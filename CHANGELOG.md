@@ -93,6 +93,12 @@ details.
   itself, each labelled as such — so you can tell when the call does not match
   what you asked. The approval notification adds it as its last line, after the
   call. The request is shown as plain text, shortened if long.
+- **What the agent can reach, written down.** `SECURITY.md` says which
+  permissions the app does and does not hold, which pipelines can call tools at
+  all, how to watch the app's traffic with PCAPdroid and what the maintainer's
+  own capture showed, what a work profile would add (not tested), and how a
+  finished run can be checked. The README links to it, says when Knotwork is not
+  the right tool, and points to the FAQ's list of known limitations.
 
 ### Changed
 
