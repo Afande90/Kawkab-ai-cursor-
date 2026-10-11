@@ -20,12 +20,12 @@ end-to-end:
 
 - On-device LLM inference through LiteRT-LM, with optional
   bring-your-own-key cloud providers (OpenAI, Anthropic, Google,
-  DeepSeek, OpenRouter, Groq) and servers you run (Ollama, any
-  OpenAI-compatible server).
+  DeepSeek) and Ollama on a server you run.
 - Graph-driven pipeline execution with a full in-app editor, a standalone
   browser editor, and a pipeline library with per-chat binding.
-- Tool calling through AppFunctions (local) and MCP (external servers),
-  with a human-in-the-loop gate for sensitive and destructive actions.
+- Built-in tools and tools from MCP servers you connect, with a
+  confirmation step that, by default, stops sensitive and destructive
+  calls.
 - Long-term memory with semantic retrieval, extraction, compaction, and
   export / import.
 - At-rest encryption (SQLCipher + Android Keystore) and explicit Room
@@ -55,6 +55,15 @@ end-to-end:
   distribution flavours at the current API level and the whole suite again at
   the `minSdk` floor, on every pull request into `main` and nightly (see
   [testing.md](testing.md#the-instrumented-gate)).
+
+### On `main`, in the next release
+
+Merged after the latest release and not in one yet;
+[CHANGELOG.md](../CHANGELOG.md) lists them under *Unreleased*:
+
+- More providers: OpenRouter and Groq with your own key, and any server
+  that speaks the OpenAI API — vLLM, LM Studio, llama.cpp — at the
+  address you enter.
 - Runs you can check: each run records its seed, sampler and the SHA-256 of
   every model file it used, and a finished run can be verified, repeated with
   the same seed, or exported as one JSON trace. What is promised, and on which

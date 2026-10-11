@@ -380,6 +380,10 @@ experimentation. Expect rough edges:
   empty — forward migrations cannot be reversed — so export anything you want
   to keep before installing an older version.)
 
+This README describes the `main` branch, which can be ahead of the latest
+release; see *Unreleased* in [CHANGELOG.md](CHANGELOG.md) for what is not
+released yet.
+
 ## License
 
 Released under the Apache License 2.0. See [LICENSE](LICENSE) for the full
