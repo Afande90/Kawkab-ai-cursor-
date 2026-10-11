@@ -668,8 +668,9 @@ The model calls a tool only from a Tool or Skill step of a pipeline. Nine of the
 fifteen pipelines that ship with the app have neither, so they cannot call
 anything. The pipeline a fresh install starts with does call tools: it looks
 topics up on Wikipedia, and one of its steps lets the model pick any tool you
-have switched on. Sensitive and destructive calls stop and ask you first; see
-[Risk levels and human-in-the-loop](docs/user-guide.md#risk-levels-and-human-in-the-loop).
+have switched on. By default sensitive and destructive calls stop and ask you
+first, and a destructive one asks under every setting of **Approve tool calls**;
+see [Risk levels and human-in-the-loop](docs/user-guide.md#risk-levels-and-human-in-the-loop).
 
 Every way data can leave the phone is listed in
 [PRIVACY.md § 3](PRIVACY.md#3-what-can-leave-your-device). The build fails when
