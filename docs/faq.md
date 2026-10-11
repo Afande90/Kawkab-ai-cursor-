@@ -1,8 +1,7 @@
 # Frequently asked questions
 
-Short answers to the questions that actually come up, each one pointing at the
-page that covers it properly. Nothing here is the full story on purpose — this
-page is a router, not a third copy of the documentation.
+Short answers to the questions that actually come up. Each one links to the
+page that covers it in full.
 
 Which page do you want?
 
@@ -32,9 +31,8 @@ useful, that is [the five-step answer below](#im-installed-now-what-do-i-actuall
 
 ### What do I need to run this?
 
-Android 14 or newer and roughly 2 GB of free RAM for the model. Memory is the
-real constraint, not the CPU — a phone without a usable GPU still works,
-just slower. Full list in [README § Requirements](../README.md#requirements).
+Android 14 or newer and roughly 2 GB of free RAM for the model. Memory is what
+limits it; a phone without a usable GPU still works, only slower. Full list in [README § Requirements](../README.md#requirements).
 
 ### Do I have to download a model at all?
 
@@ -47,8 +45,7 @@ neither. See [Getting started](user-guide.md#getting-started).
 
 Onboarding picks one for you — each scenario names the model it needs and
 downloads exactly that. Choosing by hand, the two presets are **Gemma 4 E2B** and
-**Gemma 4 E4B**; take E2B when storage or RAM is tight. Either way this is a tap,
-not a decision about file formats. See
+**Gemma 4 E4B**; take E2B when storage or RAM is tight. See
 [Getting started](user-guide.md#getting-started).
 
 ### Which cloud providers are supported?
@@ -71,8 +68,7 @@ model after **Test connection** brings the server's list, or type its id.
 Over `https`, yes — the Ollama row under **Settings → Models → External
 providers** carries its base URL. Over plain
 `http` it is refused unless the address is on a private network or you have
-approved that specific origin, because unencrypted traffic to the open internet
-is not something the app will do quietly on your behalf.
+approved that specific origin, because the app does not send unencrypted traffic over the open internet.
 
 ### What is "Custom Model URL", and can it use authentication?
 
@@ -255,8 +251,8 @@ one you were looking at, because the useful question is normally about a gap
 rather than a row. The request journal on Settings → Background & triggers →
 External automation carries the same pair for inbound requests.
 
-Attach either to a bug report about background reliability — it says what the
-app actually did while you were not watching, which nothing else can. The file
+Attach either to a bug report about background reliability: it shows what the
+app did while you were not watching. The file
 holds the journal rows: a failed run's error message, but no message a run was
 given and no answer it produced.
 Neither action touches the network. See [Checking what a trigger has been
@@ -312,8 +308,7 @@ human-in-the-loop](user-guide.md#risk-levels-and-human-in-the-loop).
 
 ### Can other apps on my phone expose tools to the agent?
 
-Publishing them is not the problem — Android lets any app publish
-AppFunctions. Picking them up is: reading and running another app's
+Android lets any app publish AppFunctions, but running another app's
 AppFunctions needs a permission (`EXECUTE_APP_FUNCTIONS`) that Android 16 hands
 only to privileged system apps, and an app you install yourself is not one. So
 what you get is the built-in catalogue plus whatever you connect over MCP.
@@ -373,8 +368,7 @@ limit](user-guide.md#when-a-run-reaches-a-limit).
 ### Does continuing past a limit turn the limit off?
 
 No. It buys **one more portion** — the same allowance again, which is the number
-on the button — and the run asks again when that runs out. A run you have waved
-through five times is one you have said yes to five times.
+on the button — and the run asks again when that runs out.
 
 ### Can I cap what a run costs me?
 
@@ -433,8 +427,7 @@ entry](troubleshooting.md#memory-search-isnt-finding-an-obvious-entry).
 
 ## Known limitations
 
-These are current, deliberate, and stated without softening. Each one says what
-would change it.
+What the app does not do today. Each item says what would change it.
 
 - **No OAuth anywhere.** Not for MCP servers, not for model downloads. Bearer,
   Basic and API-key headers are what exist. Revisited with the first external
@@ -473,8 +466,8 @@ would change it.
   validation.
 - **There is no casual mode, and there will not be one.** The app is built for
   someone who wants to see and change the machinery. A phone assistant that
-  answers questions already ships with the OS, and competing with it is a losing
-  bet rather than a missing feature. See [README § Who it's
+  answers questions already ships with the OS, and the app does not try to
+  compete with it. See [README § Who it's
   for](../README.md#who-its-for).
 - **One maintainer, no company.** Response times follow from that.
 

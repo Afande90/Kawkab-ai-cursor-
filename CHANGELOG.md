@@ -264,6 +264,14 @@ details.
   this release. Its list of known limitations now says that memory search on the
   on-device embedding model cannot tell facts written in Russian apart. The
   roadmap lists what this release added and where the F-Droid submission stands.
+- **The README claims only what the app does.** It called the app an autonomous
+  assistant that acts across your phone, said the agent never sends a message or
+  writes a file without asking, and said nothing leaves the device unless you set
+  it up. The agent reaches only its own storage and the network paths in the
+  privacy policy, and there is no tool that sends messages. A file write can run
+  without asking when *Approve tool calls* is set to *Never*. The built-in
+  Wikipedia lookup is on from the first launch. The README and the FAQ are also
+  shorter and plainer.
 - **Cookbook recipes run with the values they show.** A pipeline node carries its
   settings twice — once for the run, once for the editors — and two recipes held
   some only in the editors' copy: the planning cap and the queue's stop-on-error

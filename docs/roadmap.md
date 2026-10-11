@@ -102,8 +102,8 @@ actually implements. What is left is the second channel.
   The review lists the prebuilt native libraries of the inference engine for
   F-Droid's maintainers, and asks nothing of this project.
 
-Note the one-time migration cost described in the *Pre-release notice* of
-[README.md](../README.md): `0.7.0` is the first release-signed build, so
+Note the one-time migration cost described under *Install* in
+[README.md](../README.md#from-a-release-build): `0.7.0` is the first release-signed build, so
 updating a debug-signed install to it requires a reinstall. Releases from
 `0.7.0` onward update in place.
 
