@@ -649,6 +649,73 @@ which is why an input method granted by the user is outside this policy's scope.
   build — made from the source for development, never published — is not
   minified and keeps the call.
 
+### What the agent can reach, and how to check
+
+An agent that can act on your phone is a fair thing to be wary of. This
+section says what this one can reach, and how to check it without reading the
+code.
+
+The app asks Android for no access to your contacts, messages, call log,
+calendar, photos or files, and it is not an accessibility service, so it cannot
+read or operate other apps' screens. The permissions it does hold are listed,
+with the reason for each, in
+[PRIVACY.md § 5](PRIVACY.md#5-permissions-and-why-they-are-requested); the build
+fails if one is added and nobody records it. The agent's file tools work
+inside one folder of the app's private storage. There is no shell, and the model
+cannot write a program and run it.
+
+The model calls a tool only from a Tool or Skill step of a pipeline. Nine of the
+fifteen pipelines that ship with the app have neither, so they cannot call
+anything. The pipeline a fresh install starts with does call tools: it looks
+topics up on Wikipedia, and one of its steps lets the model pick any tool you
+have switched on. By default sensitive and destructive calls stop and ask you
+first, and a destructive one asks under every setting of **Approve tool calls**;
+see [Risk levels and human-in-the-loop](docs/user-guide.md#risk-levels-and-human-in-the-loop).
+
+Every way data can leave the phone is listed in
+[PRIVACY.md § 3](PRIVACY.md#3-what-can-leave-your-device). The build fails when
+code that can open a network connection does not name the part of that list it
+falls under. In the app, the footer of the **More** tab says when the app last
+opened a connection; crash reports are sent by their own library and do not
+show there.
+
+#### Checking the traffic yourself
+
+[PCAPdroid](https://github.com/emanuele-f/PCAPdroid) shows which app connects
+where. It needs no root: it runs as a VPN on the phone itself. Start it before
+you open Knotwork, then use the app as usual. With crash reports off, the
+maintainer's own capture showed connections to Wikipedia when a pipeline looked
+something up and to Hugging Face when a model was downloaded, and nothing else.
+Browsing models on the **Discover** screen also reaches Hugging Face. A cloud
+model, an MCP server or an `http_request` host shows up only once you have set
+it up, and crash reports, if you turn them on in the `full` build, go to
+Firebase. A connection anywhere else is a bug; please report it as described in
+[Reporting a Vulnerability](#reporting-a-vulnerability).
+
+#### A separate profile
+
+If you want Android itself to keep the app apart from the rest of the phone,
+install it in a work profile, for example with
+[Shelter](https://f-droid.org/en/packages/net.typeblog.shelter/), or in
+[Private Space](https://developer.android.com/about/versions/15/features#private-space)
+on Android 15 and later. An app in another profile has its own storage and its
+own VPN, and turning the profile off stops it. So PCAPdroid has to run in the
+same profile to see the app's traffic, and the model has to be downloaded again
+inside it. The maintainer has not tested Knotwork in a work profile or in
+Private Space.
+
+#### Seeing what a run did
+
+The console keeps a record of every step of a run — what the model was given and
+what it answered — and exports it as one JSON file. On the phone that made the
+run, **Verify** repeats its on-device model calls from their recorded prompts
+and compares the answers byte for byte, without running tools again. That is
+promised on CPU, and on GPU at the same context window; it is not promised on
+another phone, and nothing is signed. See [The run
+header](docs/user-guide.md#the-run-header-seed-verify-run-again-export).
+
+What none of this covers is listed under [Out of scope](#out-of-scope).
+
 ### Prompt injection via tool content (accepted risk)
 
 Content returned by tools is **untrusted model input**, and the agent does

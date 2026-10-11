@@ -54,6 +54,24 @@ assistant. For that, Gemini is free and built into the OS, and competing there
 is a losing bet regardless of code quality. Knotwork trades that convenience for
 control, transparency, and local-first data handling.
 
+## When Knotwork is not the right tool
+
+- You want a chat window onto a model running on your own server. Knotwork can
+  use that server, but the server's own client is simpler if the chat is all you
+  need.
+- You want quick answers to questions. The assistant built into your phone is
+  free and already there.
+- Your phone cannot spare about 2 GB of RAM for a model. The app still works
+  with a cloud provider or your own server, but then the main reason to use it
+  is gone.
+- You want an agent that writes and runs its own code, or operates other apps'
+  screens for you. Knotwork does neither, and neither is planned.
+
+## Known limitations
+
+What the app does not do, and what would change each item, is kept in one list:
+[docs/faq.md § Known limitations](docs/faq.md#known-limitations).
+
 ## See it work
 
 The **Share Handler** scenario is a good one-glance picture of the whole idea:
@@ -341,6 +359,9 @@ to log into, and nothing is uploaded for the app to work.
 - **The agent asks before it acts.** Destructive and sensitive tool calls stop
   at a human-in-the-loop confirmation, including when a pipeline runs in the
   background from a trigger.
+
+What the agent can reach on the phone, and how to check its traffic yourself,
+is in [SECURITY.md](SECURITY.md#what-the-agent-can-reach-and-how-to-check).
 
 The policy in full — what is stored on the device, every path that can send
 data off it, and how to switch each one off — is [PRIVACY.md](PRIVACY.md). The
