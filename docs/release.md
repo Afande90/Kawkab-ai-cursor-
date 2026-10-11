@@ -129,8 +129,9 @@ fallback. That was acceptable for the pre-release sideload channel because:
 
 The first release-signed build will use a different signer than the historical
 debug-signed builds, so an in-place upgrade from a debug-signed install will be
-rejected with a signature mismatch — see the *Pre-release notice* in
-[README.md](../README.md). Plan for a clean install at that transition.
+rejected with a signature mismatch — see *Install* in
+[README.md](../README.md#from-a-release-build). Plan for a clean install at that
+transition.
 
 ### Signing identities by channel
 
