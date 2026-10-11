@@ -263,7 +263,8 @@ details.
   connection test and that the node picker was hard to read; both were fixed in
   this release. Its list of known limitations now says that memory search on the
   on-device embedding model cannot tell facts written in Russian apart. The
-  roadmap lists what this release added and where the F-Droid submission stands.
+  roadmap lists what this release adds, under its own heading until it ships,
+  and where the F-Droid submission stands.
 - **The README claims only what the app does.** It called the app an autonomous
   assistant that acts across your phone, said the agent never sends a message or
   writes a file without asking, and said nothing leaves the device unless you set
@@ -272,6 +273,10 @@ details.
   without asking when *Approve tool calls* is set to *Never*. The built-in
   Wikipedia lookup is on from the first launch. The README and the FAQ are also
   shorter and plainer.
+- **The roadmap no longer says the agent calls tools through AppFunctions.** It
+  does not. The roadmap also said sensitive calls stop for confirmation without
+  saying that this is the default, which *Approve tool calls* can change. The
+  README now says it describes `main`, which can be ahead of the latest release.
 - **Cookbook recipes run with the values they show.** A pipeline node carries its
   settings twice — once for the run, once for the editors — and two recipes held
   some only in the editors' copy: the planning cap and the queue's stop-on-error
