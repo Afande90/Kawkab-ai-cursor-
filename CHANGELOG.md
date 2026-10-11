@@ -268,7 +268,7 @@ details.
   assistant that acts across your phone, said the agent never sends a message or
   writes a file without asking, and said nothing leaves the device unless you set
   it up. The agent reaches only its own storage and the network paths in the
-  privacy policy, and there is no tool that sends messages. A file write can run
+  privacy policy, and no built-in tool sends messages. A file write can run
   without asking when *Approve tool calls* is set to *Never*. The built-in
   Wikipedia lookup is on from the first launch. The README and the FAQ are also
   shorter and plainer.

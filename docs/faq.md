@@ -32,7 +32,8 @@ useful, that is [the five-step answer below](#im-installed-now-what-do-i-actuall
 ### What do I need to run this?
 
 Android 14 or newer and roughly 2 GB of free RAM for the model. Memory is what
-limits it; a phone without a usable GPU still works, only slower. Full list in [README § Requirements](../README.md#requirements).
+limits it; a phone without a usable GPU still works, only slower. Full list in
+[README § Requirements](../README.md#requirements).
 
 ### Do I have to download a model at all?
 
@@ -68,7 +69,8 @@ model after **Test connection** brings the server's list, or type its id.
 Over `https`, yes — the Ollama row under **Settings → Models → External
 providers** carries its base URL. Over plain
 `http` it is refused unless the address is on a private network or you have
-approved that specific origin, because the app does not send unencrypted traffic over the open internet.
+approved that specific origin, because the app does not send unencrypted
+traffic over the open internet.
 
 ### What is "Custom Model URL", and can it use authentication?
 
@@ -252,9 +254,8 @@ rather than a row. The request journal on Settings → Background & triggers →
 External automation carries the same pair for inbound requests.
 
 Attach either to a bug report about background reliability: it shows what the
-app did while you were not watching. The file
-holds the journal rows: a failed run's error message, but no message a run was
-given and no answer it produced.
+app did while you were not watching. The file holds the journal rows: a failed
+run's error message, but no message a run was given and no answer it produced.
 Neither action touches the network. See [Checking what a trigger has been
 doing](user-guide.md#checking-what-a-trigger-has-been-doing).
 

@@ -28,15 +28,15 @@
 Knotwork is an Android app that runs a language model on your phone and lets
 you decide what happens to a request on the way to an answer. Inference runs
 **on-device** through [LiteRT-LM](https://ai.google.dev/edge) (Google's
-on-device runtime, formerly TensorFlow Lite); a cloud model is used only where a
-pipeline you built calls one.
+on-device runtime, formerly TensorFlow Lite); a cloud model is used only once you
+add its key.
 
 Every conversation goes through a pipeline — what Tasker, n8n or Zapier would
 call a *workflow*: a graph of typed nodes (input, on-device LLM, optional cloud
 LLM, tool calls, routing, decomposition, evaluation, clarifications, output)
-that you edit in the app or in a standalone browser editor. By default, a step
-that wants to write a file or reach a server shows you the call and waits for
-your answer.
+that you edit in the app or in a standalone browser editor. By default, a
+sensitive or destructive tool call — writing a file, calling a tool on an MCP
+server — shows you the call and waits for your answer.
 
 ## Who it's for
 
