@@ -244,6 +244,12 @@ details.
   the provider for JSON. A prose answer failed the step at once, or a fixed-tool
   step ran its tool with that prose as the arguments. These steps now get the same
   repairs as on the device's own model.
+- **OpenAI's Codex and Pro models answer again.** Since 0.7.0 a Cloud step on any
+  of them failed every time with "the response … was cut off", and the answer was
+  thrown away. These models reply through OpenAI's Responses API, which ends a
+  complete answer without the finish reason the app looks for to spot a dropped
+  connection. The app now expects it only from models that reply through Chat
+  Completions; an answer cut short on the Responses API still fails the step.
 - **`delegate_task` goes where it says it will.** The tool tells the model that,
   unless it names a provider, the first one set up on the device answers; a call
   that named none went to Anthropic instead — and failed for anyone without an

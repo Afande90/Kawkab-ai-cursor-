@@ -78,6 +78,7 @@ Only Kotlin files appear inside the generated blocks.
     - `ModelNetworkGateTest.kt` - Unit tests for `ModelNetworkGate` — the single decision every model client asks before it is built.
     - `OpenAiCompatibleClientsTest.kt` - Unit tests for `OpenAiCompatibleClients`: the addresses, paths, headers and deadlines the three OpenAI-compatible providers are built with.
     - `OpenAiCompatibleServerEndToEndTest.kt` - A server the user runs, reached on the wire through the production `KoogClientFactory` and `KoogCloudLlmModelResolver`: the address the way vLLM and LM Studio document it (ending in `/v1`), the paths, the key or its absence, and the model list.
+    - `OpenAiResponsesStreamEndToEndTest.kt` - A CLOUD node answered by OpenAI, end to end: Koog's real OpenAI client against a local server, the real `CloudLlmNodeExecutor`, and the model `KoogCloudLlmModelResolver` resolves for a saved id.
     - `OpenClAccelerationProbeTest.kt` - Covers the two-step OpenCL detection and, above all, its failure discipline: the probe exists so a *missing* GPU never reaches the native engine, so any path that let an error escape would defeat its entire purpose.
     - `retry/` - Tests for the cloud retry wrapping.
       - `CloudRetryEndToEndTest.kt` - The retry policy measured on the wire: a real Koog client, built by the production `KoogClientFactory` and therefore wrapped and transported exactly as a Cloud node's is, against a local server that answers with scripted failures.

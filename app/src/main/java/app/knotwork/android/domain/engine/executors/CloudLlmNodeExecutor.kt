@@ -2,6 +2,7 @@ package app.knotwork.android.domain.engine.executors
 
 import ai.koog.prompt.dsl.prompt
 import ai.koog.prompt.executor.clients.LLMClient
+import ai.koog.prompt.llm.LLMCapability
 import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.streaming.StreamFrame
 import app.knotwork.android.domain.constants.DefaultPrompts
@@ -232,7 +233,7 @@ class CloudLlmNodeExecutor @Inject constructor(
         // reason, so the half-written answer would otherwise be handed on as a complete
         // one. Measured on a stub that cut the socket mid-stream: identical frames in both
         // cases apart from `finishReason` (null when cut, "stop" when complete).
-        if (providerReportsFinishReason(selectedProvider) && finishReason == null) {
+        if (providerReportsFinishReason(selectedProvider, model) && finishReason == null) {
             emitFailure(truncatedResponse(selectedProvider.id))
             return@channelFlow
         }
@@ -318,7 +319,8 @@ class CloudLlmNodeExecutor @Inject constructor(
     private suspend fun autoDetectProvider(): CloudProvider? = AutoProvider.resolve(apiKeyRepository)
 
     /**
-     * Whether an absent finish reason is evidence of a truncated answer for [provider].
+     * Whether an absent finish reason is evidence of a truncated answer for [provider]
+     * answering with [model].
      *
      * Only true where it was actually measured against a stub, because the inverse
      * mistake — treating a healthy stream as truncated — fails working runs:
@@ -326,7 +328,13 @@ class CloudLlmNodeExecutor @Inject constructor(
      * - `DEEPSEEK` / `OPENAI` — **checked**. Measured on DeepSeek: a socket cut mid-stream
      *   ends the flow with `End(finishReason = null)` and no exception, while a complete
      *   stream ends with `End(finishReason = "stop")`. OpenAI shares the same streaming
-     *   implementation (`AbstractOpenAILLMClient`), so the signal is the same one.
+     *   implementation (`AbstractOpenAILLMClient`), so the signal is the same one —
+     *   **except for a model Koog streams through the Responses API** (see
+     *   [streamsThroughResponsesApi]). That path ends every healthy answer with
+     *   `End(finishReason = null)`, because a Responses stream carries a status rather
+     *   than a finish reason, and Koog itself fails a stream that stops before its
+     *   completion event (`requireEndFrame`). Checking there rejected every answer of the
+     *   Codex and Pro models as cut off; measured against MockWebServer.
      * - `GOOGLE` — **checked**, and already correct without help: its client throws
      *   `IncompleteStreamException` on a cut, so the guard below never fires for it.
      * - `OLLAMA` — **excluded**. Its client never emits a finish reason at all, so absence
@@ -338,13 +346,27 @@ class CloudLlmNodeExecutor @Inject constructor(
      *   stream parser is OpenAI's, but the signal is the server's: a server that omits the
      *   finish reason would have every healthy answer discarded as cut off.
      */
-    private fun providerReportsFinishReason(provider: CloudProvider): Boolean = when (provider) {
-        CloudProvider.OPENAI, CloudProvider.DEEPSEEK, CloudProvider.GOOGLE -> true
+    private fun providerReportsFinishReason(provider: CloudProvider, model: LLModel): Boolean = when (provider) {
+        CloudProvider.OPENAI -> !model.streamsThroughResponsesApi()
+        CloudProvider.DEEPSEEK, CloudProvider.GOOGLE -> true
         CloudProvider.ANTHROPIC, CloudProvider.OLLAMA -> false
         // Same client as OpenAI, but whether each *server* sends the finish reason is what
         // matters, and none has been measured yet; off until the device check says otherwise.
         CloudProvider.OPENROUTER, CloudProvider.GROQ, CloudProvider.OPENAI_COMPATIBLE -> false
     }
+
+    /**
+     * Whether Koog's OpenAI client sends this model through the Responses API rather than
+     * Chat Completions: it prefers Chat Completions whenever the model supports it, and
+     * falls back to Responses only for a model that supports nothing else
+     * (`OpenAILLMClient.determineParams`). `OpenAiResponsesStreamEndToEndTest` holds this
+     * in step with the client, for every OpenAI model the app offers.
+     *
+     * @receiver The model the node is about to call.
+     * @return `true` for a Responses-only model, such as the Codex and Pro lines.
+     */
+    private fun LLModel.streamsThroughResponsesApi(): Boolean =
+        !supports(LLMCapability.OpenAIEndpoint.Completions) && supports(LLMCapability.OpenAIEndpoint.Responses)
 
     private companion object {
         /** The provider stopped sending without ever saying the answer was finished. */
