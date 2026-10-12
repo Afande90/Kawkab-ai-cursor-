@@ -131,18 +131,30 @@ class OpenAiResponsesStreamEndToEndTest {
     }
 
     /**
-     * Runs one CLOUD node set to OpenAI, with [modelId] saved as the provider's model.
+     * Runs one CLOUD node set to OpenAI, with [modelId] saved as the provider's model, on a client
+     * of its own that is closed afterwards.
      *
      * @param modelId The saved model id.
      * @return The node's result.
      */
-    private fun runNode(modelId: String): NodeExecutionResult = runBlocking {
+    private fun runNode(modelId: String): NodeExecutionResult = client().use { client ->
+        runNode(modelId, client)
+    }
+
+    /**
+     * Runs one CLOUD node set to OpenAI on [client], with [modelId] saved as the provider's model.
+     *
+     * @param modelId The saved model id.
+     * @param client The Koog client the node's factory hands out.
+     * @return The node's result.
+     */
+    private fun runNode(modelId: String, client: OpenAILLMClient): NodeExecutionResult = runBlocking {
         withTimeout(NODE_DEADLINE) {
             val keys = mockk<ApiKeyRepository> {
                 every { getModel(CloudProvider.OPENAI) } returns flowOf(modelId)
             }
             val factory = mockk<CloudLlmClientFactory> {
-                coEvery { createClient(CloudProvider.OPENAI, any()) } returns client()
+                coEvery { createClient(CloudProvider.OPENAI, any()) } returns client
             }
             val settings = mockk<GenerationSettings> {
                 every { systemPromptPrefix } returns flowOf("")
