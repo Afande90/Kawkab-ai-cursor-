@@ -56,12 +56,17 @@ sealed interface AgentOrchestratorState {
      *   request answers with it, and an answer settles only the request it names —
      *   never "whatever the session is waiting on now", which after a second run
      *   starts in the same session is a different request.
+     * @property context What the run was asked to do — the root run's request and
+     *   where it came from — shown next to the call so the user can tell whether
+     *   the call matches it. `null` when there is nothing to show: a run that is not
+     *   persisted, a record without a prompt, or a lookup that failed.
      */
     data class WaitingForApproval(
         val toolName: String,
         val arguments: String,
         val risk: ToolRisk,
         val requestId: String,
+        val context: ApprovalRequestContext? = null,
     ) : AgentOrchestratorState
 
     /**
@@ -203,6 +208,9 @@ sealed interface AgentOrchestratorState {
      * @property depth Pipeline-nesting level of the run this step belongs to
      *   (`0` top-level, `1` direct sub-pipeline, …). The Traces tab nests a
      *   sub-pipeline's spans under the `PIPELINE` node that spawned them.
+     * @property inputSha256 SHA-256 of the node's input, as the trace records it;
+     *   `null` where none is shown.
+     * @property outputSha256 SHA-256 of the node's output, as the trace records it.
      */
     data class TraceStep(
         val nodeName: String,
@@ -210,6 +218,8 @@ sealed interface AgentOrchestratorState {
         val durationMs: Long = 0,
         val tokenCount: Int? = null,
         val depth: Int = 0,
+        val inputSha256: String? = null,
+        val outputSha256: String? = null,
     )
 
     /**
@@ -255,6 +265,9 @@ sealed interface AgentOrchestratorState {
      * @property depth Pipeline-nesting level of the run this node belongs to
      *   (`0` top-level, `1` direct sub-pipeline, …). The Vars tab renders a
      *   sub-pipeline's rows indented under the spawning `PIPELINE` node.
+     * @property inputSha256 SHA-256 of [input], as the trace records it; `null`
+     *   where none is shown.
+     * @property outputSha256 SHA-256 of [output], as the trace records it.
      */
     data class NodeIO(
         val nodeId: String,
@@ -262,6 +275,8 @@ sealed interface AgentOrchestratorState {
         val input: String,
         val output: String,
         val depth: Int = 0,
+        val inputSha256: String? = null,
+        val outputSha256: String? = null,
     ) : AgentOrchestratorState
 }
 

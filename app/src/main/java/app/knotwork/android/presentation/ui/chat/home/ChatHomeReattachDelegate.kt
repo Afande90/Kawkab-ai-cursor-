@@ -11,8 +11,9 @@ import app.knotwork.android.domain.repositories.ClarificationRepository
 import app.knotwork.android.domain.repositories.PendingInteractionRepository
 import app.knotwork.android.domain.repositories.PipelineRepository
 import app.knotwork.android.domain.repositories.PipelineRunRepository
-import app.knotwork.android.domain.repositories.SettingsRepository
+import app.knotwork.android.domain.repositories.RunSettings
 import app.knotwork.android.domain.usecases.AgentOrchestratorUseCase
+import app.knotwork.android.domain.usecases.ResolveApprovalRequestContextUseCase
 import app.knotwork.android.domain.usecases.ResumeOutcome
 import app.knotwork.android.domain.usecases.ResumePipelineRunUseCase
 import kotlinx.coroutines.CoroutineScope
@@ -41,10 +42,9 @@ import kotlinx.coroutines.launch
  * The live collector itself is owned by the ViewModel (it is the shared agent-
  * execution core); this delegate drives it through the [attachToLiveRun] seam,
  * replays the console through [replayTrace], and restores suspension cards
- * through the [restoreApproval] / [restoreClarification] seams into the HITL
- * delegate. It owns the `pending.interrupted` snapshot and the shared
- * [resumeFeedbackEvents] channel (the HITL delegate emits into it via
- * [emitResumeFeedback]).
+ * through the [restoredCards] seams into the HITL delegate. It owns the
+ * `pending.interrupted` snapshot and the shared [resumeFeedbackEvents] channel
+ * (the HITL delegate emits into it via [emitResumeFeedback]).
  *
  * Shares the ViewModel's [scope] and single [state] reducer (see
  * `docs/architecture.md` §1.2).
@@ -53,32 +53,30 @@ import kotlinx.coroutines.launch
  * @property state The ViewModel's single source-of-truth state flow.
  * @property pipelineRunRepository Resolves the session's run records.
  * @property pipelineRepository Resolves the interrupted run's node label.
- * @property settingsRepository Source of the resume window.
+ * @property runSettings Source of the resume window.
  * @property agentOrchestratorUseCase Source of the live pending-approval snapshot on restore.
  * @property clarificationRepository Source of the live pending-clarification snapshot on restore.
  * @property pendingInteractionRepository Source of the durable parked interaction on restore.
  * @property resumePipelineRunUseCase Resumes an interrupted run.
+ * @property resolveApprovalRequestContext Re-reads what a parked run was asked to do, for its restored card.
  * @property attachToLiveRun Seam into the ViewModel's live-run collector.
  * @property replayTrace Seam into the console delegate's persisted-trace replay.
- * @property restoreApproval Seam into the HITL delegate's approval-card capture.
- * @property restoreClarification Seam into the HITL delegate's clarification-card capture.
- * @property restoreCeilingPause Seam into the HITL delegate's ceiling-pause capture.
+ * @property restoredCards Seams into the HITL delegate's capture of each suspension card.
  */
 class ChatHomeReattachDelegate(
     private val scope: CoroutineScope,
     private val state: MutableStateFlow<ChatHomeScreenState>,
     private val pipelineRunRepository: PipelineRunRepository,
     private val pipelineRepository: PipelineRepository,
-    private val settingsRepository: SettingsRepository,
+    private val runSettings: RunSettings,
     private val agentOrchestratorUseCase: AgentOrchestratorUseCase,
     private val clarificationRepository: ClarificationRepository,
     private val pendingInteractionRepository: PendingInteractionRepository,
     private val resumePipelineRunUseCase: ResumePipelineRunUseCase,
+    private val resolveApprovalRequestContext: ResolveApprovalRequestContextUseCase,
     private val attachToLiveRun: suspend (String, PipelineRunStatus) -> Unit,
     private val replayTrace: suspend (PipelineRun) -> Unit,
-    private val restoreApproval: (AgentOrchestratorState.WaitingForApproval) -> Unit,
-    private val restoreClarification: (ClarificationRequest) -> Unit,
-    private val restoreCeilingPause: (CeilingPausePending) -> Unit,
+    private val restoredCards: RestoredCardSeams,
 ) {
 
     private val _resumeFeedbackEvents: MutableSharedFlow<ResumeFeedbackEvent> =
@@ -178,7 +176,7 @@ class ChatHomeReattachDelegate(
             PipelineRunStatus.WAITING_APPROVAL -> {
                 val live = agentOrchestratorUseCase.pendingApprovalFor(sessionId)
                 if (live != null) {
-                    restoreApproval(live)
+                    restoredCards.approval(live)
                 } else {
                     // Persistent phase (or a different process parked the run):
                     // rebuild the card from the durable record; the decision
@@ -186,7 +184,7 @@ class ChatHomeReattachDelegate(
                     pendingInteractionRepository.getForSession(sessionId)
                         ?.takeIf { it.kind == PendingInteractionKind.APPROVAL }
                         ?.let { parked ->
-                            restoreApproval(
+                            restoredCards.approval(
                                 AgentOrchestratorState.WaitingForApproval(
                                     toolName = parked.toolName.orEmpty(),
                                     arguments = parked.toolArgs.orEmpty(),
@@ -196,6 +194,9 @@ class ChatHomeReattachDelegate(
                                     // from before request ids were back-filled
                                     // with their run id.
                                     requestId = parked.requestId ?: parked.runId,
+                                    // Not on the record: the root run keeps the
+                                    // request it was asked while it waits.
+                                    context = resolveApprovalRequestContext(parked.runId),
                                 ),
                             )
                         }
@@ -205,7 +206,7 @@ class ChatHomeReattachDelegate(
                 val live = clarificationRepository.pendingRequests.first()
                     .lastOrNull { it.sessionId == sessionId }
                 if (live != null) {
-                    restoreClarification(live)
+                    restoredCards.clarification(live)
                 } else {
                     // Persistent phase: re-render the persisted question. The
                     // synthetic request id (run id) can never match a live
@@ -213,7 +214,7 @@ class ChatHomeReattachDelegate(
                     pendingInteractionRepository.getForSession(sessionId)
                         ?.takeIf { it.kind == PendingInteractionKind.CLARIFICATION }
                         ?.let { parked ->
-                            restoreClarification(
+                            restoredCards.clarification(
                                 ClarificationRequest(
                                     id = parked.runId,
                                     sessionId = parked.sessionId,
@@ -233,7 +234,7 @@ class ChatHomeReattachDelegate(
                 pendingInteractionRepository.getForSession(sessionId)
                     ?.let { parked -> parked.ceilingBreach()?.let { parked to it } }
                     ?.let { (parked, breach) ->
-                        restoreCeilingPause(
+                        restoredCards.ceilingPause(
                             CeilingPausePending(
                                 runId = parked.runId,
                                 breach = breach,
@@ -258,7 +259,7 @@ class ChatHomeReattachDelegate(
         // The card only offers Resume while the checkpoint is inside the resume
         // window and the record carries everything resume needs (the original
         // prompt — absent on legacy rows). The use case re-validates on tap.
-        val maxAgeMillis = settingsRepository.resumeMaxAgeHours.first() * MILLIS_PER_HOUR
+        val maxAgeMillis = runSettings.resumeMaxAgeHours.first() * MILLIS_PER_HOUR
         val interruptedAt = run.finishedAt ?: run.startedAt
         val resumable = run.userPrompt != null &&
             System.currentTimeMillis() - interruptedAt <= maxAgeMillis
@@ -351,4 +352,36 @@ class ChatHomeReattachDelegate(
         /** Milliseconds in one hour, for the resume-window pre-check on the interrupted card. */
         private const val MILLIS_PER_HOUR: Long = 3_600_000L
     }
+}
+
+/**
+ * Where the reattach path hands a suspension card it restored: the HITL
+ * delegate, which owns the cards. Grouped so the reattach delegate takes one
+ * seam per concern rather than one per card kind.
+ *
+ * @property approval Captures a restored approval card.
+ * @property clarification Captures a restored clarification card.
+ * @property ceilingPause Captures a restored ceiling-pause card.
+ */
+class RestoredCardSeams(
+    val approval: (AgentOrchestratorState.WaitingForApproval) -> Unit,
+    val clarification: (ClarificationRequest) -> Unit,
+    val ceilingPause: (CeilingPausePending) -> Unit,
+)
+
+/**
+ * One-shot failure outcomes of a Resume tap on the interrupted-run card,
+ * mapped to snackbar copy by the screen. Modelled as an enum so resource ids
+ * stay out of the ViewModel. A successful resume emits no event — the
+ * surface flips to `Generating` instead.
+ */
+enum class ResumeFeedbackEvent {
+    /** The pipeline graph was edited or deleted; only a full restart can help. */
+    GraphChanged,
+
+    /** The interruption is older than the configured resume window. */
+    Expired,
+
+    /** The run is no longer resumable (raced discard/resume, legacy record). */
+    NotResumable,
 }

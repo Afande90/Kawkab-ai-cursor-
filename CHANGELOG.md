@@ -13,6 +13,350 @@ details.
 
 ## [Unreleased]
 
+### Added
+
+- **A correction replaces the fact it corrects.** Memory used to drop a newly
+  extracted fact whenever it was close to one already stored. A correction —
+  "now prefers English" after "prefers Russian" — was lost, and memory kept the
+  fact you had just contradicted. Closeness does not tell a correction from a
+  rewording, or from a different fact of the same shape ("allergic to cats"
+  after "allergic to peanuts"), so the on-device model now reads the two facts
+  and decides:
+  - the same fact is skipped;
+  - a change updates the entry in place and keeps the replaced text in the
+    entry's history;
+  - a different fact, or one the model cannot place, is saved beside it.
+
+  A pinned entry is never changed: its update is saved beside it and waits until
+  you choose. Earlier versions are stored in the encrypted database and deleted
+  with their entry.
+
+  On the Memory screen:
+  - a row shows how many earlier versions its entry keeps;
+  - an entry's sheet lists them under **Earlier versions**, and any one can be
+    deleted;
+  - an update waiting on a pinned entry is drawn under it, and either entry's
+    sheet offers **Use the update** or **Keep pinned**;
+  - unpinning an entry while an update waits applies the update.
+  A memory export carries each entry's earlier versions, and an import brings
+  them back as that entry's history only — never as entries of their own.
+
+- **OpenRouter, Groq and a server you run.** Three more providers in Settings →
+  Models: OpenRouter and Groq with your own key, and any server that speaks the
+  OpenAI API — vLLM, LM Studio, llama.cpp — at the address you enter, with or
+  without a key. *Add provider* groups every provider into *Hosted* and *Your
+  own server*, and a provider's row says when it still needs a model.
+- **Test connection.** A provider's screen and the MCP server form can check the
+  values on the screen before you rely on them: a provider is asked for its
+  model list, an MCP server for its tools — no prompt, no tokens, one attempt,
+  nothing saved. A refusal says *Not sent* and which rule; a failure says what
+  happened and what to do.
+- **Choose a model from the server's list.** After a test, the model field of
+  OpenRouter, Groq, Ollama or your own server opens a searchable list of the ids
+  the server serves.
+- **Every provider by name on a node.** A Cloud node's *Provider* and the
+  *Engine* of the structured nodes open a list of every provider, with the model
+  each uses on this device or *not configured on this device*. The *Compatible*
+  tile, which stood for several providers at once, is gone; the browser editor
+  lists the same providers, grouped.
+- **Every pipeline run records what it ran with.** A run now picks one seed when
+  it starts and keeps it, with the sampler (temperature, top-k, top-p), the app
+  and runtime versions and the device, as the run's header. Every call a step
+  makes to the on-device model runs on that sampler with a seed derived from the
+  run seed, the step and its visit, and the trace keeps the whole prompt and
+  answer of the call with the model file's checksum, the backend, the context
+  window and how long the call took. Each step's input and output carry a SHA-256. A run paused for an
+  approval keeps its seed and sampler when it continues. Retrying a run still
+  draws a new seed. A finished run can now be checked by repeating each recorded
+  on-device call with its own prompt, sampler and seed and comparing the answers
+  byte for byte; tools and cloud models are never run again. A finished run also
+  has a digest — one SHA-256 over what it produced, the same for a repeat that
+  produces the same — and can be exported as one JSON file with its header, every
+  record and the digest, or started again with its own seed and sampler.
+- **The run header in the console.** One line above the console's tabs says what
+  the run ran with — `seed · backend · model · t`. Open it for every field, the
+  model file's SHA-256, the run digest, what is promised about repeating the run,
+  and three actions: **Verify**, **Run again with this seed** and **Export trace**.
+  An action that is not available says why next to it; a backend or window that no
+  longer matches names both values and where to change it. The check runs in its
+  own sheet, node by node, and says which node diverged first. Each node in
+  **Traces** and **Vars** shows its input and output hash; a tap copies it. The
+  header says the actions work while the run is kept, and where run history is set.
+- **Each installed model file has a SHA-256.** The app reads a model file once,
+  in the background, after it is downloaded — and once for every model installed
+  before this release — and keeps the checksum with the model. A file replaced on
+  disk afterwards is read again. Groundwork for runs that can be checked later:
+  the checksum names exactly which model file a run used.
+- **An approval shows what was asked.** The approval card puts the request the
+  run started from above the tool call — your message, shared text, a trigger's
+  name and prompt, another app's request, or an instruction the agent scheduled
+  itself, each labelled as such — so you can tell when the call does not match
+  what you asked. The approval notification adds it as its last line, after the
+  call. The request is shown as plain text, shortened if long.
+- **What the agent can reach, written down.** `SECURITY.md` says which
+  permissions the app does and does not hold, which pipelines can call tools at
+  all, how to watch the app's traffic with PCAPdroid and what the maintainer's
+  own capture showed, what a work profile would add (not tested), and how a
+  finished run can be checked. The README links to it, says when Knotwork is not
+  the right tool, and points to the FAQ's list of known limitations.
+
+### Changed
+
+- **Adding a node opens a list you can read.** The editor's radial menu is gone:
+  on a phone its labels overlapped. The **+** button and a long-press on the
+  canvas now open an **Add node** sheet that lists every node type by what it is
+  for, each with its name and one-line description, and a search over them.
+  Nothing in it is cut at large font sizes. The node lands where you
+  long-pressed, or in the middle of the screen for **+**.
+
+- **One text says what each node type does.** A node type's name and its
+  one-line description are written once, in the app, and the cookbook and the
+  browser editor quote them; `check` fails if either drifts. The browser
+  editor's palette tooltips were a separate, older text that covered twelve of
+  the fourteen types and listed only some of today's cloud providers — they now
+  show the sentence each cookbook entry opens with, for every type. Every
+  description now fits in 85 characters; nine were shortened, and what they no
+  longer say follows in the cookbook entry.
+
+- **Your own wording wins a tie in memory recall.** A memory you saved by hand
+  now earns a small bonus in ranking — the smallest of the bonuses, below
+  freshness and pinning. When it and an auto-extracted entry match about
+  equally well and are about as old, yours is recalled first — and, if the two
+  say the same thing, it is the one kept. The bonus never gets an entry past
+  the similarity threshold.
+- **A delegated task returns its whole answer and no longer writes it to
+  memory.** `delegate_task` used to save the cloud model's full answer as a
+  memory entry marked *Saved manually* and return only its first 100 characters
+  to the step that called it. It now returns the whole answer, which a step on
+  the on-device model cuts to its read budget like any tool result, and memory
+  holds only what you and your conversations put there. Entries an earlier
+  version saved this way stay until you delete them.
+
+- **One rule decides where a request to your own server may go.** The check of
+  an address before a model client is built and the check of every redirect each
+  repeated the same two rules — *Block network from local model* and the
+  unencrypted-connection rule. They now read one function, which a settings form
+  can also ask while an address is typed, so the form and the request cannot
+  disagree.
+
+- **A condition node says when it could not use its provider.** A TOOL node, a
+  router or a decomposition that could not reach the provider it was set to use
+  ran on the on-device model and wrote a console line saying so; a condition
+  node did the same, in silence. It now writes the same line.
+
+- **Saved provider keys are read per provider.** Each provider had its own
+  methods for its key, its model and its server address, and every place that
+  needed all saved keys listed the providers by hand — including the check that
+  stops `http_request` from sending a saved key to another site. That check, the
+  providers `delegate_task` offers and the provider rows in Settings now follow
+  the list of providers itself, so a provider added later is covered without a
+  line of its own. Keys stay where they were saved; the test suite pins the
+  names they are stored under.
+
+- **Settings are split into sections.** One interface held every setting, so
+  every class that read one setting could see and change all of them, and
+  every test of such a class had to fake all of them. Settings now come in
+  sections — generation and model, network, memory, tools, run limits, entry
+  points, privacy, app state — and code depends only on the section it reads.
+  The test suite refuses new code that asks for all settings at once. Nothing
+  about how settings are stored changes, and the settings no longer need an
+  exemption from the class-size limit.
+
+- **The pipeline engine is split into small parts, without changing what it
+  does.** It was one 2,000-line class built around a 1,200-line function. Each
+  concern now has a part of its own: the state a nested pipeline shares with
+  its parent, the console and run trace, routing, queues, the run record, what
+  each step sees, resuming a run, running a step, and the walk itself. Every
+  shipped pipeline still produces exactly the run it produced before: its golden
+  trace is unchanged. The engine no longer needs an exemption from the size and
+  complexity limits.
+
+- **Size and complexity exceptions can no longer pile up.** The code carried
+  155 suppressions of the detekt rules that limit how long or tangled a class or
+  function may be. 126 of them did nothing, and they have been removed. The rest
+  are listed in `config/detekt/size-suppressions.txt`, one line per suppressed
+  rule; splitting the engine has since removed five more, and splitting the
+  settings two. The build now fails on a suppression that is not listed, and on
+  a listed one that is gone, so the list can only shrink. See
+  [`docs/static-analysis.md`](docs/static-analysis.md#size-suppression-ratchet-verifysizesuppressions).
+
+- **The node settings forms and the tools screens are split into files.** The
+  forms of all fourteen node types sat in one 1,600-line file under an
+  exemption from the function-count limit, and the tools list, a tool's detail
+  page and the MCP server form shared another of 1,500 lines. The forms are now
+  grouped by what a node does — prompt a model, steer the run, or call a tool,
+  pipeline or skill — beside one file of the fields they share, and each tools
+  screen has its own file. Nothing on screen changes: every screenshot test
+  matches its committed image, and the forms no longer need the exemption.
+
+- **Unused pipeline-editor code is removed.** Nine editing actions of the
+  pipeline editor's view model — left from the editor before the current one —
+  had no caller in the app, and the list of saved prompt templates it loaded was
+  never shown. They are gone, together with the three prompt-template use cases
+  only they used. Nothing the editor does changes.
+
+- **The pipeline editor's view model is split into parts.** One class ran the
+  pipeline library and the editor — the saved list, import and export,
+  presets, what the node settings sheet offers, and the graph being edited —
+  under exemptions from the function-count and parameter-count limits. The
+  library, import and export, presets and the node sheet now each have a part
+  of their own beside the editing core, and the exemptions are gone. Nothing
+  the library or the editor does changes.
+
+- **The chat screen's view model asks only for the settings it reads.** It
+  took every setting at once and handed four parts of them to its helpers; it
+  now takes those four sections, and the state and event types it declared for
+  its helpers sit with the code that uses them. Only the settings screen and
+  the settings plumbing itself still see every setting.
+
+### Fixed
+
+- **An overdue trigger tells you.** A trigger the phone stops checking — a battery
+  saver or deep idle holding the app back — showed only as an *Overdue* badge on
+  the Triggers screen. A check that runs every few hours now sends one **Trigger
+  overdue** notification per silence, under the *Scheduled task results* toggle;
+  its tap opens the trigger. If Android holds back all of the app's background
+  work, that check is held back as well. A trigger switched back on after a long
+  pause no longer reads overdue until its next check: the time is counted from
+  when it was switched on.
+
+- **Cloud retries wait as long as the provider asks, and no longer retry what
+  cannot succeed.** A provider that answered a rate limit with a `Retry-After`
+  header got its retry about a tenth of a second later, because the header never
+  reached the retry logic; it is now honoured, as is a wait named in the error
+  message — including Groq's "try again in 1m2.5s", which was not recognised.
+  A wait longer than 30 seconds used to be slept through, however long it was;
+  now the step fails at once and says which provider asked for how long. And a
+  failed request was judged by searching its message for a number, so a 400
+  whose body mentioned "500" was retried; the status the provider answered with
+  now decides. The user guide no longer claims timeouts are retried — a provider
+  that falls silent is reported once.
+- **A queue that carries on past a failed item is recorded as completed.** With
+  *Stop on error* off, a failing item becomes that item's result and the queue
+  moves on — but the run's record was marked failed the moment the item failed,
+  so the trigger journal, the notification and the chat said "failed" for a run
+  that finished. A step's error now ends the run only when the run really ends on
+  it. The same change fixes a step that failed without an error message: the run
+  carried on as if the step had answered, and now stops there.
+- **Tool and Decomposition steps on a cloud model get their second try back.** On
+  OpenAI, Anthropic, Google and DeepSeek the app assumed the provider would answer
+  in valid JSON and skipped the repair attempts — but nothing in the request asked
+  the provider for JSON. A prose answer failed the step at once, or a fixed-tool
+  step ran its tool with that prose as the arguments. These steps now get the same
+  repairs as on the device's own model.
+- **`delegate_task` goes where it says it will.** The tool tells the model that,
+  unless it names a provider, the first one set up on the device answers; a call
+  that named none went to Anthropic instead — and failed for anyone without an
+  Anthropic key. It now goes to that first provider.
+- **The NPU is no longer offered as an inference backend.** LiteRT-LM needs a
+  vendor dispatch library and a model compiled for the chip to use the NPU; the
+  app ships neither, so choosing NPU ran the model on CPU — about three times
+  slower than choosing CPU, with Settings and each run's header still saying
+  NPU — and the larger Gemma model was killed for lack of memory on its first
+  answer. The choice is now GPU or CPU; an NPU choice made earlier reads as CPU,
+  which is what it ran on. Settings no longer promise a fallback to GPU that
+  never existed: a GPU that fails to start falls back to CPU.
+- **The privacy and security notes cover debug builds too.** MediaPipe's usage
+  reporter is removed from release builds, which is what the documents said; a
+  debug build made from the source keeps it, which they did not.
+- **The FAQ matches the app again.** It still said an MCP server has no
+  connection test and that the node picker was hard to read; both were fixed in
+  this release. Its list of known limitations now says that memory search on the
+  on-device embedding model cannot tell facts written in Russian apart. The
+  roadmap lists what this release adds, under its own heading until it ships,
+  and where the F-Droid submission stands.
+- **The README claims only what the app does.** It called the app an autonomous
+  assistant that acts across your phone, said the agent never sends a message or
+  writes a file without asking, and said nothing leaves the device unless you set
+  it up. The agent reaches only its own storage and the network paths in the
+  privacy policy, and no built-in tool sends messages. A file write can run
+  without asking when *Approve tool calls* is set to *Never*. The built-in
+  Wikipedia lookup is on from the first launch. The README and the FAQ are also
+  shorter and plainer.
+- **The roadmap no longer says the agent calls tools through AppFunctions.** It
+  does not. The roadmap also said sensitive calls stop for confirmation without
+  saying that this is the default, which *Approve tool calls* can change. The
+  README now says it describes `main`, which can be ahead of the latest release.
+- **Cookbook recipes run with the values they show.** A pipeline node carries its
+  settings twice — once for the run, once for the editors — and two recipes held
+  some only in the editors' copy: the planning cap and the queue's stop-on-error
+  in *decompose-and-queue*, the router's fallback class in *intent-routing*. The run
+  happened to fall back to the same values, but opening the final summary step of
+  *decompose-and-queue* in the browser editor and saving it erased its prompt. Both
+  copies now agree, in the recipes and in two bundled pipelines, and a test holds
+  every recipe and bundled pipeline to it.
+- **A full hash keeps its groups whole.** The run header lays out the model's
+  SHA-256 and the run digest in groups of eight, four to a line — sized for a
+  360 dp screen. On a slightly narrower layout or a larger font the last group
+  broke, leaving a character on a line of its own. Fewer groups now go on a line
+  when four do not fit, and no group is split.
+- **A file nested thousands of levels deep no longer crashes an import.** Android's
+  JSON parser recurses once per level, so a pipeline, bundle or memory file of
+  `[[[[…` some ten thousand levels deep — about 20 KB — ran it out of stack, an
+  error the import did not catch. Imports now refuse any document nested deeper
+  than 64 levels (the app's own files nest at most 7) with an ordinary error.
+- **Compaction no longer deletes facts it cannot check.** A memory is deleted
+  under a summary only when its embedding shows the summary carries it. The
+  built-in embedder is an English model and places unrelated Russian facts almost
+  on top of each other, so any Russian summary looked like it carried every
+  Russian fact in its group — and the originals could be deleted under one that
+  did not. A fact the embedder cannot tell apart from another in its group now
+  stays as it is.
+- **The memory detail counts runs, not replies.** "Used in N replies" counted the
+  runs whose memory block received the entry, whether or not the reply used it,
+  and said "1 replies". It now reads "Used in 1 run" / "N runs".
+- **A failed memory import no longer shows the database's error text.** When the
+  store refuses an import, the app says nothing was saved — which is true: the
+  import is one transaction — and the details go to the log.
+- **Discover shows a download that is already running.** A model whose file was
+  still downloading — started from the Models screen, or from Discover before you
+  left — opened with an Install button and no progress, and stayed that way even
+  after the download finished. The file now shows its progress and turns
+  Installed when the download completes.
+
+### Security
+
+- **A model server's redirect is checked hop by hop.** The address of a server
+  you run — Ollama — was checked once, before the first request; a server could
+  then answer with a redirect, and nothing inside the model client looked where
+  to, so an approved address on your network could forward the prompt to any
+  host over plain HTTP. Every request a model client sends — chat, structured
+  output, `delegate_task`, memory embeddings — is now checked before each hop:
+  unencrypted traffic only to an address you approved, and while *Block network
+  from local model* is on, only to this device or your own network.
+- **A locked phone no longer shows or approves a tool call.** An approval
+  notification showed the tool and its arguments wherever the system showed
+  notification content, and its **Approve** could be sent without unlocking.
+  Approve now asks you to unlock first; **Deny** still works locked. Where Android
+  hides sensitive content on the lock screen, the approval, question and result
+  notifications show only their title. If your phone shows all notification
+  content on the lock screen, the full text still appears there.
+
+### Tests
+
+- **A renamed setting can no longer lose its value unnoticed.** A setting is
+  found again by its storage key's name and type; renaming either made the app
+  forget the user's choice, and nothing failed. The test suite now holds a
+  snapshot of every stored key and of the settings file names, checked against
+  the source code.
+
+- **Every shipped pipeline now runs end to end in the test suite.** Each bundled
+  preset and cookbook recipe goes through the real pipeline engine and all its
+  node executors under a scripted model, with recorded tool outputs, and the run's
+  full trace — node by node, with every prompt, tool call, routing decision and
+  approval — is compared with a committed reference. Approvals, clarifications,
+  the step ceiling, resuming a paused run and nested pipelines are covered. This is
+  the safety net for restructuring the engine without changing what it does. See
+  [`docs/testing.md`](docs/testing.md#golden-run-traces).
+
+- **A database upgrade step can no longer be left out unnoticed.** The app
+  upgrades its database through a list of steps, one per schema version, and
+  the list was written out by hand. A step missing from it built, passed every
+  test, and failed only when an installed app with data was updated. The test
+  suite now checks that the list has no gap and ends at the current schema, and
+  the emulator suite runs the whole list from the oldest saved schema to the
+  newest. Each step now sits in a file of its own.
+
 ## [0.11.1] - 2026-10-02
 
 ### Changed

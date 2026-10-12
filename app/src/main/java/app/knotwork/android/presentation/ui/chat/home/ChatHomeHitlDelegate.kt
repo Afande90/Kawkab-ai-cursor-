@@ -13,6 +13,7 @@ import app.knotwork.android.domain.usecases.PendingSubmissionOutcome
 import app.knotwork.android.domain.usecases.SubmitApprovalDecisionUseCase
 import app.knotwork.android.domain.usecases.SubmitCeilingDecisionUseCase
 import app.knotwork.android.domain.usecases.SubmitClarificationAnswerUseCase
+import app.knotwork.design.components.chips.Risk
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
@@ -283,6 +284,7 @@ class ChatHomeHitlDelegate(
                         arguments = approval.arguments,
                         risk = approval.risk,
                         requestId = approval.requestId,
+                        context = approval.context,
                     ),
                 ),
                 composer = it.composer.copy(typedConfirm = ""),
@@ -418,4 +420,15 @@ class ChatHomeHitlDelegate(
         const val SYSTEM_MESSAGE_CLARIFICATION_REPLY_NOT_DELIVERED: String =
             "Reply was not delivered — the clarification had already been resolved with a default answer."
     }
+}
+
+/**
+ * Maps the domain [ToolRisk] enum onto the catalog [Risk] enum. The two
+ * exist in different layers (domain stays free of catalog imports) so a
+ * thin adapter at the presentation boundary is the cleanest cut.
+ */
+internal fun ToolRisk.toCatalogRisk(): Risk = when (this) {
+    ToolRisk.READ_ONLY -> Risk.Readonly
+    ToolRisk.SENSITIVE -> Risk.Sensitive
+    ToolRisk.DESTRUCTIVE -> Risk.Destructive
 }

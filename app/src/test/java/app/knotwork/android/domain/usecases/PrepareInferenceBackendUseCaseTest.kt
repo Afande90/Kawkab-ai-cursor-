@@ -49,7 +49,7 @@ class PrepareInferenceBackendUseCaseTest {
         testBackendUseCase = mockk()
         llmInferenceEngine = mockk(relaxed = true)
         useCase = PrepareInferenceBackendUseCase(
-            settingsRepository = settingsRepository,
+            generationSettings = settingsRepository,
             accelerationProbe = accelerationProbe,
             loadModelUseCase = loadModelUseCase,
             testBackendUseCase = testBackendUseCase,
@@ -70,6 +70,16 @@ class PrepareInferenceBackendUseCaseTest {
         coVerify(exactly = 0) { settingsRepository.setLocalModelBackend(any()) }
         coVerify(exactly = 0) { testBackendUseCase.invoke(any()) }
         coVerify(exactly = 1) { loadModelUseCase.invoke(modelPath, any(), any()) }
+    }
+
+    @Test
+    fun `given an NPU choice stored by an earlier version when preparing then it warms up on CPU`() = runTest {
+        every { settingsRepository.localModelBackendPreference } returns flowOf(LocalBackend.NPU.key)
+
+        val outcome = useCase(modelPath)
+
+        assertEquals(PrepareInferenceBackendUseCase.Outcome.Warmed(LocalBackend.CPU), outcome)
+        verify(exactly = 0) { accelerationProbe.isGpuAvailable() }
     }
 
     @Test

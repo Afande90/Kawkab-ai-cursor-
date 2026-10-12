@@ -5,6 +5,7 @@ import app.knotwork.android.domain.models.ConsoleEventType
 import app.knotwork.android.domain.models.ExecutionScope
 import app.knotwork.android.domain.models.NodeModel
 import app.knotwork.android.domain.models.NodeType
+import app.knotwork.android.domain.models.RunTreeContext
 import app.knotwork.android.domain.usecases.EvaluateIfConditionUseCase
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -24,7 +25,7 @@ class IfConditionNodeExecutorTest {
 
     @Test
     fun `execute evaluates condition and returns result`() = runTest {
-        coEvery { evaluateIfConditionUseCase(node, "test input", any(), any()) } returns
+        coEvery { evaluateIfConditionUseCase(node, "test input", any(), any(), any()) } returns
             EvaluateIfConditionUseCase.Outcome(value = true)
 
         val outputs = executor.execute(node, "test input", "session-1", "prompt").toList()
@@ -37,7 +38,7 @@ class IfConditionNodeExecutorTest {
 
     @Test
     fun `execute surfaces each repair attempt as a console event`() = runTest {
-        coEvery { evaluateIfConditionUseCase(node, "test input", any(), any()) } answers {
+        coEvery { evaluateIfConditionUseCase(node, "test input", any(), any(), any()) } answers {
             val listener = arg<RepairListener>(3)
             listener.onRepairAttempt(node.label, 1, 2)
             EvaluateIfConditionUseCase.Outcome(value = true)
@@ -56,7 +57,7 @@ class IfConditionNodeExecutorTest {
         coEvery {
             evaluateIfConditionUseCase(node, "test input", capture(hasImageSlot), any())
         } returns EvaluateIfConditionUseCase.Outcome(value = true)
-        val scope = ExecutionScope(imagePresent = true)
+        val scope = ExecutionScope(run = RunTreeContext.standalone().copy(imagePresent = true))
 
         executor.execute(node, "test input", "session-1", "prompt", null, scope).toList()
 
@@ -77,7 +78,7 @@ class IfConditionNodeExecutorTest {
 
     @Test
     fun `execute on gate failure keeps default branch and emits an error console event`() = runTest {
-        coEvery { evaluateIfConditionUseCase(node, "test input", any(), any()) } returns
+        coEvery { evaluateIfConditionUseCase(node, "test input", any(), any(), any()) } returns
             EvaluateIfConditionUseCase.Outcome(value = false, gateFailed = true)
 
         val outputs = executor.execute(node, "test input", "session-1", "prompt").toList()
@@ -85,5 +86,19 @@ class IfConditionNodeExecutorTest {
         assertEquals(false, outputs.lastResult().conditionResult)
         val errors = outputs.consoleEvents().filter { it.type == ConsoleEventType.Error }
         assertEquals(1, errors.size)
+    }
+
+    @Test
+    fun `execute on a provider that could not be used names it on the console`() = runTest {
+        coEvery { evaluateIfConditionUseCase(node, "test input", any(), any(), any()) } returns
+            EvaluateIfConditionUseCase.Outcome(value = true, unavailableProvider = "groq")
+
+        val outputs = executor.execute(node, "test input", "session-1", "prompt").toList()
+
+        assertEquals(true, outputs.lastResult().conditionResult)
+        val errors = outputs.consoleEvents().filter { it.type == ConsoleEventType.Error }
+        assertEquals(1, errors.size)
+        assertTrue(errors.single().message, errors.single().message.contains("'groq'"))
+        assertTrue(errors.single().message, errors.single().message.contains("falling back to the local model"))
     }
 }

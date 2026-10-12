@@ -129,8 +129,9 @@ fallback. That was acceptable for the pre-release sideload channel because:
 
 The first release-signed build will use a different signer than the historical
 debug-signed builds, so an in-place upgrade from a debug-signed install will be
-rejected with a signature mismatch — see the *Pre-release notice* in
-[README.md](../README.md). Plan for a clean install at that transition.
+rejected with a signature mismatch — see *Install* in
+[README.md](../README.md#from-a-release-build). Plan for a clean install at that
+transition.
 
 ### Signing identities by channel
 
@@ -524,7 +525,8 @@ the app was broken:
   mapping nor the class table can show whether the removal happened — only the
   instructions can. It fails too when the call-site class is missing, so it
   cannot pass over nothing. Verified both ways on `fullRelease`: one call site
-  without the rules, none with them.
+  without the rules, none with them. Release variants only: a debug build is not
+  minified, so it keeps the call, and a `full` debug build can send it.
 
 The instantiability check was added after long-term memory turned out to have
 never worked in any released build. R8 in full mode left

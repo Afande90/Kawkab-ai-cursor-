@@ -30,6 +30,15 @@ layering rationale, see [`architecture.md`](architecture.md).
   not see it. The Flow overload cannot report that native work has ended
   once its collector is gone. Closing earlier crashes the process inside
   LiteRT-LM.
+- **Inside a pipeline run, reach the on-device model only through the node's
+  `NodeInference`** (`scope.inference.local(engine, prompt)`), never
+  `generateResponseStream` directly. It runs the call on the run header's sampler
+  with a seed derived from the run seed and records the full prompt and output,
+  which is what makes a run checkable. `generateResponseStream(sampling = null)`
+  — the user's sampler and a fresh seed — is for work outside a run only; the
+  check of a finished run (`VerifyRunUseCase`) calls it directly with the sampler
+  and seed a recorded call holds.
+  `LocalInferenceSeamKonsistTest` pins the direct callers.
 - Log memory usage before and after model load with `Timber.d`.
 
 ```kotlin
@@ -78,7 +87,7 @@ interface LiteRtRepository {
   for discovered AppFunctions (keyed by tool name) and for MCP tools
   (keyed per server by the `mcp:<sha8(serverUrl)>:<toolName>` id, so the
   same tool name on two servers stays two decisions) via
-  `SettingsRepository.setToolRiskOverride`, then `SENSITIVE` as the
+  `ToolSettings.setToolRiskOverride`, then `SENSITIVE` as the
   conservative fallback. The override is the user's voice, never the
   server's — MCP's `readOnlyHint` / `destructiveHint` annotations are
   deliberately not consulted, since a server able to declare its own
@@ -134,6 +143,11 @@ interface Tool {
   while the agent used another. The pool's per-URL lock is held only
   across connect / invalidate — never while a caller uses the client, or
   concurrent tool calls to one server would serialise behind it.
+- The one MCP connection outside the pool is a **connection check**
+  (`KoogMcpConnectionChecker`): a form being edited is not a saved server, so
+  the check connects a throwaway client with the form's values, lists the tools
+  and disconnects. Through the pool it would replace the live connection of the
+  server being edited with one built from unsaved values.
 - Connections are lazy: they open on first use and close when the agent
   session ends.
 - Every MCP call is wrapped in `try`/`catch` that **re-throws
@@ -180,19 +194,36 @@ interface Tool {
 
 ---
 
-## Cloud LLM APIs (OpenAI / Anthropic / Google / DeepSeek / Ollama)
+## Cloud LLM APIs (OpenAI / Anthropic / Google / DeepSeek / OpenRouter / Groq / Ollama / OpenAI-compatible server)
 
 - All cloud providers implement the domain interface
   `CloudLlmClientFactory` (data-layer impl: `KoogClientFactory`).
 - **Every client that carries model traffic asks `ModelNetworkGate` before it is
   built** — the chat clients in `KoogClientFactory` and the network embedding
   providers alike. The gate applies the *Block network from local model*
-  restriction (hosted providers refused; Ollama only at `localhost` or a private
-  IPv4 literal, whatever the scheme — see [architecture.md](architecture.md) §4.4)
-  and, for Ollama, the cleartext rule. A model client that skips it breaks the
+  restriction (hosted providers refused; a server the user runs — Ollama, an
+  OpenAI-compatible server — only at `localhost` or a private IPv4 literal,
+  whatever the scheme — see [architecture.md](architecture.md) §4.4) and, for such a
+  server, the cleartext rule. A model client that skips it breaks the
   restriction silently: the Ollama chat client and both embedding providers once
   did. Name the cause of a `null` client with
   `CloudLlmClientFactory.unavailabilityOf`, never by re-reading settings.
+- **Every model client runs on `KoogTransportFactory`**, which applies the same
+  two rules to every hop the client sends — redirects included — and records the
+  `Retry-After` of an error answer for the retry policy. Build a new client on the
+  `http` factory `KoogClientFactory` passes in, never on a Ktor client of its own:
+  the gate judges only the address the user entered, and a server can redirect.
+- **A provider reached through the OpenAI API is Koog's own OpenAI client**, built
+  in `OpenAiCompatibleClients` — OpenRouter and Groq at fixed addresses, a server
+  the user runs at the address they enter (with `/v1`; paths relative to it) and
+  with no `Authorization` header when it has no key. No further Koog module.
+- **A connection check is a run's request without the run.**
+  `KoogProviderConnectionChecker` builds the client `KoogClientFactory` builds, on
+  the same transport and deadlines, and asks for the model list once — no retry
+  policy, no prompt. OpenRouter's key is checked first at `/api/v1/key`: its model
+  list answers any key, or none. What stops a check before it sends is
+  `ConnectionPreconditions` (domain), which the settings form reads too, so a Test
+  button never promises what the check refuses.
 - **The gate also owns one tool.** `search_tool` asks
   `ModelNetworkGate.networkToolRefusal` before it opens its connection, and
   `ToolRepositoryImpl` withholds it from the catalogue while the restriction is
@@ -213,8 +244,9 @@ interface Tool {
   (OkHttp drops `Authorization` on a host change), and a pasted URL for any other
   host never gets it. Discovery browsing and metadata calls are anonymous.
 - **Every cloud client carries an explicit `ConnectionTimeoutConfig`** — one shared
-  value, `CloudClientTimeouts.CONFIG`, passed by `KoogClientFactory` (chat) and
-  `DefaultKoogEmbedderFactory` (embeddings), and required at every construction site
+  value, `CloudClientTimeouts.CONFIG`, passed by `KoogClientFactory` and
+  `OpenAiCompatibleClients` (chat) and `DefaultKoogEmbedderFactory` (embeddings), and
+  required at every construction site
   by `KoogClientTimeoutKonsistTest`: 60 s socket, 30 s connect, 900 s request. The socket value
   is the load-bearing one because Ktor applies it *per read* — it bounds how long
   the provider may stay **silent**, not how long a healthy answer may take, so a
@@ -251,6 +283,11 @@ interface Tool {
 - Database migrations must be explicit
   (`Migration(oldVersion, newVersion) { ... }`). Auto-migrations are
   allowed for additive changes only.
+- A schema bump adds one file, `data/local/migrations/Migration<old>To<new>.kt`,
+  declaring `MIGRATION_<old>_<new>`, and appends that constant to
+  `ALL_MIGRATIONS` — the only list the database builder registers.
+  `AppDatabaseMigrationChainTest` fails on a gap in the list or a list that
+  does not end at the schema version.
 - Always inject a `CoroutineDispatcher` into `DataSource` classes so they
   remain testable.
 
@@ -258,8 +295,19 @@ interface Tool {
 
 ## DataStore (settings)
 
-- Define a single `PreferencesDataStore` instance per feature module, not
-  per class.
+- One `DataStore<Preferences>` for the whole app (file `agent_preferences`,
+  provided by `AppModule`); every settings section shares it. A second
+  instance over the same file throws, and a second file leaves existing
+  installs' values behind.
+- Code reads settings through the section interfaces in
+  `domain/repositories/` (`GenerationSettings`, `MemorySettings`,
+  `ToolSettings`, …) and depends on the section it reads, never on the
+  `SettingsRepository` composite (`SettingsCompositeConsumersTest`). Every
+  class that implements a section is a class-level `@Singleton`
+  (`SettingsSingletonScopeTest`): a scope on each `@Binds` alone builds one
+  instance per binding.
+- A shipped key's name and type never change — the stored value would be
+  lost. A new key is added to `PreferenceStorageSnapshotTest`.
 - All preference keys are `object`s in a `PreferenceKeys` companion
   object.
 - Wrap `DataStore.data` collection in a `catch` operator to handle

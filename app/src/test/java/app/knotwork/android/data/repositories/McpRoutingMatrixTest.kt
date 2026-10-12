@@ -112,14 +112,14 @@ class McpRoutingMatrixTest {
         coEvery { appFunctions.getAvailableFunctions() } returns emptyList()
         coEvery { appFunctions.isDiscovered(any()) } returns false
         val apiKeys: ApiKeyRepository = mockk()
-        every { apiKeys.getOpenAIKey() } returns flowOf(null)
-        every { apiKeys.getAnthropicKey() } returns flowOf(null)
-        every { apiKeys.getGoogleKey() } returns flowOf(null)
-        every { apiKeys.getDeepSeekKey() } returns flowOf(null)
-        every { apiKeys.getOllamaBaseUrl() } returns flowOf(null)
+        // No provider set up by default; a test saves what it needs.
+        every { apiKeys.getApiKey(any()) } returns flowOf(null)
+        every { apiKeys.getBaseUrl(any()) } returns flowOf(null)
+        every { apiKeys.getModel(any()) } returns flowOf(null)
         val searchTool: SearchTool = mockk(relaxed = true)
         every { searchTool.asAgentTool() } returns AgentTool("search_tool", "desc", "{}")
         return ToolRepositoryImpl(
+            settings,
             settings,
             McpConnectionPool(factory, settings),
             appFunctions,

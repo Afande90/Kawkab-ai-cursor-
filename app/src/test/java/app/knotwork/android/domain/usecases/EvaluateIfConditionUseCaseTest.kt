@@ -1,7 +1,6 @@
 package app.knotwork.android.domain.usecases
 
 import app.knotwork.android.domain.engine.LlmInferenceEngine
-import app.knotwork.android.domain.engine.structured.CloudStructuredClient
 import app.knotwork.android.domain.engine.structured.CloudStructuredInferenceClientFactory
 import app.knotwork.android.domain.engine.structured.CollectingRepairListener
 import app.knotwork.android.domain.engine.structured.StructuredInferenceClient
@@ -155,10 +154,7 @@ class EvaluateIfConditionUseCaseTest {
         // proving the use case routes to the cloud seam (not the local engine)
         // when the node carries a cloudProvider.
         val cloudFactory = CloudStructuredInferenceClientFactory { _, _ ->
-            CloudStructuredClient(
-                inference = StructuredInferenceClient { _, _ -> "True" },
-                supportsNativeJson = true,
-            )
+            StructuredInferenceClient { _, _ -> "True" }
         }
         val useCase = EvaluateIfConditionUseCase(
             llmInferenceEngine,
@@ -172,6 +168,35 @@ class EvaluateIfConditionUseCaseTest {
 
         assertTrue(outcome.value)
         assertFalse(outcome.gateFailed)
+    }
+
+    @Test
+    fun `given a cloud provider that cannot be used when invoke then the local engine answers and it is named`() =
+        runTest {
+            // The factory has no client (no key, restriction, unknown id): the local engine
+            // decides, and the outcome carries the provider so the executor can say so — it
+            // used to fall back in silence.
+            every { llmInferenceEngine.generateResponseStream(any(), any(), any()) } returns flowOf("True")
+            val useCase = EvaluateIfConditionUseCase(
+                llmInferenceEngine,
+                StructuredOutputGate(),
+                settingsRepository,
+                CloudStructuredInferenceClientFactory { _, _ -> null },
+            )
+
+            val outcome = useCase(ifNode(prompt = "Is this a question?").copy(cloudProvider = "groq"), "How are you?")
+
+            assertTrue(outcome.value)
+            assertEquals("groq", outcome.unavailableProvider)
+        }
+
+    @Test
+    fun `given a node without a cloud provider when invoke then no fallback is reported`() = runTest {
+        every { llmInferenceEngine.generateResponseStream(any(), any(), any()) } returns flowOf("True")
+
+        val outcome = evaluateIfConditionUseCase(ifNode(prompt = "Is this a question?"), "How are you?")
+
+        assertEquals(null, outcome.unavailableProvider)
     }
 
     @Test

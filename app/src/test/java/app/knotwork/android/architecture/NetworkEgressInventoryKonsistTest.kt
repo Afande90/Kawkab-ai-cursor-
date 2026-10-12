@@ -9,9 +9,10 @@ import java.util.ServiceLoader
 /**
  * Allow-list guard over every file that can open a network connection.
  *
- * **Why an allow-list, when three deny-lists already exist.**
- * [JournalExportNoNetworkKonsistTest], [PromptPackNoNetworkKonsistTest] and
- * [UsageTelemetryNoNetworkKonsistTest] each answer "this surface must never reach the
+ * **Why an allow-list, when four deny-lists already exist.**
+ * [JournalExportNoNetworkKonsistTest], [RunTraceExportNoNetworkKonsistTest],
+ * [PromptPackNoNetworkKonsistTest] and [UsageTelemetryNoNetworkKonsistTest] each answer
+ * "this surface must never reach the
  * network". None of them answers the question the public documents make a promise about:
  * *which* surfaces do. A deny-list is silent about a path nobody thought to name, and the
  * project has now shipped three rounds of the same defect — a privacy text listing the
@@ -390,6 +391,7 @@ class NetworkEgressInventoryKonsistTest {
             "$MAIN/domain/engine/executors/CloudLlmNodeExecutor.kt",
             "$MAIN/data/engine/KoogStructuredInferenceClientFactory.kt",
             "$MAIN/data/tools/local/DelegateTaskTool.kt",
+            "$MAIN/data/engine/KoogProviderConnectionChecker.kt",
         )
 
         /** The files that send memory text through an embedding client. */
@@ -438,11 +440,24 @@ class NetworkEgressInventoryKonsistTest {
                     "3.1",
                     Indicator.RecordedBy(CHAT_CALLERS + EMBEDDING_CALLERS, listOf("CloudRetryWrapper")),
                 ),
-            "$MAIN/data/engine/retry/RetryObservingLLMClient.kt" to
+            "$MAIN/data/engine/retry/RetryingCloudLlmClient.kt" to
                 Egress.Opens(
                     "3.1",
-                    Indicator.RecordedBy(CHAT_CALLERS + EMBEDDING_CALLERS, listOf("RetryObservingLLMClient")),
+                    Indicator.RecordedBy(CHAT_CALLERS + EMBEDDING_CALLERS, listOf("RetryingCloudLlmClient")),
                 ),
+            "$MAIN/data/engine/KoogTransportFactory.kt" to
+                Egress.Opens(
+                    "3.1",
+                    Indicator.RecordedBy(CHAT_CALLERS + EMBEDDING_CALLERS, listOf("KoogTransportFactory")),
+                ),
+            "$MAIN/data/engine/OpenAiCompatibleClients.kt" to
+                Egress.Opens("3.1", Indicator.RecordedBy(CHAT_CALLERS, listOf("OpenAiCompatibleClients"))),
+            "$MAIN/data/engine/retry/CloudRetryPolicy.kt" to
+                Egress.None("reads the status and the requested wait of a failed call; sends nothing"),
+            "$MAIN/data/engine/KoogProviderConnectionChecker.kt" to
+                Egress.Opens("3.1", Indicator.RecordsItself),
+            "$MAIN/data/network/ConnectionFailureClassifier.kt" to
+                Egress.None("names the cause of a connection check that already failed; sends nothing"),
             "$MAIN/domain/engine/executors/CloudLlmNodeExecutor.kt" to
                 Egress.Opens("3.1", Indicator.RecordsItself),
             "$MAIN/data/tools/local/DelegateTaskTool.kt" to

@@ -55,8 +55,19 @@ backup or in a transfer to a new device
 ([details](SECURITY.md#backup-and-device-transfer)):
 
 - Chat sessions and messages, including image and audio attachments you add.
-- Long-term memory entries derived from your conversations.
-- Pipelines, presets, prompt templates, and their run traces.
+- Long-term memory entries derived from your conversations. When a newer fact
+  replaces an entry's text, the replaced text is kept as that entry's history
+  (up to 10 earlier versions). It is deleted with the entry — when you delete
+  it, clear memory, or compaction merges it — and you can delete a single
+  earlier version on the Memory screen.
+- Pipelines, presets, prompt templates, and their run traces. A run trace
+  keeps, for every call a pipeline step made to the on-device model, the whole
+  text the model read and wrote — instructions, the parts of your chat history
+  and memory the step included, and the answer — with the seed and settings it
+  ran on, so the run can be checked later. It is deleted with the run, under
+  the same retention setting.
+- A checksum (SHA-256) of each downloaded model file, so a run can name the
+  exact model it used.
 - Files in the agent workspace — what the agent wrote and what you imported.
 - Triggers, scheduled tasks, and the trigger journal.
 - The journal of requests other apps sent (section 3.6).
@@ -92,11 +103,16 @@ from the first launch.
 
 ### 3.1 Cloud model providers (opt-in, your own key)
 
-If a pipeline step runs on a cloud provider and you have entered your own API
-key, the text that step processes — the prompt and the relevant conversation
-context — is sent to the provider you selected (OpenAI, Anthropic, Google
-Gemini, DeepSeek, or an Ollama endpoint you name). Attachments are never sent
-to a cloud provider (section 4).
+If a pipeline step runs on a cloud provider and you have set it up, the text
+that step processes — the prompt and the relevant conversation context — is sent
+to the provider you selected: OpenAI, Anthropic, Google Gemini, DeepSeek,
+OpenRouter or Groq with your own API key, or a server you run and name by its
+address — Ollama, or any server that speaks the OpenAI API (vLLM, LM Studio,
+llama.cpp). Attachments are never sent to a cloud provider (section 4).
+
+OpenRouter forwards a request to the company behind the model you chose there;
+its own policy and the routing settings of your OpenRouter account decide which
+one, and what they may keep.
 That step is a **Cloud** node, or a router, condition, decomposition,
 evaluation, tool or skill node whose engine is set to a cloud provider.
 
@@ -106,7 +122,7 @@ provider's own privacy policy and data-retention terms govern it — including
 whether they retain or train on it. Review the policy of whichever provider
 you choose.
 
-Two other paths reach the same providers, both also opt-in:
+Three other paths reach the same providers, all also opt-in:
 
 - **Memory embeddings.** If you choose OpenAI or Ollama as the *Embedding model*
   in the memory settings, the text being embedded is sent to that service: a
@@ -116,14 +132,20 @@ Two other paths reach the same providers, both also opt-in:
 - **The `delegate_task` tool** hands a subtask to a provider you have a key for.
   It counts as a sensitive tool call, so it waits for your approval unless you
   set *Approve tool calls* to *Never*.
+- **Test connection** on a provider's settings screen, when you press it, asks
+  that provider for its list of models with the key and address you entered;
+  for OpenRouter it first asks whether the key is valid. No prompt or
+  conversation text is sent.
 
-Apart from those two, a pipeline contacts a cloud provider only through a step
+Apart from those three, a pipeline contacts a cloud provider only through a step
 that runs on one. A node's settings show its engine, so you can see which do.
 
 **Block network from local model** (Settings → Tools & workspace) keeps every
-path in this section on your own network: no cloud provider is contacted — memory uses the
-on-device embedding model instead — and an Ollama endpoint is used only at
-`localhost` or a private IP address on your own network. It also withholds the
+path in this section on your own network: no hosted provider is contacted — memory uses the
+on-device embedding model instead — and a server you run (Ollama, or one that speaks the
+OpenAI API) is used only at `localhost` or a private IP address on your own network. The
+check applies to every hop of a request: a server that answers with a redirect elsewhere
+does not take the request with it. It also withholds the
 built-in `search_tool` (3.4), which is the one tool it covers. It does not
 affect MCP servers (3.2), model downloads (3.3) or the `http_request` tool
 (3.4) — each of those is something you set up, and each has its own control.
@@ -131,7 +153,9 @@ affect MCP servers (3.2), model downloads (3.3) or the `http_request` tool
 ### 3.2 MCP servers (opt-in)
 
 If you add a Model Context Protocol server, the app connects to that server's
-URL to list its tools and to invoke them. Tool arguments produced during a run
+URL to list its tools and to invoke them. *Test connection* in the server form
+does the first of those with the values you entered, before you save them:
+it connects, lists the tools and disconnects. Tool arguments produced during a run
 — which may contain content from your conversation — are sent to that server,
 along with any credentials you stored for it. The operator of that server
 determines what happens to that data.
@@ -254,6 +278,24 @@ answer it produced.
 Where the file goes after the share sheet is decided by the app you pick, and
 that app's own policy applies from that point on.
 
+### 3.8 Run trace export (you share the file)
+
+A finished run's trace can be exported from the console — **Export trace** in
+the run header — to the system share sheet or to a file you pick, by an explicit
+action. There is no network on that path; a build-time architecture check fails
+the build if any network dependency reaches the export code.
+
+Unlike the journals, this file holds **everything the on-device model read
+during the run**: every prompt in full, so the memory excerpts and the chat
+history placed inside them, every answer, the run's message, the seed and
+sampler, each node's input and output, and their hashes. It names the model
+file by its file name, not by where it is stored. Share it as you would share
+the conversation itself. Where it goes after the share sheet is decided by the
+app you pick.
+
+Checking a run (**Verify**) and starting it again with its seed do not export
+anything: both run on the device.
+
 ---
 
 ## 4. What never leaves your device
@@ -268,7 +310,8 @@ that app's own policy applies from that point on.
   memory embeddings (MediaPipe) comes with a usage logger that would report to
   Google how it is used, together with your phone's model, build, country and
   carrier. Release builds remove that call, and each release build is checked
-  for it before it ships.
+  for it before it ships. A debug build — one a developer makes from the source,
+  never published — keeps it.
 - **Your keys and credentials.** API keys, the Hugging Face token, and MCP
   credentials are used only to authenticate to the service you entered them
   for. They are never sent anywhere else, and a saved provider key found in an
@@ -305,6 +348,14 @@ The Wi-Fi network name obtained under the location permission is used on the
 device to decide whether a trigger fires, and never leaves it. Background
 location is **not** requested.
 
+**Notifications on the lock screen.** A notification that carries what you or
+the model wrote — a tool call waiting for your approval, a question the agent
+asks you, a background run's answer — shows only its title where Android hides
+sensitive content: on a lock screen set to hide it, or while the screen is
+shared. If your phone is set to show all notification content on the lock
+screen, Android shows the full text there; that setting is yours. Approving a
+tool call from a notification asks you to unlock the phone first.
+
 ---
 
 ## 6. Children
@@ -335,9 +386,10 @@ The app contacts a third party only along the paths in section 3. Depending on
 what you configure — and, for the first entry below, on nothing at all — those
 may be:
 
-- The cloud model provider whose key you entered (OpenAI, Anthropic, Google,
-  DeepSeek, or an Ollama endpoint you name), for pipeline steps, memory
-  embeddings or `delegate_task`.
+- The cloud model provider you set up (OpenAI, Anthropic, Google, DeepSeek,
+  OpenRouter — and the model company it routes to — or Groq, with your key; or a
+  server you run and name by its address), for pipeline steps, memory embeddings
+  (OpenAI or Ollama only) or `delegate_task`.
 - Hugging Face, or any host you paste a model URL for.
 - MCP servers you add.
 - The Wikimedia Foundation, for the built-in `search_tool` lookup described in

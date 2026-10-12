@@ -5,6 +5,7 @@ import app.knotwork.android.domain.models.AgentOrchestratorState
 import app.knotwork.android.domain.models.AgentTask
 import app.knotwork.android.domain.models.ConsoleEventType
 import app.knotwork.android.domain.models.EngineImageInput
+import app.knotwork.android.domain.models.LocalSampling
 import app.knotwork.android.domain.models.MemoryChunk
 import app.knotwork.android.domain.models.MessageAttachment
 import app.knotwork.android.domain.models.NodeModel
@@ -16,6 +17,7 @@ import app.knotwork.android.domain.models.PipelineRunStatus
 import app.knotwork.android.domain.models.ResumeContext
 import app.knotwork.android.domain.models.Role
 import app.knotwork.android.domain.models.RunOrigin
+import app.knotwork.android.domain.models.RunSampler
 import app.knotwork.android.domain.models.RunTerminationReason
 import app.knotwork.android.domain.models.RunTraceRecord
 import app.knotwork.android.domain.models.TaskPriority
@@ -98,7 +100,7 @@ class TaskQueueManagerImplTest {
         taskQueueManager = TaskQueueManagerImpl(
             chatRepository = chatRepository,
             pipelineRepository = pipelineRepository,
-            settingsRepository = settingsRepository,
+            entryPointSettings = settingsRepository,
             graphExecutionEngine = graphExecutionEngine,
             pipelineRunRepository = pipelineRunRepository,
             runTraceRepository = runTraceRepository,
@@ -232,9 +234,6 @@ class TaskQueueManagerImplTest {
                 graph = any(),
                 runId = any(),
                 resume = any(),
-                depth = any(),
-                budget = any(),
-                stuckDetector = any(),
                 imageInput = capture(imageSlot),
             )
         } returns flowOf(AgentOrchestratorState.Completed("ok"))
@@ -253,15 +252,64 @@ class TaskQueueManagerImplTest {
     @Test
     fun `enqueueTask without an attachment passes a null image input to the engine`() = testScope.runTest {
         every {
-            graphExecutionEngine.invoke(any(), any(), any(), any(), any(), any(), any(), isNull())
+            // Named, for the reason given above: this stub was positional, and its
+            // eighth matcher had been aimed at `stuckDetector` rather than the image
+            // input since parameters were added ahead of it — so it asserted nothing
+            // about the image until the signature changed again and it failed.
+            graphExecutionEngine.invoke(
+                sessionId = any(),
+                userPrompt = any(),
+                graph = any(),
+                runId = any(),
+                resume = any(),
+                imageInput = isNull(),
+                runHadImage = any(),
+                origin = any(),
+            )
         } returns flowOf(AgentOrchestratorState.Completed("ok"))
 
         taskQueueManager.enqueueTask(AgentTask(sessionId = "s1", prompt = "hi"))
         advanceUntilIdle()
 
         // A text-only run resolves no image input; the engine is invoked with null.
-        verify { graphExecutionEngine.invoke(any(), any(), any(), any(), any(), any(), any(), isNull()) }
+        verify {
+            graphExecutionEngine.invoke(
+                sessionId = any(),
+                userPrompt = any(),
+                graph = any(),
+                runId = any(),
+                resume = any(),
+                imageInput = isNull(),
+                runHadImage = any(),
+                origin = any(),
+            )
+        }
     }
+
+    @Test
+    fun `enqueueTask started again with a recorded seed passes its seed and sampler to the engine`() =
+        testScope.runTest {
+            val recorded = LocalSampling(RunSampler(temperature = 0.3, topK = 12, topP = 0.5), seed = 1_482_913)
+            val samplingSlot = slot<LocalSampling>()
+            every {
+                graphExecutionEngine.invoke(
+                    sessionId = any(),
+                    userPrompt = any(),
+                    graph = any(),
+                    runId = any(),
+                    resume = any(),
+                    imageInput = any(),
+                    runHadImage = any(),
+                    origin = any(),
+                    samplingOverride = capture(samplingSlot),
+                )
+            } returns flowOf(AgentOrchestratorState.Completed("ok"))
+
+            taskQueueManager.enqueueTask(AgentTask(sessionId = "s1", prompt = "hi", samplingOverride = recorded))
+            advanceUntilIdle()
+
+            assertEquals(recorded, samplingSlot.captured)
+        }
 
     /**
      * When an [AgentTask] carries a `pipelineId`, the queue
@@ -340,7 +388,7 @@ class TaskQueueManagerImplTest {
 
     /**
      * When the task carries no `pipelineId`, the queue uses the
-     * user-marked default from `SettingsRepository.defaultPipelineId` —
+     * user-marked default from `EntryPointSettings.defaultPipelineId` —
      * never "whatever the repository returned first". The default sits
      * last in the library to prove the order does not matter.
      */
@@ -828,11 +876,7 @@ class TaskQueueManagerImplTest {
                 graph = any(),
                 runId = any(),
                 resume = any(),
-                depth = any(),
-                budget = any(),
-                stuckDetector = any(),
                 imageInput = any(),
-                imageDelivery = any(),
                 runHadImage = capture(hadImageSlot),
             )
         } returns flowOf(AgentOrchestratorState.Completed("ok"))

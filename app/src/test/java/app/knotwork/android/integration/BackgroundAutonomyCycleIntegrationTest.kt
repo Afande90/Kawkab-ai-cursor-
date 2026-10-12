@@ -10,7 +10,6 @@ import app.knotwork.android.data.repositories.PendingInteractionRepositoryImpl
 import app.knotwork.android.data.repositories.PipelineRunRepositoryImpl
 import app.knotwork.android.data.repositories.RunTraceRepositoryImpl
 import app.knotwork.android.domain.engine.ChatHistoryWindowPlanner
-import app.knotwork.android.domain.engine.GraphExecutionEngine
 import app.knotwork.android.domain.engine.LlmInferenceEngine
 import app.knotwork.android.domain.engine.NodeContextBuilder
 import app.knotwork.android.domain.engine.executors.ClarificationNodeExecutor
@@ -29,6 +28,7 @@ import app.knotwork.android.domain.engine.executors.ToolInvocationGate
 import app.knotwork.android.domain.engine.executors.ToolNodeExecutor
 import app.knotwork.android.domain.engine.structured.CloudStructuredInferenceClientFactory
 import app.knotwork.android.domain.engine.structured.StructuredOutputGate
+import app.knotwork.android.domain.engine.testGraphExecutionEngine
 import app.knotwork.android.domain.models.AgentTool
 import app.knotwork.android.domain.models.ChatMessage
 import app.knotwork.android.domain.models.ConnectionModel
@@ -53,6 +53,7 @@ import app.knotwork.android.domain.services.CeilingNotifier
 import app.knotwork.android.domain.services.ClarificationNotifier
 import app.knotwork.android.domain.services.NativeMemorySampler
 import app.knotwork.android.domain.usecases.AgentOrchestratorUseCase
+import app.knotwork.android.domain.usecases.ApprovalRequestContextFixtures
 import app.knotwork.android.domain.usecases.LoadModelUseCase
 import app.knotwork.android.domain.usecases.ParkedRunResumer
 import app.knotwork.android.domain.usecases.PendingSubmissionOutcome
@@ -216,9 +217,12 @@ class BackgroundAutonomyCycleIntegrationTest {
             // ── Phase 1: schedule — the run starts and hangs on the LLM node ──
             val processA = buildProcess(
                 llmEngine = mockk<LlmInferenceEngine> {
+                    every { currentModelPath } returns null
+                    every { activeBackend } returns null
+                    every { activeContextLength } returns null
                     // The local model never returns: the process will "die"
                     // mid-inference on the LITE_RT node.
-                    every { generateResponseStream(any()) } returns flow { awaitCancellation() }
+                    every { generateResponseStream(any(), any(), any()) } returns flow { awaitCancellation() }
                 },
             )
             val runId = AgentOrchestratorUseCase(processA.taskQueueManager)
@@ -267,7 +271,7 @@ class BackgroundAutonomyCycleIntegrationTest {
                     processB.pendingRepository.getForRun(runId) != null
             }
             verify(atLeast = 1) {
-                processB.approvalNotifier.sendApprovalRequest(any(), any(), any(), any(), any())
+                processB.approvalNotifier.sendApprovalRequest(any(), any(), any(), any(), any(), any())
             }
             // The resumed engine executed the LLM step live (the interrupted
             // run never completed it) and its record is now part of the
@@ -353,6 +357,7 @@ class BackgroundAutonomyCycleIntegrationTest {
             chatRepository,
             pendingRepository,
             recordTriggerHitlEvent = mockk<RecordTriggerHitlEventUseCase>(relaxed = true),
+            resolveRequestContext = ApprovalRequestContextFixtures.none(),
         )
         val toolNodeExecutor = ToolNodeExecutor(
             llmEngine,
@@ -418,7 +423,7 @@ class BackgroundAutonomyCycleIntegrationTest {
             ),
             mockk<SkillNodeExecutor>(relaxed = true),
         )
-        val engine = GraphExecutionEngine(
+        val engine = testGraphExecutionEngine(
             nodeExecutorFactory,
             toolNodeExecutor,
             chatRepository,
@@ -443,7 +448,7 @@ class BackgroundAutonomyCycleIntegrationTest {
         val taskQueueManager = TaskQueueManagerImpl(
             chatRepository = chatRepository,
             pipelineRepository = pipelineRepository,
-            settingsRepository = settingsRepository,
+            entryPointSettings = settingsRepository,
             graphExecutionEngine = engine,
             pipelineRunRepository = runRepository,
             runTraceRepository = traceRepository,
@@ -494,7 +499,10 @@ class BackgroundAutonomyCycleIntegrationTest {
      */
     private fun scriptedLlmEngine(): LlmInferenceEngine = mockk {
         every { currentModelPath } returns null
-        every { generateResponseStream(any()) } answers {
+        // A recorded on-device call notes what the engine ran on.
+        every { activeBackend } returns null
+        every { activeContextLength } returns null
+        every { generateResponseStream(any(), any(), any()) } answers {
             val prompt = firstArg<String>()
             flowOf(
                 when {

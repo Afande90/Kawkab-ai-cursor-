@@ -2,13 +2,17 @@ package app.knotwork.android.presentation.ui.settings
 
 import android.content.Context
 import app.knotwork.android.R
+import app.knotwork.android.domain.models.CloudProvider
 import app.knotwork.android.domain.models.ProviderId
 import app.knotwork.android.domain.models.ProviderSummary
 import app.knotwork.android.domain.repositories.ApiKeyRepository
+import app.knotwork.android.domain.repositories.GenerationSettings
 import app.knotwork.android.domain.repositories.LocalModelRepository
-import app.knotwork.android.domain.repositories.SettingsRepository
+import app.knotwork.android.domain.repositories.requiredCredential
 import app.knotwork.android.domain.usecases.TestBackendUseCase
+import app.knotwork.android.presentation.ui.settings.provider.displayName
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -39,7 +43,7 @@ import java.util.Locale
  * @property scope The ViewModel's `viewModelScope`.
  * @property state The ViewModel's single source-of-truth state flow.
  * @property appContext Application context for probe-result snackbar copy.
- * @property settingsRepository Persistence for the backend selection + probe result.
+ * @property generationSettings Persistence for the backend selection + probe result.
  * @property apiKeyRepository Source of the per-provider key/model/endpoint flows.
  * @property localModelRepository Source of the active-model card metadata.
  * @property testBackendUseCase Runs the on-device backend smoke probe.
@@ -48,7 +52,7 @@ class ModelsSettingsDelegate(
     private val scope: CoroutineScope,
     private val state: MutableStateFlow<SettingsUiState>,
     private val appContext: Context,
-    private val settingsRepository: SettingsRepository,
+    private val generationSettings: GenerationSettings,
     private val apiKeyRepository: ApiKeyRepository,
     private val localModelRepository: LocalModelRepository,
     private val testBackendUseCase: TestBackendUseCase,
@@ -74,9 +78,9 @@ class ModelsSettingsDelegate(
 
     init {
         scope.launch {
-            appliedBackend = settingsRepository.localModelBackend.first()
+            appliedBackend = generationSettings.localModelBackend.first()
             hasCapturedBackendBaseline = true
-            appliedOllamaBaseUrl = apiKeyRepository.getOllamaBaseUrl().firstOrNull()
+            appliedOllamaBaseUrl = apiKeyRepository.getBaseUrl(CloudProvider.OLLAMA).firstOrNull()
             hasCapturedOllamaBaseline = true
             startObservers()
         }
@@ -87,7 +91,7 @@ class ModelsSettingsDelegate(
             state.update { it.copy(activeModelMeta = meta) }
         }.launchIn(scope)
 
-        settingsRepository.localModelBackend.onEach { value ->
+        generationSettings.localModelBackend.onEach { value ->
             state.update {
                 it.copy(
                     localModelBackend = value,
@@ -96,7 +100,7 @@ class ModelsSettingsDelegate(
             }
         }.launchIn(scope)
 
-        settingsRepository.lastTestProbeResult.onEach { value ->
+        generationSettings.lastTestProbeResult.onEach { value ->
             state.update { it.copy(lastTestProbeResult = value) }
         }.launchIn(scope)
 
@@ -124,44 +128,33 @@ class ModelsSettingsDelegate(
         }
     }
 
-    private fun combineProviderFlows() = combine(
-        combine(apiKeyRepository.getOpenAIKey(), apiKeyRepository.getOpenAIModel(), ::Pair),
-        combine(apiKeyRepository.getAnthropicKey(), apiKeyRepository.getAnthropicModel(), ::Pair),
-        combine(apiKeyRepository.getGoogleKey(), apiKeyRepository.getGoogleModel(), ::Pair),
-        combine(apiKeyRepository.getDeepSeekKey(), apiKeyRepository.getDeepSeekModel(), ::Pair),
-        combine(apiKeyRepository.getOllamaBaseUrl(), apiKeyRepository.getOllamaModelName(), ::Pair),
-    ) { openAi, anthropic, google, deepSeek, ollama ->
-        listOf(
-            providerSummary(ProviderId.OpenAi, "OpenAI", openAi.first, openAi.second),
-            providerSummary(ProviderId.Anthropic, "Anthropic", anthropic.first, anthropic.second),
-            providerSummary(ProviderId.Google, "Google", google.first, google.second),
-            providerSummary(ProviderId.DeepSeek, "DeepSeek", deepSeek.first, deepSeek.second),
-            providerSummary(
-                id = ProviderId.Ollama,
-                displayName = "Ollama",
-                key = ollama.first?.takeIf { it.isNotBlank() },
-                model = ollama.second,
-                endpointHint = ollama.first?.takeIf { it.isNotBlank() },
-                isLan = true,
-            ),
-        )
-    }
+    /**
+     * One summary per [ProviderId], in declaration order — the order the External providers
+     * list shows them in. A provider reached at an address the user enters shows that address
+     * where a hosted provider shows its key fingerprint, and carries the LAN pill.
+     */
+    private fun combineProviderFlows(): Flow<List<ProviderSummary>> =
+        combine(ProviderId.entries.map(::providerSummaryFlow)) { summaries -> summaries.toList() }
 
-    private fun providerSummary(
-        id: ProviderId,
-        displayName: String,
-        key: String?,
-        model: String?,
-        endpointHint: String? = null,
-        isLan: Boolean = false,
-    ): ProviderSummary = ProviderSummary(
-        id = id,
-        displayName = displayName,
-        keyFingerprint = key?.takeIf { it.isNotBlank() }?.let { maskKey(it) },
-        model = model?.takeIf { it.isNotBlank() },
-        isLanLocal = isLan,
-        endpointHint = endpointHint,
-    )
+    private fun providerSummaryFlow(id: ProviderId): Flow<ProviderSummary> {
+        val provider = id.cloudProvider
+        return combine(
+            apiKeyRepository.requiredCredential(provider),
+            apiKeyRepository.getModel(provider),
+        ) { credential, model ->
+            ProviderSummary(
+                id = id,
+                displayName = id.displayName(),
+                // Only its presence is read for an address-based provider — the row shows the
+                // address itself through `endpointHint`.
+                keyFingerprint = credential?.takeIf { it.isNotBlank() }?.let { maskKey(it) },
+                model = model?.takeIf { it.isNotBlank() },
+                isLanLocal = provider.usesBaseUrl,
+                endpointHint = credential?.takeIf { provider.usesBaseUrl && it.isNotBlank() },
+                modelMissing = provider.requiresModel && !credential.isNullOrBlank() && model.isNullOrBlank(),
+            )
+        }
+    }
 
     private fun maskKey(key: String): String {
         val tail = key.takeLast(MASK_TAIL_LENGTH)
@@ -187,7 +180,7 @@ class ModelsSettingsDelegate(
 
     /** Persists the selected local-model backend (restart-gated). */
     fun setLocalModelBackend(backend: String) {
-        scope.launch { settingsRepository.setLocalModelBackend(backend) }
+        scope.launch { generationSettings.setLocalModelBackend(backend) }
     }
 
     /** Runs the on-device backend smoke probe and surfaces the outcome as a snackbar. */

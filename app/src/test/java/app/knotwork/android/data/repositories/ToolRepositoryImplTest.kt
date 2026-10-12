@@ -6,6 +6,7 @@ import app.knotwork.android.data.mcp.McpConnectionPool
 import app.knotwork.android.data.tools.local.LocalAppFunctionManager
 import app.knotwork.android.data.tools.local.SearchTool
 import app.knotwork.android.domain.models.AgentTool
+import app.knotwork.android.domain.models.CloudProvider
 import app.knotwork.android.domain.models.McpAuth
 import app.knotwork.android.domain.models.McpServerConfig
 import app.knotwork.android.domain.models.ToolExecutionContext
@@ -72,11 +73,10 @@ class ToolRepositoryImplTest {
         coEvery { mcpClient.connect(any()) } returns Unit
         coEvery { mcpClient.disconnect() } returns Unit
 
-        every { apiKeyRepository.getOpenAIKey() } returns flowOf(null)
-        every { apiKeyRepository.getAnthropicKey() } returns flowOf(null)
-        every { apiKeyRepository.getGoogleKey() } returns flowOf(null)
-        every { apiKeyRepository.getDeepSeekKey() } returns flowOf(null)
-        every { apiKeyRepository.getOllamaBaseUrl() } returns flowOf(null)
+        // No provider set up by default; a test saves what it needs.
+        every { apiKeyRepository.getApiKey(any()) } returns flowOf(null)
+        every { apiKeyRepository.getBaseUrl(any()) } returns flowOf(null)
+        every { apiKeyRepository.getModel(any()) } returns flowOf(null)
 
         every { searchTool.asAgentTool() } returns AgentTool("search_tool", "desc", "{}")
         every { scheduleTaskExecutor.toolName } returns "schedule_task"
@@ -90,6 +90,7 @@ class ToolRepositoryImplTest {
         )
 
         repository = ToolRepositoryImpl(
+            settingsRepository,
             settingsRepository,
             McpConnectionPool(mcpClientFactory, settingsRepository),
             localAppFunctionManager,
@@ -118,6 +119,50 @@ class ToolRepositoryImplTest {
         val appFunctionIndex = result.indexOfFirst { it.name == "get_system_time" }
         assertTrue(builtinIndex < appFunctionIndex)
         coVerify(exactly = 1) { mcpClient.getTools() }
+    }
+
+    @Test
+    fun `given every provider set up when getAvailableTools then delegate_task offers each in enum order`() = runTest {
+        // The list once named five providers by hand; it is now the enum filtered by whether
+        // each is set up — its key or server address, and a model where none is the default.
+        CloudProvider.entries.forEach { provider ->
+            every { apiKeyRepository.getApiKey(provider) } returns flowOf("key-${provider.id}")
+            every { apiKeyRepository.getBaseUrl(provider) } returns flowOf("http://10.0.0.2:1")
+            every { apiKeyRepository.getModel(provider) } returns flowOf("model-${provider.id}")
+        }
+        coEvery { mcpClient.getTools() } returns emptyList()
+
+        val delegate = repository.getAvailableTools().single { it.name == "delegate_task" }
+
+        val offered = CloudProvider.entries.joinToString(", ") { it.id }
+        assertTrue(delegate.parameters, delegate.parameters.contains("MUST be one of: $offered."))
+        assertTrue(
+            delegate.parameters,
+            delegate.parameters.contains("Default is ${CloudProvider.entries.first().id}."),
+        )
+    }
+
+    @Test
+    fun `given OpenRouter with a key but no model when getAvailableTools then delegate_task does not offer it`() =
+        runTest {
+            // Offered without a model, a delegation could only fail at the factory.
+            every { apiKeyRepository.getApiKey(CloudProvider.OPENROUTER) } returns flowOf("sk-or")
+            every { apiKeyRepository.getApiKey(CloudProvider.OPENAI) } returns flowOf("sk")
+            coEvery { mcpClient.getTools() } returns emptyList()
+
+            val delegate = repository.getAvailableTools().single { it.name == "delegate_task" }
+
+            assertTrue(delegate.parameters, delegate.parameters.contains("MUST be one of: openai."))
+        }
+
+    @Test
+    fun `given only an Ollama address when getAvailableTools then delegate_task offers Ollama alone`() = runTest {
+        every { apiKeyRepository.getBaseUrl(CloudProvider.OLLAMA) } returns flowOf("http://10.0.0.2:11434")
+        coEvery { mcpClient.getTools() } returns emptyList()
+
+        val delegate = repository.getAvailableTools().single { it.name == "delegate_task" }
+
+        assertTrue(delegate.parameters, delegate.parameters.contains("MUST be one of: ollama."))
     }
 
     @Test
@@ -306,7 +351,7 @@ class ToolRepositoryImplTest {
         // We use `delegate_task` because it is advertised only when at least one cloud
         // API key is configured, and the test setup deliberately omits it from the
         // executor map.
-        every { apiKeyRepository.getAnthropicKey() } returns flowOf("anthropic-test-key")
+        every { apiKeyRepository.getApiKey(CloudProvider.ANTHROPIC) } returns flowOf("anthropic-test-key")
         coEvery { mcpClient.getTools() } returns emptyList()
         val toolName = "delegate_task"
 
@@ -339,7 +384,7 @@ class ToolRepositoryImplTest {
     @Test
     fun `given builtin delegate_task when getRisk then returns SENSITIVE`() = runTest {
         // delegate_task is only advertised when a cloud API key is present.
-        every { apiKeyRepository.getAnthropicKey() } returns flowOf("anthropic-test-key")
+        every { apiKeyRepository.getApiKey(CloudProvider.ANTHROPIC) } returns flowOf("anthropic-test-key")
         coEvery { mcpClient.getTools() } returns emptyList()
 
         val risk = repository.getRisk("delegate_task")
@@ -773,8 +818,8 @@ class ToolRepositoryImplTest {
         // Regression: switching the MCP dispatch loop from
         // ConcurrentHashMap.entries (implicit URL-key dedup) to the raw
         // persisted list let a duplicate-URL row in settings (which
-        // SettingsManager.updateMcpServer can produce by replacing-by-index
-        // without checking for collisions) execute the same tool twice on
+        // updateMcpServer could produce by replacing-by-index before it
+        // refused URL collisions) execute the same tool twice on
         // the same connected client per call — catastrophic for non-
         // idempotent side effects. distinctMcpConfigs() now keeps only the
         // first occurrence of each URL before iteration.

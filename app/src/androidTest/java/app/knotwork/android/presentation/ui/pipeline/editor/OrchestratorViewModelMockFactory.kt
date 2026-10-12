@@ -15,8 +15,11 @@ import app.knotwork.android.domain.models.NodeModel
 import app.knotwork.android.domain.models.NodeType
 import app.knotwork.android.domain.models.PipelineGraph
 import app.knotwork.android.domain.models.ToolRisk
+import app.knotwork.android.presentation.ui.orchestrator.OrchestratorNodeSheetDelegate
 import app.knotwork.android.presentation.ui.orchestrator.OrchestratorUiState
 import app.knotwork.android.presentation.ui.orchestrator.OrchestratorViewModel
+import app.knotwork.android.presentation.ui.orchestrator.ProviderAvailability
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -67,6 +70,10 @@ internal fun mockOrchestratorViewModel(
     every { vm.addNode(any(), any(), any()) } answers {
         "test-node-${java.util.UUID.randomUUID().shortHex()}"
     }
+    // The node sheet reads which providers are set up when it opens.
+    val nodeSheet = mockk<OrchestratorNodeSheetDelegate>(relaxed = true)
+    coEvery { nodeSheet.loadProviderAvailability() } returns ProviderAvailability()
+    every { vm.nodeSheet } returns nodeSheet
 
     val handles = OrchestratorMockHandles(
         uiStateFlow = uiStateFlow,

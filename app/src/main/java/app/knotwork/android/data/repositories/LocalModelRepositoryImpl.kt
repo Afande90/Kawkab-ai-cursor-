@@ -5,13 +5,18 @@ import app.knotwork.android.data.mappers.toDomain
 import app.knotwork.android.data.mappers.toEntity
 import app.knotwork.android.domain.models.ActiveModelMeta
 import app.knotwork.android.domain.models.LocalModel
+import app.knotwork.android.domain.models.ModelFileHash
+import app.knotwork.android.domain.models.ModelFileStatus
 import app.knotwork.android.domain.repositories.LocalModelRepository
 import app.knotwork.android.domain.repositories.ModelPerformanceRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import timber.log.Timber
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -98,6 +103,57 @@ class LocalModelRepositoryImpl @Inject constructor(
     override suspend fun findByPath(path: String): LocalModel? = withContext(Dispatchers.IO) {
         localModelDao.findByPath(path)?.toDomain()
     }
+
+    override suspend fun currentFileHash(path: String): String? = try {
+        withContext(Dispatchers.IO) {
+            val hash = localModelDao.findByPath(path)?.toDomain()?.fileHash
+            hash?.sha256?.takeIf { hash.describesFile(File(path)) }
+        }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        // Read on the run path for every on-device call it records: a registry that
+        // cannot be read costs the call its checksum, never the run.
+        Timber.w(e, "Model file hash unavailable; recording the call without it")
+        null
+    }
+
+    override suspend fun modelsNeedingFileHash(): List<LocalModel> = withContext(Dispatchers.IO) {
+        localModelDao.getAllModels().first()
+            .map { it.toDomain() }
+            .filter { model ->
+                val file = File(model.path)
+                // A missing file has nothing to hash; a present one needs a pass
+                // unless its stored hash still describes it.
+                file.isFile && model.fileHash?.describesFile(file) != true
+            }
+    }
+
+    override suspend fun fileStatus(path: String): ModelFileStatus = withContext(Dispatchers.IO) {
+        val model = localModelDao.findByPath(path)?.toDomain()
+        val file = File(path)
+        when {
+            model == null || !file.isFile -> ModelFileStatus.Missing
+            model.fileHash?.describesFile(file) == true -> ModelFileStatus.Hashed(model.fileHash.sha256)
+            else -> ModelFileStatus.HashPending
+        }
+    }
+
+    override suspend fun recordFileHash(id: Long, hash: ModelFileHash): Unit = withContext(Dispatchers.IO) {
+        localModelDao.setFileHash(
+            id = id,
+            sha256 = hash.sha256,
+            fileSize = hash.fileSizeBytes,
+            fileModifiedAt = hash.fileModifiedAtMs,
+        )
+    }
+
+    /**
+     * Whether this hash still describes [file] as it is on disk now: the file
+     * exists and has the size and modification time the hash was computed at.
+     */
+    private fun ModelFileHash.describesFile(file: File): Boolean =
+        file.isFile && describes(sizeBytes = file.length(), modifiedAtMs = file.lastModified())
 
     override fun observeActiveModelMeta(): Flow<ActiveModelMeta?> = localModelDao.observeActiveModel()
         .map { entity ->

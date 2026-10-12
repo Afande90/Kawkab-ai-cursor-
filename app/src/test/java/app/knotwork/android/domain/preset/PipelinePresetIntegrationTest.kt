@@ -22,6 +22,7 @@ import app.knotwork.android.domain.engine.executors.ToolInvocationGate
 import app.knotwork.android.domain.engine.executors.ToolNodeExecutor
 import app.knotwork.android.domain.engine.structured.CloudStructuredInferenceClientFactory
 import app.knotwork.android.domain.engine.structured.StructuredOutputGate
+import app.knotwork.android.domain.engine.testGraphExecutionEngine
 import app.knotwork.android.domain.models.AgentOrchestratorState
 import app.knotwork.android.domain.models.PipelineGraph
 import app.knotwork.android.domain.models.PipelinePreset
@@ -47,6 +48,7 @@ import app.knotwork.android.domain.services.ApprovalNotifier
 import app.knotwork.android.domain.services.CeilingNotifier
 import app.knotwork.android.domain.services.ClarificationNotifier
 import app.knotwork.android.domain.services.NativeMemorySampler
+import app.knotwork.android.domain.usecases.ApprovalRequestContextFixtures
 import app.knotwork.android.domain.usecases.EvaluateIfConditionUseCase
 import app.knotwork.android.domain.usecases.GetContextWindowUseCase
 import app.knotwork.android.domain.usecases.LoadModelUseCase
@@ -131,6 +133,9 @@ class PipelinePresetIntegrationTest {
     fun setup() {
         llmEngine = mockk()
         every { llmEngine.currentModelPath } returns null
+        // A recorded on-device call notes what the engine ran on.
+        every { llmEngine.activeBackend } returns null
+        every { llmEngine.activeContextLength } returns null
         toolRepository = mockk(relaxed = true)
         chatRepository = mockk(relaxed = true)
         getContextWindowUseCase = mockk()
@@ -165,6 +170,7 @@ class PipelinePresetIntegrationTest {
                 chatRepository,
                 pendingInteractionRepository,
                 recordTriggerHitlEvent = mockk<RecordTriggerHitlEventUseCase>(relaxed = true),
+                resolveRequestContext = ApprovalRequestContextFixtures.none(),
             ),
             StructuredOutputGate(),
             settingsRepository,
@@ -226,7 +232,7 @@ class PipelinePresetIntegrationTest {
             mockk<SkillNodeExecutor>(relaxed = true),
         )
 
-        engine = GraphExecutionEngine(
+        engine = testGraphExecutionEngine(
             nodeExecutorFactory,
             toolNodeExecutor,
             chatRepository,
@@ -247,7 +253,7 @@ class PipelinePresetIntegrationTest {
             ceilingNotifier,
         )
 
-        every { llmEngine.generateResponseStream(any()) } returns flowOf(cannedAnswer)
+        every { llmEngine.generateResponseStream(any(), any(), any()) } returns flowOf(cannedAnswer)
         coEvery { getContextWindowUseCase(any()) } returns ""
         coEvery { retrieveRelevantMemoryUseCase(any()) } returns emptyList()
         every { chatRepository.getMessagesForSession(any()) } returns flowOf(emptyList())

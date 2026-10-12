@@ -25,6 +25,7 @@ import app.knotwork.android.domain.engine.structured.CloudStructuredInferenceCli
 import app.knotwork.android.domain.engine.structured.StructuredOutputGate
 import app.knotwork.android.domain.models.AgentOrchestratorState
 import app.knotwork.android.domain.models.AgentTool
+import app.knotwork.android.domain.models.CloudProvider
 import app.knotwork.android.domain.models.ConnectionModel
 import app.knotwork.android.domain.models.NodeContextConfig
 import app.knotwork.android.domain.models.NodeModel
@@ -49,6 +50,7 @@ import app.knotwork.android.domain.services.ApprovalNotifier
 import app.knotwork.android.domain.services.CeilingNotifier
 import app.knotwork.android.domain.services.ClarificationNotifier
 import app.knotwork.android.domain.services.NativeMemorySampler
+import app.knotwork.android.domain.usecases.ApprovalRequestContextFixtures
 import app.knotwork.android.domain.usecases.EvaluateIfConditionUseCase
 import app.knotwork.android.domain.usecases.GetContextWindowUseCase
 import app.knotwork.android.domain.usecases.LoadModelUseCase
@@ -123,6 +125,9 @@ class PipelineSecurityContourTest {
     fun setup() {
         llmEngine = mockk()
         every { llmEngine.currentModelPath } returns null
+        // A recorded on-device call notes what the engine ran on.
+        every { llmEngine.activeBackend } returns null
+        every { llmEngine.activeContextLength } returns null
         toolRepository = mockk()
         chatRepository = mockk(relaxed = true)
         settingsRepository = mockk()
@@ -153,10 +158,10 @@ class PipelineSecurityContourTest {
         writeFileExecutor = WriteFileExecutor(workspace)
         deleteFileExecutor = spyk(DeleteFileExecutor(workspace))
 
-        every { apiKeyRepository.getOpenAIKey() } returns flowOf(null)
-        every { apiKeyRepository.getAnthropicKey() } returns flowOf(null)
-        every { apiKeyRepository.getGoogleKey() } returns flowOf(null)
-        every { apiKeyRepository.getDeepSeekKey() } returns flowOf(null)
+        every { apiKeyRepository.getApiKey(CloudProvider.OPENAI) } returns flowOf(null)
+        every { apiKeyRepository.getApiKey(CloudProvider.ANTHROPIC) } returns flowOf(null)
+        every { apiKeyRepository.getApiKey(CloudProvider.GOOGLE) } returns flowOf(null)
+        every { apiKeyRepository.getApiKey(CloudProvider.DEEPSEEK) } returns flowOf(null)
         every { settingsRepository.httpToolMaxResponseBytes } returns flowOf(100_000L)
         // Allowlist contains a different domain so the test target is rejected as off-list.
         every { settingsRepository.allowedHttpDomains } returns flowOf(listOf("example.org"))
@@ -174,6 +179,7 @@ class PipelineSecurityContourTest {
                 chatRepository,
                 pendingInteractionRepository,
                 recordTriggerHitlEvent = mockk<RecordTriggerHitlEventUseCase>(relaxed = true),
+                resolveRequestContext = ApprovalRequestContextFixtures.none(),
             ),
             StructuredOutputGate(),
             settingsRepository,
@@ -235,7 +241,7 @@ class PipelineSecurityContourTest {
             mockk<SkillNodeExecutor>(relaxed = true),
         )
 
-        engine = GraphExecutionEngine(
+        engine = testGraphExecutionEngine(
             nodeExecutorFactory,
             toolNodeExecutor,
             chatRepository,
@@ -257,7 +263,7 @@ class PipelineSecurityContourTest {
         )
 
         // The arg-generation pass returns the per-tool JSON; everything else is irrelevant.
-        every { llmEngine.generateResponseStream(any()) } answers {
+        every { llmEngine.generateResponseStream(any(), any(), any()) } answers {
             val prompt = firstArg<String>()
             flowOf(
                 when {

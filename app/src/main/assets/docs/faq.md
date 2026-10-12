@@ -1,8 +1,7 @@
 # Frequently asked questions
 
-Short answers to the questions that actually come up, each one pointing at the
-page that covers it properly. Nothing here is the full story on purpose — this
-page is a router, not a third copy of the documentation.
+Short answers to the questions that actually come up. Each one links to the
+page that covers it in full.
 
 Which page do you want?
 
@@ -32,9 +31,9 @@ useful, that is [the five-step answer below](#im-installed-now-what-do-i-actuall
 
 ### What do I need to run this?
 
-Android 14 or newer and roughly 2 GB of free RAM for the model. Memory is the
-real constraint, not the CPU — a phone without an NPU or usable GPU still works,
-just slower. Full list in [README § Requirements](../README.md#requirements).
+Android 14 or newer and roughly 2 GB of free RAM for the model. Memory is what
+limits it; a phone without a usable GPU still works, only slower. Full list in
+[README § Requirements](../README.md#requirements).
 
 ### Do I have to download a model at all?
 
@@ -47,30 +46,31 @@ neither. See [Getting started](user-guide.md#getting-started).
 
 Onboarding picks one for you — each scenario names the model it needs and
 downloads exactly that. Choosing by hand, the two presets are **Gemma 4 E2B** and
-**Gemma 4 E4B**; take E2B when storage or RAM is tight. Either way this is a tap,
-not a decision about file formats. See
+**Gemma 4 E4B**; take E2B when storage or RAM is tight. See
 [Getting started](user-guide.md#getting-started).
 
 ### Which cloud providers are supported?
 
-Five: OpenAI, Anthropic, Google Gemini, DeepSeek, and a self-hosted **Ollama**
-server. All of them are opt-in and bring-your-own-key. They are offered during
-onboarding and live afterwards under **Settings → Models → External providers**.
+Hosted: OpenAI, Anthropic, Google Gemini, DeepSeek, OpenRouter and Groq, each with
+your own key. Your own server: **Ollama**, or any server that speaks the OpenAI
+API. All of them are opt-in. They live under **Settings → Models → External
+providers**, and **Test connection** on each provider's screen checks the key and
+address without sending a prompt.
 
 ### Can I point it at my own OpenAI-compatible endpoint?
 
-Not unless it speaks the Ollama API. The provider list is a closed set of five,
-so a base URL is configurable **only** for Ollama — Groq, vLLM, LM Studio's
-OpenAI-compatible mode and a plain OpenAI-shaped endpoint on your own VPS have
-nowhere to go. See [Known limitations](#known-limitations).
+Yes — add an **OpenAI-compatible server** and enter its address the way the server
+documents it, including `/v1` (vLLM, LM Studio and llama.cpp all serve the API
+there). A key is optional; with none, no `Authorization` header is sent. Pick the
+model after **Test connection** brings the server's list, or type its id.
 
 ### My Ollama server is not on my home network. Will it work?
 
 Over `https`, yes — the Ollama row under **Settings → Models → External
 providers** carries its base URL. Over plain
 `http` it is refused unless the address is on a private network or you have
-approved that specific origin, because unencrypted traffic to the open internet
-is not something the app will do quietly on your behalf.
+approved that specific origin, because the app does not send unencrypted
+traffic over the open internet.
 
 ### What is "Custom Model URL", and can it use authentication?
 
@@ -140,7 +140,8 @@ Usage statistics exist, they stay on the device, and they are never transmitted 
 a build-time check fails the build if any network dependency reaches that code.
 Crash reporting is separate, off by default, `full`-build only, and asks before
 it collects anything. The on-device library behind memory search (MediaPipe)
-carries a usage reporter of its own; release builds remove it. See [SECURITY §
+carries a usage reporter of its own; release builds remove it, and only a debug
+build made from the source keeps it. See [SECURITY §
 What is collected](../SECURITY.md#what-is-collected-crash-reporting).
 
 ### Is my chat history encrypted on the phone?
@@ -252,10 +253,9 @@ one you were looking at, because the useful question is normally about a gap
 rather than a row. The request journal on Settings → Background & triggers →
 External automation carries the same pair for inbound requests.
 
-Attach either to a bug report about background reliability — it says what the
-app actually did while you were not watching, which nothing else can. The file
-holds the journal rows: a failed run's error message, but no message a run was
-given and no answer it produced.
+Attach either to a bug report about background reliability: it shows what the
+app did while you were not watching. The file holds the journal rows: a failed
+run's error message, but no message a run was given and no answer it produced.
 Neither action touches the network. See [Checking what a trigger has been
 doing](user-guide.md#checking-what-a-trigger-has-been-doing).
 
@@ -279,10 +279,10 @@ stored encrypted, per server. **OAuth is not supported.** See
 
 ### Is there a "test connection" button?
 
-No. What you get instead is the server row itself: after you add a server it
-shows a health state and a tool count, and a server that cannot be reached says
-so there. See [What the common MCP
-errors mean](user-guide.md#what-the-common-mcp-errors-mean).
+Yes. **Test connection** on the server form connects with the values you
+typed, lists the server's tools and disconnects, before anything is saved. It
+answers with the number of tools or with what went wrong. See [Adding an MCP
+server](user-guide.md#adding-an-mcp-server).
 
 ### My server publishes 16 tools but the app shows 13.
 
@@ -309,8 +309,7 @@ human-in-the-loop](user-guide.md#risk-levels-and-human-in-the-loop).
 
 ### Can other apps on my phone expose tools to the agent?
 
-Publishing them is not the problem — Android lets any app publish
-AppFunctions. Picking them up is: reading and running another app's
+Android lets any app publish AppFunctions, but running another app's
 AppFunctions needs a permission (`EXECUTE_APP_FUNCTIONS`) that Android 16 hands
 only to privileged system apps, and an app you install yourself is not one. So
 what you get is the built-in catalogue plus whatever you connect over MCP.
@@ -370,8 +369,7 @@ limit](user-guide.md#when-a-run-reaches-a-limit).
 ### Does continuing past a limit turn the limit off?
 
 No. It buys **one more portion** — the same allowance again, which is the number
-on the button — and the run asks again when that runs out. A run you have waved
-through five times is one you have said yes to five times.
+on the button — and the run asks again when that runs out.
 
 ### Can I cap what a run costs me?
 
@@ -404,7 +402,8 @@ mid-run](troubleshooting.md#the-agent-stopped-mid-run).
 
 Durable facts it extracted from conversations — preferences, events,
 relationships — retrieved by meaning when a node is set to read memory. Small
-talk and near-duplicates are skipped. See [What the agent recalls, and
+talk and facts it already has are skipped; a change of a fact updates the entry
+and keeps the old text in its history. See [What the agent recalls, and
 when](user-guide.md#what-the-agent-recalls-and-when).
 
 ### Can I add or delete a memory myself?
@@ -429,20 +428,11 @@ entry](troubleshooting.md#memory-search-isnt-finding-an-obvious-entry).
 
 ## Known limitations
 
-These are current, deliberate, and stated without softening. Each one says what
-would change it.
+What the app does not do today. Each item says what would change it.
 
-- **No arbitrary OpenAI-compatible endpoint.** The provider list is a closed set
-  of five, and a base URL is configurable only for Ollama. Revisited on the
-  first request filed publicly as an issue. Two people have asked for it so far
-  — one in private testing, one in a public thread — which is two independent
-  requests, not the filed issue the condition names, and does not reorder the
-  work.
 - **No OAuth anywhere.** Not for MCP servers, not for model downloads. Bearer,
   Basic and API-key headers are what exist. Revisited with the first external
   report of a real server that cannot be reached any other way.
-- **No connection test for an MCP server.** You add it and read the resulting
-  health row. Revisited alongside the MCP screen's next rework.
 - **A built-in tool's risk level cannot be changed.** MCP tools and tools
   discovered on the device now have a **Risk level** control on their detail
   page; a tool written into the app does not, because its level is resolved from
@@ -460,9 +450,14 @@ would change it.
 - **Tools from other apps are not picked up.** Publishing AppFunctions is open
   to any app; calling one needs a permission Android reserves for privileged
   system apps, and nothing on the roadmap changes that for an ordinary install.
-- **The node picker in the visual editor is hard to read** at the current number
-  of node types, where labels overlap. Replacing it is accepted as needed, with
-  no date attached; the browser editor is the workaround in the meantime.
+- **Memory search works in English.** The on-device embedding model sees
+  unrelated facts written in Russian as near-copies of each other, so a memory
+  search keeps one of them per run and drops the rest as duplicates. Pinned
+  facts are never dropped this way. Other languages have not been measured.
+  OpenAI as the **Embedding model** is multilingual by its maker's account —
+  not measured here — and sends the text of your memories to OpenAI. Changing
+  the on-device model means shipping a multilingual one, which has not been
+  decided.
 - **Pipeline files are not a compatibility contract before 1.0.** The version
   stamp is a marker, not a promise, and no import-time migration exists. See
   [README § Pre-release notice](../README.md#pre-release-notice).
@@ -472,8 +467,8 @@ would change it.
   validation.
 - **There is no casual mode, and there will not be one.** The app is built for
   someone who wants to see and change the machinery. A phone assistant that
-  answers questions already ships with the OS, and competing with it is a losing
-  bet rather than a missing feature. See [README § Who it's
+  answers questions already ships with the OS, and the app does not try to
+  compete with it. See [README § Who it's
   for](../README.md#who-its-for).
 - **One maintainer, no company.** Response times follow from that.
 

@@ -5,7 +5,8 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import app.knotwork.android.domain.repositories.PendingInteractionRepository
-import app.knotwork.android.domain.repositories.SettingsRepository
+import app.knotwork.android.domain.repositories.RunSettings
+import app.knotwork.android.domain.usecases.NotifyStaleTriggersUseCase
 import app.knotwork.android.domain.usecases.ParkedRunResumer
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -36,18 +37,26 @@ import timber.log.Timber
  * ([app.knotwork.android.domain.usecases.SubmitApprovalDecisionUseCase]);
  * this pass is the backstop for parks the user never responds to at all.
  *
+ * The same pass then tells the user about any trigger the phone has stopped
+ * checking ([NotifyStaleTriggersUseCase]). It belongs here rather than in the
+ * triggers' own periodic poll: a starved poll cannot report its own silence, and
+ * this job runs on a different schedule with looser constraints. Its failure is
+ * logged and does not fail the expiry pass.
+ *
  * @property pendingInteractionRepository Source of the parked records.
- * @property settingsRepository Source of the `backgroundApprovalWindowHours`
+ * @property runSettings Source of the `backgroundApprovalWindowHours`
  *   setting, re-read on every run so a changed window applies immediately.
  * @property parkedRunResumer Owner of the shared park-settlement semantics.
+ * @property notifyStaleTriggers Announces triggers the phone has stopped checking.
  */
 @HiltWorker
 class PendingInteractionMaintenanceWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted workerParams: WorkerParameters,
     private val pendingInteractionRepository: PendingInteractionRepository,
-    private val settingsRepository: SettingsRepository,
+    private val runSettings: RunSettings,
     private val parkedRunResumer: ParkedRunResumer,
+    private val notifyStaleTriggers: NotifyStaleTriggersUseCase,
 ) : CoroutineWorker(context, workerParams) {
 
     /**
@@ -58,19 +67,32 @@ class PendingInteractionMaintenanceWorker @AssistedInject constructor(
      *   re-attempts under the same constraints.
      */
     override suspend fun doWork(): Result = try {
-        val windowHours = settingsRepository.backgroundApprovalWindowHours.first()
+        val windowHours = runSettings.backgroundApprovalWindowHours.first()
         val cutoff = System.currentTimeMillis() - windowHours * MILLIS_PER_HOUR
         val expired = pendingInteractionRepository.getRequestedAtOrBefore(cutoff)
         expired.forEach { pending -> parkedRunResumer.failExpiredPark(pending) }
         if (expired.isNotEmpty()) {
             Timber.tag(TAG).i("Expired %d parked interaction(s) past the %d h window", expired.size, windowHours)
         }
+        announceStaleTriggers()
         Result.success()
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
         Timber.tag(TAG).e(e, "Pending-interaction expiry pass failed; will retry")
         Result.retry()
+    }
+
+    /** Runs the overdue-trigger check; a failure is logged, never retried through the expiry pass. */
+    private suspend fun announceStaleTriggers() {
+        try {
+            val noticed = notifyStaleTriggers()
+            if (noticed > 0) Timber.tag(TAG).i("Announced %d overdue trigger(s)", noticed)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.tag(TAG).w(e, "Overdue-trigger check failed")
+        }
     }
 
     companion object {

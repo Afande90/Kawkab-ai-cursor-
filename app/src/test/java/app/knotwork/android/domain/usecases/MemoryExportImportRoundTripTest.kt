@@ -4,9 +4,13 @@ import app.knotwork.android.domain.models.MemoryChunk
 import app.knotwork.android.domain.models.MemoryExportDocument
 import app.knotwork.android.domain.models.MemoryImportOutcome
 import app.knotwork.android.domain.models.MemoryImportStrategy
+import app.knotwork.android.domain.models.MemoryPendingUpdate
 import app.knotwork.android.domain.models.MemorySource
 import app.knotwork.android.domain.models.MemoryStats
 import app.knotwork.android.domain.models.MemorySummary
+import app.knotwork.android.domain.models.MemoryVersion
+import app.knotwork.android.domain.models.MemoryWithHistory
+import app.knotwork.android.domain.repositories.MemoryHistoryRepository
 import app.knotwork.android.domain.repositories.MemoryRepository
 import app.knotwork.android.domain.repositories.SettingsRepository
 import app.knotwork.android.domain.services.EmbeddingProvider
@@ -62,10 +66,20 @@ class MemoryExportImportRoundTripTest {
             ),
         )
         store.seed(original)
+        val earlier = MemoryVersion(
+            id = 0L,
+            chunkId = 0L,
+            text = "I prefer light mode",
+            source = MemorySource.ChatSession("sess-0"),
+            tags = listOf("preference"),
+            capturedAt = 500L,
+            replacedAt = 900L,
+        )
+        store.seedHistory(1L, listOf(earlier))
 
         val settings = mockk<SettingsRepository>()
         every { settings.activeEmbeddingProviderId } returns flowOf(EmbeddingProvider.ID_USE)
-        val export = ExportMemoryBaseUseCase(store, settings)
+        val export = ExportMemoryBaseUseCase(store, settings, store)
         val importUseCase = MemoryImportUseCase(store, resolver, scheduler)
 
         val out = ByteArrayOutputStream()
@@ -79,7 +93,7 @@ class MemoryExportImportRoundTripTest {
         val result = importUseCase.import(
             (outcome as MemoryImportOutcome.Success).document,
             MemoryImportStrategy.Replace,
-        )
+        ).getOrThrow()
 
         assertEquals(2, result.imported)
         // Deliberately not a byte-for-byte round-trip: an import cannot pin, even
@@ -89,6 +103,8 @@ class MemoryExportImportRoundTripTest {
             original.map { it.copy(isPinned = false) }.sortedBy { it.id },
             store.getAllMemories().sortedBy { it.id },
         )
+        // The earlier version travels with its chunk and comes back as history only.
+        assertEquals(mapOf(1L to listOf(earlier)), store.getAllHistory())
     }
 
     @Test
@@ -107,7 +123,7 @@ class MemoryExportImportRoundTripTest {
         val importUseCase = MemoryImportUseCase(store, resolver, scheduler)
         val document = MemoryExportDocument(EmbeddingProvider.ID_USE, 0L, incoming)
 
-        val result = importUseCase.import(document, MemoryImportStrategy.Merge)
+        val result = importUseCase.import(document, MemoryImportStrategy.Merge).getOrThrow()
 
         assertEquals(1, result.imported)
         assertEquals(1, result.skipped)
@@ -122,29 +138,86 @@ class MemoryExportImportRoundTripTest {
  * export/import call paths are backed by real behaviour; the rest throw so an
  * accidental dependency surfaces loudly.
  */
-private class InMemoryMemoryStore : MemoryRepository {
+private class InMemoryMemoryStore :
+    MemoryRepository,
+    MemoryHistoryRepository {
     private val rows = mutableListOf<MemoryChunk>()
+    private val histories = mutableMapOf<Long, List<MemoryVersion>>()
 
     fun seed(chunks: List<MemoryChunk>) {
         rows.clear()
         rows.addAll(chunks)
     }
 
+    fun seedHistory(chunkId: Long, versions: List<MemoryVersion>) {
+        histories[chunkId] = versions
+    }
+
+    override suspend fun getAllHistory(): Map<Long, List<MemoryVersion>> = histories.toMap()
+
+    override suspend fun findSupersedeCandidate(embedding: FloatArray): Pair<MemoryChunk, Float>? =
+        throw NotImplementedError()
+
+    override suspend fun supersede(
+        id: Long,
+        text: String,
+        embedding: FloatArray,
+        source: MemorySource,
+        tags: List<String>,
+    ): Boolean = throw NotImplementedError()
+
+    override suspend fun saveUpdateOfPinned(
+        pinnedId: Long,
+        text: String,
+        embedding: FloatArray,
+        source: MemorySource,
+        tags: List<String>,
+    ): Long = throw NotImplementedError()
+
+    override suspend fun getHistory(chunkId: Long): List<MemoryVersion> = histories[chunkId].orEmpty()
+
+    override suspend fun getPendingUpdates(): List<MemoryPendingUpdate> = throw NotImplementedError()
+
+    override suspend fun applyWaitingUpdate(chunkId: Long): Long? = throw NotImplementedError()
+
+    override suspend fun discardWaitingUpdate(chunkId: Long): Long? = throw NotImplementedError()
+
+    override suspend fun setPinned(chunkId: Long, pinned: Boolean) = throw NotImplementedError()
+
+    override suspend fun deleteVersion(versionId: Long) = throw NotImplementedError()
+
+    private fun load(memories: List<MemoryWithHistory>) {
+        memories.forEach { (chunk, history) ->
+            rows.add(chunk)
+            if (history.isNotEmpty()) histories[chunk.id] = history
+        }
+    }
+
     override suspend fun getAllMemories(): List<MemoryChunk> = rows.toList()
 
     override suspend fun getExistingMemoryIds(): Set<Long> = rows.map { it.id }.toSet()
 
-    override suspend fun insertImportedMemories(chunks: List<MemoryChunk>, needsReembedding: Boolean) {
-        rows.addAll(chunks)
+    override suspend fun insertImportedMemories(
+        memories: List<MemoryWithHistory>,
+        needsReembedding: Boolean,
+    ): Result<Unit> {
+        load(memories)
+        return Result.success(Unit)
     }
 
-    override suspend fun replaceImportedMemories(chunks: List<MemoryChunk>, needsReembedding: Boolean) {
+    override suspend fun replaceImportedMemories(
+        memories: List<MemoryWithHistory>,
+        needsReembedding: Boolean,
+    ): Result<Unit> {
         rows.clear()
-        rows.addAll(chunks)
+        histories.clear()
+        load(memories)
+        return Result.success(Unit)
     }
 
     override suspend fun deleteAllMemories() {
         rows.clear()
+        histories.clear()
     }
 
     override suspend fun saveMemory(

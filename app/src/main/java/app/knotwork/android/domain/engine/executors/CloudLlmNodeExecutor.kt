@@ -6,6 +6,7 @@ import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.streaming.StreamFrame
 import app.knotwork.android.domain.constants.DefaultPrompts
 import app.knotwork.android.domain.constants.PipelineExecutionDefaults
+import app.knotwork.android.domain.engine.AutoProvider
 import app.knotwork.android.domain.engine.CloudErrorSanitizer
 import app.knotwork.android.domain.engine.CloudLlmClientFactory
 import app.knotwork.android.domain.engine.CloudLlmModelResolver
@@ -20,9 +21,9 @@ import app.knotwork.android.domain.models.NodeExecutionResult
 import app.knotwork.android.domain.models.NodeModel
 import app.knotwork.android.domain.models.NodeOutput
 import app.knotwork.android.domain.repositories.ApiKeyRepository
+import app.knotwork.android.domain.repositories.GenerationSettings
 import app.knotwork.android.domain.repositories.MetricsRepository
 import app.knotwork.android.domain.repositories.NetworkActivityTracker
-import app.knotwork.android.domain.repositories.SettingsRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.flow.Flow
@@ -34,10 +35,10 @@ import javax.inject.Inject
 /**
  * Executor for [NodeType.CLOUD][app.knotwork.android.domain.models.NodeType.CLOUD] nodes.
  *
- * Streams a response from one of the supported cloud LLM providers (OpenAI, Anthropic,
- * Google, DeepSeek, Ollama) using the Koog client abstraction. The active provider is
- * either taken from `node.cloudProvider` or auto-detected from the first configured API
- * key when the node is set to `"auto"`. The fully assembled `inputText` is sent verbatim:
+ * Streams a response from one of the supported cloud LLM providers ([CloudProvider]) using
+ * the Koog client abstraction. The active provider is either taken from `node.cloudProvider`
+ * or, when the node is set to `"auto"`, the first of [AutoProvider.ORDER] with a configured API key —
+ * never a provider outside that list. The fully assembled `inputText` is sent verbatim:
  * `NodeContextBuilder` has already concatenated the context blocks selected by
  * [NodeContextConfig][app.knotwork.android.domain.models.NodeContextConfig], so the executor
  * must not re-fetch chat history or memory itself.
@@ -57,7 +58,7 @@ import javax.inject.Inject
  * pipeline starts on a CLOUD node before it can run.
  */
 class CloudLlmNodeExecutor @Inject constructor(
-    private val settingsRepository: SettingsRepository,
+    private val generationSettings: GenerationSettings,
     private val apiKeyRepository: ApiKeyRepository,
     private val metricsRepository: MetricsRepository,
     private val cloudLlmClientFactory: CloudLlmClientFactory,
@@ -73,7 +74,7 @@ class CloudLlmNodeExecutor @Inject constructor(
         runId: String?,
         scope: ExecutionScope,
     ): Flow<NodeOutput> = channelFlow {
-        val systemPromptPrefix = settingsRepository.systemPromptPrefix.first()
+        val systemPromptPrefix = generationSettings.systemPromptPrefix.first()
         val nodeSystemPrompt = node.systemPrompt ?: DefaultPrompts.Cloud.SYSTEM_FALLBACK
         val baseSystemPrompt = "$systemPromptPrefix\n$nodeSystemPrompt\n"
 
@@ -145,6 +146,9 @@ class CloudLlmNodeExecutor @Inject constructor(
         // Privacy-status pulse for the More tab footer. Recorded right before
         // the network call so the timestamp reflects the actual outbound moment.
         networkActivityTracker.recordOutbound()
+        // Marks the visit as answered in the cloud: a hosted model takes no seed the
+        // app controls, so a later check reports it as not repeatable.
+        scope.inference.cloudCall(selectedProvider.id, model.id)
         val responseStream = client.executeStreaming(prompt("default") { user(fullPrompt) }, model)
 
         val accumulatedResponse = StringBuilder()
@@ -271,9 +275,9 @@ class CloudLlmNodeExecutor @Inject constructor(
         // model happens to be active. selectedProvider is non-null on this success
         // path (a null provider returns early above).
         selectedProvider?.let { provider ->
-            scope.generatingModel?.let { gm ->
-                gm.cloudLabel = provider.id
-                gm.localModelPath = null
+            scope.run.generatingModel.apply {
+                cloudLabel = provider.id
+                localModelPath = null
             }
         }
 
@@ -306,20 +310,12 @@ class CloudLlmNodeExecutor @Inject constructor(
     }
 
     /**
-     * Picks the first [CloudProvider] for which an API key is configured.
+     * Picks the first provider of [AutoProvider.ORDER] for which an API key is configured.
      *
-     * Order mirrors the historical "auto" routing priority (Google → Anthropic → OpenAI →
-     * DeepSeek) so existing pipelines keep their previous default behaviour. Returns
-     * `null` when no provider has credentials, which the caller surfaces to the user as
-     * "No cloud provider configured or selected".
+     * Returns `null` when none has a key, which the caller surfaces to the user as
+     * "No cloud provider is configured".
      */
-    private suspend fun autoDetectProvider(): CloudProvider? {
-        if (!apiKeyRepository.getGoogleKey().first().isNullOrBlank()) return CloudProvider.GOOGLE
-        if (!apiKeyRepository.getAnthropicKey().first().isNullOrBlank()) return CloudProvider.ANTHROPIC
-        if (!apiKeyRepository.getOpenAIKey().first().isNullOrBlank()) return CloudProvider.OPENAI
-        if (!apiKeyRepository.getDeepSeekKey().first().isNullOrBlank()) return CloudProvider.DEEPSEEK
-        return null
-    }
+    private suspend fun autoDetectProvider(): CloudProvider? = AutoProvider.resolve(apiKeyRepository)
 
     /**
      * Whether an absent finish reason is evidence of a truncated answer for [provider].
@@ -338,10 +334,16 @@ class CloudLlmNodeExecutor @Inject constructor(
      * - `ANTHROPIC` — **excluded pending measurement**. The harness could not produce a
      *   stream its parser accepts, so there is no evidence either way, and a guess here
      *   is exactly the failure mode this task exists to avoid.
+     * - `OPENROUTER` / `GROQ` / `OPENAI_COMPATIBLE` — **excluded pending measurement**. The
+     *   stream parser is OpenAI's, but the signal is the server's: a server that omits the
+     *   finish reason would have every healthy answer discarded as cut off.
      */
     private fun providerReportsFinishReason(provider: CloudProvider): Boolean = when (provider) {
         CloudProvider.OPENAI, CloudProvider.DEEPSEEK, CloudProvider.GOOGLE -> true
         CloudProvider.ANTHROPIC, CloudProvider.OLLAMA -> false
+        // Same client as OpenAI, but whether each *server* sends the finish reason is what
+        // matters, and none has been measured yet; off until the device check says otherwise.
+        CloudProvider.OPENROUTER, CloudProvider.GROQ, CloudProvider.OPENAI_COMPATIBLE -> false
     }
 
     private companion object {

@@ -8,8 +8,8 @@
 [![Google Play](https://img.shields.io/badge/Google%20Play-available-3DDC84.svg?logo=googleplay&logoColor=white)](https://play.google.com/store/apps/details?id=app.knotwork.android)
 
 > **An AI agent you build, not just prompt.** A local-first Android agent whose
-> behaviour you assemble from explicit, verifiable blocks — and every risky
-> action waits for your confirmation. It plans and acts across your phone, and a
+> behaviour you assemble from explicit, verifiable blocks — and by default every
+> risky action waits for your confirmation. Its model runs on the phone, so a
 > typical conversation never leaves the device.
 
 <!--
@@ -25,133 +25,120 @@
 
 ## What it is
 
-Knotwork is an autonomous assistant that takes a request in plain language,
-decides what to do, and carries the work out across your Android device.
-Inference runs **on-device** via [LiteRT-LM](https://ai.google.dev/edge)
-(Google Edge AI, the successor to TensorFlow Lite), so planning, tool calls,
-and replies stay on the phone unless you deliberately reach for a cloud model.
+Knotwork is an Android app that runs a language model on your phone and lets
+you decide what happens to a request on the way to an answer. Inference runs
+**on-device** through [LiteRT-LM](https://ai.google.dev/edge) (Google's
+on-device runtime, formerly TensorFlow Lite); a cloud model is used only once you
+add its key.
 
-What makes it Knotwork rather than another chat box is that **you build the
-behaviour**. Every conversation is processed by a pipeline — what Tasker, n8n,
-or Zapier would call a *workflow*: a graph of typed nodes (input, on-device LLM,
-optional cloud LLM, tool calls, routing, decomposition, evaluation,
-clarifications, output) that you can edit inside the app or in a standalone
-browser editor. Automations that can act on their own still can't act
-*unsupervised*: destructive or sensitive tool calls pass through a
-human-in-the-loop gate, so the agent never sends a message or writes a file
-without showing you the request first.
+Every conversation goes through a pipeline — what Tasker, n8n or Zapier would
+call a *workflow*: a graph of typed nodes (input, on-device LLM, optional cloud
+LLM, tool calls, routing, decomposition, evaluation, clarifications, output)
+that you edit in the app or in a standalone browser editor. By default, a
+sensitive or destructive tool call — writing a file, calling a tool on an MCP
+server — shows you the call and waits for your answer.
 
 ## Who it's for
 
-Knotwork is built for the technically literate flagship-Android owner who
-values privacy as a practice rather than a slogan, enjoys *constructing* the way
-their tools behave, and is already at home in the world of Tasker, Obsidian,
-Home Assistant, or r/LocalLLaMA. If you want to know — and control — exactly
-what your agent does with your data, this is for you.
+Knotwork is for someone with a recent Android phone who already uses Tasker,
+Obsidian, Home Assistant or a local model, and who wants to see and change what
+their agent does with their data.
 
 It is deliberately **not** a mass-market "ask a question, get an answer"
-assistant. For that, Gemini is free and built into the OS, and competing there
-is a losing bet regardless of code quality. Knotwork trades that convenience for
-control, transparency, and local-first data handling.
+assistant. Gemini already does that for free and is built into the OS.
+
+## When Knotwork is not the right tool
+
+- You want a chat window onto a model running on your own server. Knotwork can
+  use that server, but the server's own client is simpler if the chat is all you
+  need.
+- You want quick answers to questions. The assistant built into your phone is
+  free and already there.
+- Your phone cannot spare about 2 GB of RAM for a model. The app still works
+  with a cloud provider or your own server, but then the main reason to use it
+  is gone.
+- You want an agent that writes and runs its own code, or operates other apps'
+  screens for you. Knotwork does neither, and neither is planned.
+
+## Known limitations
+
+What the app does not do, and what would change each item, is kept in one list:
+[docs/faq.md § Known limitations](docs/faq.md#known-limitations).
 
 ## See it work
 
 The **Share Handler** scenario is a good one-glance picture of the whole idea:
 share an article, a message, or a screenshot to Knotwork from any app, and an
 on-device model turns it into a clean, structured note in your inbox — pausing
-to ask before it writes the file. On-device inference, a real tool call, and the
-human-in-the-loop gate, all in one flow.
+to ask before it writes the file.
 
-First launch leads with *what the agent should do for you* rather than an empty
-canvas: pick a ready-made scenario and Knotwork materialises its pipeline as
-your default, wires any surface it uses, and downloads exactly the model that
-scenario needs — with size and live progress — before dropping you into a
-working chat. A **Start from scratch** path stays one tap away.
+On first launch you pick a ready-made scenario. Knotwork makes its pipeline your
+default, sets up the entry point it uses and downloads the model it needs,
+showing the size and progress, then opens a working chat. **Start from
+scratch** skips this.
 
 https://github.com/user-attachments/assets/2ea06de5-6832-4e0c-ad48-430f375d8b72
 
-> The hero above is a real on-device capture — no mockups.
+> The animation at the top is a screen recording from a phone.
 
 ## Highlights
 
-- **Runs on your device.** On-device LLM inference through LiteRT-LM, with
-  optional NPU/GPU acceleration; CPU-only works too, just slower. Cloud
-  providers (OpenAI, Anthropic, Google Gemini, DeepSeek, Ollama) are optional,
-  opt-in, and bring-your-own-key — nothing leaves the device unless you
-  configure it to.
-- **You build the pipeline.** A drag-and-drop editor with pan / pinch-zoom,
-  snap-to-grid, a radial node picker, auto-layout, inline validation, and
-  per-type configuration for all 14 node types — plus a standalone
-  [browser editor](pipeline-editor.html) for authoring pipelines without
-  launching the app: one HTML file with its graph library inlined, so it opens
-  from disk with no network at all. Prompt variables (`$DATE`, `$TIME`,
-  `$TOOLS`, `$MODEL`, `$MEMORY_SUMMARY`, `$LANG`, `$LOCATION`, `$USER`,
-  `$DEVICE`) render fresh on
-  every run. Prompts import and export as **Markdown files**, so one can be
-  written in any editor and passed around — and a prompt file supplies wording
-  only: it cannot add tools or steps, and a file that asks is imported as text
-  with the request named.
-- **Tools, gated by you.** Local actions through AppFunctions Jetpack and
-  external servers through the Model Context Protocol (MCP), with reusable
-  **skills** (instruction + tool allowlist + context) as pipeline steps. Every
-  sensitive or destructive call stops for explicit confirmation — the allowlist
-  is enforced at the executor level, not merely suggested.
-- **Reaches you from outside the app.** A share target, launcher shortcuts, and
-  a Quick Settings tile run your chosen pipeline over shared text/images or in
-  the background. **Triggers** (time, charging, Wi-Fi, network) fire a pipeline
-  on their own and report back with a notification. Every entry surface stays
-  inert until you bind a pipeline to it — a privacy-first default.
-- **Complements your automation app.** Tasker, MacroDroid or a shell script over
-  `adb` can ask the agent to run one pipeline you nominate: they decide *when*,
-  the agent does the language-model part of *what*. Off by default and behind an
-  explicit consent dialog; the binding is an allowlist, not a fallback, so a
-  request naming anything else is refused rather than redirected. Every inbound
-  request — accepted or refused — lands in a readable journal you can export as
-  a file when a profile misbehaves.
-- **Local-first by construction.** The Room database is SQLCipher-encrypted and
-  API keys are sealed with AES-GCM under a dedicated Android Keystore key.
-  On-device usage statistics and journal exports (build-time guards forbid any
-  network on either path), attachment images that never reach cloud models, and
-  voice input transcribed on-device before the pipeline runs. A **FOSS build** ships with
-  zero proprietary dependencies for F-Droid.
-- **Reliable over long, autonomous runs.** A validate-and-repair gate keeps
-  structured nodes producing well-formed output, exponential-backoff retry
-  smooths transient cloud failures, and background history compression keeps a
-  long session from overflowing the context window. Interrupted runs resume from
-  their last completed node; reopening a chat reconnects to a run still
-  executing in the background. A run nobody is watching is bounded by step and
-  token ceilings counted across the whole run tree — so an automation that
-  starts looping cannot quietly spend your cloud key — and a run stopped that
-  way says so instead of looking broken.
-- **Remembers what matters.** Long-term memory with semantic retrieval (RAG)
-  over past conversations, automatic fact extraction, manual "Save to memory,"
-  and a memory manager with search, provenance, compaction, and JSON
-  export / import.
-- **A chat list that stays a working list.** Archive a conversation to take it
-  out of the drawer without deleting a single message: it waits, whole and
-  exportable, on its own screen until you restore it — and opens read-only in
-  the meantime, so nothing brings it back except you.
-- **Settings that say what they do.** Options that carry a number, a borrowed
-  term, or a consequence beyond their own row explain themselves in one
-  sentence, opened in place from the **ⓘ** beside the label — so *Similarity
-  threshold*, *Recency half-life* and the retention windows stop being words you
-  have to look up elsewhere. There is exactly one copy of each explanation: the
-  reference table in the user guide is generated from the strings the app itself
-  shows. A setting whose behaviour is not wired up yet carries no explanation at
-  all rather than a plausible one — the reference table records which, and why.
-- **The documentation is reachable from inside the app — two of it offline.**
-  A **Help** screen lists the user guide, FAQ, cookbook, troubleshooting page
-  and automation contract, and marks each with where it is read from; Tools,
-  Triggers, the pipeline editor and the external-automation settings link
-  to the document that explains them — Tools and Triggers to the exact
-  section. The FAQ and the troubleshooting
-  guide **ship inside the app** and read with no network — which is when you
-  need them — with working links between them and headings a screen reader can
-  navigate. The rest open in a browser, at the tag of the version you installed,
-  so you read about the app you actually have. A build gate resolves every link
-  against the real document and refuses to bundle one the in-app renderer cannot
-  show, so a renamed heading or a dropped paragraph fails the build rather than
-  the reader.
+- On-device inference through LiteRT-LM: faster with a GPU, slower on CPU
+  alone. Cloud providers (OpenAI, Anthropic, Google Gemini, DeepSeek,
+  OpenRouter, Groq) and a server you run (Ollama, or any OpenAI-compatible one —
+  vLLM, LM Studio, llama.cpp) are optional and use your own key. **Test
+  connection** checks a provider or an MCP server without sending a prompt.
+- A pipeline editor with 14 node types, a searchable list for adding them,
+  auto-layout and inline validation — in the app, and as a
+  [browser editor](pipeline-editor.html) in one HTML file that opens from disk
+  with no network. Prompt variables such as `$DATE`, `$TOOLS` or
+  `$MEMORY_SUMMARY` are filled in fresh on every run. Prompts import and export
+  as Markdown files; a prompt file brings wording only and cannot add tools or
+  steps.
+- Built-in tools, such as Wikipedia search, files in the app's own workspace,
+  scheduling and HTTP requests to hosts you allow, and tools from Model Context
+  Protocol (MCP) servers you connect, plus reusable **skills** (an instruction
+  with a tool allowlist). By default a sensitive or destructive call stops for
+  your confirmation, and the card shows what you asked next to what the agent
+  wants to run. The allowlist is enforced where the tool runs.
+- A share target, launcher shortcuts and a Quick Settings tile run the pipeline
+  you choose. **Triggers** (time, charging, Wi-Fi, network) start a pipeline on
+  their own and report back with a notification. None of these does anything
+  until you bind a pipeline to it.
+- Tasker, MacroDroid or a script over `adb` can ask the agent to run one
+  pipeline you nominate. It is off by default and behind a consent dialog, and a
+  request naming any other pipeline is refused. Every request, accepted or
+  refused, lands in a journal you can export.
+- The database is encrypted with SQLCipher, and API keys are sealed with AES-GCM
+  under an Android Keystore key. Usage statistics and journal exports have no
+  network path, and a build check keeps it that way. Images you attach never go
+  to a cloud model, and voice input is transcribed on the phone. The **FOSS
+  build** has no proprietary dependencies.
+- Structured steps check the model's output and ask it to fix a malformed
+  answer, and cloud calls retry transient failures. An interrupted run resumes
+  from its last completed node. A run nobody is watching stops at step and token
+  limits counted across the whole run tree, and says why it stopped.
+- Every run records its seed, sampler, versions and the SHA-256 of each model
+  file it used. From the console you can **verify** a finished run — its
+  on-device calls are repeated from their recorded prompts and compared byte for
+  byte, and tools never run again — **run it again with the same seed**, or
+  **export its trace** as one JSON file. Promised on CPU, and on GPU at the same
+  context window, on the same device; not on another phone, and nothing is
+  signed.
+- Long-term memory: facts extracted from conversations or saved by hand, found
+  by meaning when a step reads memory, with a manager for search, provenance,
+  compaction and JSON export and import. Memory search works in English — see
+  [Known limitations](docs/faq.md#known-limitations).
+- Archiving a chat takes it out of the drawer without deleting it. It stays
+  readable and exportable on its own screen until you restore it.
+- Settings with a number, a borrowed term or a side effect explain themselves in
+  one sentence behind the **ⓘ** next to the label. The reference table in the
+  user guide is generated from the same strings.
+- **More → Help** lists the user guide, FAQ, cookbook, troubleshooting page and
+  automation contract. The FAQ and the troubleshooting page ship inside the app
+  and read offline; the rest open in a browser at the tag of the version you
+  installed. The build fails if a link points at a heading that no longer
+  exists.
 
 The full feature tour lives in the [user guide](docs/user-guide.md).
 
@@ -211,8 +198,10 @@ browser's `prefers-color-scheme`.
   apps only, so an ordinary install cannot do it. Publishing them, which this
   app does, is open to any app.)
 - Approximately **2 GB of free RAM** available for the LLM at runtime.
-- Optional: hardware acceleration via **NPU or GPU** for noticeably faster
-  inference. CPU-only operation works but is slower.
+- Optional: **GPU** acceleration for noticeably faster inference. CPU-only
+  operation works but is slower. The NPU is not used: LiteRT-LM needs a
+  vendor dispatch library and a model compiled for the chip, and the app
+  ships neither.
 - Optional: **location permission**, requested only if you scope a Wi-Fi
   trigger to specific network names (Android ties the Wi-Fi name to location).
   Nothing else uses it, and the name never leaves the device.
@@ -251,8 +240,7 @@ on an Android 14+ device. Two flavours are published:
 > signed with a real release key. Android refuses to update an install whose
 > signer changed, so you must uninstall the old build — which clears its local
 > data — before installing `0.7.0`. Export anything you want to keep first.
-> This is a one-time break; later releases update in place. See the full
-> pre-release notice below.
+> This is a one-time break; later releases update in place.
 
 ### Build from source
 
@@ -326,9 +314,12 @@ to log into, and nothing is uploaded for the app to work.
   memory, run traces — is SQLCipher-encrypted, and API keys, the Hugging Face
   token, and MCP credentials are sealed with AES-GCM under a dedicated Android
   Keystore key.
-- **The agent asks before it acts.** Destructive and sensitive tool calls stop
-  at a human-in-the-loop confirmation, including when a pipeline runs in the
-  background from a trigger.
+- **The agent asks before it acts.** By default, destructive and sensitive tool
+  calls stop at a confirmation, including when a pipeline runs in the background
+  from a trigger. A destructive call asks under every setting.
+
+What the agent can reach on the phone, and how to check its traffic yourself,
+is in [SECURITY.md](SECURITY.md#what-the-agent-can-reach-and-how-to-check).
 
 The policy in full — what is stored on the device, every path that can send
 data off it, and how to switch each one off — is [PRIVACY.md](PRIVACY.md). The
@@ -375,33 +366,23 @@ experimentation. Expect rough edges:
   pipeline JSON schema, settings layout) between versions.
 - On-device storage formats (encrypted preferences, exported pipeline JSON)
   may still change between versions.
-- **Shared pipeline files are not yet a compatibility contract.** Exported
-  pipelines and bundles carry a version stamp (`schemaVersion: 1`,
-  `bundleVersion: 1`), but before 1.0 that stamp is a marker, not a promise:
-  the schema may change without a major bump, and no import-time migration is
-  provided. A file whose stamp does not match the build importing it is not
-  rejected — it is imported on a **best-effort** basis behind an explicit
-  warning. What the import *does* now tell you is exactly which settings it
-  could not read, by name, whether or not the stamp matches — because the
-  format adds fields without bumping the stamp, so a matching version is no
-  guarantee that nothing was lost. Keep the original file anyway: naming the
-  loss is not the same as preventing it. At 1.0 at
-  the latest the format becomes a semantic-versioning contract: a breaking
-  change then means a major `schemaVersion` plus a migration applied on import.
+- **Shared pipeline files are not yet a compatibility contract.** Exports carry
+  a version stamp (`schemaVersion: 1`, `bundleVersion: 1`), but before 1.0 it is
+  only a marker: the format can change without a new stamp, and nothing migrates
+  an old file on import. A file whose stamp does not match is imported on a
+  best-effort basis behind a warning, and every import names the settings it
+  could not read. Keep the original file. From 1.0, a breaking change will mean
+  a new major `schemaVersion` and a migration on import.
 - **Upgrades preserve local data.** Every Room schema-version bump ships with
   an explicit migration, so an in-place update keeps your chat history,
   long-term memory, run traces, custom pipelines, and saved presets / prompt
   templates. (Note: *downgrading* to an older build recreates the database
   empty — forward migrations cannot be reversed — so export anything you want
   to keep before installing an older version.)
-- **The signing identity changed at `0.7.0` — a one-time upgrade break.**
-  Builds up to and including `0.6.0` were signed with the Android debug
-  keystore; `0.7.0` is the first release signed with a real release key.
-  Android **refuses to update an install in place when the signer changes**
-  (signature mismatch), so upgrading from `0.6.0` or earlier means uninstalling
-  the old build first — which clears its local data. Export anything you want
-  to keep before you do. Releases from `0.7.0` onward share one signer within
-  a channel and update in place normally.
+
+This README describes the `main` branch, which can be ahead of the latest
+release; see *Unreleased* in [CHANGELOG.md](CHANGELOG.md) for what is not
+released yet.
 
 ## License
 

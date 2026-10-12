@@ -1,8 +1,9 @@
 package app.knotwork.android.domain.usecases
 
 import app.knotwork.android.domain.memoryio.MemoryJsonSerializer
+import app.knotwork.android.domain.repositories.MemoryHistoryRepository
 import app.knotwork.android.domain.repositories.MemoryRepository
-import app.knotwork.android.domain.repositories.SettingsRepository
+import app.knotwork.android.domain.repositories.MemorySettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -19,17 +20,20 @@ import javax.inject.Inject
  * The on-disk shape is owned by [MemoryJsonSerializer] (`schemaVersion: 1`):
  * a top-level object carrying `embeddingProviderId` (the provider that produced
  * the stored vectors — lets an importing device detect a vector-space
- * mismatch), `exportedAt`, and a `chunks` array. The matching reader is
+ * mismatch), `exportedAt`, and a `chunks` array. Each chunk carries its earlier
+ * versions, so a correction's history moves with it. The matching reader is
  * [MemoryImportUseCase].
  *
  * @property memoryRepository Source of the chunks to export.
- * @property settingsRepository Source of the active embedding provider id
+ * @property memoryHistoryRepository Source of the chunks' earlier versions.
+ * @property memorySettings Source of the active embedding provider id
  *   stamped onto the document.
  * @return Number of chunks written.
  */
 class ExportMemoryBaseUseCase @Inject constructor(
     private val memoryRepository: MemoryRepository,
-    private val settingsRepository: SettingsRepository,
+    private val memorySettings: MemorySettings,
+    private val memoryHistoryRepository: MemoryHistoryRepository,
 ) {
     /**
      * Serialises chunks into [target] and returns the number of entries
@@ -50,11 +54,13 @@ class ExportMemoryBaseUseCase @Inject constructor(
     ): Int = withContext(Dispatchers.IO) {
         val memories = memoryRepository.getAllMemories()
             .let { all -> if (ids == null) all else all.filter { it.id in ids } }
-        val providerId = settingsRepository.activeEmbeddingProviderId.first()
+        val providerId = memorySettings.activeEmbeddingProviderId.first()
+        val exportedIds = memories.mapTo(HashSet()) { it.id }
         val payload = MemoryJsonSerializer.serialize(
             chunks = memories,
             embeddingProviderId = providerId,
             exportedAt = nowMillis,
+            history = memoryHistoryRepository.getAllHistory().filterKeys { it in exportedIds },
         )
         target.bufferedWriter().use { writer ->
             writer.write(payload)

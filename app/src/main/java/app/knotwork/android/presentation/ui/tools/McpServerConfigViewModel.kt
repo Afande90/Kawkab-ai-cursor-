@@ -3,13 +3,19 @@ package app.knotwork.android.presentation.ui.tools
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.knotwork.android.domain.connection.ConnectionPreconditions
+import app.knotwork.android.domain.connection.ConnectionRefusal
+import app.knotwork.android.domain.connection.McpConnectionChecker
 import app.knotwork.android.domain.models.McpAuth
 import app.knotwork.android.domain.models.McpServerConfig
 import app.knotwork.android.domain.models.McpTransport
 import app.knotwork.android.domain.models.UpdateMcpServerResult
 import app.knotwork.android.domain.repositories.McpServerRepository
-import app.knotwork.android.domain.repositories.SettingsRepository
+import app.knotwork.android.domain.repositories.NetworkSettings
+import app.knotwork.android.domain.repositories.ToolSettings
 import app.knotwork.android.domain.services.CleartextPolicy
+import app.knotwork.android.presentation.ui.common.ConnectionTest
+import app.knotwork.android.presentation.ui.common.ConnectionTestState
 import app.knotwork.design.screens.tools.AddMcpServerForm
 import app.knotwork.design.screens.tools.McpAuthSelector
 import app.knotwork.design.screens.tools.McpHeaderRow
@@ -18,10 +24,16 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.time.TimeSource
 
 /**
  * ViewModel for the standalone `McpServerConfigScreen`.
@@ -29,24 +41,30 @@ import javax.inject.Inject
  * Drives the [AddMcpServerForm] state for both Add and Edit modes:
  *
  *  - **Add** — no `originalUrl` nav argument; submission calls
- *    `SettingsRepository.addMcpServer`.
+ *    `ToolSettings.addMcpServer`.
  *  - **Edit** — `originalUrl` is supplied via the nav graph; the VM
- *    fetches the existing config from `SettingsRepository.mcpServers`
+ *    fetches the existing config from `ToolSettings.mcpServers`
  *    on first observation and pre-fills the form. Submission calls
- *    `SettingsRepository.updateMcpServer` and disconnects the
+ *    `ToolSettings.updateMcpServer` and disconnects the
  *    underlying client so the next fetch picks up new headers.
+ *
+ * Also owns the form's Test connection row ([connectionTestState]): it checks the values in the
+ * form through [McpConnectionChecker] and saves nothing — *Add server* / *Save* does.
  */
 @HiltViewModel
 class McpServerConfigViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    private val settingsRepository: SettingsRepository,
+    private val toolSettings: ToolSettings,
+    private val networkSettings: NetworkSettings,
     private val mcpServerRepository: McpServerRepository,
+    private val connectionChecker: McpConnectionChecker,
+    timeSource: TimeSource.WithComparableMarks,
 ) : ViewModel() {
 
     /**
      * Original URL passed via the nav argument. `null` or blank means
      * Add mode; non-null means Edit mode and triggers a one-shot read
-     * from `SettingsRepository.mcpServers` to populate the form.
+     * from `ToolSettings.mcpServers` to populate the form.
      */
     private val originalUrl: String? = savedStateHandle
         .get<String>(EXTRA_ORIGINAL_URL)
@@ -68,19 +86,37 @@ class McpServerConfigViewModel @Inject constructor(
     private val _events = MutableStateFlow<Event?>(null)
     val events: StateFlow<Event?> = _events.asStateFlow()
 
+    private val connectionTest = ConnectionTest(viewModelScope, timeSource)
+
+    /**
+     * The Test connection row: disabled with a reason, idle, running since a moment, or finished
+     * with what the check found. A result is dropped as soon as a value it was run with changes.
+     */
+    val connectionTestState: StateFlow<ConnectionTestState> = connectionTest.state
+
     init {
         // The consent notice is derived from the typed URL and the approved set,
         // so it appears and disappears as the user edits rather than only at save
         // time — and it stays correct if approval happens from elsewhere.
         viewModelScope.launch {
-            settingsRepository.approvedCleartextOrigins.collect { approved ->
+            networkSettings.approvedCleartextOrigins.collect { approved ->
                 approvedOrigins = approved
                 _form.update { it.copy(cleartextConsentOrigin = consentOriginFor(it.url, approved)) }
             }
         }
+        // The Test row reads the server as the form would save it — the display name aside,
+        // which no check reads — and the approved origins.
+        combine(
+            _form.map { it.toDomain().copy(name = null) }.distinctUntilChanged(),
+            networkSettings.approvedCleartextOrigins,
+        ) { config, approved -> config to approved }
+            .onEach { (config, approved) ->
+                connectionTest.onInputs(inputs = config to approved, refusal = testRefusal(config.url, approved))
+            }
+            .launchIn(viewModelScope)
         if (originalUrl != null) {
             viewModelScope.launch {
-                val existing = settingsRepository.mcpServers.first().firstOrNull { it.url == originalUrl }
+                val existing = toolSettings.mcpServers.first().firstOrNull { it.url == originalUrl }
                 if (existing != null) {
                     // Read the approved set here rather than relying on the
                     // collector above having run first: the two coroutines are
@@ -88,13 +124,7 @@ class McpServerConfigViewModel @Inject constructor(
                     // computed from the still-empty URL. The user would then see
                     // no banner and a Save that refuses with "approve the
                     // connection above" — pointing at nothing.
-                    // Read the approved set here rather than relying on the
-                    // collector above having run first: the two coroutines are
-                    // unordered, and if this one wins, the notice would be
-                    // computed from the still-empty URL. The user would then see
-                    // no banner and a Save that refuses with "approve the
-                    // connection above" — pointing at nothing.
-                    val approved = settingsRepository.approvedCleartextOrigins.first()
+                    val approved = networkSettings.approvedCleartextOrigins.first()
                     _form.update {
                         it.fromConfig(existing)
                             .copy(cleartextConsentOrigin = consentOriginFor(existing.url, approved))
@@ -121,7 +151,7 @@ class McpServerConfigViewModel @Inject constructor(
      */
     fun onApproveCleartext() {
         val origin = _form.value.cleartextConsentOrigin ?: return
-        viewModelScope.launch { settingsRepository.approveCleartextOrigin(origin) }
+        viewModelScope.launch { networkSettings.approveCleartextOrigin(origin) }
     }
 
     /**
@@ -132,6 +162,28 @@ class McpServerConfigViewModel @Inject constructor(
      */
     private fun consentOriginFor(url: String, approved: Set<String>): String? =
         (CleartextPolicy.classify(url, approved) as? CleartextPolicy.Verdict.NeedsApproval)?.origin
+
+    /**
+     * Runs Test connection with the values in the form. Does nothing while the row is disabled or
+     * a check is running.
+     */
+    fun onTestConnection() {
+        val config = _form.value.toDomain()
+        connectionTest.start(CleartextPolicy.hostOf(config.url) ?: config.url) { connectionChecker.check(config) }
+    }
+
+    /** Cancels a running Test connection; the row goes back to idle. */
+    fun onCancelConnectionTest() {
+        connectionTest.cancel()
+    }
+
+    /**
+     * Why Test connection cannot run for [url]: the checks it applies itself, then the form's own
+     * stricter reading of an address (a scheme the server form accepts).
+     */
+    private fun testRefusal(url: String, approved: Set<String>): ConnectionRefusal? =
+        ConnectionPreconditions.mcp(url, approved)
+            ?: ConnectionRefusal.NotAnAddress.takeIf { validateUrl(input = url, requireNonEmpty = true) != null }
 
     fun onNameChange(value: String) = _form.update { it.copy(name = value) }
 
@@ -194,7 +246,7 @@ class McpServerConfigViewModel @Inject constructor(
                 // Drop the cached client so the next fetch reconnects with the
                 // new headers/transport/URL instead of reusing the old session.
                 mcpServerRepository.disconnect(serverUrl = originalUrl)
-                val outcome = settingsRepository.updateMcpServer(originalUrl = originalUrl, updated = config)
+                val outcome = toolSettings.updateMcpServer(originalUrl = originalUrl, updated = config)
                 when (outcome) {
                     is UpdateMcpServerResult.Success -> _events.value = Event.Saved
                     is UpdateMcpServerResult.UrlCollision -> {
@@ -207,7 +259,7 @@ class McpServerConfigViewModel @Inject constructor(
                     }
                 }
             } else {
-                settingsRepository.addMcpServer(config = config)
+                toolSettings.addMcpServer(config = config)
                 _events.value = Event.Saved
             }
         }

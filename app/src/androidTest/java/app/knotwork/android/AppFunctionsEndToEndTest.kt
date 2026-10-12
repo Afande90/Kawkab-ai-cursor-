@@ -18,6 +18,7 @@ import app.knotwork.android.domain.engine.executors.ToolNodeExecutor
 import app.knotwork.android.domain.engine.structured.CloudStructuredInferenceClientFactory
 import app.knotwork.android.domain.engine.structured.StructuredOutputGate
 import app.knotwork.android.domain.models.AgentOrchestratorState
+import app.knotwork.android.domain.models.ApprovalRequestContext
 import app.knotwork.android.domain.models.NodeContextConfig
 import app.knotwork.android.domain.models.NodeModel
 import app.knotwork.android.domain.models.NodeOutput
@@ -28,6 +29,7 @@ import app.knotwork.android.domain.models.ToolRisk
 import app.knotwork.android.domain.services.ApprovalNotifier
 import app.knotwork.android.domain.usecases.LoadModelUseCase
 import app.knotwork.android.domain.usecases.RecordTriggerHitlEventUseCase
+import app.knotwork.android.domain.usecases.ResolveApprovalRequestContextUseCase
 import app.knotwork.android.testing.DeviceOnlyInstrumentedTest
 import dagger.hilt.android.EntryPointAccessors
 import io.mockk.coEvery
@@ -361,7 +363,7 @@ class AppFunctionsEndToEndTest {
      * Scenario 4 — Risk override flow.
      *
      * Persists a [ToolRisk.READ_ONLY] override for the probe's echo through
-     * [SettingsRepository.setToolRiskOverride] and verifies that
+     * [ToolSettings.setToolRiskOverride] and verifies that
      * [ToolRepository.getRisk] resolves the same name to READ_ONLY on the next call.
      * The HITL gate then short-circuits to a direct execution because READ_ONLY tools
      * skip the approval flow (see `ToolNodeExecutor.execute`'s `needsApproval` branch).
@@ -761,6 +763,7 @@ class AppFunctionsEndToEndTest {
                 toolName: String,
                 arguments: String,
                 risk: ToolRisk,
+                requestContext: ApprovalRequestContext?,
             ) {
                 // Notification side effects are not part of this test's contract; the gate
                 // suspension is observed through the WaitingForApproval state emission, not
@@ -775,6 +778,7 @@ class AppFunctionsEndToEndTest {
                 toolName: String,
                 arguments: String,
                 risk: ToolRisk,
+                requestContext: ApprovalRequestContext?,
             ) {
                 // Same rationale: the park is asserted through the durable record.
             }
@@ -794,14 +798,19 @@ class AppFunctionsEndToEndTest {
             toolRepository = entryPoint.toolRepository(),
             toolInvocationGate = ToolInvocationGate(
                 toolRepository = entryPoint.toolRepository(),
-                settingsRepository = entryPoint.settingsRepository(),
+                toolSettings = entryPoint.settingsRepository(),
                 approvalNotifier = silentNotifier,
                 chatRepository = entryPoint.chatRepository(),
                 pendingInteractionRepository = entryPoint.pendingInteractionRepository(),
                 recordTriggerHitlEvent = mockk<RecordTriggerHitlEventUseCase>(relaxed = true),
+                // What an approval shows is not this test's contract either.
+                resolveRequestContext = mockk<ResolveApprovalRequestContextUseCase>().also {
+                    coEvery { it(any()) } returns
+                        null
+                },
             ),
             structuredOutputGate = StructuredOutputGate(),
-            settingsRepository = entryPoint.settingsRepository(),
+            runSettings = entryPoint.settingsRepository(),
             // This E2E covers a fixed on-device TOOL node; no cloud structured
             // client is needed, so the factory always yields null.
             cloudStructuredFactory = CloudStructuredInferenceClientFactory { _, _ -> null },

@@ -1,11 +1,13 @@
 package app.knotwork.android.presentation.notifications
 
 import android.Manifest
+import android.app.Notification
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.os.Build
 import app.knotwork.android.domain.constants.NotificationChannels
+import app.knotwork.android.domain.constants.NotificationIds
 import app.knotwork.android.domain.repositories.SettingsRepository
 import io.mockk.every
 import io.mockk.mockk
@@ -13,6 +15,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -124,6 +127,20 @@ class ScheduledTaskNotifierImplTest {
     }
 
     @Test
+    fun `given a run's answer when notified then a locked screen shows the title only`() = runTest {
+        enable()
+
+        notifier.notifyCompleted("session-1", "Your blood test results are normal.")
+
+        val posted = Shadows.shadowOf(notificationManager()).allNotifications.single()
+        val public = posted.publicVersion
+        assertEquals(Notification.VISIBILITY_PRIVATE, posted.visibility)
+        assertEquals("Task completed", public.extras.getCharSequence(Notification.EXTRA_TITLE).toString())
+        assertEquals(null, public.extras.getCharSequence(Notification.EXTRA_TEXT))
+        assertEquals(null, public.extras.getCharSequence(Notification.EXTRA_BIG_TEXT))
+    }
+
+    @Test
     fun `given enabled when notifyTriggerFired is called then posts fired title with trigger name body`() = runTest {
         enable()
 
@@ -220,5 +237,33 @@ class ScheduledTaskNotifierImplTest {
 
         // Same session — stable id, the shade shows only the latest outcome.
         assertEquals(1, Shadows.shadowOf(notificationManager()).size())
+    }
+
+    // ── Overdue trigger ──────────────────────────────────────────────────────
+
+    @Test
+    fun `given an overdue trigger then the notice opens that trigger in its own slot`() = runTest {
+        enable()
+
+        notifier.notifyTriggerStale("trig-9", "Morning brief", System.currentTimeMillis() - 3 * 60 * 60_000L)
+
+        val shadow = Shadows.shadowOf(notificationManager())
+        val posted = shadow.getNotification(NotificationIds.Family.TRIGGER_STALE.idFor("trig-9"))
+        assertNotNull("The notice is posted in the overdue-trigger family's slot", posted)
+        val savedIntent: Intent = Shadows.shadowOf(posted.contentIntent).savedIntent
+        assertEquals("knotwork://triggers/trig-9", savedIntent.data.toString())
+        val body = posted.extras.getCharSequence(android.app.Notification.EXTRA_TEXT).toString()
+        assertTrue("the body names the trigger: $body", body.contains("Morning brief"))
+        assertTrue("the body says what the detail banner says: $body", body.contains("has not been checked since"))
+    }
+
+    @Test
+    fun `given notifications disabled when a trigger is overdue then nothing is posted`() = runTest {
+        every { settings.scheduledTaskNotificationsEnabled } returns flowOf(false)
+        grantPostNotifications()
+
+        notifier.notifyTriggerStale("trig-9", "Morning brief", 0L)
+
+        assertEquals(0, Shadows.shadowOf(notificationManager()).size())
     }
 }

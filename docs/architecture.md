@@ -73,7 +73,7 @@ interfaces.
 The presentation layer is hosted by a single `NavHost` declared in
 `presentation/ui/navigation/AppNavGraph.kt`. The graph wires:
 
-- **Splash** → **Onboarding** (only when `SettingsRepository.isFirstLaunch`
+- **Splash** → **Onboarding** (only when `AppStateSettings.isFirstLaunch`
   is `true`) → **Chat tab**. After onboarding, the flag is persisted as
   `false` so subsequent launches go straight to Chat.
 - Four top-level **tabs** rendered by `AppShellScaffold`'s Material3
@@ -142,8 +142,9 @@ class and the ViewModel becomes a thin coordinator:
   seam, and the reattach delegate restores suspension cards through seams into
   the HITL delegate.
 
-`ChatHomeViewModel` is decomposed into eight delegates — `ChatHomeConsoleDelegate`
-(console pane), `ChatHomeVoiceDelegate` (voice input), `ChatHomeAttachmentDelegate`
+`ChatHomeViewModel` is decomposed into nine delegates — `ChatHomeConsoleDelegate`
+(console pane), `ChatHomeRunDelegate` (the run strip: settings, check, run
+again, trace export), `ChatHomeVoiceDelegate` (voice input), `ChatHomeAttachmentDelegate`
 (image attachments), `ChatHomeTransferDelegate` (import / export / save-to-memory),
 `ChatHomePipelineBindingDelegate` (pipeline subtitle + fallback),
 `ChatHomeThreadsDelegate` (sessions + drawer + CRUD), `ChatHomeHitlDelegate`
@@ -153,6 +154,20 @@ transformers (`restingVisual`, `withPendingCleared`, `isRestingOrCold`,
 `withConsoleProjectionsCleared`) live as `internal` top-level functions in
 `ChatHomeStateReducers.kt` / the console delegate file. The coordinator itself is
 left around the agent-execution core that the delegates orchestrate around.
+
+`OrchestratorViewModel` — the one view model the pipeline library and editor
+share — follows the same pattern with four delegates:
+`OrchestratorLibraryDelegate` (the saved list, the default pipeline and
+entry-surface bindings, open / create / rename / duplicate / delete),
+`OrchestratorTransferDelegate` (importing a file or bundle, exporting a
+bundle), `OrchestratorPresetsDelegate` (pipeline and prompt presets) and
+`OrchestratorNodeSheetDelegate` (what the node settings sheet lists, and the
+prompt preview). It keeps the open pipeline: editing its graph, saving it, and
+the validation wording, which lives in the pure `OrchestratorErrorText` so a
+save, an import and a preset save word the same failure alike. Each delegate
+takes its collaborators as one injected holder (`Orchestrator…UseCases` /
+`…Sources`), so the view model's constructor names five things rather than
+twenty-three.
 
 ---
 
@@ -226,7 +241,10 @@ Step-by-step notes:
    multibinding) runs the node. Long-running nodes (`LITE_RT`, `CLOUD`)
    emit token-streaming and progress events as `NodeOutput.State`
    values; the terminal `NodeOutput.Result` carries the node's textual
-   output to the engine.
+   output to the engine. A node that fails reports it in that result; the
+   engine ends the run with a single `AgentOrchestratorState.Error`, or —
+   inside a queue whose `stopOnError` is off — makes the error that item's
+   result and goes on.
 6. While the graph executes, the engine emits
    `AgentOrchestratorState.ConsoleLog` events. The view-model folds
    them into the `consoleLines` flow exposed by `ChatHomeViewModel`,
@@ -247,14 +265,21 @@ Step-by-step notes:
 9. On the terminal `Completed` state, `ChatHomeViewModel` notifies the
    app-scoped `MemoryAutoExtractionCoordinator` (domain service). After a
    30-second per-session debounce — and only when
-   `SettingsRepository.autoExtractEnabled` is set — it runs
+   `MemorySettings.autoExtractEnabled` is set — it runs
    `MemoryExtractionUseCase`, which makes one local-model pass to distil
    durable facts from the recent dialogue — the user's and the assistant's
    turns only; tool observations and other `SYSTEM` rows are never read —
    embeds them with the active
-   `EmbeddingProvider`, drops near-duplicates, and writes survivors to
-   `memory_chunks` tagged with `MemorySource.ChatSession`. This is
-   fire-and-forget background work and never blocks or fails the chat.
+   `EmbeddingProvider`, and finds each fact's nearest stored chunk. Below the
+   near-duplicate threshold the fact is new. At or above it the vector has only
+   found a candidate, so `MemorySupersedeJudge` asks the local model whether the
+   fact restates the chunk (skipped), updates it (the chunk is replaced in place
+   and its old text goes to `memory_chunk_history`; a pinned chunk is never
+   replaced — the update is stored beside it and linked in
+   `memory_pending_updates`), or is a different fact (saved as new, as is any
+   fact the judge cannot decide on). New facts go to `memory_chunks` tagged with
+   `MemorySource.ChatSession`. This is fire-and-forget background work and never
+   blocks or fails the chat.
 
 ### 2.1. Memory export / import and lazy re-embedding
 
@@ -278,6 +303,14 @@ whether a chunk is retrieved at all are not taken from a file: every chunk is
 imported unpinned (the count of pins the file carried,
 `MemoryExportDocument.pinnedInFile`, becomes a notice in the import dialog),
 and a `timestamp` later than the parse is capped to it.
+
+Each chunk carries its earlier versions (`memory_chunk_history`) under an
+optional `history` key — additive, so `schemaVersion` stays 1. On import a
+version is only ever history: it is stored with its chunk in the same
+transaction (`MemoryHistoryDao.importChunks`), never as a chunk of its own; at
+most ten of the newest are kept and their dates are capped like a chunk's. A
+chunk waiting to update a pinned one is exported as an ordinary chunk — pins
+are not taken from a file, so neither is the pair.
 
 When the document's embedding provider differs from the importing
 device's active **resolved** provider — `EmbeddingProviderResolver.resolve()`,
@@ -316,19 +349,25 @@ flowchart TB
     subgraph Extraction["Extraction (after a run completes)"]
         Done[Pipeline Completed] --> Coord[MemoryAutoExtractionCoordinator<br/>debounce 30s · gate on autoExtractEnabled<br/>defer while agent busy]
         Coord --> Extract[MemoryExtractionUseCase<br/>LLM distils JSON facts]
-        Manual[Save to memory<br/>SaveMessageToMemoryUseCase] --> Embed
         Extract --> Embed[EmbeddingProvider.embed<br/>resolved per call]
-        Embed --> Dedup{cosine ≥ 0.92<br/>duplicate?}
-        Dedup -- yes --> Drop[skip]
-        Dedup -- no --> Store[(memory_chunks<br/>Room + SQLCipher)]
+        Embed --> Near{nearest stored chunk<br/>cosine ≥ 0.92?}
+        Near -- no --> Store[(memory_chunks<br/>Room + SQLCipher)]
+        Near -- yes --> Judge{MemorySupersedeJudge<br/>local model reads both}
+        Judge -- SAME --> Drop[skip]
+        Judge -- DIFFERENT / undecided --> Store
+        Judge -- UPDATE --> Replace[replace in place<br/>old text → memory_chunk_history]
+        Judge -- UPDATE of a pinned chunk --> Wait[waits beside it<br/>memory_pending_updates]
+        Replace --> Store
+        Wait --> Store
+        Manual[Save to memory<br/>SaveMessageToMemoryUseCase] --> ManualEmbed[EmbeddingProvider.embed] --> Store
     end
 
     subgraph Retrieval["Retrieval (next session, longTermMemory node)"]
-        Engine[GraphExecutionEngine<br/>resolveMemoriesOnce · once per run] --> Key[MemoryRetrievalQueryResolver<br/>interactive → userPrompt<br/>background → declared query<br/>→ node input → userPrompt]
+        Engine[NodeInputComposer<br/>memory retrieved once per run] --> Key[MemoryRetrievalQueryResolver<br/>interactive → userPrompt<br/>background → declared query<br/>→ node input → userPrompt]
         Key --> Retrieve[RetrieveRelevantMemoryUseCase]
         Retrieve --> Search[findSimilarMemories<br/>cosine over the full table]
         Store --> Search
-        Search --> Rerank[MemoryReranker<br/>threshold · recency bonus · pinned boost<br/>verbatim over summaries · near-duplicate collapse]
+        Search --> Rerank[MemoryReranker<br/>threshold · recency bonus · pinned boost · manual bonus<br/>verbatim over summaries · near-duplicate collapse]
         Rerank --> Console[ConsoleEvent.MemoryAccess<br/>+ recordUsage]
         Console --> Block[NodeContextBuilder<br/>--- Long-Term Memory ---]
         Block --> LLM[Node executor → LLM]
@@ -363,7 +402,10 @@ Key invariants:
 3. **Pinned is sacred.** Pinned chunks carry an extra boost, bypass the
    threshold filter on retrieval, win any near-duplicate collapse they take
    part in, and are never compaction candidates — the one mechanism a user
-   has to guarantee a fact stays findable.
+   has to guarantee a fact stays findable. A chunk the user saved by hand
+   (`MemorySource.Manual`) carries a smaller flat bonus (0.03, below the 0.15
+   recency bonus), so at about equal relevance and age the user's wording
+   outranks a model's extraction; it never buys admission past the threshold.
 4. **Age never hides a fact.** `findSimilarMemories` scans the *entire*
    `memory_chunks` table on every query — there is no recency window on
    visibility — and `MemoryReranker` scores age as an **additive** bonus, so
@@ -376,10 +418,12 @@ Key invariants:
    (`CompactionCoverageVerifier`: at least as close to each member as the
    cluster's own centroid, within a small margin), and writes the summary plus
    those deletions in a single transaction. Members the summary failed to cover
-   stay stored verbatim; a summary covering fewer than two members is discarded
-   entirely. On the read side the same contract holds in reverse — a summary is
-   dropped from the results whenever the source it was distilled from, or a
-   verbatim restatement of it, is retrievable.
+   stay stored verbatim, and so does a member the embedder cannot tell apart
+   from another member (`INDISTINGUISHABLE_SIMILARITY`, 0.98 — the built-in
+   encoder folds Russian text into one direction); a summary covering fewer than
+   two members is discarded entirely. On the read side the same contract holds
+   in reverse — a summary is dropped from the results whenever the source it was
+   distilled from, or a verbatim restatement of it, is retrievable.
 6. **One similarity metric.** Search, extraction dedup, retrieval-side
    near-duplicate collapse and compaction clustering all go through
    `MemoryVectorSimilarity`, which also owns the near-duplicate threshold —
@@ -398,13 +442,101 @@ Pipelines are first-class. A `PipelineGraph` is a directed graph of typed
 runs them is `GraphExecutionEngine`, decomposed into per-type
 `NodeExecutor` strategies.
 
+The engine itself is an entry point. It validates the graph, announces an
+image, builds or inherits the run tree, opens one of each per-invocation
+collaborator, and hands the graph to `RunWalk`. Each step of the walk asks
+the ledger first, then enters the node, replays or runs it, and handles a
+failure. It then records the step, shows it to the repetition detector, and
+moves on.
+
+```mermaid
+flowchart LR
+    Engine["GraphExecutionEngine<br/>validate · image line · run tree"] --> Walk["RunWalk<br/>one step at a time"]
+    Engine -. builds .-> Tree["RunTreeContext<br/>ledger · detector · notes · image"]
+    Walk --> Ceiling{"ledger:<br/>ceiling reached?"}
+    Ceiling -- "park or stop" --> Records["RunRecordWriter<br/>current node · spend · WAITING_*"]
+    Ceiling -- clear --> Replay["CheckpointReplay<br/>recorded prefix"]
+    Replay -- "no record" --> Live["LiveNodeStep<br/>executor · charge · soft notice"]
+    Live --> Inputs["NodeInputComposer<br/>prompt · context · image"]
+    Live --> Inference["RecordingNodeInference<br/>seeded, recorded model calls"]
+    Live --> Records
+    Walk --> Console["RunConsole<br/>console + trace, one seq"]
+    Walk --> Routing["GraphRouting<br/>next node · estimate"]
+    Walk --> Queue["QueueCursor<br/>items · results · summary"]
+```
+
+The collaborators, each covering one concern:
+
+- **`RunWalk`** — the walk: the node it is on, the text it carries there and
+  whether a model wrote it, the step count and estimate it reports, and the
+  end of a walk that did not reach OUTPUT — a protective stop or a branch with
+  nowhere left to go.
+
+- **`RunTreeContext`** — what every invocation of one run tree shares: the
+  spend ledger, the repetition detector, pending advice, the image, the
+  generating model, the origin and the run header. The engine builds it for the
+  root run; each node receives it in `ExecutionScope.run`, and a `PIPELINE` node
+  hands it to its sub-pipeline one level deeper, extending its seed path by the
+  node and visit.
+- **Run header (`RunHeaders`)** — chosen once, when a root run first starts, and
+  stored on its `pipeline_runs` row: the run seed, the sampler (temperature,
+  top-k, top-p), the app and runtime versions and the device. A resumed run reads
+  it back, so every on-device call of the run — before and after a pause — uses
+  the same sampler and seeds derived from the same run seed.
+- **`RunConsole`** — one invocation's console lines and trace records, in a
+  single `seq` numbering that a resumed run continues. It shows console lines
+  as they are pushed, and records each node's input and output — with the visit
+  index and the SHA-256 of both texts — for the checkpoint replay, and each model
+  call a node made. A TOOL or CLOUD node's record is flushed at once.
+- **`NodeInference` (`RecordingNodeInference`)** — a node's only way to its
+  model during one visit, passed in `ExecutionScope.inference`. Every on-device
+  call runs on the run header's sampler with a seed derived (`RunSeeds`) from the
+  run seed, the seed path, the node, the visit and the call's index, and is kept
+  with its full prompt and output and what the engine ran on — model file,
+  backend, context window. `LiveNodeStep` drains the kept calls into the trace
+  when the node finishes, parks or fails, before the node's own record; a call is
+  buffered rather than written because an executor's flow may produce on another
+  coroutine than the one owning `seq`. A cloud call leaves only a note of the
+  provider. No executor calls the engine around this seam
+  (`LocalInferenceSeamKonsistTest`).
+- **`GraphRouting`** — where the run goes after a node, from the graph's edges
+  and the node's verdict: IF_CONDITION's `True`/`False` edge, INTENT_ROUTER's
+  labelled edge or its fallback, EVALUATION's verdict port, otherwise the first
+  edge. It also gives a routing node its choices and estimates the steps ahead
+  for the progress indicator.
+- **`QueueCursor`** — one QUEUE_PROCESSOR loop: it reads the item list, hands
+  each item the results before it, survives a failed item when the queue's
+  `stopOnError` is off, and leaves by the `Done` edge with a summary.
+- **`RunRecordWriter`** — the run record's mid-run writes: the node the run is
+  on, what the tree has spent, and the WAITING_* status while a gate waits for
+  an answer. It parks a run on a ceiling and consumes that question when the
+  run resumes. The task queue still owns the RUNNING transition and every
+  terminal status. For a run that is not persisted it writes nothing, so a
+  ceiling stops that run instead of pausing it.
+- **`NodeInputComposer`** — what each node sees: its system prompt with
+  `$VARIABLE`s rendered, its input composed from the context blocks it opted
+  into, and — for one node in the whole tree — the run's image. Memory is
+  retrieved by the first node that renders it, and only once; chat-history
+  settings are read once; the message list is re-read for each node that
+  replays it. Pending advice reaches the next prompt-composing node, never
+  OUTPUT.
+- **`CheckpointReplay`** — a resumed run's recorded prefix: each node the
+  interrupted run completed gets its recorded output and routing verdicts back
+  instead of running again. INPUT and OUTPUT always run live. A record naming
+  another node stops the resume as `GraphChanged`.
+- **`LiveNodeStep`** — one node run live: its executor's states are forwarded and
+  mirrored into the run record, its console lines are stamped, and its duration
+  is recorded. The tree's ledger is charged for it — but not again for INPUT and
+  OUTPUT on a resumed attempt — and a soft ceiling crossing is announced. A node
+  that parks the run or throws ends the walk.
+
 ### 3.1. Node types
 
 | `NodeType`         | Purpose                                                                                       |
 |--------------------|-----------------------------------------------------------------------------------------------|
 | `INPUT`            | Entry point. Echoes the user's original message downstream. Exactly one per graph.            |
 | `LITE_RT`          | On-device LLM call via LiteRT-LM. Streams tokens as `Flow<String>`.                           |
-| `CLOUD`            | Cloud LLM call. Provider (OpenAI / Anthropic / Google / DeepSeek / Ollama) selected by param. |
+| `CLOUD`            | Cloud LLM call. Provider (OpenAI / Anthropic / Google / DeepSeek / OpenRouter / Groq / Ollama / OpenAI-compatible server) selected by param. |
 | `OUTPUT`           | Final answer to the user. Optionally wraps upstream text with a system prompt.                |
 | `SUMMARY`          | Condenses tool results / multi-turn output into a single message.                             |
 | `INTENT_ROUTER`    | Routes execution down one branch based on classified intent.                                  |
@@ -646,9 +778,10 @@ into a run is deliberately narrow so the rest of the engine stays text-only:
 2. **Announce.** At run start the engine emits one `Image input: W×H, N KB`
    console line (`SystemMessage`).
 3. **Deliver to exactly one node, anywhere in the tree.** Delivery state is a
-   tree-shared `RunImageDelivery` holder (mirroring the shared `RunBudgetLedger`):
-   a `PIPELINE` node threads it into its sub-pipeline's engine invocation via
-   `ExecutionScope.imageDelivery`. The engine hands the image to the **first
+   tree-shared `RunImageDelivery` holder (mirroring the shared `RunBudgetLedger`).
+   It is part of the run tree's `RunTreeContext`, which every node receives in
+   `ExecutionScope.run` and a `PIPELINE` node hands whole to its sub-pipeline's
+   engine invocation. The engine hands the image to the **first
    `LITE_RT` node whose context includes the original task** in execution order
    *across the whole run tree* — including a node nested inside a sub-pipeline —
    via `ExecutionScope.imagePath`, then marks the holder consumed. Every other
@@ -795,6 +928,86 @@ message into one node; audio never enters the graph at all).
 
 ---
 
+### 3.11. Checking a finished run
+
+A run records what it ran with (§3: the run header, `NodeInference`, `model_calls`).
+The check of a finished run lives in `domain/verification/` and repeats **only the
+recorded on-device model calls** — never the graph, a tool or a cloud model.
+
+```mermaid
+flowchart LR
+    Record[("pipeline_runs · trace_steps · model_calls")] -. reads .-> Tree["ReadRecordedRunTreeUseCase<br/>RecordedRunTree"]
+    Tree --> Plan["PlanRunVerificationUseCase<br/>record only"]
+    Plan -- "Available(plan)" --> Verify["VerifyRunUseCase<br/>repeat each call"]
+    Plan -. reads .-> Registry[("local_models<br/>checksum + stamp")]
+    Verify --> Load["LoadModelUseCase"]
+    Verify --> Engine["LlmInferenceEngine<br/>recorded prompt · sampler · seed"]
+    Tree --> Digest["RunDigest<br/>SHA-256 chain"]
+    Tree --> Export["ExportRunTraceUseCase<br/>JSON document"]
+    Digest --> Export
+    Again["PlanRunAgainWithSeedUseCase"] -- "RunAgainRequest" --> Queue["AgentTask.samplingOverride<br/>→ engine → run header"]
+```
+
+Every reader of a finished run as a whole goes through one reading of it:
+`ReadRecordedRunTreeUseCase` returns the root run, its sub-pipeline runs and each
+run's trace in `seq` order as a `RecordedRunTree`, which places a sub-pipeline run
+under the `PIPELINE` visit that started it — the visit of a `PIPELINE` node that
+failed and wrote no record included. The check, the digest and the export all walk
+it, so they cannot disagree about the shape of a run.
+
+1. **Plan.** `PlanRunVerificationUseCase` reads the run tree, its traces, the model
+   registry and the generation settings, and loads nothing. It refuses a run that
+   is still going (`Busy`), one recorded before seeds (`PreVersion`), one with no
+   on-device call (`NoLocalCalls`), and — naming both values — a model file that
+   is gone, unhashed or replaced, or a backend or GPU window that differs from what
+   the next load would use (`Mismatch`). Otherwise it lists every node visit in
+   run order, sub-pipelines in place, each either repeated or not with its reason
+   (`RunReproducibilityPolicy`: tool, cloud, no model call, NPU, image, model not
+   recorded).
+2. **Repeat.** `VerifyRunUseCase` loads the file each call ran on, checks the
+   engine against the call — file, the backend it actually runs on, the GPU window —
+   sends the recorded prompt with the recorded sampler and seed, and compares the
+   answer's SHA-256 with the recorded one. The engine is checked again after the
+   call, so a run that loads another model in between stops the check instead of
+   letting it compare on the wrong file. Calls are repeated from their own
+   prompts, so a difference in one node does not affect the next.
+3. **No tool, ever.** The package depends only on the record, the registry, the
+   loader and the engine; `VerificationToolIsolationKonsistTest` refuses any other
+   constructor dependency and any mention of a tool, an executor or the graph
+   engine, and `RunVerificationGoldenTest` runs the check on a real run with the
+   tool catalogue set to fail on any call.
+4. **Digest.** `RunDigest` chains SHA-256 over a finished run's content records in
+   `seq` order — each node's input and output hashes, each on-device call's prompt
+   and output hashes, each cloud call's provider and model — with every field
+   length-prefixed and the scheme tag `knotwork-digest-v1` first. A sub-pipeline's
+   digest is folded into the record of its `PIPELINE` visit. Times, durations, ids,
+   seeds, the sampler, the model file and console lines stay out, so a repeat with
+   the same content has the same digest. It is computed when read, never stored;
+   a run still going or recorded before headers has none.
+5. **Export.** `ExportRunTraceUseCase` renders a finished run through
+   `BuildRunTraceExportUseCase`: one JSON document with the header, every record of
+   every run in tree order — full prompts and outputs with their hashes, the seed
+   and sampler, the model file's name and SHA-256 — and the digest with its scheme.
+   It is built before the export surface opens, so the surface can show its size.
+   The path imports no network client (`RunTraceExportNoNetworkKonsistTest`).
+6. **Start again with the seed.** `PlanRunAgainWithSeedUseCase` offers a finished
+   chat or share run without an image whose pipeline still exists, and returns the
+   run's message, pipeline, seed and sampler. The new run carries them as
+   `AgentTask.samplingOverride`; the queue hands them to the engine, whose
+   `RunHeaders.fresh` takes them instead of a fresh seed and the current sampler —
+   unless the run already has a header, as a resumed one does. Everything else is
+   read again: it is a new run on today's inputs.
+7. **In the console.** `ChatHomeRunDelegate` follows the console's run — the
+   session's active root run, else its latest — and re-describes it through
+   `DescribeRunUseCase` whenever the run's status or the backend and window the
+   next load would use change, so a mismatch appears and clears as the user fixes
+   it. The catalog's `RunHeaderStrip` draws it in a slot of `ConsolePane` between
+   the handle and the tabs; the check runs in `VerificationSheet`, whose frames
+   `VerificationProgress` folds from `VerifyRunUseCase`'s events. Each node's input
+   and output hash on the Traces and Vars tabs comes from `RunWalk` for a live run
+   and from the trace record for a replayed one — the same function, so the chips
+   agree. Share and save reuse the journal exports' delegate and handlers.
+
 ## 4. Integrations
 
 ### 4.1. LiteRT-LM (on-device inference)
@@ -904,7 +1117,7 @@ merges three layers:
    to `SENSITIVE` because the platform `AppFunctionManager` metadata
    gives no trustworthy signal about side effects. Users can override
    per-tool through
-   `SettingsRepository.setToolRiskOverride(toolKey, risk)`,
+   `ToolSettings.setToolRiskOverride(toolKey, risk)`,
    which writes into the `toolRiskOverrides` flow persisted
    under DataStore key `app_function_risk_overrides`. The override
    always wins over the conservative default.
@@ -933,18 +1146,39 @@ HITL contract (live):
   - `SENSITIVE` — asks unless the policy is `Never`.
   - `READ_ONLY` — asks only under `All`.
   - A call that must wait emits
-    `AgentOrchestratorState.WaitingForApproval(toolName, args, risk, requestId)`
+    `AgentOrchestratorState.WaitingForApproval(toolName, args, risk, requestId, context)`
     and suspends on a `CompletableDeferred` registered for that one request
     until the user resolves it via the chat console row, the system
     notification action, or the configured timeout.
 - `WaitingForApproval` carries the resolved `risk` so the chat console
   can render a coloured risk chip (`READ` / `SENS` / `DEST`) next to the
   tool name without re-resolving.
+- `context` is what the run was asked to do, for the approval surfaces to
+  show next to the call. `ResolveApprovalRequestContextUseCase` resolves it
+  once per raised gate: the executing run is walked up to the **root** of its
+  tree (a sub-pipeline's own input is not the user's request), the root's
+  recorded prompt becomes the request — made one display-safe line and
+  clamped — and a trigger's run is named through the trigger journal. The
+  state and both notifications carry the same value. The parked record keeps
+  no copy: the notification re-post and the restored chat card resolve it
+  again from the record's run id, since the root run keeps its prompt while
+  it waits. The lookup is best-effort — a failure leaves `context` empty and
+  never fails the gate. The chat card shows it above the call; the
+  notification appends it as the last line of the expanded text, outside the
+  argument budget that decides whether Approve is offered there. Both read
+  one label rule (`HitlRequestContext.label` in `:catalog`).
 - The notification fallback (`ApprovalNotificationManager`) uses two
   `IMPORTANCE_HIGH` channels: `AgentApprovalChannel` for `SENSITIVE` /
   opt-in `READ_ONLY` and `AgentApprovalDestructiveChannel` for
   `DESTRUCTIVE`, with distinct icon and title so the destructive prompt
   is recognisable at a glance in the system shade.
+- Its **Approve** action requires an unlocked device
+  (`setAuthenticationRequired`); Deny does not. Every notification that
+  carries user or model text — approval, clarification, background-run
+  result — sets a title-only public version (`lockScreenVersion`), which is
+  what Android shows where it hides sensitive content.
+  `NotificationLockScreenGuardTest` refuses a notification builder without
+  one unless the file is listed with the reason its text is safe there.
 
 ### 4.3. Model Context Protocol (MCP)
 
@@ -1052,7 +1286,7 @@ Enforcement points, one per stack:
 
 | Stack | Gate |
 |---|---|
-| Koog/Ktor — Ollama (chat and embeddings) | `ModelNetworkGate.ollamaRefusal()`, asked by `KoogClientFactory` and `OllamaEmbeddingProvider` |
+| Koog/Ktor — a server the user runs: Ollama, an OpenAI-compatible server (chat and embeddings) | `ModelNetworkGate.endpointRefusal()`, asked by `KoogClientFactory` and `OllamaEmbeddingProvider`; then `KoogTransportFactory` on every hop of every model client |
 | Ktor — MCP | `McpConnectionPool` (the only place a connection is opened) |
 | Shared OkHttp | `CleartextGuardInterceptor`, on every request |
 
@@ -1069,15 +1303,27 @@ with a leading zero is not private (`inet_aton` reads `010` as octal).
 `LocalOnlyPolicyParserAgreementTest` checks adversarial URLs against Ktor itself.
 
 The interceptor runs per request rather than per connection, so it also catches
-a redirect trying to downgrade `https` to `http`. The residual exposure — a
-cleartext redirect inside the third-party Koog / Ktor clients, which the
-platform used to block app-wide — is a deliberate trade recorded in the
-project's decision log.
+a redirect trying to downgrade `https` to `http`. The Koog / Ktor model clients,
+which the platform used to cover app-wide and the move left open, are covered by
+`KoogTransportFactory`: a Ktor send hook that sits inside Ktor's redirect
+handling and applies `ModelHopRule` — the cleartext rule, and the local-only
+restriction while it is on — to every hop before it is sent.
+
+The pair of checks is one function, `domain/connection/EndpointRule`, read by the
+gate before a client is built, by `ModelHopRule` on every hop, and by the settings
+forms while an address is typed — so a form cannot accept an address the
+send-time check then refuses.
 
 ### 4.4. Cloud LLM providers
 
-Cloud providers (`openai`, `anthropic`, `google`, `deepseek`, `ollama`)
-implement the `CloudLlmProvider` interface in `domain`. They are
+Cloud providers (`openai`, `anthropic`, `google`, `deepseek`, `openrouter`,
+`groq`, `ollama`, `openai_compatible`) implement the `CloudLlmProvider` interface
+in `domain`. OpenRouter, Groq and a server the user runs are Koog's own OpenAI
+client with other settings (`data/engine/OpenAiCompatibleClients`): OpenRouter and
+Groq at fixed addresses, the user's server at the address they enter (with `/v1`,
+paths relative to it), and without an `Authorization` header when it has no key.
+None of the three has a default model; the factory refuses a client until one is
+chosen (`CloudClientUnavailability.MissingModel`). They are
 dispatched by the single unified `CLOUD` node, which takes the
 provider id as a parameter — there is no provider-specific node type,
 and adding a new provider does not require touching the pipeline
@@ -1089,7 +1335,8 @@ and are never serialized into DataStore or git.
 traffic asks before it is built: the chat clients in `KoogClientFactory` (Cloud
 nodes, structured output, `delegate_task`) and both network embedding providers
 (memory search and writes). While the restriction is on, hosted providers are
-refused and Ollama is admitted only when its host is `localhost` or a loopback /
+refused and a server the user runs (Ollama, an OpenAI-compatible server) is
+admitted only when its host is `localhost` or a loopback /
 RFC-1918 IPv4 literal (`domain/services/LocalOnlyPolicy`) — **whatever the
 scheme**, because `CleartextPolicy` answers whether traffic may be unencrypted
 and waves every `https://` address through. Host names are refused: a name says
@@ -1111,20 +1358,40 @@ by the same checks in the same order. Callers used to re-derive the cause, and
 blamed the restriction — or a missing API key — for an address the cleartext rule
 had refused.
 
+**Connection checks.** *Test connection* on a provider screen and in the MCP
+server form runs one check against the values in the form
+(`domain/connection/ProviderConnectionChecker`, `McpConnectionChecker`). A
+provider check builds the client `KoogClientFactory` builds, on the same
+transport and deadlines, and asks for the model list once — no retry policy, no
+prompt (OpenRouter's key is checked first, because its model list answers any
+key). An MCP check connects a throwaway `KoogMcpClient`, lists the tools and
+disconnects, outside `McpConnectionPool`. What stops a check before it sends is
+`ConnectionPreconditions`, which the form also reads to disable the button with a
+reason; a failed check is named by `data/network/ConnectionFailureClassifier`
+(rejected key, wrong path, rate limit, server error, unknown host, refused port,
+connect or read deadline, not an MCP endpoint, refused redirect).
+
 **Transient-failure retry.** Every cloud `LLMClient` built by
 `KoogClientFactory` or `DefaultKoogEmbedderFactory` — chat completions and the
 cloud / Ollama embedding clients alike — is wrapped with an exponential-backoff
-retry policy before use (`data/engine/retry/CloudRetryWrapper`, using Koog's
-standalone `RetryingLLMClient` decorator). Transient failures (HTTP 429 / 5xx /
-529 and connection-or-read timeouts) are retried; authentication errors are
-not, and coroutine cancellation is always honoured (re-thrown, never
-swallowed). The attempt budget (`cloudRetryMaxAttempts`, 1–5, default 3;
-`1` returns the raw client unwrapped, disabling retries) and the base delay
-(`cloudRetryBaseDelayMs`, 100–10000 ms, default 1000) are configurable under
-Settings → Providers. Koog exposes no per-attempt hook, so a thin
-`RetryObservingLLMClient` sits as the retrying client's delegate and counts
-invocations; a retried `CLOUD` node surfaces each retry on the console as a
-muted `RUNTIME` warning (`Cloud retry 1/2 for openai`).
+retry policy before use (`data/engine/retry/CloudRetryWrapper` building a
+`RetryingCloudLlmClient`, which replaced Koog's `RetryingLLMClient`). The decision
+is `CloudRetryPolicy`'s: a failure carrying an HTTP status is judged by that
+status alone (429 / 500 / 502 / 503 / 504 / 529 retried, anything else not — Koog
+searched the message text, body included, for the number); a failure with no
+status keeps Koog's text rules unchanged, so a socket timeout is still not
+retried. The wait is the one the provider asked for — the `Retry-After` header,
+which `KoogTransportFactory` records on the transport because
+Koog's exceptions carry no headers, or a wait named in the error text (Groq's
+`1m2.5s` included) — or else exponential backoff with jitter. A requested wait
+over the 30 s ceiling fails the call with `RetryAfterExceededException` instead
+of being slept through. Coroutine cancellation is always honoured (re-thrown,
+never swallowed), and a streamed answer is retried only before its first frame.
+The attempt budget (`cloudRetryMaxAttempts`, 1–5, default 3; `1` returns the raw
+client unwrapped, disabling retries) and the base delay (`cloudRetryBaseDelayMs`,
+100–10000 ms, default 1000) are configurable under Settings → Providers. Each
+retry is reported just before it is sent; a retried `CLOUD` node surfaces it on
+the console as a muted `RUNTIME` warning (`Cloud retry 1/2 for openai`).
 
 **Deadlines.** Every Koog model client — the chat clients `KoogClientFactory`
 builds and the embedding clients `DefaultKoogEmbedderFactory` builds — carries one
@@ -1170,12 +1437,11 @@ validate-and-repair gate against a cloud provider instead of the on-device
 model. The node carries the choice in its `cloudProvider` field, exposed as
 an **Engine** selector (On-device by default) in both the in-app and browser
 pipeline editors. The data-layer `KoogStructuredInferenceClientFactory`
-backs the `CloudStructuredInferenceClientFactory` seam: when the chosen
-provider natively constrains output to JSON
-(`LLMCapability.Schema.JSON`), the gate trusts it and validates once
-(`maxRepairs = 0`) **for JSON-payload nodes only** (`DECOMPOSITION` array,
-`TOOL` arguments); token-output nodes keep their configured repair budget,
-since a JSON-mode provider could still wrap a bare token. If a cloud
+backs the `CloudStructuredInferenceClientFactory` seam. The request carries
+no response schema and switches no JSON mode on — the gate asks for a JSON
+object, a top-level JSON array or a bare token, and no one schema fits all
+three — so a cloud answer can be prose like a local one, and the gate keeps
+its configured repair budget on either engine. If a cloud
 provider is selected but unavailable, the node notes it on the console and
 falls back to the on-device model. The gate remains the single source of
 structural validation regardless of which engine produced the output.
@@ -1316,17 +1582,32 @@ active (or latest) run on open and merges live events on top by that
 sequence, which keeps the replay/live seam free of duplicates. Trace
 rows cascade-delete with their parent `pipeline_runs` row.
 
+The model calls of a run live in their own table, `model_calls`, in the same
+`seq` numbering: an on-device call with its full prompt and output, the
+sampling and seed, the model file and its registry checksum, the backend and the
+context window; a cloud call with its provider and model only. They go through
+the same buffer and reach storage in the same transaction as the trace rows
+flushed with them (`TraceStepDao.insertBatch`), and the read merges both tables
+back into one ordered trace. The run header (seed, sampler, versions, device)
+sits on the root run's `pipeline_runs` row. The model file's checksum is
+computed once per file in the background and kept in `local_models` with the
+file's size and modification time; a file that changed since reads as not
+hashed.
+
 Migration rules:
 
 - Schema migrations are explicit
-  (`Migration(oldVersion, newVersion) { … }`) and registered through
-  `addMigrations(...)` in `AppModule`. There is **no destructive fallback on
-  upgrade**, so an in-place version bump preserves user data; a missing
-  migration fails fast in development instead of silently dropping tables.
-  Destructive recreation is retained only on **downgrade**
-  (`fallbackToDestructiveMigrationOnDowngrade`), which forward migrations
-  cannot handle. The migrations across the exported-schema baseline range are
-  covered by a `MigrationTestHelper` regression suite.
+  (`Migration(oldVersion, newVersion) { … }`), one file per step under
+  `data/local/migrations/` (`Migration<old>To<new>.kt`), and registered
+  through one ordered list, `ALL_MIGRATIONS`, which `AppModule` passes to
+  `addMigrations(...)`. There is **no destructive fallback on upgrade**, so an
+  in-place version bump preserves user data; a missing migration fails fast in
+  development instead of silently dropping tables. Destructive recreation is
+  retained only on **downgrade** (`fallbackToDestructiveMigrationOnDowngrade`),
+  which forward migrations cannot handle. A JVM test fails when the list has a
+  gap or does not end at the schema version the build exports; a
+  `MigrationTestHelper` suite covers the steps across the exported-schema
+  range and runs the whole list from the oldest exported schema to the newest.
 - Auto-migrations are allowed for additive changes only.
 - DAO methods returning `Flow<T>` are annotated with `@Query` — no
   ad-hoc reactive wrapping.
@@ -1342,7 +1623,8 @@ Encryption applies to every table that may hold user-derived content:
 
 - `chat_messages`, `chat_sessions` — user messages and LLM replies.
 - `memory_chunks` — long-term memory fragments distilled from
-  conversations.
+  conversations; `memory_chunk_history` — the earlier texts of chunks a
+  newer statement replaced.
 - `trace_steps` — the persistent pipeline-run trace: per-node
   input/output snapshots and console log events, all derived from
   user input.
@@ -1423,6 +1705,26 @@ instance per feature module. DataStore is not encrypted — it is
 explicitly reserved for non-sensitive preferences. Any value that is
 sensitive (an API key, a passphrase, a personal identifier) goes
 through a `KeystoreBackedPrefsStore` instead.
+A stored setting is found again by its key name and value type alone, so
+renaming either loses what the user set. `PreferenceStorageSnapshotTest`
+pins every key and the names of the settings files against the sources.
+
+Code reads settings through **sections** in `domain/repositories/`:
+`GenerationSettings`, `NetworkSettings`, `MemorySettings`, `ToolSettings`,
+`RunSettings`, `EntryPointSettings`, `PrivacySettings`, `AppStateSettings`,
+and `SettingsReset` for the two resets that span several of them. A consumer
+depends on the section it reads. `SettingsRepository` is the union of all
+sections, kept while existing consumers move off it;
+`SettingsCompositeConsumersTest` refuses a new production dependency on it.
+Each section is implemented by a store in `data/local/settings/`
+(`AppStateSettingsStore`, `ToolSettingsStore`, …) over the same DataStore; a
+store owns its keys, their defaults and, for the Hugging Face token and MCP
+credentials, their place in the encrypted secret store. `SettingsResetStore`
+writes both resets, each as one atomic edit in which every store writes its own
+part. `SettingsManager`, the composite, only delegates. Every section is bound
+to one instance, which is a class-level `@Singleton`
+(`SettingsSingletonScopeTest`): a scope on each binding alone would build one
+instance per binding, each with its own in-memory credential cache.
 
 #### Storage tiers at a glance
 
@@ -1435,7 +1737,7 @@ explicitly in [`SECURITY.md`](../SECURITY.md) (*Agent file workspace*).
 
 | Tier                          | What it holds                                                                                                  | At-rest protection                                                        |
 |-------------------------------|---------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------|
-| **Room DB** (`agent_database.db`) | `chat_messages`, `chat_sessions`, `memory_chunks`, `trace_steps`, `pipeline_runs`, `pending_interactions`, pipelines / presets / prompt templates | **SQLCipher** (full-database AES) under the app's Keystore-held passphrase |
+| **Room DB** (`agent_database.db`) | `chat_messages`, `chat_sessions`, `memory_chunks`, `memory_chunk_history`, `trace_steps`, `pipeline_runs`, `pending_interactions`, pipelines / presets / prompt templates | **SQLCipher** (full-database AES) under the app's Keystore-held passphrase |
 | **Keystore-backed stores** (`KeystoreBackedPrefsStore`) | SQLCipher passphrase, cloud-provider API keys, HuggingFace access token                                        | **AES-256-GCM per value**, key non-exportable in the Android Keystore      |
 | **DataStore** (Preferences)   | Non-sensitive settings: sampling params, timeouts, default pipeline id, opt-in flags, `allowed_http_domains`, `app_function_risk_overrides` | **FBE + app sandbox only** (plaintext within the sandbox; no app cipher)   |
 | **Agent workspace** (`files/agent_workspace/`) | Agent-produced and user-imported files (reports, exports, inputs)                                              | **FBE + app sandbox only** — *not* SQLCipher-encrypted (see `SECURITY.md`) |
@@ -1496,13 +1798,14 @@ idle. Three components coordinate that lifecycle:
 | `AgentWorker` (WorkManager)| Executes deferred / scheduled tasks (driven by `ScheduleTaskUseCase`).                        |
 | `AgentIdleManager`         | Watches device idle / Doze state and signals when the agent can safely unload the model.     |
 | `AgentPowerManager`        | Watches charging and battery state; throttles or defers work on low battery.                  |
-| `ScheduledTaskNotifier`    | Announces scheduled / trigger runs: the "Trigger fired" start notice and the "Task completed" / "Task failed" outcomes, each deep-linking into the session. |
+| `ScheduledTaskNotifier`    | Announces scheduled / trigger runs: the "Trigger fired" start notice and the "Task completed" / "Task failed" outcomes, each deep-linking into the session; and the "Trigger overdue" notice, deep-linking into the trigger (`knotwork://triggers/{id}`). |
 | `TriggerWatchWorker`       | Periodic (~15 min) poll that evaluates due triggers through `FireTriggerUseCase` (the always-on path for time and network triggers, and the backstop for charging). |
 | `ChargingTriggerSweepWorker` | Charging-constrained one-shot (`setRequiresCharging`) that the OS wakes the instant the device is plugged in, firing charging triggers without waiting for the poll. |
 | `WorkManagerTriggerScheduler` | `TriggerScheduler` impl: registers / cancels the per-condition watches as triggers are created, edited, enabled or deleted, so changes take effect immediately. |
-| `PendingInteractionMaintenanceWorker` | Periodic (6 h) expiry pass: fails runs whose parked approval / clarification outlived the approval window. |
+| `PendingInteractionMaintenanceWorker` | Periodic (6 h) expiry pass: fails runs whose parked approval / clarification outlived the approval window; then `NotifyStaleTriggersUseCase` announces each trigger that has gone overdue, once per silence. |
 | `RunRetentionWorker`       | Daily (charging + idle) retention pass over `pipeline_runs` / `trace_steps` **and** the trigger-evaluation journal (age window + hard cap) — see *Run retention* below. |
 | `MemoryCompactionWorker`   | Daily (charging + idle) long-term-memory compaction (see the memory lifecycle section).        |
+| `ModelFileHashWorker`      | One-off SHA-256 pass over every installed model file without a current hash, scheduled when a model is registered and re-armed at start-up while a file is still unhashed (`ModelFileHashScheduler`; passes chain with `APPEND_OR_REPLACE`). The hash is kept with the model and its file stamp (size + modification time), so a run can name the exact file it used without reading gigabytes per run, and a file replaced on disk is hashed again. |
 | `ModelDownloadWorker`      | Unique-per-file model download promoted to a `dataSync` foreground service, so a multi-gigabyte transfer survives leaving the screen or the app. Resumes a partial file over HTTP `Range` (`ResumableFileDownloader`), retries transport failures, and registers the finished file itself — the observing ViewModel may be long gone by then. Spends at most `DownloadForegroundBudget` (five hours of foreground time, one under Android's daily `dataSync` limit) and then pauses with a failure; starting the download again resets the budget and resumes. |
 
 A scheduled task is not a separate execution path: `AgentWorker`
@@ -1610,15 +1913,17 @@ Key invariants:
   the **root** of the tree (resolved by walking `parentRunId` up). A
   child's trace records carry a nesting `depth` so the console renders
   them indented under the spawning node. The autonomous-run ceilings are
-  charged against a single `RunBudgetLedger` threaded (via
-  `ExecutionScope`) through the whole tree, so a sub-pipeline charges the
+  charged against a single `RunBudgetLedger` shared by the whole tree — it
+  is part of `RunTreeContext`, which every node receives in
+  `ExecutionScope.run` and a `PIPELINE` node hands whole to the sub-pipeline
+  it starts (one level deeper) — so a sub-pipeline charges the
   parent's allowance and a breach at any depth fails the entire stack
   with a typed `RunTerminationReason`. The ledger is seeded from — and
   written back to — the root run record, so a ceiling keeps binding across
   a park and resume instead of restarting; work already replayed from the
   checkpoint is never charged twice.
 
-  A second tree-shared guard rides the same `ExecutionScope` seam and
+  A second tree-shared guard rides the same `RunTreeContext` and
   answers a different question. The ledger bounds what a run **spends**;
   `GraphStuckDetector` (`domain/engine/stuck/`) bounds what it
   **repeats** — a sliding window over executed steps, observed at the

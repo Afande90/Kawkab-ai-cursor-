@@ -4,6 +4,8 @@ import app.knotwork.android.domain.constants.DefaultPrompts
 import app.knotwork.android.domain.constants.PipelineExecutionDefaults
 import app.knotwork.android.domain.engine.CloudErrorSanitizer
 import app.knotwork.android.domain.engine.LlmInferenceEngine
+import app.knotwork.android.domain.engine.NodeInference
+import app.knotwork.android.domain.engine.structured.CloudCallNotingClient
 import app.knotwork.android.domain.engine.structured.CloudStructuredInferenceClientFactory
 import app.knotwork.android.domain.engine.structured.CollectingRepairListener
 import app.knotwork.android.domain.engine.structured.EngineStructuredInferenceClient
@@ -22,7 +24,7 @@ import app.knotwork.android.domain.models.NodeType
 import app.knotwork.android.domain.models.Result
 import app.knotwork.android.domain.models.RouteLabels
 import app.knotwork.android.domain.repositories.ChatRepository
-import app.knotwork.android.domain.repositories.SettingsRepository
+import app.knotwork.android.domain.repositories.RunSettings
 import app.knotwork.android.domain.usecases.LoadModelUseCase
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
@@ -70,7 +72,7 @@ class SystemNodeExecutor @Inject constructor(
     private val loadModelUseCase: LoadModelUseCase,
     @Suppress("unused") private val chatRepository: ChatRepository,
     private val structuredOutputGate: StructuredOutputGate,
-    private val settingsRepository: SettingsRepository,
+    private val runSettings: RunSettings,
     private val cloudStructuredFactory: CloudStructuredInferenceClientFactory,
 ) : NodeExecutor {
 
@@ -90,14 +92,14 @@ class SystemNodeExecutor @Inject constructor(
         // share this executor and must not have their prompts mutated by an attachment
         // they never act on.
         val imageNote =
-            if (node.type == NodeType.INTENT_ROUTER && scope.imagePresent) {
+            if (node.type == NodeType.INTENT_ROUTER && scope.run.imagePresent) {
                 "\n\n${DefaultPrompts.System.IMAGE_PRESENT_NOTE}"
             } else {
                 ""
             }
         val fullPrompt = "$nodeSystemPrompt$imageNote\n\nUSER: $inputText\nAGENT: "
 
-        val configuredMaxRepairs = settingsRepository.structuredOutputMaxRepairs.first()
+        val configuredMaxRepairs = runSettings.structuredOutputMaxRepairs.first()
         // The last inference attempt's streamed text. Reset on every repair (see
         // [resettingListener]) so that — after the gate returns — it holds exactly
         // the text of the attempt that finally validated, usable as the node's
@@ -117,19 +119,15 @@ class SystemNodeExecutor @Inject constructor(
         // provider runs the gate against that provider; otherwise the local
         // LiteRT engine backs it. `null` from the cloud factory (missing
         // credentials / local-only mode) degrades gracefully to the local model.
-        val resolved = resolveInference(node, onToken) ?: return@flow
-        val client = resolved.first
-        // The native-JSON budget cut applies only to JSON-payload gate calls
-        // (DECOMPOSITION's array): a provider's JSON mode guarantees well-formed
-        // JSON, so one validation pass suffices. Constrained-token outputs
-        // (EVALUATION / INTENT_ROUTER) are not JSON, so they keep the full
-        // configured repair budget regardless of the provider's JSON capability.
-        val jsonMaxRepairs = if (resolved.second) 0 else configuredMaxRepairs
+        // Every output shape keeps the configured repair budget on either engine:
+        // the request switches no provider JSON mode on, so a cloud answer can be
+        // prose like a local one.
+        val client = resolveInference(node, onToken, scope.inference) ?: return@flow
 
         try {
             when (node.type) {
                 NodeType.DECOMPOSITION ->
-                    runDecomposition(node, fullPrompt, jsonMaxRepairs, client, collected, resettingListener)
+                    runDecomposition(node, fullPrompt, configuredMaxRepairs, client, collected, resettingListener)
                 NodeType.EVALUATION ->
                     runRouting(
                         node,
@@ -187,22 +185,20 @@ class SystemNodeExecutor @Inject constructor(
      *   provider id): emits a console note and degrades to the local engine, so
      *   a misconfigured cloud node still produces a verdict rather than failing.
      *
-     * @return The `(client, supportsNativeJson)` pair — the boolean is `true`
-     *   only for a cloud provider that natively constrains output to JSON, so
-     *   the JSON-payload caller can drop its repair budget. `null` when even the
-     *   local fallback could not load its model (a terminal error was already
-     *   emitted).
+     * @return The client, or `null` when even the local fallback could not load
+     *   its model (a terminal error was already emitted).
      */
     private suspend fun FlowCollector<NodeOutput>.resolveInference(
         node: NodeModel,
         onToken: suspend (String) -> Unit,
-    ): Pair<StructuredInferenceClient, Boolean>? {
+        inference: NodeInference,
+    ): StructuredInferenceClient? {
         val providerId = node.cloudProvider?.takeIf { it.isNotBlank() }
         if (providerId != null) {
             val provider = CloudProvider.fromId(providerId)
             val cloud = provider?.let { cloudStructuredFactory.create(it, onToken) }
-            if (cloud != null) {
-                return cloud.inference to cloud.supportsNativeJson
+            if (provider != null && cloud != null) {
+                return CloudCallNotingClient(provider.id, inference, cloud)
             }
             emit(
                 NodeOutput.Console(
@@ -211,18 +207,19 @@ class SystemNodeExecutor @Inject constructor(
                 ),
             )
         }
-        return loadLocalInference(node, onToken)
+        return loadLocalInference(node, onToken, inference)
     }
 
     /**
      * Loads the node's local model and returns the LiteRT-backed inference
-     * client (never a native-JSON provider, hence `false`), or `null` after
-     * emitting a terminal error if the model fails to load.
+     * client, or `null` after emitting a terminal error if the model fails to
+     * load.
      */
     private suspend fun FlowCollector<NodeOutput>.loadLocalInference(
         node: NodeModel,
         onToken: suspend (String) -> Unit,
-    ): Pair<StructuredInferenceClient, Boolean>? {
+        inference: NodeInference,
+    ): StructuredInferenceClient? {
         val loadResult = loadModelUseCase(node.modelPath)
         if (loadResult is Result.Error) {
             val errorMsg = "Error loading local model for system node"
@@ -230,7 +227,7 @@ class SystemNodeExecutor @Inject constructor(
             emit(NodeOutput.Result(NodeExecutionResult(error = errorMsg)))
             return null
         }
-        return EngineStructuredInferenceClient(llmEngine, onToken) to false
+        return EngineStructuredInferenceClient(llmEngine, inference, onToken)
     }
 
     /**

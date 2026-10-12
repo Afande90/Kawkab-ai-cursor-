@@ -1,7 +1,6 @@
 package app.knotwork.android.presentation.ui.orchestrator
 
 import app.knotwork.android.domain.models.AgentTool
-import app.knotwork.android.domain.models.CloudProvider
 import app.knotwork.android.domain.models.ConnectionModel
 import app.knotwork.android.domain.models.LocalModel
 import app.knotwork.android.domain.models.NodeModel
@@ -10,7 +9,6 @@ import app.knotwork.android.domain.models.PipelineCollision
 import app.knotwork.android.domain.models.PipelineGraph
 import app.knotwork.android.domain.models.PipelineImportOutcome
 import app.knotwork.android.domain.models.PipelineValidationError
-import app.knotwork.android.domain.models.PromptTemplate
 import app.knotwork.android.domain.prompt.PromptSegment
 import app.knotwork.android.presentation.ui.common.UiText
 
@@ -26,8 +24,6 @@ import app.knotwork.android.presentation.ui.common.UiText
  * @property isLoading Whether a loading operation is currently in progress.
  * @property errorMessage An error message if an operation fails.
  * @property availableTools List of all available tools in the system.
- * @property providerKeys Map indicating whether an API key is set for specific provider node types.
- * @property promptTemplates List of saved prompt templates.
  * @property availableVariables Tokens (`$KEY`) of every prompt variable currently
  * registered in the DI graph. Drives the chip row in the prompt editor.
  * @property previewState Current state of the prompt-preview bottom sheet.
@@ -54,15 +50,15 @@ import app.knotwork.android.presentation.ui.common.UiText
  * dragging the user into the editor with the previously active pipeline.
  * Cleared via `consumePendingEditorNavigation()` once acted upon.
  * @property defaultPipelineId Id of the pipeline the user has marked as
- * default in the library, observed from `SettingsRepository.defaultPipelineId`.
+ * default in the library, observed from `EntryPointSettings.defaultPipelineId`.
  * `null` means no explicit choice — unbound chats then refuse to run
  * until a default is marked or the chat is bound explicitly. Drives the
  * "Default" badge and the menu item state in `PipelineLibraryScreen`.
  * @property shareTargetPipelineId Id of the pipeline bound to the OS Share
- * target, observed from `SettingsRepository.shareTargetPipelineId`. `null` =
+ * target, observed from `EntryPointSettings.shareTargetPipelineId`. `null` =
  * the surface is inert. Drives the outlined "SHARE" pill on the matching row.
  * @property quickSettingsTilePipelineId Id of the pipeline bound to the Quick
- * Settings tile, observed from `SettingsRepository.quickSettingsTilePipelineId`.
+ * Settings tile, observed from `EntryPointSettings.quickSettingsTilePipelineId`.
  * `null` = the surface is inert. Drives the outlined "TILE" pill on the row.
  */
 data class OrchestratorUiState(
@@ -76,8 +72,6 @@ data class OrchestratorUiState(
     val errorMessage: UiText? = null,
     val availableTools: List<AgentTool> = emptyList(),
     val availableLocalModels: List<LocalModel> = emptyList(),
-    val providerKeys: Map<CloudProvider, Boolean> = emptyMap(),
-    val promptTemplates: List<PromptTemplate> = emptyList(),
     val availableVariables: List<String> = emptyList(),
     val previewState: PromptPreviewState = PromptPreviewState.Hidden,
     val pendingImport: PipelineImportOutcome.SchemaMismatch? = null,

@@ -61,10 +61,12 @@ means a document is being generated from a rule nobody is checking.
 | `:app:testFullDebugUnitTest` (`SettingsHelpCatalogTest`) | Fails if a registered setting has no help decision, or its text is blank, over-long, duplicated or in a forbidden register (see below). |
 | `:app:verifyLintBaselineOverrides`            | Custom rule: fail if a lint baseline suppresses a check demoted to informational severity (see below). |
 | `:app:verifyDetektAnalysisMode`               | Custom rule: fail if `detekt.yml` activates a rule that only runs under type resolution (see below). |
+| `:app:verifySizeSuppressions`                 | Fails if a size or complexity suppression is missing from its committed list, or a listed one is gone from the sources. The list only shrinks (see below). |
 | `:app:testFullDebugUnitTest` (Konsist suite)      | Architecture guard: Clean-Architecture layer boundaries (see below).        |
 | `:app:testFullDebugUnitTest` (`TopBarInsetGuardTest`) | Fails if a bar at the top of a screen neither applies the status-bar inset nor names the parent that does (see below). |
 | `:app:testFullDebugUnitTest` (`BundledDocumentationRoutingGuardTest`) | Fails if a call that can open a document bundled into the app passes no in-app reader, and so sends it to the browser (see below). |
 | `:app:testFullDebugUnitTest` (`ShippedPipelineLayoutTest`) | Fails if two node cards overlap in a bundled pipeline preset or a cookbook recipe (see below). |
+| `:app:testFullDebugUnitTest` (`GoldenTraceTest`, `GoldenTraceCatalogueTest`) | Fails if running a bundled preset, a cookbook recipe or a test fixture through the real engine produces a trace that differs from its committed golden file, or a pipeline file, a node type or a golden file falls out of the catalogue (see below). |
 | `:catalog:verifyRoborazziDebug`               | Fails if a design-system screenshot differs from its committed baseline (see below). |
 
 Pre-flight tip: run `./gradlew :app:ktlintFormat` first to auto-fix the
@@ -131,6 +133,12 @@ fun validate(): List<PipelineValidationError> { … }
 ```
 
 Bare `@Suppress("X")` without a reason comment is rejected in code review.
+
+**Not for the size and complexity rules.** `LargeClass`, `TooManyFunctions`,
+`LongMethod`, `CyclomaticComplexMethod` and `LongParameterList` cannot be
+suppressed by adding an annotation: the
+[size-suppression ratchet](#size-suppression-ratchet-verifysizesuppressions)
+fails the build. Split the code instead.
 
 **Reports**:
 - `app/build/reports/detekt/detekt.html` — visual checklist.
@@ -221,6 +229,71 @@ of naming and tuning actually runs.
 
 Implementation: `buildSrc/.../DetektAnalysisModeGuard.kt`, unit-tested via
 `./gradlew -p buildSrc test`.
+
+### Size-suppression ratchet (`verifySizeSuppressions`)
+
+Five rules measure how big or tangled a declaration is: `LargeClass`,
+`TooManyFunctions`, `LongMethod`, `CyclomaticComplexMethod` and
+`LongParameterList`. Suppressing one is a standing exception to a threshold.
+Each such exception was meant to be temporary, and nothing ever removed one.
+
+Nothing noticed when one stopped working either. When they were first counted,
+126 of the 155 suppressed no finding at all. There were three reasons:
+
+- The code had shrunk under the threshold.
+- The rule ignores that declaration anyway (`@Composable` functions,
+  `presentation/ui/**` for `LargeClass`).
+- The rule never runs on that source set.
+
+The dead ones were deleted. The ones that remain are listed in
+[`config/detekt/size-suppressions.txt`](../config/detekt/size-suppressions.txt),
+one line per suppressed rule:
+
+```text
+app/src/main/java/app/knotwork/android/di/DataModule.kt :: class DataModule :: TooManyFunctions
+```
+
+`:app:verifySizeSuppressions` (wired into `check`) compares the sources with
+that list:
+
+- **A suppression that is not listed fails the build.** Split the code instead.
+  Moving a suppression to another declaration counts as a new one, because the
+  entry names the declaration, not a line number.
+- **A listed entry that is gone fails it too.** Delete the line in the same
+  change that removed the annotation. That is how the list shrinks.
+
+It reads `@Suppress` and `@SuppressWarnings` at any use-site target, including
+`@file:`. It recognises every rule-id spelling detekt accepts, such as
+`complexity:LongMethod` and `detekt.complexity.LongMethod`. Suppressing the
+whole `complexity` set, or `all`, counts as all five rules. Comments and string
+literals are skipped: the first count included an annotation that was really
+part of a test fixture's source text. An argument that is not a plain string
+literal fails the build instead of being guessed.
+
+It scans the sources and build scripts of every module, test sets included. A
+suppression where the rule never runs is exactly the dead kind.
+
+**What it cannot see:**
+
+- **A line added to the list.** The build cannot tell a new line from an old
+  one, so the list growing is caught in review, as a raised threshold would be.
+- **A listed suppression that has gone dead.** Telling live from dead means
+  running detekt with the annotation removed. That stays a manual probe:
+  rename the rule ids in all annotations, run every detekt task with
+  `--continue`, and match the findings to the annotations.
+- **A raised threshold or a new `excludes` path** in `config/detekt/`. Those are
+  configuration edits and are reviewed as such.
+
+**Where `LongParameterList` does not run.** It runs only in the type-resolution
+tasks of `:app`, and their source is `src/main`. It checks nothing in
+`:catalog`, `buildSrc` or any test set, suppressed or not.
+
+**Observed failing.** One suppression was added to `NodeContextBuilder.build`
+and one listed suppression was removed from `DefaultPipelineFactory.create`. The
+task named both: the first under "Not listed", the second under "Listed but
+gone". Implementation: `buildSrc/.../SizeSuppressionRatchet.kt`, unit-tested in
+`SizeSuppressionRatchetTest`. A test fails if string literals or the
+`detekt:` prefix stop being handled.
 
 ---
 
@@ -391,6 +464,9 @@ flag them with spurious, environment-dependent violations.
 | `UsageTelemetryNoNetworkKonsistTest` | No file on the local usage-telemetry path imports a network client. The statistics stay on-device. |
 | `PromptPackNoNetworkKonsistTest`   | No file on the prompt-pack path imports a network client — a pack is imported from a file the user picked, never fetched (see below). |
 | `JournalExportNoNetworkKonsistTest` | No file on the journal-export path imports a network client — the trigger and external-request journals leave the device only through the share sheet or a file the user picked (see below). |
+| `RunTraceExportNoNetworkKonsistTest` | No file on the run-trace-export path imports a network client — a run's trace (every prompt the on-device model read, with its answers and hashes) leaves the device only through the share sheet or a file the user picked. Same three instruments as the journal-export rule (see below). |
+| `VerificationToolIsolationKonsistTest` | The check of a finished run cannot run a tool. Every class of `domain/verification/` takes only types on an allowlist — the run record and its trace, the model registry and the pipelines, the generation settings, the model loader, the on-device engine and the package's own use cases — and no file there names a tool, the approval gate, a node executor, the graph engine, the task queue, the MCP connection pool, the AppFunctions manager or the cloud client factory. A tool's recorded output stands, and the tool is never run again. |
+| `LocalInferenceSeamKonsistTest`    | Inside a pipeline run, a node reaches the on-device model only through its `NodeInference`, which runs the call on the run's sampler with a seed derived from the run seed and records it. The direct callers of `generateResponseStream` are an exact list — the two `NodeInference` implementations; chat-history compression, memory compaction, the backend test in Settings and the benchmark on the Models screen; `search_tool`, whose model use is part of the tool's recorded output; and the check of a finished run — and no node executor is on it. A listed caller that disappears fails too. |
 | `NetworkEgressInventoryKonsistTest` | Every shipping file (every production source set of `app` and `:catalog`) that imports a network client is named in an inventory, with either the `PRIVACY.md` section describing what leaves the device along it or the reason it opens nothing — and, for an egress, what the More tab's privacy indicator sees of it (see below). |
 | `KoogClientTimeoutKonsistTest`     | Every construction of a Koog model client passes the shared deadlines (`CloudClientTimeouts.CONFIG`); without them Koog's 900 s request and socket defaults apply, which the embedding clients once did. |
 | `ContentUriReadInventoryTest`      | Every file that opens a URI through `ContentResolver` is inventoried with where the URI comes from; one another app can supply must pass `ForeignContentUri` (another app's `content://` only), since the read runs with this app's identity. |
@@ -398,10 +474,14 @@ flag them with spurious, environment-dependent violations.
 | `TransientCacheDirectoryGuardTest` | Every directory the app creates under its cache, and every `<cache-path>` the `FileProvider` serves, is an entry of `TransientCacheDirectory` — so the daily sweep removes what its owner misses. |
 | `PathContainmentGuardTest`         | No production file outside `PathContainment` prefix-tests a path string: `absolutePath.startsWith(root)` passes `root/../elsewhere`, so containment is always canonicalise-then-compare. |
 | `PersistentStorageInventoryGuardTest` | Every storage root the production code reaches is inventoried with two decisions — kept out of Android backup and device transfer, and erased or kept by the recovery wipe. Backup is off, both extraction sections exclude every domain, the plain-text directories are also excluded by the names production code uses, and the wipe calls the owner of every root recorded as erased. |
+| `PreferenceStorageSnapshotTest`   | Every preference key keeps its name and value type, and the settings keep their file names: a renamed or retyped key, or a renamed file, loses the user's value on the next read without failing anything. The key census reads the production sources, so a key moving to another file does not matter; every key must be declared with a literal name, and there is one DataStore file. A new key is added to the snapshot in the same change. |
+| `SettingsCompositeConsumersTest`  | No production file depends on the whole `SettingsRepository` composite unless it is on the list of existing consumers, and a listed file that no longer does fails too — so the list only shrinks. Code depends on the settings section it reads (`MemorySettings`, `ToolSettings`, …); a KDoc mention does not count. |
+| `SettingsSingletonScopeTest`      | Every class that implements a settings section is a class-level `@Singleton`. Each section has its own binding, and a scope on a `@Binds` method caches per binding: with the class unscoped, the generated component built one instance per binding, each with its own in-memory credential cache. The sections are read from `SettingsRepository`'s supertype list. |
 | `TimeLimitedForegroundServiceGuardTest` | The only foreground-service type with an Android time limit that either flavour ships is `dataSync` (read from the merged-manifest expectations, so a library's `dataSync` or `mediaProcessing` counts too; a library's `shortService` has no permission to show), and every file that starts one books against `DownloadForegroundBudget`. A foreground service still running when its time limit runs out takes the app down. |
 | `DownloadStartCallSiteGuardTest` | Only user actions on a screen start a model download. Starting one resets the download's foreground-time budget, which is honest only while the app is on screen, because Android resets its own count at that moment. |
 | `ExportedComponentInventoryTest`   | Every component a source manifest exports (overlays included) is inventoried with the permission it demands; each shipping one that demands none is named in `SECURITY.md`, and the external-automation receiver keeps `enforceIntentFilter`. The manifests outside `src/main` are declared test inputs — without that, an export added to `src/full` left the `foss` suite green from a cached run (observed). |
 | `OutboundBroadcastCensusTest`      | `ExternalAutomationCallbackSender` is the app's only `sendBroadcast`, so the two rules it enforces — nothing while external automation is off, nothing over the contract's length ceilings — have no second path around them. |
+| `NotificationLockScreenGuardTest`  | Every notification builder in the production sources is given a version that shows only its title where Android hides sensitive content on the lock screen — one per builder in the file — unless the file is listed with the reason its notifications carry nothing the user or the model wrote (the agent's status line, a model download, a run's limit). A listed file that no longer builds a notification fails too. On a phone set to show all notification content, the full text still appears. |
 | `EntrySurfaceLimitsDocumentsTest`  | Every number the public documents quote about the entry surfaces' limits (share ceiling, contract value ceilings, journal value bound) equals the constant that enforces it. |
 | `RunRateCeilingTest` (census)      | Every `RunOrigin` is bounded by its own `RunRateCeiling` or exempt for a written reason, and the two origins another app can start without a permission (`SHARE`, `EXTERNAL`) have a ceiling. A new origin does not compile until someone decides. |
 | `TabRootEntryGuardTest`            | A bottom-nav tab root is entered as a tab switch, never pushed onto another subtree's back stack. |
@@ -421,9 +501,9 @@ catch: reintroducing a `domain -> data` import (or an `android.*` import in
 `domain`) turns both `LayerDependencyKonsistTest` and
 `DomainPurityKonsistTest` red — verified during the suite's introduction.
 
-**The three no-network rules, and the trap they share.**
-`UsageTelemetryNoNetworkKonsistTest`, `PromptPackNoNetworkKonsistTest` and
-`JournalExportNoNetworkKonsistTest`
+**The four no-network rules, and the trap they share.**
+`UsageTelemetryNoNetworkKonsistTest`, `PromptPackNoNetworkKonsistTest`,
+`JournalExportNoNetworkKonsistTest` and `RunTraceExportNoNetworkKonsistTest`
 select their files by name and path, and a filter of that shape goes stale in
 silence: a new file on the same logical path, named something the filter does
 not match, is simply unguarded and nothing says so. The prompt-pack rule closes
@@ -441,10 +521,11 @@ two `Export…JournalUseCase`s and both journal screens unguarded, because none 
 them carries the export token in its own name. The filter now also matches on
 *imports* containing that token, and a third test pins the token to the real
 declarations' names — so a rename fails loudly instead of quietly emptying the
-guarded set.
+guarded set. The run-trace-export rule was written with all three from its first
+day, keyed off the `RunTraceExport` token.
 
-**The allow-list rule, and the question the three deny-lists cannot answer.**
-The three rules above each say "this surface must never reach the network".
+**The allow-list rule, and the question the four deny-lists cannot answer.**
+The four rules above each say "this surface must never reach the network".
 Between them they say nothing about *which* surfaces do — and that is the
 question every privacy text in the repository answers in prose. The project
 shipped the same defect three times on that gap: a document listing the ways
@@ -461,9 +542,9 @@ goes out along it, or `None`, with the reason it starts no request — a URL bui
 a model descriptor, an interceptor on somebody else's client. A named section has
 to exist, and an entry naming no such file fails too, so the inventory cannot rot
 in either direction. Selection is by import rather than by name, which is what
-keeps it clear of the trap the three deny-lists share.
+keeps it clear of the trap the four deny-lists share.
 
-The import prefixes live in one list, `NetworkClientImports`, which all four rules
+The import prefixes live in one list, `NetworkClientImports`, which all five rules
 read. They used to be four copies of five prefixes, and a namespace missing from one
 was missing from all: the image loader (`coil3.`), the Firebase SDK and
 `android.webkit.` were. So was a whole source set — scoped to `app/src/main`, the
@@ -559,8 +640,19 @@ cannot.
 A build-time verification task, wired into `check`, that regenerates the three
 `AUTO-GEN` blocks of the cookbook from the sources that define a node — the
 `NodeType` enum, the `:catalog` mirror of it, `NodePorts.forType`,
-`NodeContextConfig.defaultForType`, the `NodeConfig` hierarchy and
-`DefaultPrompts` — and fails when the committed document differs.
+`NodeContextConfig.defaultForType`, the `NodeConfig` hierarchy,
+`DefaultPrompts` and the node-type resource file `strings_node_types.xml` —
+and fails when the committed document differs.
+
+That last source is the one the app shares. Each entry opens with the type's
+name and one-line description exactly as the app's string resources hold them,
+read from `:catalog` through `NodeTypeStrings` (`buildSrc`), which refuses
+anything a verbatim copy would render differently — markup, format arguments,
+escapes other than `\'` and `\"` — and a description longer than one sentence
+of 85 characters, the two lines the node-type picker is designed to give it on
+a 360 dp phone. The browser editor's palette label and tooltip are generated
+from the same file (`verifyBrowserEditorConstants`), so rewording a description
+in the app rewords both documents or fails `check`.
 
 Regenerate with:
 
@@ -570,8 +662,9 @@ Regenerate with:
 
 Three things the generator cannot read out of the sources are hand-maintained in
 [`CookbookDocsGenerator`](../buildSrc/src/main/kotlin/app/knotwork/android/buildtools/CookbookDocsGenerator.kt):
-the reader-facing sentence per node type (the domain KDoc is written for whoever
-implements an executor, not for whoever wires a pipeline), the per-field verdict
+the reader-facing sentences that continue each type's one-line description (the
+domain KDoc is written for whoever implements an executor, not for whoever wires
+a pipeline), the per-field verdict
 of whether a configuration field reaches the run, and — per node type — the list
 of what the node actually runs on.
 
@@ -582,16 +675,18 @@ barely overlap: the form shows a prompt box that goes nowhere while the prompt
 the node really runs on appeared in no table at all. A reader who knew the
 system found the result confusing, which settled it.
 
-None of the three is unguarded. Generation fails when a node type has no
-sentence, when a field has no verdict, when a sheet field writes a property no
+None of the three is unguarded. Generation fails when a node type is missing
+from that table or from the resource file, when a field has no verdict, when a
+sheet field writes a property no
 input row explains, or when an input row promises a control that no field
 writes. So the two tables cannot drift apart, in either direction.
 
 The count guard matters more here than the drift check, because a generator
 paired with its own drift check agrees with itself exactly when it is wrong. So
-the node set is derived **five times over four files in two modules** — the
+the node set is derived **six times over six files in two modules** — the
 `:app` enum, the `:catalog` enum, the ports factory, the context-defaults
-`when`, and the config hierarchy — and generation stops unless all five agree.
+`when`, the config hierarchy and the node-type resource file — and generation
+stops unless all six agree.
 
 ### `CookbookRuntimeReachTest` — the verdicts are checked against the codec
 
@@ -722,6 +817,78 @@ same replacement passed from the up-to-date check. With CI's Linux render of the
 settings hub put in place of its baseline, the run passes at 0.02 and fails at
 Roborazzi's default 0.007 — the tolerance absorbs exactly the observed noise. A
 capture call with its options removed fails the guard.
+
+---
+
+## Golden trace guard (`GoldenTraceTest`)
+
+The engine's behaviour was pinned path by path — one unit test per branch, per
+suspension, per executor. Nothing pinned it end to end: "this pipeline, on this
+input, visits these nodes with these inputs and outputs". `GoldenTraceTest` does,
+for every bundled preset, every cookbook recipe and three test-only fixtures. The
+harness, what it fakes and how to rewrite a trace are in
+[`testing.md` § Golden run traces](testing.md#golden-run-traces); this section is
+what makes it a gate.
+
+- **The comparison lives in the test, not in a `buildSrc` task.** Build logic
+  cannot run app code, so a task there could only compare files the test wrote —
+  a second place to fail and a stale-output risk, for a diff the test can print
+  itself. The golden directory is declared as a test input, so the task is
+  `UP-TO-DATE` when nothing changed and re-runs when a golden file is edited
+  (measured both ways).
+- **The trace is wider than routing.** It carries every prompt the model receives,
+  every write to run records, chat, metrics and the trigger journal, and the
+  states the UI sees. A refactoring that stops applying a setting, renders a
+  variable differently, drops a metric or flushes the trace at a different point
+  shows as a diff even when every route is unchanged. Every numeric setting differs
+  from its shipped default and reaches some scenario, so a read replaced by the
+  default shows as well.
+- **The fakes cannot lie for the engine.** The stores keep the production guards
+  (a terminal status is written once; a trace record is durable only after a
+  flush, and what was never flushed is gone when an attempt ends). A user's answer
+  to a parked run goes through the app's own use cases, and the resumed attempt is
+  driven from the task they enqueue. A misused fake — including an interface member
+  no run path uses — raises an `AssertionError`, which the engine's
+  `catch (Exception)` around every node cannot turn into an ordinary run error.
+  Every scenario declares how it ends, and the run record must agree.
+- **Determinism is checked, not assumed.** Each scenario runs twice and the
+  traces must match before either is compared.
+- **Completeness is a test.** `GoldenTraceCatalogueTest` fails on a pipeline file
+  without a scenario, on a `NodeType` no committed trace visits — `EVALUATION`
+  and `SKILL` are in no shipped pipeline, so two of the fixtures under
+  `app/src/test/golden/fixtures/` run them — and on a golden file no scenario
+  produces.
+
+**What it cannot see:** anything behind the fakes — the real model, a real tool's
+side effect, Room's SQL (only its guards are modelled), notifications on a device,
+the settings layer itself (its defaults and migrations never run), the wall-clock
+resume and approval windows — and the copy of each tool's description, which is a
+fixture. A behaviour no scenario reaches is not pinned either; a new branch needs a
+scenario.
+
+### Observed failing
+
+Six mutations, each restored in the same command, against the 56 scenarios the
+guard shipped with:
+
+| Mutation | Red scenarios |
+|---|---|
+| `IF_CONDITION` routing with True and False swapped | **6 of 56** — exactly those whose run passes an `IF` node |
+| `stepQueue` taking the **last** remaining item instead of the first | **7 of 56** — exactly those that run a queue |
+| `ResolveRunCeilingsUseCase` giving a background run the interactive ceilings and vice versa | **4 of 56** — the four ceiling scenarios (steps and tokens, one per origin) |
+| the same, on the token axis only | **2 of 56** — the two token-ceiling scenarios |
+| `PipelineNodeExecutor` reading the shipped default instead of the nesting-depth setting | **1 of 56** — the self-nesting fixture |
+| `ToolNodeExecutor` reading the shipped default instead of the repair-limit setting | **1 of 56** — the tool-arguments give-up scenario |
+
+An early version of the harness caught one queue scenario instead of seven: its
+default plan had two items, and the engine takes a queue's first item itself, so
+`stepQueue` only ever saw a one-item list. The default plan has three items for
+that reason. The ceiling and nesting mutations were invisible to it as well: its
+only ceiling scenario set the same limit for both origins, and nothing nested
+deeper than one level (by construction; not measured).
+
+A golden file edited by one character makes the next run execute and fail; the
+same run without the edit is `UP-TO-DATE`.
 
 ---
 

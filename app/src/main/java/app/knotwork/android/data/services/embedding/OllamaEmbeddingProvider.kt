@@ -57,7 +57,7 @@ class OllamaEmbeddingProvider @Inject constructor(
     /** Available only when a non-blank Ollama base URL is configured and the network gate admits it. */
     override suspend fun isAvailable(): Boolean {
         val baseUrl = baseUrl() ?: return false
-        return modelNetworkGate.ollamaRefusal(baseUrl) == null
+        return modelNetworkGate.endpointRefusal(baseUrl) == null
     }
 
     override suspend fun embed(text: String): FloatArray = embed(listOf(text)).first()
@@ -76,7 +76,7 @@ class OllamaEmbeddingProvider @Inject constructor(
         val baseUrl = baseUrl() ?: throw EmbeddingException("Ollama base URL is not configured")
         // Re-checked here, not only in `isAvailable`: the restriction can be switched on
         // between the resolver's check and this send.
-        modelNetworkGate.ollamaRefusal(baseUrl)?.let { refusal ->
+        modelNetworkGate.endpointRefusal(baseUrl)?.let { refusal ->
             throw EmbeddingException(refusal.message(CloudProvider.OLLAMA))
         }
 
@@ -95,7 +95,7 @@ class OllamaEmbeddingProvider @Inject constructor(
 
     /** The trimmed, non-blank Ollama base URL, or `null` when none is configured. */
     private suspend fun baseUrl(): String? =
-        apiKeyRepository.getOllamaBaseUrl().firstOrNull()?.trim()?.takeIf { it.isNotBlank() }
+        apiKeyRepository.getBaseUrl(CloudProvider.OLLAMA).firstOrNull()?.trim()?.takeIf { it.isNotBlank() }
 
     private companion object {
         /** Output dimension of the `nomic-embed-text` Ollama model. */

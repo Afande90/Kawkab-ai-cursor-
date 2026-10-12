@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import app.knotwork.android.data.local.models.MemoryChunkEntity
+import app.knotwork.android.data.local.models.MemoryPendingUpdateEntity
 import app.knotwork.android.domain.models.MemorySummary
 import kotlinx.coroutines.flow.Flow
 
@@ -23,30 +24,6 @@ interface MemoryDao {
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMemory(memoryChunk: MemoryChunkEntity): Long
-
-    /**
-     * Inserts a batch of memory chunks in a single transaction. Used by the
-     * memory import path; rows carrying an explicit non-zero `id` keep that id
-     * (so a round-trip preserves identity), while `id = 0` rows are
-     * auto-assigned. Conflicting ids are replaced.
-     *
-     * @param chunks The chunks to insert.
-     */
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertMemories(chunks: List<MemoryChunkEntity>)
-
-    /**
-     * Atomically replaces the whole table with [chunks]: deletes every row then
-     * inserts the batch in one transaction, so a Replace import can never leave
-     * the store empty if the insert fails partway.
-     *
-     * @param chunks The replacement rows.
-     */
-    @Transaction
-    suspend fun replaceAll(chunks: List<MemoryChunkEntity>) {
-        deleteAllMemories()
-        insertMemories(chunks)
-    }
 
     /**
      * Projects the ids of every stored chunk. Backs the import Merge strategy's
@@ -129,7 +106,7 @@ interface MemoryDao {
     /**
      * Records that the given chunks were just retrieved into a pipeline run's
      * Long-Term Memory context: increments each chunk's `useCount` and stamps
-     * `lastUsedAt`. Backs the detail sheet's "Used in N replies" line.
+     * `lastUsedAt`. Backs the detail sheet's "Used in N runs" line.
      *
      * @param ids Identifiers of the chunks that were injected.
      * @param atMillis Epoch-millis to stamp as the most-recent use time.
@@ -210,15 +187,20 @@ interface MemoryDao {
      * the candidate set for background compaction.
      *
      * Pinned chunks (`isPinned = 1`) are excluded so they are never touched by
-     * consolidation, and fresh chunks (`timestamp >= :olderThan`) are excluded
-     * so recently-learned facts keep their exact wording. The full embedding
-     * payload is returned because the compaction worker clusters on it.
+     * consolidation, fresh chunks (`timestamp >= :olderThan`) are excluded so
+     * recently-learned facts keep their exact wording, and an update waiting on a
+     * pinned chunk ([MemoryPendingUpdateEntity]) is excluded so a summary cannot
+     * dissolve the pair before the user resolves it. The full embedding payload is
+     * returned because the compaction worker clusters on it.
      *
      * @param olderThan Exclusive upper bound on `timestamp`; only rows strictly
      *   older than this are returned.
      * @return Candidate chunks ordered newest-first.
      */
-    @Query("SELECT * FROM memory_chunks WHERE isPinned = 0 AND timestamp < :olderThan ORDER BY timestamp DESC")
+    @Query(
+        "SELECT * FROM memory_chunks WHERE isPinned = 0 AND timestamp < :olderThan " +
+            "AND id NOT IN (SELECT updateChunkId FROM memory_pending_updates) ORDER BY timestamp DESC",
+    )
     suspend fun getCompactionCandidates(olderThan: Long): List<MemoryChunkEntity>
 
     /**

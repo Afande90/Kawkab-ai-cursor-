@@ -20,6 +20,7 @@ import app.knotwork.android.data.local.dao.ChatHistorySummaryDao
 import app.knotwork.android.data.local.dao.ExternalAutomationJournalDao
 import app.knotwork.android.data.local.dao.LocalModelDao
 import app.knotwork.android.data.local.dao.MemoryDao
+import app.knotwork.android.data.local.dao.MemoryHistoryDao
 import app.knotwork.android.data.local.dao.ModelPerformanceDao
 import app.knotwork.android.data.local.dao.PendingInteractionDao
 import app.knotwork.android.data.local.dao.PipelineDao
@@ -32,6 +33,7 @@ import app.knotwork.android.data.local.dao.TraceStepDao
 import app.knotwork.android.data.local.dao.TriggerDao
 import app.knotwork.android.data.local.dao.TriggerJournalDao
 import app.knotwork.android.data.local.dao.UsageTelemetryDao
+import app.knotwork.android.data.local.migrations.ALL_MIGRATIONS
 import app.knotwork.android.data.network.SharedHttpClient
 import app.knotwork.android.data.services.ExternalAutomationCallbackSender
 import app.knotwork.android.data.services.WorkManagerTaskScheduler
@@ -59,6 +61,7 @@ import dagger.hilt.components.SingletonComponent
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import okhttp3.OkHttpClient
 import javax.inject.Singleton
+import kotlin.time.TimeSource
 
 /**
  * Global application-level dependency injection module.
@@ -124,11 +127,11 @@ object AppModule {
      *
      * **Migration policy.** Every schema-version bump is backed by an explicit
      * [androidx.room.migration.Migration] registered through [addMigrations]; the full chain is
-     * declared on [AppDatabase]. Destructive recreation on **upgrade** has been removed, so a
-     * version bump preserves all user data (chats, long-term memory, run traces, custom
-     * pipelines, saved presets and prompt templates) instead of dropping the tables. A missing
-     * upgrade path is therefore a hard failure surfaced in development rather than silent data
-     * loss in the field.
+     * [ALL_MIGRATIONS], one file per step under `data/local/migrations/`. Destructive recreation
+     * on **upgrade** has been removed, so a version bump preserves all user data (chats,
+     * long-term memory, run traces, custom pipelines, saved presets and prompt templates) instead
+     * of dropping the tables. A missing upgrade path is therefore a hard failure surfaced in
+     * development rather than silent data loss in the field.
      *
      * Destructive recreation is retained **only on downgrade**
      * ([fallbackToDestructiveMigrationOnDowngrade]) — forward migrations cannot reverse a schema,
@@ -163,64 +166,7 @@ object AppModule {
             AppDatabase.DATABASE_NAME,
         )
             .openHelperFactory(factory)
-            .addMigrations(
-                AppDatabase.MIGRATION_9_10,
-                AppDatabase.MIGRATION_10_11,
-                AppDatabase.MIGRATION_11_12,
-                AppDatabase.MIGRATION_12_13,
-                AppDatabase.MIGRATION_13_14,
-                AppDatabase.MIGRATION_14_15,
-                AppDatabase.MIGRATION_15_16,
-                AppDatabase.MIGRATION_16_17,
-                AppDatabase.MIGRATION_17_18,
-                AppDatabase.MIGRATION_18_19,
-                AppDatabase.MIGRATION_19_20,
-                AppDatabase.MIGRATION_20_21,
-                AppDatabase.MIGRATION_21_22,
-                AppDatabase.MIGRATION_22_23,
-                AppDatabase.MIGRATION_23_24,
-                AppDatabase.MIGRATION_24_25,
-                AppDatabase.MIGRATION_25_26,
-                AppDatabase.MIGRATION_26_27,
-                AppDatabase.MIGRATION_27_28,
-                AppDatabase.MIGRATION_28_29,
-                AppDatabase.MIGRATION_29_30,
-                AppDatabase.MIGRATION_30_31,
-                AppDatabase.MIGRATION_31_32,
-                AppDatabase.MIGRATION_32_33,
-                AppDatabase.MIGRATION_33_34,
-                AppDatabase.MIGRATION_34_35,
-                AppDatabase.MIGRATION_35_36,
-                AppDatabase.MIGRATION_36_37,
-                AppDatabase.MIGRATION_37_38,
-                AppDatabase.MIGRATION_38_39,
-                AppDatabase.MIGRATION_39_40,
-                AppDatabase.MIGRATION_40_41,
-                AppDatabase.MIGRATION_41_42,
-                AppDatabase.MIGRATION_42_43,
-                AppDatabase.MIGRATION_43_44,
-                AppDatabase.MIGRATION_44_45,
-                AppDatabase.MIGRATION_45_46,
-                AppDatabase.MIGRATION_46_47,
-                AppDatabase.MIGRATION_47_48,
-                AppDatabase.MIGRATION_48_49,
-                AppDatabase.MIGRATION_49_50,
-                AppDatabase.MIGRATION_50_51,
-                AppDatabase.MIGRATION_51_52,
-                AppDatabase.MIGRATION_52_53,
-                AppDatabase.MIGRATION_53_54,
-                AppDatabase.MIGRATION_54_55,
-                AppDatabase.MIGRATION_55_56,
-                AppDatabase.MIGRATION_56_57,
-                AppDatabase.MIGRATION_57_58,
-                AppDatabase.MIGRATION_58_59,
-                AppDatabase.MIGRATION_59_60,
-                AppDatabase.MIGRATION_60_61,
-                AppDatabase.MIGRATION_61_62,
-                AppDatabase.MIGRATION_62_63,
-                AppDatabase.MIGRATION_63_64,
-                AppDatabase.MIGRATION_64_65,
-            )
+            .addMigrations(*ALL_MIGRATIONS.toTypedArray())
             // No destructive fallback on upgrade: every version bump must supply an explicit
             // migration above so user data survives. Destructive recreation is kept only for the
             // (rare) downgrade case, which forward migrations cannot handle.
@@ -245,6 +191,12 @@ object AppModule {
      */
     @Provides
     fun provideMemoryDao(database: AppDatabase): MemoryDao = database.memoryDao()
+
+    /**
+     * Provides the [MemoryHistoryDao] from the database.
+     */
+    @Provides
+    fun provideMemoryHistoryDao(database: AppDatabase): MemoryHistoryDao = database.memoryHistoryDao()
 
     /**
      * Provides the [PipelineDao] from the database.
@@ -360,9 +312,11 @@ object AppModule {
     fun provideConverters(): Converters = Converters()
 
     /**
-     * Provides the Keystore-backed secret store consumed by `SettingsManager`
-     * (API keys, the Hugging Face token, per-server MCP credentials). Exposed via
-     * the [SecretStore] seam so unit tests substitute an in-memory fake.
+     * Provides the Keystore-backed secret store consumed by the settings section
+     * stores (the Hugging Face token in `GenerationSettingsStore`, per-server MCP
+     * credentials in `ToolSettingsStore`); API keys live in a store of their own
+     * (`ApiKeyManager`). Exposed via the [SecretStore] seam so unit tests
+     * substitute an in-memory fake.
      */
     @Provides
     @Singleton
@@ -394,6 +348,13 @@ object AppModule {
      */
     @Provides
     fun provideSearchConnectionOpener(): SearchTool.ConnectionOpener = SearchTool.ConnectionOpener.SYSTEM
+
+    /**
+     * Provides the monotonic clock a running connection check is timed by: the Test row counts
+     * its elapsed seconds from the start this marks. A seam, so tests can step time.
+     */
+    @Provides
+    fun provideMonotonicTimeSource(): TimeSource.WithComparableMarks = TimeSource.Monotonic
 
     /**
      * Provides the singleton instance of LocalAppFunctionManager.

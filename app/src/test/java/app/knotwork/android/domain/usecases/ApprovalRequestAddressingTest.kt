@@ -113,11 +113,12 @@ class ApprovalRequestAddressingTest {
         val parkedRunResumer: ParkedRunResumer = mockk(relaxed = true)
         private val gate = ToolInvocationGate(
             toolRepository = toolRepository,
-            settingsRepository = settingsRepository,
+            toolSettings = settingsRepository,
             approvalNotifier = mockk(relaxed = true),
             chatRepository = mockk(relaxed = true),
             pendingInteractionRepository = pendingInteractionRepository,
             recordTriggerHitlEvent = mockk(relaxed = true),
+            resolveRequestContext = ApprovalRequestContextFixtures.none(),
         )
         private val taskQueueManager: TaskQueueManager = mockk(relaxed = true)
         val useCase = SubmitApprovalDecisionUseCase(taskQueueManager, pendingInteractionRepository, parkedRunResumer)

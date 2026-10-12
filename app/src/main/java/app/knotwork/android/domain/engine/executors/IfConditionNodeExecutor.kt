@@ -46,13 +46,21 @@ class IfConditionNodeExecutor @Inject constructor(private val evaluateIfConditio
         // PipelineRun.hadImage on a resumed one, so an IF node forks correctly on image
         // presence even when it executes live past a checkpoint resume — and whether or not
         // a downstream vision node has consumed the image yet.
-        val hasImage = scope.imagePresent
-        val outcome = evaluateIfConditionUseCase(node, inputText, hasImage, repairListener)
+        val hasImage = scope.run.imagePresent
+        val outcome = evaluateIfConditionUseCase(node, inputText, hasImage, repairListener, scope.inference)
 
         // Surface each buffered repair attempt; the engine renders it and bumps
         // the per-node repair counter.
         repairListener.attempts.forEach { attempt ->
             emit(NodeOutput.Console(ConsoleEventType.StructuredOutputRepair, attempt.consoleMessage()))
+        }
+        outcome.unavailableProvider?.let { providerId ->
+            emit(
+                NodeOutput.Console(
+                    ConsoleEventType.Error,
+                    "Cloud provider '$providerId' unavailable for '${node.label}'; falling back to the local model",
+                ),
+            )
         }
         if (outcome.gateFailed) {
             emit(

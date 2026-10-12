@@ -11,9 +11,9 @@ import app.knotwork.android.data.repositories.PendingInteractionRepositoryImpl
 import app.knotwork.android.data.repositories.PipelineRunRepositoryImpl
 import app.knotwork.android.data.repositories.RunTraceRepositoryImpl
 import app.knotwork.android.data.repositories.TriggerJournalRepositoryImpl
+import app.knotwork.android.data.repositories.TriggerRepositoryImpl
 import app.knotwork.android.domain.constants.ExternalAutomationContract
 import app.knotwork.android.domain.engine.ChatHistoryWindowPlanner
-import app.knotwork.android.domain.engine.GraphExecutionEngine
 import app.knotwork.android.domain.engine.LlmInferenceEngine
 import app.knotwork.android.domain.engine.NodeContextBuilder
 import app.knotwork.android.domain.engine.executors.ClarificationNodeExecutor
@@ -32,6 +32,7 @@ import app.knotwork.android.domain.engine.executors.ToolInvocationGate
 import app.knotwork.android.domain.engine.executors.ToolNodeExecutor
 import app.knotwork.android.domain.engine.structured.CloudStructuredInferenceClientFactory
 import app.knotwork.android.domain.engine.structured.StructuredOutputGate
+import app.knotwork.android.domain.engine.testGraphExecutionEngine
 import app.knotwork.android.domain.models.AgentTool
 import app.knotwork.android.domain.models.ConnectionModel
 import app.knotwork.android.domain.models.ExternalAutomationInvocation
@@ -63,6 +64,7 @@ import app.knotwork.android.domain.usecases.LoadModelUseCase
 import app.knotwork.android.domain.usecases.ParkedRunResumer
 import app.knotwork.android.domain.usecases.PendingSubmissionOutcome
 import app.knotwork.android.domain.usecases.RecordTriggerHitlEventUseCase
+import app.knotwork.android.domain.usecases.ResolveApprovalRequestContextUseCase
 import app.knotwork.android.domain.usecases.ResolveRunCeilingsUseCase
 import app.knotwork.android.domain.usecases.ResumePipelineRunUseCase
 import app.knotwork.android.domain.usecases.RetrieveRelevantMemoryUseCase
@@ -212,7 +214,7 @@ class ExternalAutomationBackgroundRunIntegrationTest {
     private fun buildHandler(process: ProcessHarness) = HandleExternalAutomationRequestUseCase(
         parseRequest = ParseExternalAutomationRequestUseCase(),
         authorizeRequest = AuthorizeExternalAutomationRequestUseCase(),
-        settingsRepository = settingsRepository,
+        entryPointSettings = settingsRepository,
         pipelineRepository = pipelineRepository,
         journal = process.externalJournal,
         taskScheduler = process.scheduler,
@@ -438,6 +440,11 @@ class ExternalAutomationBackgroundRunIntegrationTest {
             chatRepository,
             pendingRepository,
             recordTriggerHitlEvent = recordTriggerHitlEvent,
+            resolveRequestContext = ResolveApprovalRequestContextUseCase(
+                runRepository,
+                triggerJournal,
+                TriggerRepositoryImpl(database.triggerDao()),
+            ),
         )
         val toolNodeExecutor = ToolNodeExecutor(
             llmEngine,
@@ -496,7 +503,7 @@ class ExternalAutomationBackgroundRunIntegrationTest {
             ),
             mockk<SkillNodeExecutor>(relaxed = true),
         )
-        val engine = GraphExecutionEngine(
+        val engine = testGraphExecutionEngine(
             nodeExecutorFactory,
             toolNodeExecutor,
             chatRepository,
@@ -521,7 +528,7 @@ class ExternalAutomationBackgroundRunIntegrationTest {
         val taskQueueManager = TaskQueueManagerImpl(
             chatRepository = chatRepository,
             pipelineRepository = pipelineRepository,
-            settingsRepository = settingsRepository,
+            entryPointSettings = settingsRepository,
             graphExecutionEngine = engine,
             pipelineRunRepository = runRepository,
             runTraceRepository = traceRepository,
@@ -674,7 +681,10 @@ class ExternalAutomationBackgroundRunIntegrationTest {
      */
     private fun scriptedLlmEngine(): LlmInferenceEngine = mockk {
         every { currentModelPath } returns null
-        every { generateResponseStream(any()) } answers {
+        // A recorded on-device call notes what the engine ran on.
+        every { activeBackend } returns null
+        every { activeContextLength } returns null
+        every { generateResponseStream(any(), any(), any()) } answers {
             val prompt = firstArg<String>()
             flowOf(
                 when {

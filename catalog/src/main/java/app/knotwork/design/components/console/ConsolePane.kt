@@ -142,10 +142,13 @@ private val ConsoleNestingIndent = 14.dp
  * @param onFilterByLineSource invoked when the user picks `Only show this
  * source` from the long-press menu — the host should narrow [filter] to a
  * single-source set.
+ * @param onCopyHash invoked when the user taps a node's input or output hash chip
+ *   on the Vars or Traces tab; the host copies the full hash.
+ * @param runHeader the run strip ([RunHeaderStrip]) drawn between the handle and
+ *   the tabs, or `null` when the console has no run to describe.
  * @param modifier optional layout modifier applied to the pane root.
  */
 @Composable
-@Suppress("LongParameterList") // Stable public API.
 fun ConsolePane(
     tab: ConsoleTab,
     onTabChange: (ConsoleTab) -> Unit,
@@ -164,6 +167,8 @@ fun ConsolePane(
     onCopyVar: (ConsoleVarRow) -> Unit = {},
     onCopySpan: (ConsoleTraceSpan) -> Unit = {},
     onFilterByLineSource: (ConsoleSource) -> Unit = {},
+    onCopyHash: (ConsoleHashCopy) -> Unit = {},
+    runHeader: (@Composable () -> Unit)? = null,
 ) {
     // Stateless content — the surrounding `ModalBottomSheet` owns the
     // sheet container (drag handle, anchored-draggable physics, snap
@@ -174,6 +179,7 @@ fun ConsolePane(
             .fillMaxWidth()
             .background(color = KnotworkTheme.extended.consoleBg),
     ) {
+        runHeader?.invoke()
         ConsolePaneHeader(
             tab = tab,
             onTabChange = onTabChange,
@@ -191,15 +197,14 @@ fun ConsolePane(
                 onCopyLine = onCopyLine,
                 onFilterByLineSource = onFilterByLineSource,
             )
-            ConsoleTab.Vars -> ConsoleVarsBody(rows = vars, onCopyVar = onCopyVar)
-            ConsoleTab.Traces -> ConsoleTracesBody(spans = traces, onCopySpan = onCopySpan)
+            ConsoleTab.Vars -> ConsoleVarsBody(rows = vars, onCopyVar = onCopyVar, onCopyHash = onCopyHash)
+            ConsoleTab.Traces -> ConsoleTracesBody(spans = traces, onCopySpan = onCopySpan, onCopyHash = onCopyHash)
         }
     }
 }
 
 /** Tab strip + trailing actions row. */
 @Composable
-@Suppress("LongParameterList")
 private fun ConsolePaneHeader(
     tab: ConsoleTab,
     onTabChange: (ConsoleTab) -> Unit,
@@ -325,7 +330,6 @@ private fun ConsoleHeaderIcon(icon: ImageVector, contentDescription: String, onC
  * renders the localised "no matches" empty-state row.
  */
 @Composable
-@Suppress("LongParameterList") // Six knobs — collapsing into a config object would just shuffle the params.
 private fun ConsoleLogsBody(
     logs: List<ConsoleLine>,
     filter: ConsoleFilter,
@@ -623,7 +627,11 @@ private fun levelAccent(level: ConsoleLevel): Color = when (level) {
  * out of it used to be a screenshot.
  */
 @Composable
-private fun ConsoleVarsBody(rows: List<ConsoleVarRow>, onCopyVar: (ConsoleVarRow) -> Unit) {
+private fun ConsoleVarsBody(
+    rows: List<ConsoleVarRow>,
+    onCopyVar: (ConsoleVarRow) -> Unit,
+    onCopyHash: (ConsoleHashCopy) -> Unit,
+) {
     val groups = rows.groupBy { it.node }
     LazyColumn(modifier = Modifier.fillMaxWidth().fillMaxHeight()) {
         groups.forEach { (node, entries) ->
@@ -644,6 +652,21 @@ private fun ConsoleVarsBody(rows: List<ConsoleVarRow>, onCopyVar: (ConsoleVarRow
                             bottom = KnotworkTheme.spacing.sp1,
                         ),
                 )
+            }
+            val hashed = entries.firstOrNull()
+            if (hashed?.inputSha256 != null || hashed?.outputSha256 != null) {
+                item {
+                    NodeHashChips(
+                        node = node,
+                        inputSha256 = hashed.inputSha256,
+                        outputSha256 = hashed.outputSha256,
+                        onCopyHash = onCopyHash,
+                        modifier = Modifier.padding(
+                            start = KnotworkTheme.spacing.sp3 + groupIndent,
+                            end = KnotworkTheme.spacing.sp3,
+                        ),
+                    )
+                }
             }
             items(items = entries) { row ->
                 ConsoleRowWithMenu(
@@ -692,7 +715,11 @@ private fun ConsoleVarsBody(rows: List<ConsoleVarRow>, onCopyVar: (ConsoleVarRow
 
 /** Traces-tab body — flat list with relative-duration bars. */
 @Composable
-private fun ConsoleTracesBody(spans: List<ConsoleTraceSpan>, onCopySpan: (ConsoleTraceSpan) -> Unit) {
+private fun ConsoleTracesBody(
+    spans: List<ConsoleTraceSpan>,
+    onCopySpan: (ConsoleTraceSpan) -> Unit,
+    onCopyHash: (ConsoleHashCopy) -> Unit,
+) {
     val maxDuration = spans.maxOfOrNull { it.durationMs }?.coerceAtLeast(1L) ?: 1L
     LazyColumn(modifier = Modifier.fillMaxWidth().fillMaxHeight()) {
         items(items = spans) { span ->
@@ -749,8 +776,51 @@ private fun ConsoleTracesBody(spans: List<ConsoleTraceSpan>, onCopySpan: (Consol
                             .width(TraceBarMaxWidth * fraction)
                             .background(color = traceStatusColor(span.status)),
                     )
+                    if (span.inputSha256 != null || span.outputSha256 != null) {
+                        NodeHashChips(
+                            node = span.name,
+                            inputSha256 = span.inputSha256,
+                            outputSha256 = span.outputSha256,
+                            onCopyHash = onCopyHash,
+                        )
+                    }
                 }
             }
+        }
+    }
+}
+
+/**
+ * A node's two hash chips, input then output; each copies its full hash.
+ *
+ * @param node The node's name, for the host's "copied" message.
+ * @param inputSha256 The input's hash, or `null` to leave its chip out.
+ * @param outputSha256 The output's hash, or `null` to leave its chip out.
+ * @param onCopyHash Invoked with the chip the user tapped.
+ * @param modifier Optional layout modifier.
+ */
+@Composable
+private fun NodeHashChips(
+    node: String,
+    inputSha256: String?,
+    outputSha256: String?,
+    onCopyHash: (ConsoleHashCopy) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(KnotworkTheme.spacing.sp2), modifier = modifier) {
+        inputSha256?.let { sha ->
+            ConsoleHashChip(
+                kind = HashKind.INPUT,
+                sha256 = sha,
+                onCopy = { onCopyHash(ConsoleHashCopy(node, HashKind.INPUT, sha)) },
+            )
+        }
+        outputSha256?.let { sha ->
+            ConsoleHashChip(
+                kind = HashKind.OUTPUT,
+                sha256 = sha,
+                onCopy = { onCopyHash(ConsoleHashCopy(node, HashKind.OUTPUT, sha)) },
+            )
         }
     }
 }

@@ -22,6 +22,7 @@ import app.knotwork.android.domain.engine.executors.ToolInvocationGate
 import app.knotwork.android.domain.engine.executors.ToolNodeExecutor
 import app.knotwork.android.domain.engine.structured.CloudStructuredInferenceClientFactory
 import app.knotwork.android.domain.engine.structured.StructuredOutputGate
+import app.knotwork.android.domain.engine.testGraphExecutionEngine
 import app.knotwork.android.domain.models.AgentOrchestratorState
 import app.knotwork.android.domain.models.ConnectionModel
 import app.knotwork.android.domain.models.NodeContextConfig
@@ -57,6 +58,7 @@ import app.knotwork.android.domain.services.CeilingNotifier
 import app.knotwork.android.domain.services.ClarificationNotifier
 import app.knotwork.android.domain.services.NativeMemorySampler
 import app.knotwork.android.domain.services.PipelineCompositionValidator
+import app.knotwork.android.domain.usecases.ApprovalRequestContextFixtures
 import app.knotwork.android.domain.usecases.EvaluateIfConditionUseCase
 import app.knotwork.android.domain.usecases.LoadModelUseCase
 import app.knotwork.android.domain.usecases.LoadPipelineFromPresetUseCase
@@ -130,6 +132,9 @@ class ShowcaseCompositionIntegrationTest {
     fun setup() {
         llmEngine = mockk()
         every { llmEngine.currentModelPath } returns null
+        // A recorded on-device call notes what the engine ran on.
+        every { llmEngine.activeBackend } returns null
+        every { llmEngine.activeContextLength } returns null
         settingsRepository = mockk(relaxed = true)
         every { settingsRepository.workspaceReadTokenBudget } returns flowOf(2_000)
 
@@ -173,7 +178,7 @@ class ShowcaseCompositionIntegrationTest {
 
         engine = buildEngine()
 
-        every { llmEngine.generateResponseStream(any()) } answers { flowOf(scriptFor(firstArg())) }
+        every { llmEngine.generateResponseStream(any(), any(), any()) } answers { flowOf(scriptFor(firstArg())) }
         every { settingsRepository.pipelineMaxNestingDepth } returns flowOf(3)
         every { settingsRepository.pipelineMaxSteps } returns flowOf(50)
         every { settingsRepository.pipelineMaxStepsBackground } returns flowOf(15)
@@ -301,6 +306,7 @@ class ShowcaseCompositionIntegrationTest {
                 chatRepository,
                 mockk<PendingInteractionRepository>(relaxed = true),
                 recordTriggerHitlEvent = mockk<RecordTriggerHitlEventUseCase>(relaxed = true),
+                resolveRequestContext = ApprovalRequestContextFixtures.none(),
             ),
             StructuredOutputGate(),
             settingsRepository,
@@ -360,7 +366,7 @@ class ShowcaseCompositionIntegrationTest {
             mockk<SkillNodeExecutor>(relaxed = true),
         )
 
-        return GraphExecutionEngine(
+        return testGraphExecutionEngine(
             factory,
             toolNodeExecutor,
             chatRepository,

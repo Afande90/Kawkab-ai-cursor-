@@ -94,7 +94,7 @@ import app.knotwork.design.screens.settings.SettingsCategoryId
  *        [AppShellScaffold] for bottom-nav visibility / highlight.
  * @param showOnboarding Read once at composition. When `true`, the splash
  *        completion handler routes to onboarding; otherwise it goes to
- *        Chat. Sourced from `SettingsRepository.hasCompletedOnboarding`
+ *        Chat. Sourced from `AppStateSettings.hasCompletedOnboarding`
  *        (inverted) — a flag that survives `InitializeAppUseCase` and so
  *        is the right gate for the UI surface, unlike `isFirstLaunch`
  *        which is cleared during cold-start init.
@@ -189,6 +189,7 @@ fun AppNavGraph(
                 onOpenModels = { navController.navigate(NavRoutes.MODELS) },
                 onOpenArchive = { navController.navigate(NavRoutes.CHAT_ARCHIVE) },
                 onOpenRunLimits = { navController.navigate(NavRoutes.SETTINGS_PIPELINES_RUN_LIMITS) },
+                onOpenGenerationSettings = { navController.navigate(NavRoutes.SETTINGS_GENERATION) },
             )
         }
 
@@ -237,7 +238,7 @@ fun AppNavGraph(
                 val orchestratorViewModel: OrchestratorViewModel = hiltViewModel(parentEntry)
                 val pipelineId = entry.arguments?.getString(NavRoutes.PIPELINE_EDIT_ID_ARG)
                 LaunchedEffect(pipelineId) {
-                    if (!pipelineId.isNullOrBlank()) orchestratorViewModel.loadPipeline(pipelineId)
+                    if (!pipelineId.isNullOrBlank()) orchestratorViewModel.library.loadPipeline(pipelineId)
                 }
                 PipelineEditorScreen(
                     viewModel = orchestratorViewModel,
@@ -472,7 +473,15 @@ fun AppNavGraph(
                 },
             )
         }
-        composable(NavRoutes.TRIGGERS) {
+        composable(
+            route = NavRoutes.TRIGGERS_ROUTE,
+            arguments = listOf(
+                navArgument(NavRoutes.TRIGGERS_OPEN_ARG) {
+                    type = NavType.StringType
+                    defaultValue = ""
+                },
+            ),
+        ) {
             TriggersScreen(
                 modifier = Modifier.fillMaxSize(),
                 onBack = { navController.popBackStack() },

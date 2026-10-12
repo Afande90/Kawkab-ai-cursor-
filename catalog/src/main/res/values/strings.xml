@@ -65,6 +65,32 @@
     <string name="knotwork_hitl_args_expand">Expand arguments</string>
     <string name="knotwork_hitl_args_collapse">Collapse arguments</string>
 
+    <!-- Request block of the approval card: whose words the request is. The -->
+    <!-- request itself is the user's or another source's text, shown plainly. -->
+    <string name="knotwork_hitl_request_source_chat">You asked</string>
+    <string name="knotwork_hitl_request_source_chat_image">You asked, with an image</string>
+    <string name="knotwork_hitl_request_source_image_only">You sent an image</string>
+    <!-- Shown in place of the request when an image was sent without text. -->
+    <string name="knotwork_hitl_request_image_only_body">No text with it.</string>
+    <string name="knotwork_hitl_request_source_shared">You shared</string>
+    <!-- %1$s is the trigger's name; the request below it is the trigger's prompt. -->
+    <string name="knotwork_hitl_request_source_trigger">Trigger “%1$s”</string>
+    <string name="knotwork_hitl_request_source_trigger_deleted">Deleted trigger</string>
+    <!-- The agent composed this instruction through schedule_task: never "you asked". -->
+    <string name="knotwork_hitl_request_source_scheduled">Scheduled by the agent</string>
+    <string name="knotwork_hitl_request_source_tile">Quick Settings tile</string>
+    <string name="knotwork_hitl_request_source_other_app">Another app asked</string>
+    <!-- Click labels of the collapsible request block (TalkBack: "Double-tap to show all"). -->
+    <string name="knotwork_hitl_request_show_all">Show all</string>
+    <string name="knotwork_hitl_request_show_less">Show less</string>
+    <!-- TalkBack: the request block as one node. %1$s is the label, %2$s the request. -->
+    <string name="knotwork_hitl_request_a11y">%1$s: %2$s</string>
+    <!-- The visible ellipsis is not read reliably, so a clamped request says so. -->
+    <string name="knotwork_hitl_request_a11y_shortened">%1$s: %2$s. Shortened.</string>
+    <string name="knotwork_hitl_request_a11y_image_only">You sent an image with no text</string>
+    <!-- TalkBack description of the tool-name row when the card shows a request. -->
+    <string name="knotwork_hitl_call_a11y">Agent wants to use %1$s</string>
+
     <!-- ============ ClarificationCard ============ -->
 
     <!-- Default placeholder for the free-form clarification field if the caller -->
@@ -537,6 +563,28 @@
     <string name="knotwork_settings_providers_add">Add provider</string>
     <string name="knotwork_settings_providers_lan">LAN</string>
     <string name="knotwork_settings_providers_not_configured">Not configured · tap to add API key</string>
+    <string name="knotwork_settings_providers_not_configured_address">Not configured · tap to add the server address</string>
+    <string name="knotwork_settings_providers_no_model">no model selected</string>
+
+    <string name="knotwork_node_provider_auto">Auto</string>
+    <string name="knotwork_node_provider_not_configured">not configured on this device</string>
+    <string name="knotwork_node_provider_auto_line">first configured of Google, Anthropic, OpenAI, DeepSeek</string>
+    <string name="knotwork_node_provider_auto_resolved">on this device → %1$s</string>
+    <string name="knotwork_node_provider_on_device_line">on-device model</string>
+    <string name="knotwork_node_provider_picker_note">Providers not configured here still save: a pipeline can run on another device.</string>
+    <string name="knotwork_node_provider_hint_cloud">If %1$s is not set up on the device that runs this, the node fails and names the reason.</string>
+    <string name="knotwork_node_provider_hint_engine">If %1$s is not set up on the device that runs this, the node runs on the on-device model and writes a console line.</string>
+    <string name="knotwork_node_provider_hint_auto">Uses the first configured of Google, Anthropic, OpenAI, DeepSeek — never OpenRouter, Groq or your own server. If none is set up, the node fails and names the reason.</string>
+    <string name="knotwork_node_provider_group_hosted">Hosted</string>
+    <string name="knotwork_node_provider_group_own">Your own server</string>
+
+    <string name="knotwork_model_sheet_title">Choose a model</string>
+    <string name="knotwork_model_sheet_count" tools:ignore="PluralsCandidate">%1$d from %2$s</string>
+    <string name="knotwork_model_sheet_search">Search model ids</string>
+    <plurals name="knotwork_model_sheet_matches">
+        <item quantity="one">%1$d match</item>
+        <item quantity="other">%1$d matches</item>
+    </plurals>
 
     <string name="knotwork_settings_notifications_scheduled_results">Scheduled task results</string>
     <string name="knotwork_settings_share_pipeline_title">Pipeline for sharing</string>
@@ -619,6 +667,40 @@
     <string name="knotwork_memory_detail_cancel">Cancel</string>
     <string name="knotwork_memory_detail_save">Save</string>
     <string name="knotwork_memory_detail_close">Close</string>
+    <!-- Earlier versions and pairs on the detail sheet and the list row. -->
+    <string name="knotwork_memory_hist_title">Earlier versions</string>
+    <plurals name="knotwork_memory_hist_count">
+        <item quantity="one">%1$d earlier version</item>
+        <item quantity="other">%1$d earlier versions</item>
+    </plurals>
+    <string name="knotwork_memory_hist_src_auto">Auto-extracted</string>
+    <string name="knotwork_memory_hist_src_manual">Saved manually</string>
+    <string name="knotwork_memory_hist_src_compact">Compacted</string>
+    <string name="knotwork_memory_hist_src_unknown">Unknown source</string>
+    <string name="knotwork_memory_hist_learned_from">Learned from Chat “%1$s”</string>
+    <string name="knotwork_memory_hist_captured">Captured %1$s</string>
+    <string name="knotwork_memory_hist_replaced">Replaced %1$s</string>
+    <string name="knotwork_memory_hist_version_more">More options for this version</string>
+    <string name="knotwork_memory_hist_delete_version">Delete this version</string>
+    <string name="knotwork_memory_dlg_delete_version_title">Delete this version?</string>
+    <string name="knotwork_memory_dlg_delete_version_body">The earlier text is removed from this memory’s history. The current text stays.</string>
+    <string name="knotwork_memory_edit_history_note">Your edit replaces the text without adding an earlier version.</string>
+    <string name="knotwork_memory_pair_pinned_title">An update is waiting</string>
+    <string name="knotwork_memory_pair_update_title">Updates a pinned memory</string>
+    <string name="knotwork_memory_pair_note">The agent uses the pinned text until you choose.</string>
+    <string name="knotwork_memory_pair_use">Use the update</string>
+    <string name="knotwork_memory_pair_keep">Keep pinned</string>
+    <string name="knotwork_memory_row_pair_pinned">Update waiting</string>
+    <string name="knotwork_memory_row_pair_update">Updates a pinned memory</string>
+    <plurals name="knotwork_memory_a11y_row_history">
+        <item quantity="one">%1$d earlier version</item>
+        <item quantity="other">%1$d earlier versions</item>
+    </plurals>
+    <string name="knotwork_memory_a11y_hist_show">Show earlier versions</string>
+    <string name="knotwork_memory_a11y_hist_hide">Hide earlier versions</string>
+    <string name="knotwork_memory_a11y_version">Earlier version %1$d of %2$d. %3$s. %4$s.</string>
+    <string name="knotwork_memory_a11y_pair_update_text">Update: %1$s</string>
+    <string name="knotwork_memory_a11y_pair_pinned_text">Pinned text: %1$s</string>
     <string name="knotwork_memory_meta_source">Source</string>
     <string name="knotwork_memory_meta_learned_from">Learned from</string>
     <string name="knotwork_memory_meta_captured">Captured</string>
@@ -1061,5 +1143,34 @@
     <string name="knotwork_discover_license_body_unknown">This model\'s licence is not declared on Hugging Face. Review it on the model card before installing.</string>
     <string name="knotwork_discover_license_accept">Accept &amp; install</string>
     <string name="knotwork_discover_license_cancel">Cancel</string>
+
+    <!-- ============ NodeTypePickerSheetBody ============ -->
+    <!-- The pipeline editor's sheet for adding a node. The node types' own names and
+         descriptions live in strings_node_types.xml; these are the sheet around them. -->
+
+    <!-- Sheet title; the same words as the editor's + button. -->
+    <string name="knotwork_node_picker_title">Add node</string>
+    <!-- Header close icon, contentDescription. -->
+    <string name="knotwork_node_picker_close">Close</string>
+    <!-- Search placeholder, and the field's accessibility label. -->
+    <string name="knotwork_node_picker_search_hint">Search node types</string>
+    <!-- The field's clear icon (contentDescription) and the no-match state's button. -->
+    <string name="knotwork_node_picker_search_clear">Clear search</string>
+    <!-- Group headings, in the order the sheet lists them. -->
+    <string name="knotwork_node_picker_group_io">Start and finish</string>
+    <string name="knotwork_node_picker_group_model">Run a model</string>
+    <string name="knotwork_node_picker_group_act">Ask and act</string>
+    <string name="knotwork_node_picker_group_branch">Branch</string>
+    <string name="knotwork_node_picker_group_list">Work through a list</string>
+    <!-- No type matches the search. %1$s is the query as typed. -->
+    <string name="knotwork_node_picker_no_match">No node type matches “%1$s”</string>
+    <!-- TalkBack: what double-tapping a row does. -->
+    <string name="knotwork_node_picker_a11y_row_action">Add to pipeline</string>
+    <!-- TalkBack: the number of matching types, carried by the search field once typing
+         pauses. %1$d is the count. -->
+    <plurals name="knotwork_node_picker_a11y_results">
+        <item quantity="one">%1$d node type</item>
+        <item quantity="other">%1$d node types</item>
+    </plurals>
 
 </resources>

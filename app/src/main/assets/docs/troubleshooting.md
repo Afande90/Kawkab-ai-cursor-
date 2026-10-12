@@ -49,11 +49,14 @@ model fails:
 
 ## Inference is very slow
 
-Without an NPU or a usable GPU, the local model runs on CPU only,
-which is noticeably slower (especially for the first few tokens):
+Without a usable GPU, the local model runs on CPU only, which is
+noticeably slower (especially for the first few tokens):
 
-- Open **Settings → Models** and tap **Test backend** to confirm
-  which backend the model is actually using.
+- While a reply is being written, the agent status names the backend
+  the model is actually running on. If it says CPU with **GPU**
+  selected, the GPU failed to start and this session fell back.
+- **Test backend** in **Settings → Models** measures how fast the
+  selected backend generates.
 - Try a smaller model from the **Models** screen — even a 1B-2B
   parameter model can be substantially faster than a 7B+ one on
   CPU.
@@ -204,7 +207,11 @@ screen's search), work down this list:
 - **Another entry said the same thing.** Entries whose meaning nearly
   matches a better-ranked one are collapsed into it, so a reworded
   duplicate does not spend a second slot. The surviving copy is the
-  pinned one if there is one, otherwise the best-ranked.
+  pinned one if there is one, otherwise the best-ranked — and at about equal
+  relevance and age, one you saved by hand ranks above an extracted one.
+  With the on-device embedding model this also catches unrelated entries
+  written in Russian, which it cannot tell apart — see [Known
+  limitations](faq.md#known-limitations).
 - **The entry is queued for re-embedding.** A chunk imported under a
   different embedding provider can't be matched until the background
   re-embed finishes (it scores ~0 in the meantime). Give it a moment, or
@@ -221,9 +228,11 @@ screen's search), work down this list:
   `search_tool`, so a step that looked a fact up on Wikipedia reports a refusal
   naming the setting instead of returning an extract.
 - **It was never extracted.** Auto-extract only keeps durable facts
-  (preferences, events, relationships) and skips small talk and
-  near-duplicates. If a fact didn't make the cut, add it by hand with
-  **Save to memory** or the **Add memory** FAB.
+  (preferences, events, relationships) and skips small talk and facts
+  you already have. A change of a fact you have updates that entry instead
+  of adding one — or, for a pinned entry, waits beside it. If a fact didn't
+  make the cut, add it by hand with **Save to memory** or the **Add memory**
+  FAB.
 
 ## "Your data can't be unlocked" appears at startup
 

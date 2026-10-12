@@ -1,10 +1,13 @@
 package app.knotwork.android.di
 
 import app.knotwork.android.data.audio.AudioRecorderImpl
+import app.knotwork.android.data.engine.AndroidRunEnvironment
 import app.knotwork.android.data.engine.DefaultTextEmbedderFactory
+import app.knotwork.android.data.engine.KoogProviderConnectionChecker
 import app.knotwork.android.data.engine.LiteRTLlmEngine
 import app.knotwork.android.data.engine.MediaPipeTextEmbeddingEngine
 import app.knotwork.android.data.engine.OpenClAccelerationProbe
+import app.knotwork.android.data.engine.SecureRandomRunSeedSource
 import app.knotwork.android.data.engine.TaskQueueManagerImpl
 import app.knotwork.android.data.engine.TextEmbedderFactory
 import app.knotwork.android.data.local.AgentWorkspaceImpl
@@ -15,11 +18,12 @@ import app.knotwork.android.data.local.AudioCaptureStoreImpl
 import app.knotwork.android.data.local.DatabaseResetServiceImpl
 import app.knotwork.android.data.local.DownloadedModelFilesImpl
 import app.knotwork.android.data.local.ImageCaptureStoreImpl
-import app.knotwork.android.data.local.SettingsManager
+import app.knotwork.android.data.local.StreamingModelFileHasher
 import app.knotwork.android.data.local.TransientCacheSweeperImpl
 import app.knotwork.android.data.local.crypto.AeadCipher
 import app.knotwork.android.data.local.crypto.AndroidKeystoreAeadCipher
 import app.knotwork.android.data.mcp.KoogMcpClientFactory
+import app.knotwork.android.data.mcp.KoogMcpConnectionChecker
 import app.knotwork.android.data.mcp.McpClientFactory
 import app.knotwork.android.data.network.AndroidModelDownloadManager
 import app.knotwork.android.data.repositories.AssetBundledDocumentationRepository
@@ -35,6 +39,7 @@ import app.knotwork.android.data.repositories.LocalPipelinePresetRepositoryImpl
 import app.knotwork.android.data.repositories.LocalPipelineRepositoryImpl
 import app.knotwork.android.data.repositories.LocalPromptPresetRepositoryImpl
 import app.knotwork.android.data.repositories.McpServerRepositoryImpl
+import app.knotwork.android.data.repositories.MemoryHistoryRepositoryImpl
 import app.knotwork.android.data.repositories.MemoryRepositoryImpl
 import app.knotwork.android.data.repositories.MetricsRepositoryImpl
 import app.knotwork.android.data.repositories.ModelDiscoveryRepositoryImpl
@@ -53,7 +58,10 @@ import app.knotwork.android.data.repositories.TriggerJournalRepositoryImpl
 import app.knotwork.android.data.repositories.TriggerRepositoryImpl
 import app.knotwork.android.data.repositories.UsageTelemetryRepositoryImpl
 import app.knotwork.android.data.services.WorkManagerMemoryReembedScheduler
+import app.knotwork.android.data.services.WorkManagerModelFileHashScheduler
 import app.knotwork.android.data.services.WorkManagerTriggerScheduler
+import app.knotwork.android.domain.connection.McpConnectionChecker
+import app.knotwork.android.domain.connection.ProviderConnectionChecker
 import app.knotwork.android.domain.engine.HardwareAccelerationProbe
 import app.knotwork.android.domain.engine.LlmInferenceEngine
 import app.knotwork.android.domain.engine.TaskQueueManager
@@ -67,6 +75,7 @@ import app.knotwork.android.domain.repositories.ExternalAutomationJournalReposit
 import app.knotwork.android.domain.repositories.IdentityRepository
 import app.knotwork.android.domain.repositories.LocalModelRepository
 import app.knotwork.android.domain.repositories.McpServerRepository
+import app.knotwork.android.domain.repositories.MemoryHistoryRepository
 import app.knotwork.android.domain.repositories.MemoryRepository
 import app.knotwork.android.domain.repositories.MetricsRepository
 import app.knotwork.android.domain.repositories.ModelDiscoveryRepository
@@ -82,7 +91,6 @@ import app.knotwork.android.domain.repositories.PowerStateRepository
 import app.knotwork.android.domain.repositories.PromptPresetRepository
 import app.knotwork.android.domain.repositories.PromptRepository
 import app.knotwork.android.domain.repositories.RunTraceRepository
-import app.knotwork.android.domain.repositories.SettingsRepository
 import app.knotwork.android.domain.repositories.ShareAdmissionRepository
 import app.knotwork.android.domain.repositories.SkillRepository
 import app.knotwork.android.domain.repositories.ToolRepository
@@ -97,7 +105,11 @@ import app.knotwork.android.domain.services.DatabaseResetService
 import app.knotwork.android.domain.services.DownloadedModelFiles
 import app.knotwork.android.domain.services.ImageCaptureStore
 import app.knotwork.android.domain.services.MemoryReembedScheduler
+import app.knotwork.android.domain.services.ModelFileHashScheduler
+import app.knotwork.android.domain.services.ModelFileHasher
 import app.knotwork.android.domain.services.NativeMemorySampler
+import app.knotwork.android.domain.services.RunEnvironment
+import app.knotwork.android.domain.services.RunSeedSource
 import app.knotwork.android.domain.services.TransientCacheSweeper
 import app.knotwork.android.domain.services.TriggerScheduler
 import dagger.Binds
@@ -158,13 +170,6 @@ abstract class DataModule {
     ): BundledDocumentationRepository
 
     /**
-     * Binds the [SettingsManager] implementation to the [SettingsRepository] interface.
-     */
-    @Binds
-    @Singleton
-    abstract fun bindSettingsRepository(settingsManager: SettingsManager): SettingsRepository
-
-    /**
      * Binds the [LiteRTLlmEngine] implementation to the [LlmInferenceEngine] interface.
      */
     @Binds
@@ -199,6 +204,13 @@ abstract class DataModule {
     @Binds
     @Singleton
     abstract fun bindMemoryRepository(repository: MemoryRepositoryImpl): MemoryRepository
+
+    /**
+     * Binds the [MemoryHistoryRepositoryImpl] implementation to the [MemoryHistoryRepository] interface.
+     */
+    @Binds
+    @Singleton
+    abstract fun bindMemoryHistoryRepository(repository: MemoryHistoryRepositoryImpl): MemoryHistoryRepository
 
     /**
      * Binds the [AndroidModelDownloadManager] implementation to the [ModelDownloadManager] interface.
@@ -282,6 +294,22 @@ abstract class DataModule {
     @Binds
     @Singleton
     abstract fun bindMcpServerRepository(repository: McpServerRepositoryImpl): McpServerRepository
+
+    /**
+     * Binds [KoogProviderConnectionChecker] to [ProviderConnectionChecker] — the provider
+     * screen's Test connection, on the clients and the transport a run uses.
+     */
+    @Binds
+    @Singleton
+    abstract fun bindProviderConnectionChecker(checker: KoogProviderConnectionChecker): ProviderConnectionChecker
+
+    /**
+     * Binds [KoogMcpConnectionChecker] to [McpConnectionChecker] — the MCP server form's Test
+     * connection, on a throwaway client outside the connection pool.
+     */
+    @Binds
+    @Singleton
+    abstract fun bindMcpConnectionChecker(checker: KoogMcpConnectionChecker): McpConnectionChecker
 
     /**
      * Binds the [MetricsRepositoryImpl] implementation to the [MetricsRepository] interface.
@@ -493,6 +521,37 @@ abstract class DataModule {
      */
     @Binds
     abstract fun bindDownloadedModelFiles(files: DownloadedModelFilesImpl): DownloadedModelFiles
+
+    /**
+     * Binds [StreamingModelFileHasher] to [ModelFileHasher] — reads a model file
+     * through SHA-256 in chunks for the background hashing pass.
+     */
+    @Binds
+    abstract fun bindModelFileHasher(hasher: StreamingModelFileHasher): ModelFileHasher
+
+    /**
+     * Binds [WorkManagerModelFileHashScheduler] to [ModelFileHashScheduler] —
+     * enqueues the background pass that hashes installed model files.
+     */
+    @Binds
+    @Singleton
+    abstract fun bindModelFileHashScheduler(scheduler: WorkManagerModelFileHashScheduler): ModelFileHashScheduler
+
+    /**
+     * Binds [SecureRandomRunSeedSource] to [RunSeedSource] — draws the seed a
+     * pipeline run's on-device calls derive their seeds from.
+     */
+    @Binds
+    @Singleton
+    abstract fun bindRunSeedSource(source: SecureRandomRunSeedSource): RunSeedSource
+
+    /**
+     * Binds [AndroidRunEnvironment] to [RunEnvironment] — the app version,
+     * runtime version and device a run's header records.
+     */
+    @Binds
+    @Singleton
+    abstract fun bindRunEnvironment(environment: AndroidRunEnvironment): RunEnvironment
 
     /**
      * Binds [AudioCaptureStoreImpl] to [AudioCaptureStore] — the ephemeral

@@ -14,14 +14,17 @@ import app.knotwork.android.R
 import app.knotwork.android.domain.constants.NotificationChannels
 import app.knotwork.android.domain.constants.NotificationIds
 import app.knotwork.android.domain.models.RunTerminationKind
-import app.knotwork.android.domain.repositories.SettingsRepository
+import app.knotwork.android.domain.repositories.RunSettings
 import app.knotwork.android.domain.services.ScheduledTaskNotifier
 import app.knotwork.android.presentation.ui.common.RunTerminationCopyMapper
 import app.knotwork.android.presentation.ui.common.RunTerminationTone
 import app.knotwork.android.presentation.ui.common.resolve
 import app.knotwork.android.presentation.ui.navigation.ChatDeepLink
+import app.knotwork.android.presentation.ui.navigation.TriggerDeepLink
+import app.knotwork.android.presentation.ui.triggers.TriggerSilenceLabel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.firstOrNull
+import java.time.ZoneId
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -42,7 +45,7 @@ import javax.inject.Singleton
 @Singleton
 class ScheduledTaskNotifierImpl @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val settingsRepository: SettingsRepository,
+    private val runSettings: RunSettings,
 ) : ScheduledTaskNotifier {
 
     override fun registerChannel() {
@@ -63,6 +66,38 @@ class ScheduledTaskNotifierImpl @Inject constructor(
             body = triggerName,
             icon = R.drawable.ic_stat_agent,
         )
+    }
+
+    @SuppressLint("MissingPermission") // hasPostNotificationsPermission() gates the call below.
+    override suspend fun notifyTriggerStale(triggerId: String, triggerName: String, silentSinceMillis: Long) {
+        val enabled = runSettings.scheduledTaskNotificationsEnabled.firstOrNull() ?: false
+        if (!enabled) return
+        if (!hasPostNotificationsPermission()) return
+        val title = context.getString(R.string.notifications_trigger_stale_title)
+        // The moment the trigger's detail banner names, written the same way: the tap opens that screen.
+        val since = TriggerSilenceLabel.format(
+            epochMillis = silentSinceMillis,
+            nowMillis = System.currentTimeMillis(),
+            zone = ZoneId.systemDefault(),
+            dayFormatter = TriggerSilenceLabel.dayFormatter(context.resources.configuration.locales[0]),
+        )
+        val body = context.getString(R.string.notifications_trigger_stale_body, triggerName, since)
+        val id = NotificationIds.Family.TRIGGER_STALE.idFor(triggerId)
+        val notification = NotificationCompat.Builder(context, NotificationChannels.TASK_RESULTS)
+            .setSmallIcon(R.drawable.ic_stat_agent)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(
+                TriggerDeepLink.backStack(context, triggerId)
+                    .getPendingIntent(id, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE),
+            )
+            .setAutoCancel(true)
+            // The body names the trigger.
+            .lockScreenVersion(context, NotificationChannels.TASK_RESULTS, R.drawable.ic_stat_agent, title)
+            .build()
+        NotificationManagerCompat.from(context).notify(id, notification)
     }
 
     override suspend fun notifyCompleted(sessionId: String, resultPreview: String) {
@@ -123,7 +158,7 @@ class ScheduledTaskNotifierImpl @Inject constructor(
 
     @SuppressLint("MissingPermission") // hasPostNotificationsPermission() gates the call below.
     private suspend fun post(sessionId: String, title: String, body: String, icon: Int) {
-        val enabled = settingsRepository.scheduledTaskNotificationsEnabled.firstOrNull() ?: false
+        val enabled = runSettings.scheduledTaskNotificationsEnabled.firstOrNull() ?: false
         if (!enabled) return
         if (!hasPostNotificationsPermission()) return
         val notification = NotificationCompat.Builder(context, NotificationChannels.TASK_RESULTS)
@@ -134,6 +169,8 @@ class ScheduledTaskNotifierImpl @Inject constructor(
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setContentIntent(chatDeepLinkIntent(sessionId))
             .setAutoCancel(true)
+            // The body is the run's answer, its failure, or a trigger's name.
+            .lockScreenVersion(context, NotificationChannels.TASK_RESULTS, icon, title)
             .build()
         NotificationManagerCompat.from(context).notify(notificationId(sessionId), notification)
     }

@@ -1,8 +1,8 @@
 package app.knotwork.android.domain.engine.executors
 
 import app.knotwork.android.domain.engine.LlmInferenceEngine
-import app.knotwork.android.domain.engine.structured.CloudStructuredClient
 import app.knotwork.android.domain.engine.structured.CloudStructuredInferenceClientFactory
+import app.knotwork.android.domain.engine.structured.StructuredInferenceClient
 import app.knotwork.android.domain.engine.structured.StructuredOutputGate
 import app.knotwork.android.domain.models.AgentOrchestratorState
 import app.knotwork.android.domain.models.AgentTool
@@ -25,6 +25,7 @@ import app.knotwork.android.domain.repositories.PendingInteractionRepository
 import app.knotwork.android.domain.repositories.SettingsRepository
 import app.knotwork.android.domain.repositories.ToolRepository
 import app.knotwork.android.domain.services.ApprovalNotifier
+import app.knotwork.android.domain.usecases.ApprovalRequestContextFixtures
 import app.knotwork.android.domain.usecases.LoadModelUseCase
 import app.knotwork.android.domain.usecases.RecordTriggerHitlEventUseCase
 import io.mockk.coEvery
@@ -81,11 +82,12 @@ class ToolNodeExecutorTest {
 
         toolInvocationGate = ToolInvocationGate(
             toolRepository = toolRepository,
-            settingsRepository = settingsRepository,
+            toolSettings = settingsRepository,
             approvalNotifier = approvalNotifier,
             chatRepository = chatRepository,
             pendingInteractionRepository = pendingInteractionRepository,
             recordTriggerHitlEvent = recordTriggerHitlEvent,
+            resolveRequestContext = ApprovalRequestContextFixtures.none(),
         )
         executor = ToolNodeExecutor(
             llmEngine = llmEngine,
@@ -93,7 +95,7 @@ class ToolNodeExecutorTest {
             toolRepository = toolRepository,
             toolInvocationGate = toolInvocationGate,
             structuredOutputGate = StructuredOutputGate(),
-            settingsRepository = settingsRepository,
+            runSettings = settingsRepository,
             cloudStructuredFactory = CloudStructuredInferenceClientFactory { _, _ -> null },
         )
 
@@ -116,12 +118,9 @@ class ToolNodeExecutorTest {
                 toolRepository = toolRepository,
                 toolInvocationGate = toolInvocationGate,
                 structuredOutputGate = StructuredOutputGate(),
-                settingsRepository = settingsRepository,
+                runSettings = settingsRepository,
                 cloudStructuredFactory = CloudStructuredInferenceClientFactory { _, _ ->
-                    CloudStructuredClient(
-                        inference = { _, _ -> throw RuntimeException(LEAKING_PROVIDER_ERROR) },
-                        supportsNativeJson = true,
-                    )
+                    StructuredInferenceClient { _, _ -> throw RuntimeException(LEAKING_PROVIDER_ERROR) }
                 },
             )
             val toolName = "MyTool"
@@ -273,7 +272,7 @@ class ToolNodeExecutorTest {
             "READ_ONLY tool with global override OFF must not emit WaitingForApproval",
             states.any { it is AgentOrchestratorState.WaitingForApproval },
         )
-        verify(exactly = 0) { approvalNotifier.sendApprovalRequest(any(), any(), any(), any(), any()) }
+        verify(exactly = 0) { approvalNotifier.sendApprovalRequest(any(), any(), any(), any(), any(), any()) }
         val last = states.last() as NodeExecutionResult
         assertEquals("ok", last.outputText)
     }
@@ -309,7 +308,7 @@ class ToolNodeExecutorTest {
             assertNotNull("Global override must force HITL prompt for READ_ONLY", waiting)
             assertEquals(ToolRisk.READ_ONLY, waiting!!.risk)
             verify(exactly = 1) {
-                approvalNotifier.sendApprovalRequest("session-1", any(), toolName, "args", ToolRisk.READ_ONLY)
+                approvalNotifier.sendApprovalRequest("session-1", any(), toolName, "args", ToolRisk.READ_ONLY, any())
             }
             job.cancel()
         }
@@ -345,7 +344,7 @@ class ToolNodeExecutorTest {
             assertNotNull("SENSITIVE tools must always trigger HITL prompt", waiting)
             assertEquals(ToolRisk.SENSITIVE, waiting!!.risk)
             verify(exactly = 1) {
-                approvalNotifier.sendApprovalRequest("session-1", any(), toolName, "args", ToolRisk.SENSITIVE)
+                approvalNotifier.sendApprovalRequest("session-1", any(), toolName, "args", ToolRisk.SENSITIVE, any())
             }
             job.cancel()
         }
@@ -381,7 +380,7 @@ class ToolNodeExecutorTest {
             assertNotNull("DESTRUCTIVE tools must always trigger HITL prompt", waiting)
             assertEquals(ToolRisk.DESTRUCTIVE, waiting!!.risk)
             verify(exactly = 1) {
-                approvalNotifier.sendApprovalRequest("session-1", any(), toolName, "args", ToolRisk.DESTRUCTIVE)
+                approvalNotifier.sendApprovalRequest("session-1", any(), toolName, "args", ToolRisk.DESTRUCTIVE, any())
             }
             job.cancel()
         }
@@ -430,7 +429,7 @@ class ToolNodeExecutorTest {
             assertTrue(finalResult.error!!.contains("blocked by Settings", ignoreCase = true))
             assertEquals(null, finalResult.outputText)
             coVerify(exactly = 0) { toolRepository.executeTool(any(), any(), any()) }
-            verify(exactly = 0) { approvalNotifier.sendApprovalRequest(any(), any(), any(), any(), any()) }
+            verify(exactly = 0) { approvalNotifier.sendApprovalRequest(any(), any(), any(), any(), any(), any()) }
         }
 
     @Test
@@ -451,7 +450,7 @@ class ToolNodeExecutorTest {
         assertNotNull("getRisk failure must surface as a structured error", finalResult!!.error)
         assertTrue(finalResult.error!!.contains("Risk lookup failed", ignoreCase = true))
         coVerify(exactly = 0) { toolRepository.executeTool(any(), any(), any()) }
-        verify(exactly = 0) { approvalNotifier.sendApprovalRequest(any(), any(), any(), any(), any()) }
+        verify(exactly = 0) { approvalNotifier.sendApprovalRequest(any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -836,6 +835,7 @@ class ToolNodeExecutorTest {
                 "MyTool",
                 "args",
                 ToolRisk.SENSITIVE,
+                any(),
             )
         }
         coVerify(exactly = 0) { toolRepository.executeTool(any(), any(), any()) }
@@ -919,6 +919,7 @@ class ToolNodeExecutorTest {
                     "delete_file",
                     """{"path":"reports/old.md"}""",
                     ToolRisk.DESTRUCTIVE,
+                    any(),
                 )
             }
             coVerify(exactly = 0) { toolRepository.executeTool(any(), any(), any()) }
@@ -947,7 +948,9 @@ class ToolNodeExecutorTest {
         val lastResult = results.filterIsInstance<NodeExecutionResult>().lastOrNull()
         assertNotNull(lastResult)
         assertTrue(lastResult!!.error!!.contains("timed out", ignoreCase = true))
-        verify(exactly = 0) { approvalNotifier.sendPersistentApprovalRequest(any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 0) {
+            approvalNotifier.sendPersistentApprovalRequest(any(), any(), any(), any(), any(), any(), any())
+        }
         job.cancel()
     }
 
@@ -974,7 +977,7 @@ class ToolNodeExecutorTest {
         // No fresh gate was raised and the one-shot record was consumed.
         assertTrue(states.filterIsInstance<AgentOrchestratorState.WaitingForApproval>().isEmpty())
         coVerify { pendingInteractionRepository.delete("run-1") }
-        verify(exactly = 0) { approvalNotifier.sendApprovalRequest(any(), any(), any(), any(), any()) }
+        verify(exactly = 0) { approvalNotifier.sendApprovalRequest(any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -1079,6 +1082,34 @@ class ToolNodeExecutorTest {
         coEvery { toolRepository.executeTool(toolName, "good_args", any()) } returns "Tool Success"
 
         val outputs = executor.execute(node, "Do something", "session-1", "").toList()
+
+        assertEquals("Tool Success", outputs.lastResult().outputText)
+        assertEquals(1, outputs.consoleEvents().count { it.type == ConsoleEventType.StructuredOutputRepair })
+    }
+
+    @Test
+    fun `given a cloud provider when the first tool call is malformed then it is repaired`() = runTest {
+        // Nothing in the request switches a provider's JSON mode on, so its first
+        // answer can be prose like any model's: the configured repair budget applies.
+        val answers = ArrayDeque(
+            listOf("sorry, here is the json", """{"tool": "MyTool", "arguments": "good_args"}"""),
+        )
+        val cloud = ToolNodeExecutor(
+            llmEngine = llmEngine,
+            loadModelUseCase = loadModelUseCase,
+            toolRepository = toolRepository,
+            toolInvocationGate = toolInvocationGate,
+            structuredOutputGate = StructuredOutputGate(),
+            runSettings = settingsRepository,
+            cloudStructuredFactory = CloudStructuredInferenceClientFactory { _, _ ->
+                StructuredInferenceClient { _, _ -> answers.removeFirst() }
+            },
+        )
+        val node = NodeModel("1", NodeType.TOOL, 0f, 0f, toolName = "MyTool", cloudProvider = "openai")
+        coEvery { toolRepository.getAvailableTools() } returns listOf(AgentTool("MyTool", "Desc", "Schema"))
+        coEvery { toolRepository.executeTool("MyTool", "good_args", any()) } returns "Tool Success"
+
+        val outputs = cloud.execute(node, "Do something", "session-1", "").toList()
 
         assertEquals("Tool Success", outputs.lastResult().outputText)
         assertEquals(1, outputs.consoleEvents().count { it.type == ConsoleEventType.StructuredOutputRepair })

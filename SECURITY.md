@@ -41,13 +41,20 @@ storage and credentials:
   - `chat_messages` — user messages and model replies.
   - `chat_sessions` — chat metadata and pipeline bindings.
   - `memory_chunks` — fragments of long-term agent memory extracted from
-    prior conversations.
+    prior conversations, and `memory_chunk_history` — the earlier texts of
+    fragments a newer statement replaced.
   - `trace_steps` — the persistent pipeline-run trace: per-node inputs and
-    outputs, console events, and resolved long-term-memory snapshots recorded
-    while a run executes (this is what console replay and checkpoint resume
-    read back).
+    outputs (with their SHA-256), console events, and resolved long-term-memory
+    snapshots recorded while a run executes (this is what console replay and
+    checkpoint resume read back).
+  - `model_calls` — every call a run made to a model: for an on-device call the
+    full prompt the model read (chat history and memory included, as far as the
+    step used them) and its full answer, with the seed, sampler, model-file
+    checksum, backend and context window that produced it; for a cloud call only
+    the provider and model. Deleted with its run.
   - `pipeline_runs` — persistent run records, including the original user
-    prompt of each run and per-node progress markers.
+    prompt of each run, per-node progress markers and the run header (seed,
+    sampler, app and runtime versions, device).
   - `pending_interactions` — parked human-in-the-loop requests for runs that
     wait in the background: each record stores the staged **tool name and the
     exact arguments** awaiting approval (or the clarification question), so
@@ -102,7 +109,7 @@ storage and credentials:
   the destructive-recreation fallback on upgrade has been removed. An in-place
   upgrade therefore keeps all local data — chats and metadata (`chat_messages`,
   `chat_sessions`), long-term memory (`memory_chunks`), pipeline run traces
-  (`trace_steps`), **custom pipelines** (`pipelines`, `pipeline_nodes`,
+  (`trace_steps`, `model_calls`), **custom pipelines** (`pipelines`, `pipeline_nodes`,
   `pipeline_connections`), and **saved presets and prompt templates**
   (`pipeline_presets`, `prompt_presets`, `prompt_templates`). The migrations
   across the exported-schema baseline range are covered by a `MigrationTestHelper`
@@ -397,7 +404,12 @@ new risk surface, and the design constrains it deliberately:
   [docs/architecture.md](docs/architecture.md)). An answer
   settles only the request it was given for — the card and each notification
   carry that request's identity — so a second run waiting in the same chat
-  cannot be approved by the answer meant for the first. The
+  cannot be approved by the answer meant for the first. **A locked phone
+  neither shows the call nor approves it**: the notification's Approve asks
+  for the device to be unlocked before it is sent (Deny does not — refusing
+  authorises nothing), and where Android hides sensitive content the approval,
+  question and result notifications show their title only. A lock screen set
+  to show all content still shows the text; the setting is the user's. The
   background-execution arc — trigger fires → background run → notification →
   result in the bound chat, including the park-and-approve path — is covered
   end-to-end by an integration test.
@@ -420,6 +432,16 @@ new risk surface, and the design constrains it deliberately:
   failed run's error message, which can quote the failing call — and never a
   run's prompt or answer. Once the share sheet hands the file to
   another app, that app's handling is outside this threat model.
+- **A run's trace can be exported, by you, over no network — and it carries the
+  prompts.** *Export trace* in the console writes one finished run to the share
+  sheet or a picked file on an explicit action; a separate architecture check
+  keeps network clients off that path. Unlike the journals, the file holds every
+  full prompt the on-device model read (memory excerpts and chat history
+  included) and every answer, so it is as sensitive as the conversation. The
+  hashes and the run digest in it show that a repeat matches the record; they
+  are not a signature and prove nothing about who produced the run. *Verify*
+  repeats only recorded on-device model calls and never runs a tool — an
+  architecture check refuses any dependency that could reach one.
 - **Each trigger owns one bound chat.** A trigger's runs land in a single chat
   session named after it (recurring fires accumulate there), so the results of an
   autonomous run are visible and auditable in the same encrypted store as the
@@ -551,9 +573,12 @@ only for gated repositories) is handled exactly like a cloud-provider key:
 ### API keys for cloud providers
 
 - Keys for optional cloud LLM providers (OpenAI, Anthropic, Google, DeepSeek,
-  Ollama) are stored exclusively in the same kind of Keystore-backed
-  encrypted store as the database passphrase (AES-256-GCM under its own
-  dedicated Android Keystore key).
+  OpenRouter, Groq, and an OpenAI-compatible server you run, if it uses one) —
+  and the addresses of servers you run — are stored exclusively in the same kind
+  of Keystore-backed encrypted store as the database passphrase (AES-256-GCM
+  under its own dedicated Android Keystore key).
+- A server you run may need no key. Then no `Authorization` header is sent at
+  all, rather than an empty one.
 - Keys are never written to plain `SharedPreferences`, DataStore, log files,
   exported chat archives, or any artifact checked into the repository.
 - A provider error can quote the failing request, key included (Google
@@ -620,7 +645,76 @@ which is why an input method granted by the user is outside this policy's scope.
   send usage counts and the device's model, build fingerprint, country and
   carrier to Google. In release builds that call is removed when the app is
   minified, and every release build checks its packaged code for it; the
-  `foss` build also lacks the component that would upload it.
+  `foss` build also lacks the component that would upload it. A `full` debug
+  build — made from the source for development, never published — is not
+  minified and keeps the call.
+
+### What the agent can reach, and how to check
+
+An agent that can act on your phone is a fair thing to be wary of. This
+section says what this one can reach, and how to check it without reading the
+code.
+
+The app asks Android for no access to your contacts, messages, call log,
+calendar, photos or files, and it is not an accessibility service, so it cannot
+read or operate other apps' screens. The permissions it does hold are listed,
+with the reason for each, in
+[PRIVACY.md § 5](PRIVACY.md#5-permissions-and-why-they-are-requested); the build
+fails if one is added and nobody records it. The agent's file tools work
+inside one folder of the app's private storage. There is no shell, and the model
+cannot write a program and run it.
+
+The model calls a tool only from a Tool or Skill step of a pipeline. Nine of the
+fifteen pipelines that ship with the app have neither, so they cannot call
+anything. The pipeline a fresh install starts with does call tools: it looks
+topics up on Wikipedia, and one of its steps lets the model pick any tool you
+have switched on. By default sensitive and destructive calls stop and ask you
+first, and a destructive one asks under every setting of **Approve tool calls**;
+see [Risk levels and human-in-the-loop](docs/user-guide.md#risk-levels-and-human-in-the-loop).
+
+Every way data can leave the phone is listed in
+[PRIVACY.md § 3](PRIVACY.md#3-what-can-leave-your-device). The build fails when
+code that can open a network connection does not name the part of that list it
+falls under. In the app, the footer of the **More** tab says when the app last
+opened a connection; crash reports are sent by their own library and do not
+show there.
+
+#### Checking the traffic yourself
+
+[PCAPdroid](https://github.com/emanuele-f/PCAPdroid) shows which app connects
+where. It needs no root: it runs as a VPN on the phone itself. Start it before
+you open Knotwork, then use the app as usual. With crash reports off, the
+maintainer's own capture showed connections to Wikipedia when a pipeline looked
+something up and to Hugging Face when a model was downloaded, and nothing else.
+Browsing models on the **Discover** screen also reaches Hugging Face. A cloud
+model, an MCP server or an `http_request` host shows up only once you have set
+it up, and crash reports, if you turn them on in the `full` build, go to
+Firebase. A connection anywhere else is a bug; please report it as described in
+[Reporting a Vulnerability](#reporting-a-vulnerability).
+
+#### A separate profile
+
+If you want Android itself to keep the app apart from the rest of the phone,
+install it in a work profile, for example with
+[Shelter](https://f-droid.org/en/packages/net.typeblog.shelter/), or in
+[Private Space](https://developer.android.com/about/versions/15/features#private-space)
+on Android 15 and later. An app in another profile has its own storage and its
+own VPN, and turning the profile off stops it. So PCAPdroid has to run in the
+same profile to see the app's traffic, and the model has to be downloaded again
+inside it. The maintainer has not tested Knotwork in a work profile or in
+Private Space.
+
+#### Seeing what a run did
+
+The console keeps a record of every step of a run — what the model was given and
+what it answered — and exports it as one JSON file. On the phone that made the
+run, **Verify** repeats its on-device model calls from their recorded prompts
+and compares the answers byte for byte, without running tools again. That is
+promised on CPU, and on GPU at the same context window; it is not promised on
+another phone, and nothing is signed. See [The run
+header](docs/user-guide.md#the-run-header-seed-verify-run-again-export).
+
+What none of this covers is listed under [Out of scope](#out-of-scope).
 
 ### Prompt injection via tool content (accepted risk)
 
@@ -683,12 +777,19 @@ oversight — and it works as follows:
   What remains: the assistant's replies are read, and a reply can repeat what a
   tool returned, so an injection that gets the model to restate it in its
   answer can still reach the extractor, whose prompt tells the model to ignore
-  the assistant's own statements. Two other paths put untrusted text into
-  memory by design: `delegate_task` stores the cloud model's answer (it is
-  `SENSITIVE`, so it asks under the default policy), and text the user did not
-  type is read as the user's message — shared text, a `schedule_task`
-  instruction the model composed (`SENSITIVE`, and the approval card shows it),
-  and an external-automation request.
+  the assistant's own statements. One other path puts untrusted text into
+  memory by design: text the user did not type is read as the user's message —
+  shared text, a `schedule_task` instruction the model composed (`SENSITIVE`,
+  and the approval card shows it), and an external-automation request.
+  `delegate_task` no longer writes the cloud model's answer to memory; it
+  returns the answer to the step that called it, like any other tool result.
+  A fact that reaches memory can also **replace** a stored one: when it lands
+  close to an unpinned entry and the on-device model judges it an update, the
+  entry takes the new text and keeps the old one in its history. So an injected
+  fact can hide a stored fact from recall, not only add one. The old text stays
+  on the device, on the Memory screen; a pinned entry is never replaced, so
+  pinning is the way to hold a fact against this; and both facts go through
+  `ChatTranscript`, so neither can open a line in the judge's prompt.
 - **AppFunctions exposed by other installed apps are not on that list**, and
   the omission is deliberate rather than an oversight. Calling another app's
   AppFunction needs `EXECUTE_APP_FUNCTIONS`, which Android 16 grants to
@@ -701,7 +802,13 @@ oversight — and it works as follows:
 - The backstop is the **human-in-the-loop gate**: before a `SENSITIVE` or
   `DESTRUCTIVE` tool executes, the chat surfaces a confirmation card showing
   the **tool name and the exact arguments** the model produced, and the run
-  suspends until the user approves or denies. An injected instruction can
+  suspends until the user approves or denies. Above the call the card shows
+  the request the run was started with, labelled by where it came from — the
+  user's message, shared text, a trigger's prompt, another app's request, or
+  an instruction the agent scheduled, which is never labelled as the user's —
+  so a call that does not match what was asked can be seen as such. That text
+  is shown as one plain line: no markup, no links, line breaks and
+  direction-override characters flattened. An injected instruction can
   therefore *propose* a harmful call, but cannot *execute* it unreviewed. That
   holds under the default approval policy. Setting *Approve tool calls* to
   *Never* removes the card for `SENSITIVE` tools — writing a workspace file,
@@ -765,8 +872,9 @@ The defences are layered so that no single one has to be perfect:
   attention sees the destination before the data leaves the device. An
   unparsable call falls back to the strictest risk.
 - **Stored-credential filter.** Before a request is sent, its URL, header
-  names and values, and body are scanned for any saved cloud-provider API key
-  (OpenAI, Anthropic, Google, DeepSeek) — the URL and the body also
+  names and values, and body are scanned for every saved cloud-provider API key
+  — whichever providers are set up, the list follows the providers the app
+  supports rather than being written out by hand — the URL and the body also
   percent-decoded. A request carrying one as written is refused outright, even
   with user approval. It is a substring filter, and it promises what one can:
   a key the model splits across fields or encodes some other way is not
@@ -791,7 +899,12 @@ The defences are layered so that no single one has to be perfect:
   the platform network-security config permits cleartext app-wide, because it
   cannot express "any private address"). The shared client that model
   downloads and discovery use enforces the same floor on **every hop**,
-  including redirects it follows itself.
+  including redirects it follows itself — and so does the transport of every
+  model client (chat, structured output, `delegate_task`, memory embeddings):
+  each hop, redirects included, must be https, or an approved private address,
+  and while *Block network from local model* is on, this device or a private
+  address. A model server that answers with a redirect elsewhere does not take
+  the prompt with it.
 
 The residual risk is the honest one: a user who has **deliberately added a
 host to the allowlist** and then **approves** a `SENSITIVE`/`DESTRUCTIVE`

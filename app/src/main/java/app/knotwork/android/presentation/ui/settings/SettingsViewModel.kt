@@ -91,7 +91,7 @@ class SettingsViewModel @Inject constructor(
         scope = viewModelScope,
         state = _uiState,
         appContext = appContext,
-        settingsRepository = settingsRepository,
+        generationSettings = settingsRepository,
         getSystemPromptVariableCatalogUseCase = getSystemPromptVariableCatalogUseCase,
         resetSamplingDefaultsUseCase = resetSamplingDefaultsUseCase,
     )
@@ -100,7 +100,7 @@ class SettingsViewModel @Inject constructor(
         scope = viewModelScope,
         state = _uiState,
         appContext = appContext,
-        settingsRepository = settingsRepository,
+        generationSettings = settingsRepository,
         apiKeyRepository = apiKeyRepository,
         localModelRepository = localModelRepository,
         testBackendUseCase = testBackendUseCase,
@@ -110,7 +110,7 @@ class SettingsViewModel @Inject constructor(
         scope = viewModelScope,
         state = _uiState,
         appContext = appContext,
-        settingsRepository = settingsRepository,
+        memorySettings = settingsRepository,
         memoryRepository = memoryRepository,
         memorySearchStatsTracker = memorySearchStatsTracker,
         embeddingProviders = embeddingProviders,
@@ -122,22 +122,28 @@ class SettingsViewModel @Inject constructor(
 
     private val pipelines = PipelinesSettingsDelegate(viewModelScope, _uiState, settingsRepository)
 
-    private val tools = ToolsSettingsDelegate(viewModelScope, _uiState, settingsRepository)
+    private val tools = ToolsSettingsDelegate(
+        scope = viewModelScope,
+        state = _uiState,
+        toolSettings = settingsRepository,
+        networkSettings = settingsRepository,
+    )
 
     private val background =
         BackgroundSettingsDelegate(
-            viewModelScope,
-            _uiState,
-            settingsRepository,
-            pipelineRepository,
-            setSurfacePipelineUseCase,
-            externalAutomationJournal,
+            scope = viewModelScope,
+            state = _uiState,
+            runSettings = settingsRepository,
+            entryPointSettings = settingsRepository,
+            pipelineRepository = pipelineRepository,
+            setSurfacePipelineUseCase = setSurfacePipelineUseCase,
+            externalAutomationJournal = externalAutomationJournal,
         )
 
     private val privacy = PrivacySettingsDelegate(
         scope = viewModelScope,
         state = _uiState,
-        settingsRepository = settingsRepository,
+        privacySettings = settingsRepository,
     )
 
     private val about = AboutSettingsDelegate(

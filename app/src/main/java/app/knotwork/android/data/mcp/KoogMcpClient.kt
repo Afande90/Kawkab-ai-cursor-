@@ -15,7 +15,7 @@ import app.knotwork.android.domain.models.McpAuth
 import app.knotwork.android.domain.models.McpServerConfig
 import app.knotwork.android.domain.models.McpTransport
 import app.knotwork.android.domain.repositories.NetworkActivityTracker
-import app.knotwork.android.domain.repositories.SettingsRepository
+import app.knotwork.android.domain.repositories.ToolSettings
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.defaultRequest
@@ -39,6 +39,7 @@ import timber.log.Timber
 import java.io.IOException
 import java.util.Base64
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * Concrete implementation of [McpClient] using the Koog framework's MCP tools.
@@ -228,10 +229,7 @@ class KoogMcpClient(
                         val serverInfo = McpServerInfo(url = config.url, command = "")
                         val toolRegistry = McpToolRegistryProvider.fromTransport(transport, serverInfo)
                         Session(httpClient = client, transport = transport, registry = toolRegistry)
-                    } ?: throw IOException(
-                        "MCP server ${config.url} did not complete the handshake within " +
-                            "${connectTimeoutMs / MILLIS_PER_SECOND}s",
-                    )
+                    } ?: throw McpHandshakeTimeoutException(config.url, connectTimeoutMs.milliseconds)
                     // Publish the session only after the transport has been attached
                     // successfully — failure paths must close the client locally.
                     session = established
@@ -522,7 +520,7 @@ class KoogMcpClient(
          * a slow-but-alive server is ended by our deadline with its own error
          * text rather than by a lower-level socket error five seconds earlier.
          */
-        private const val SOCKET_TIMEOUT_SLACK_MS = 5_000L
+        internal const val SOCKET_TIMEOUT_SLACK_MS = 5_000L
 
         /** Divisor for rendering a millisecond deadline as seconds in error text. */
         private const val MILLIS_PER_SECOND = 1_000L
@@ -671,7 +669,7 @@ class KoogMcpClient(
  */
 class KoogMcpClientFactory @Inject constructor(
     private val networkActivityTracker: NetworkActivityTracker,
-    private val settingsRepository: SettingsRepository,
+    private val toolSettings: ToolSettings,
 ) : McpClientFactory {
     /**
      * Creates a new instance of [KoogMcpClient]. Each instance carries the
@@ -684,7 +682,7 @@ class KoogMcpClientFactory @Inject constructor(
     override fun create(): McpClient = KoogMcpClient(
         networkActivityTracker = networkActivityTracker,
         resultByteBudget = {
-            settingsRepository.httpToolMaxResponseBytes.firstOrNull()
+            toolSettings.httpToolMaxResponseBytes.firstOrNull()
                 ?: SettingsDefaults.HTTP_TOOL_MAX_RESPONSE_BYTES_DEFAULT
         },
     )

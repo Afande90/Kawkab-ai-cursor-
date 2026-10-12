@@ -161,7 +161,9 @@ app:
 - **Install.** Tap **Install** next to a file. You'll be asked to
   **review and accept the licence** before the download starts; it then
   streams through the same downloader as the rest of the screen and the
-  model appears in your **Downloaded** list, ready to activate.
+  model appears in your **Downloaded** list, ready to activate. The
+  download keeps going if you leave; open the model again and the file
+  shows its progress — a download started from the Models screen too.
 - **Gated models.** Some repositories require you to accept their
   licence on the Hugging Face website and use a personal access token.
   These show a **Gated** badge and an inline token field — paste your
@@ -627,6 +629,47 @@ parent pipeline fast-forwards through the work it already finished, then
 continues the sub-pipeline from where it stopped — neither the parent
 nor the child re-runs a node that already completed.
 
+### The run header: seed, verify, run again, export
+
+Between the console's handle and its tabs sits one line about the run the
+console shows — `seed 1 482 913 · CPU · Gemma 4 E2B · t 0.7`. Tap it to open
+**This run**: the seed, the sampler, each model with its backend, context window
+and the SHA-256 of its file, the app and runtime versions, the device, and the
+run's **digest** — one SHA-256 over what the run produced. The seed and both
+hashes have a copy button; copying always takes the full value.
+
+Below the fields, one sentence says what is promised: a run on **CPU** repeats
+byte for byte on this device with the same model file, seed, sampler and input;
+on **GPU** the context window must also be the same. Nothing is promised on the
+NPU, for a run that read an image, for a cloud model's answer, or on another
+device. Under each node in **Traces** and **Vars**, two chips show the first 8
+characters of its input and output hash; a tap copies all 64.
+
+Three actions follow:
+
+- **Verify** re-runs every recorded on-device call from its own recorded prompt,
+  with its recorded sampler and seed, and compares each answer byte for byte.
+  Tools are never run again — their recorded output stands — and cloud calls are
+  skipped. A check with more than 3 calls, or 30 s or more of model time, asks
+  first. If the backend, the GPU window or the model file differs from the run,
+  Verify stays off and says what to change, and where.
+- **Run again with this seed** starts a new run of the same message on the same
+  pipeline with the recorded seed and sampler. Memory, chat history and tool
+  results are read again and tools run with the usual approvals, so the answer
+  repeats only if every input is the same. Offered for chat and share runs
+  without an image.
+- **Export trace** saves or shares one JSON file: the header, every record with
+  its hashes, and the digest. It holds everything the model read in the run —
+  prompts, memory excerpts and the chat history inside them — and stays on the
+  device unless you share it.
+
+Hashes show that an export and a repeat match. They do not prove who produced a
+run: nothing is signed.
+
+All three work while the run is kept. Run history is kept per chat and for a number
+of days — **Settings → Privacy → Keep run history per chat** and **Run history max
+age** — and a run removed by them takes its trace, and its check, with it.
+
 ### Reopening a chat while a run is in flight
 
 Closing the chat — or the whole app UI — no longer disconnects you from
@@ -669,17 +712,38 @@ a colour-coded risk pill (`READ` / `SENS` / `DEST`), and **Approve** /
 **Deny** buttons. Destructive tools also require typing **yes** into a
 confirmation field before the **Approve** button is enabled.
 
+Above the tool call the card shows what the run was asked to do, so you
+can check the call against it — the agent may have understood you
+differently. A label says whose words they are: **You asked** for your
+message in the chat, **You shared**, **Trigger "name"** with the
+trigger's prompt, **Quick Settings tile**, **Another app asked**, or
+**Scheduled by the agent** for an instruction the agent wrote itself
+with `schedule_task`. A run inside a sub-pipeline shows the request that
+started the whole run, not the step's own input. A long request is
+shortened to three lines — tap it to read the rest. An image sent
+without text says so instead of quoting anything. Nothing on the card
+judges whether the call matches; that is your call.
+
 If that chat is not on screen when the request comes in, it also
 arrives as a notification. For read-only and sensitive tools it offers
 **Approve** and **Deny**. Destructive tools never execute from a
 notification — it offers **Deny** and a **Review in chat** link to the
 regular typed-confirm card. The same goes for a call whose arguments are
 longer than a notification can show: its text is cut with a note, and it is
-approved in the chat, where the card shows every argument.
+approved in the chat, where the card shows every argument. The request the
+run was asked is the notification's last line, after the call — shortened if
+it is long, and never in the way of the arguments.
 
 Each notification and each card answers only the request it shows. If two
 runs are waiting in the same chat, each has its own notification, and a
 button for a request that has already been answered or stopped does nothing.
+
+**Approve** in a notification asks you to unlock the phone first; **Deny**
+works on a locked phone. Where Android hides sensitive content on the lock
+screen, an approval notification shows only its title — not the tool, its
+arguments or your request — and so do the notifications for a question the
+agent asks and for a background run's result. If your phone is set to show
+all notification content on the lock screen, they show in full there.
 
 An unanswered request does not fail the run. When the live waiting
 window elapses — say a scheduled run hits a sensitive tool at 6 a.m. —
@@ -755,6 +819,7 @@ setting once by hand.
 | *Approval required* | A sensitive/destructive tool call awaits your decision | **Approve** / **Deny** (destructive, or arguments too long to show: **Deny** / **Review in chat**) |
 | *Agent needs your input* | A clarification question is waiting | Deep-links into the chat |
 | *Task completed* / *Task failed* | A scheduled task finished | Opens the conversation the result landed in |
+| *Trigger overdue* | A trigger has not been checked for longer than its schedule allows — once per silence | Opens that trigger |
 | *Still running* (optional ping) | A long backgrounded run is still going | Opens the app |
 
 Approval and clarification requests survive process death: the staged
@@ -1002,7 +1067,12 @@ all on the **"Scheduled task results"** channel and gated by the same
 - **Task completed** — with a preview of the final answer.
 - **Task failed** — with the reason.
 
-Tapping any of them deep-links straight into the trigger's chat. If a run
+Tapping any of them deep-links straight into the trigger's chat. A fourth
+notification, **Trigger overdue**, comes when a trigger has gone **Overdue**
+(below) — once per silence, and its tap opens that trigger. It comes from a
+separate check that runs every few hours; if Android holds back all of the
+app's background work, that check is held back too, and the badge on the
+Triggers screen is what remains. If a run
 pauses for approval of a sensitive or destructive tool, you get the usual
 **approval notification** with **Approve / Deny** actions, so you can let a
 background trigger run proceed (or stop it) without opening the app. A
@@ -1024,7 +1094,11 @@ surfaces make it legible.
 - **Overdue** — the phone has not checked this trigger for noticeably longer
   than its own schedule implies (more than twice the cadence it should be
   checked at). This is the tell-tale of an aggressive battery saver or a deep
-  idle state — the trigger is fine, the phone simply isn't waking the app.
+  idle state — the trigger is fine, the phone simply isn't waking the app. The
+  time is counted from the trigger's last check or from when you switched it
+  on, whichever is later, so turning a trigger back on after a pause does not
+  make it overdue. You also get one **Trigger overdue** notification per
+  silence (see above).
 - **Last run failed** — the most recent run this trigger started ended as
   anything other than a clean success: a failure, a run the system killed, a
   run you stopped, or one that timed out waiting for your approval. The
@@ -1266,9 +1340,16 @@ pan / zoom canvas with the following gestures:
   Equivalent to "double-tap the node".
 - **Long-press a node** — enter multi-select. Subsequent taps toggle
   membership; the top bar swaps for a count + Cancel / Delete cluster.
-- **Long-press the empty canvas** — opens a **radial quick-add menu**
-  with one labelled tile per node type. Picking a tile spawns the node
-  at the long-press point and immediately opens its configuration sheet.
+- **Add a node** — tap the **+** button, or long-press the empty canvas
+  where you want the node. Both open the **Add node** sheet: every node
+  type grouped by what it is for (Start and finish, Run a model, Ask and
+  act, Branch, Work through a list), each with its name and a one-line
+  description — the same sentence its entry in the
+  [pipeline cookbook](cookbook.md) opens with. Search matches the name,
+  the description and the type's id (`QUEUE_PROCESSOR`); every word you
+  type has to match. Picking a type closes the sheet, places the node —
+  at the long-press point, or the centre of the screen for **+** — and
+  opens its configuration sheet.
 - **Toolbar** — back arrow, the inline-editable pipeline name with a
   one-line status under it (`Editing · nodes N · edges N`, or the issue
   count when saving is blocked), and an overflow menu on the right. Every
@@ -1319,8 +1400,8 @@ Reach a node's per-type configuration by either:
 
 - **Tapping a node you've already selected** (single-tap → select,
   tap again → open the sheet); or
-- **Picking the node from the radial quick-add menu** — newly added
-  nodes open the sheet immediately.
+- **Picking a type in the Add node sheet** — newly added nodes open the
+  sheet immediately.
 
 The sheet is a modal bottom-sheet. Every node type — Input, Output,
 LiteRt, Cloud, IntentRouter, IfCondition, Clarification, Tool,
@@ -1342,6 +1423,19 @@ returns the formatted result instead. Even then, its default context is just the
 **previous node's output** — not the chat history, the original task, memory or
 tool results — so it re-formats only that reply. Enable the other context blocks
 in the node's config if a formatter genuinely needs them.
+
+A **Cloud** node's **Provider** and the **Engine** of a router, condition,
+decomposition, evaluation, tool or skill node are one field each: it shows the
+choice and, under it, the model it uses on this device. Tapping it opens the
+full list — **Auto** (Cloud) or **On-device** (Engine) first, then the hosted
+providers and the servers you run, each by name. A provider not set up on this
+device is marked **not configured on this device** and can still be chosen: a
+pipeline can run on another device. The line under the field says what happens
+if it is not set up where the pipeline runs — a Cloud node fails and names the
+reason; another node runs on the on-device model and writes a console line.
+**Auto** uses the first configured of Google, Anthropic, OpenAI and DeepSeek —
+never OpenRouter, Groq or your own server — and the field shows which one that
+is on this device.
 
 For the **IntentRouter** node, the Classes section in its config
 sheet lets you grow / shrink the class list: each row has a small
@@ -1667,7 +1761,7 @@ The app ships with the following tools:
 |------------------|---------------------------------------------------------------------------------------|
 | **search_tool**    | Looks up a topic on Wikipedia and returns a concise summary. **This tool leaves the device**, and it is the only built-in that does so without asking: the search term the model wrote is sent to `https://<language>.wikipedia.org`, and the tool is read-only, so no confirmation card appears. It is on from the first launch and the seeded pipeline calls it — turn it off with its switch here, or with *Block network from local model*, which withholds it. |
 | **schedule_task**  | Schedules a task to run later in the background (one-off or recurring).             |
-| **delegate_task**  | Hands a hard subtask to a configured cloud LLM and stores the result in memory. Only appears when at least one cloud provider has an API key configured. |
+| **delegate_task**  | Hands a hard subtask to a configured cloud LLM and returns its whole answer to the step that called it. When the model does not name a provider, the first one set up in Settings answers. The answer is not saved to memory. Only appears when at least one cloud provider has an API key configured. |
 | **read_file**      | Reads a text file from the agent's private workspace, truncated to a token budget so a long file never overflows the model's context; supports byte `offset`/`limit` paging. |
 | **list_files**     | Lists files in the workspace (optionally under a sub-directory) with their size and last-modified time. |
 | **find_files**     | Finds workspace files whose path matches a glob pattern (`*.md`, `reports/**`).      |
@@ -1849,6 +1943,14 @@ including any token you set in the Authentication section below.
 approved. Approval is remembered per address *and port* — approving
 `http://192.168.1.42:8080` does not approve port 3000 on the same machine,
 because that is a different server.
+
+**Test connection**, between the Authentication section and the buttons,
+connects with the values on the form, lists the server's tools and disconnects
+— before anything is saved; **Add server** is what saves. It answers with the
+number of tools, or with what went wrong: credentials rejected, an address that
+answers but not as an MCP server (the path is often `/mcp` or `/sse`), a server
+that accepted the connection but did not finish the MCP handshake in 30 seconds,
+or a host or port that cannot be reached.
 
 MCP connections open lazily — the app only contacts the server when
 a tool from it is needed — and they are wrapped in error-handling
@@ -2056,8 +2158,23 @@ fast back-and-forth is processed only once), it re-reads the recent
 conversation and distils the durable facts you stated — preferences,
 events, and relationships — into new memory chunks. Small talk, the
 assistant's own wording, and anything not explicitly stated are
-ignored, and a fact that closely matches one you already have is
-skipped rather than duplicated.
+ignored.
+
+When a new fact lands close to one you already have, the on-device model
+reads the two and decides what the new one is:
+
+- **The same fact in other words** — nothing is written.
+- **A change of it** ("now prefers English" after "prefers Russian") — the
+  entry is updated in place, and the text it replaces is kept in that entry's
+  history, so a correction never loses what it corrected.
+- **A different fact** ("allergic to cats" after "allergic to peanuts") — it is
+  saved as a new entry.
+
+If the model cannot tell, the new fact is saved as a new entry: nothing is lost
+or hidden. A **pinned** entry is never changed this way. A change of a pinned
+fact is saved as a separate entry that waits beside it, and the agent keeps
+using the pinned text until you choose. Facts you save by hand are always
+saved as new entries.
 
 It reads your messages and the assistant's replies — never tool results
 (a web lookup, a file the agent read, an MCP server's answer), not even when
@@ -2068,8 +2185,8 @@ a tool fetched is not put before the extractor as something you said. Text
 you share into the app from another app is recorded as your message,
 though, so it is read as yours.
 
-Each new chunk is tagged with the fact type it represents (`fact`,
-`preference`, `project`, …) and the chat it came from, so you can tell
+Each new chunk is tagged with the fact type it represents (`preference`,
+`event` or `relation`) and the chat it came from, so you can tell
 auto-saved memories apart from ones you saved by hand. You can watch
 this happen in the **Console** pane (the **Memory** filter) and review
 or delete the results on the Memory screen.
@@ -2092,8 +2209,8 @@ Tap the search icon to open semantic search. Your query is embedded and
 the list is re-ranked by relevance, so a search for "berlin" surfaces the
 timezone note even though it never contains that word. Each result shows
 its ranking score: how well the entry matches, plus the small bonuses a
-recent or pinned entry earns — which is why a strong match can read
-slightly above 1.00.
+recent, pinned or hand-saved entry earns — which is why a strong match can
+read slightly above 1.00.
 
 ### What the agent recalls, and when
 
@@ -2116,6 +2233,11 @@ sees. Which entries those are is decided in this order:
 - **Pinned entries are always in.** Pinning skips the gate, adds the largest
   bonus, and sorts the entry first — it is the one way to guarantee a fact is
   recalled.
+- **Your own wording wins a tie.** An entry you saved by hand gets the smallest
+  bonus of all: when it and an auto-extracted entry match about equally well
+  and are about as old, yours is recalled first — and, if the two say the same
+  thing, it is the one kept. It never gets an entry past the gate, and a
+  much newer auto-extracted entry still ranks above an old one of yours.
 - **The original wins over a summary of it.** If compaction has merged some
   facts into a summary and one of those facts is still stored word-for-word, the
   original is what the agent is shown. A summary is a paraphrase written by the
@@ -2157,32 +2279,70 @@ field or in the file you import.
 Tap a row to open its detail sheet. It shows the full text, an
 approximate token count, the source ("Auto-extracted" / "Saved
 manually" / "Compacted"), which chat it was learned from, when it was
-captured, and how often it has been used in replies. From here you can
+captured, and in how many runs it was recalled into the agent's memory —
+runs, not replies: the model may not have used it. From here you can
 **pin**, **edit** the text and tags, or **delete** the entry. Pinned
 entries float to the top and are never touched by compaction.
+
+### Earlier versions
+
+When a newer fact replaced an entry's text (see
+[Auto-extract](#auto-extract-from-conversations)), the entry keeps the text it
+had before. Its row shows a small history mark with the number of earlier
+versions, and its sheet lists them under **Earlier versions**, newest first, each
+with where it came from and when it was captured and replaced. The list opens
+collapsed; a long version shows six lines until you tap it.
+
+An earlier version is never shown to the agent. To remove one, open its ⋮ menu
+and choose **Delete this version** — the entry and its other versions stay.
+Deleting the entry deletes its history too, and so does clearing memory.
+Editing an entry yourself replaces its text without adding an earlier version.
+
+### An update waiting on a pinned entry
+
+A pinned entry is never changed automatically. When a newer fact changes it,
+the update is saved as a separate entry and drawn right under the pinned one:
+the pinned row says **Update waiting**, the update's row says **Updates a
+pinned memory**. Until you decide, the agent keeps using the pinned text.
+
+Open either entry and choose:
+
+- **Use the update** — the pinned entry takes the new text and stays pinned;
+  its old text becomes its newest earlier version, and the separate update
+  entry is removed.
+- **Keep pinned** — the update is removed; nothing else changes.
+
+Unpinning an entry while an update waits applies the update, since the pin was
+the only thing holding it back. Pinning the update instead keeps both entries,
+each as it is. At most one update waits on a pinned entry: a newer one replaces
+it.
 
 ### Compact Memory
 
 Tap **Compact** in the stats header to consolidate memory. A dialog
 previews the estimated number of chunks removed, bytes freed, and
-runtime before you confirm. Compaction merges near-duplicate chunks and
-re-summarises the oldest entries; pinned memories are never touched. The
+runtime before you confirm. Compaction merges related chunks into shorter
+summaries, oldest entries first; pinned memories are never touched. The
 "compacted N ago" line in the header reflects the last run.
 
 The preview is an upper bound, and deliberately so. An entry is deleted only
 once the on-device model's summary has been checked to actually represent it,
 so facts a summary skipped stay in memory word-for-word, and a summary that
 turned out not to describe its group is discarded with the whole group left
-intact. A run can therefore free less than it predicted — never more, and never
-at the cost of a fact whose only copy it was about to remove. If a merged
+intact. The check works on the memories' embeddings, so an entry it cannot tell
+apart from another in its group — two facts of the same shape, or text the
+built-in embedder cannot read, such as Russian — is never merged. A run can
+therefore free less than it predicted — never more, and never at the cost of a
+fact whose only copy it was about to remove. If a merged
 summary and the original wording of one of its facts are both in memory (say
 after importing an older backup), the original is what the agent is shown.
 
 ### Exporting memory
 
 The overflow menu (⋮) on the Memory screen offers **Export memory**,
-which writes every chunk — text, embedding, tags, and metadata — to a
-JSON file via the system file picker, for backup or migration. The same
+which writes every chunk — text, embedding, tags, metadata, and the earlier
+versions it keeps after a correction — to a JSON file via the system file
+picker, for backup or migration. The same
 **Export** action lives under **Settings → Memory**, and the Memory
 screen's multi-select mode can export only the chosen entries.
 
@@ -2201,8 +2361,12 @@ and import the file on the new one:
    file, then choose a strategy:
    - **Merge** — add the imported chunks to whatever is already there,
      skipping any with an id that already exists. Nothing is deleted.
-   - **Replace all** — wipe the current memory (pinned entries included)
-     and load the file's chunks. Use this for a clean transfer.
+   - **Replace all** — wipe the current memory (pinned entries and their
+     earlier versions included) and load the file's chunks. Use this for a
+     clean transfer.
+
+   Each entry's earlier versions come with it and stay its history: an earlier
+   version never becomes an entry of its own.
 
 Two things are not taken from the file, whichever strategy you choose:
 
@@ -2327,7 +2491,7 @@ repeated here.
 
 | Setting | What it means |
 |---|---|
-| **Local model backend** | Which chip runs the on-device model. NPU is fastest where it works; the app falls back on its own if it does not. |
+| **Local model backend** | Which chip runs the on-device model. GPU is faster where it works; if it fails to start, the app runs on CPU. |
 | **External providers** | *(no explanation — opens a screen that explains itself)* |
 | **Default pipeline** | *(no explanation — opens a screen that explains itself)* |
 
@@ -2433,44 +2597,103 @@ The active on-device model, its backend, and external cloud providers.
 
 - **Active-model card** — name, file size, context window, quantization and
   download date, with an **Active** badge.
-- **Inference backend** *(Basic)* — drop-down picking the engine (NPU preferred,
-  falling back to GPU then CPU). Changing it surfaces a restart banner — tap
-  **Restart** to apply immediately. On a fresh install the app picks this for
-  you once, during setup: if the device looks capable of GPU inference it briefly
-  shows **Checking acceleration…** while verifying that the GPU really runs the
-  model, and quietly settles on CPU if it does not. The result is written into
-  this row, so you can always see — and override — what was chosen. Once you pick
-  a backend yourself, the app never changes it again.
+- **Inference backend** *(Basic)* — drop-down picking the engine: GPU or CPU. If
+  starting on the GPU stops the app, the next session runs on CPU, and after two
+  such starts in a row the choice becomes CPU. The NPU is not offered — the app
+  ships no NPU dispatch library, so an NPU choice ran on CPU anyway; one made in
+  an earlier version now reads as CPU. Changing it surfaces a restart banner —
+  tap **Restart** to apply immediately. On a fresh install the app picks this
+  for you once, during setup: if the device looks capable of GPU inference it
+  briefly shows **Checking acceleration…** while verifying that the GPU really
+  runs the model, and quietly settles on CPU if it does not. The result is
+  written into this row, so you can always see — and override — what was chosen.
+  Once you pick a backend yourself, setup never changes it again.
 - **Test backend** — runs a fixed prompt-probe and persists the measurement
   (`Last probe · N tok in T s · K tok/s`) so the row keeps the metric across
   navigation.
 - **Manage** — opens the full Models browser to discover and install on-device
   models.
-- **External providers** *(Basic link)* — each provider (**OpenAI**,
-  **Anthropic**, **Google**, **DeepSeek**, **Ollama**) collapses to a row showing
-  the masked key fingerprint and selected model; tap to open the provider editor.
-  The Ollama row carries a **LAN** pill and base URL. **+ Add provider** surfaces
-  an unconfigured provider without scrolling. Leaving every cloud row blank keeps
-  the agent fully offline.
+- **External providers** *(Basic link)* — one row per provider, in this order:
+  the hosted ones (**OpenAI**, **Anthropic**, **Google**, **DeepSeek**,
+  **OpenRouter**, **Groq**), then the servers you run (**Ollama**, an
+  **OpenAI-compatible server**). A row shows the masked key fingerprint — or, for
+  a server you run, its address and a **LAN** pill — and the selected model; tap
+  it to open the provider's screen. An unset row says what it needs (*tap to add
+  API key*, *tap to add the server address*). A row that ends in **no model
+  selected** is the one that would fail if a step used it: OpenRouter, Groq and an
+  OpenAI-compatible server have no default model, so they need one chosen.
+  **+ Add provider** lists every provider in the same order, grouped into
+  **Hosted** and **Your own server**, and marks the ones already set up as
+  **added**. Leaving every row blank keeps the agent fully offline.
 - **Default pipeline** *(Advanced link)* — picks which pipeline new chats use by
   default.
 
-The provider editor's **Retry policy** applies to every cloud provider (chat and
-cloud embeddings alike). Transient failures — rate-limits (HTTP 429), server
-errors (5xx) and connection/read timeouts — are retried with exponential
-backoff; authentication errors are not retried, and stopping a run cancels
-cleanly. **Max attempts** (1–5, default 3; set to **1** to disable retries) and
-**Base delay** (100–10 000 ms, default 1 000) tune it. Each retry shows on the
-agent console as a muted line such as `Cloud retry 1/2 for openai`, at the
-moment the retry happens rather than after the answer finishes.
+#### Setting up a provider
 
-One limitation worth knowing, measured rather than assumed: when a provider
-answers a rate-limit with a `Retry-After` header asking you to wait a specific
-time, that request is **not** honoured — the backoff curve is the same whether
-the header is present or not. The cause is in the upstream client library, and
-working around it would mean building a second retry layer of our own. In
-practice it means that under a real rate limit the app knocks sooner than it was
-asked to.
+A provider's screen shows its fields in the order you fill them, with
+**Test connection** between what it reads and what it fills: address → key →
+**Test connection** → model.
+
+- **OpenAI, Anthropic, Google, DeepSeek** — an API key, and a model from a
+  built-in list.
+- **OpenRouter, Groq** — the address they send to is shown read-only under
+  **Sends to**; an API key (**required**) and a **Model id** (**required**) that
+  you type or choose from the provider's list.
+- **Ollama** — its base URL, a model name, and the context window.
+- **OpenAI-compatible server** — for vLLM, LM Studio, llama.cpp or any server
+  that speaks the OpenAI API. Enter the **Server address** the way the server
+  documents it, including **`/v1`** (`http://192.168.1.20:8000/v1`); the paths
+  the app asks for are relative to it. The **API key** is **optional** — leave it
+  empty if your server has none, and no key is sent at all. A **Model id** is
+  **required**.
+
+An address that will be refused says so **under the field, while you type**:
+`http://` to a public host, or — while **Block network from local model** is on
+— a host name or a public address. An unencrypted address on your own network
+shows the **Approve unencrypted connection** notice instead, as for Ollama.
+
+#### Test connection
+
+**Test connection** asks the provider for its list of models, with the key and
+address on the screen. It sends no prompt and spends no tokens, and it tries
+once — no retries. For OpenRouter it first asks whether the key is valid,
+because OpenRouter's model list answers any key. While it runs, the row names
+the host and counts the seconds; **Cancel** stops it, and so does leaving the
+screen.
+
+- **Connected · N models** — the server answered. On a provider whose model you
+  type, the model field gains **Choose**: a full-height list of the server's
+  model ids with a search field, so a list of hundreds is searched rather than
+  scrolled. Picking an id fills the field; the field stays editable.
+- **Not sent.** — a rule kept the request on the device, and the row says which
+  rule and where to change it. The privacy indicator does not register it.
+- **A failure** — says what happened, with the code in brackets, and one thing
+  to do: a rejected key, nothing at the address (most often a missing `/v1`),
+  a rate limit and how long the provider asked to wait, a server error, a host
+  that does not resolve, a port nothing listens on, a server that did not
+  connect within 30 seconds or went silent for 60.
+
+The button is disabled, with the reason, until the test can run: no address,
+an address that is not one, no key for a hosted provider, an unencrypted
+address not yet approved, or an address a rule refuses. A result describes the
+values it was run with: edit the key or the address and it is cleared.
+
+The provider editor's **Retry policy** applies to every cloud provider (chat and
+cloud embeddings alike). A rate limit (HTTP 429) or a server error (5xx) is
+retried; the status the provider answered with decides, so an invalid request
+or a rejected key is reported at once, never retried, and stopping a run
+cancels cleanly. **Max attempts** (1–5, default 3; set to **1** to disable
+retries) and **Base delay** (100–10 000 ms, default 1 000) tune it. Each retry
+shows on the agent console as a muted line such as `Cloud retry 1/2 for openai`,
+at the moment the retry happens rather than after the answer finishes.
+
+**When the provider says how long to wait, the retry waits exactly that.** It may
+say so in a `Retry-After` header or in its error message — for example Groq's
+"try again in 1m2.5s". Otherwise the wait starts at **Base delay** and doubles
+with each retry. A wait longer than **30 seconds** is not sat through: the step
+fails at once with a message that names the provider and the wait — for example
+`'groq' is rate-limiting requests and asked to wait 63 s, longer than the 30 s the
+app waits` — so you can run it again after that instead of watching a stalled run.
 
 #### How long a cloud provider is given, and how many tries it gets
 
@@ -2484,14 +2707,13 @@ from documentation:
   minutes** on a stalled provider.
 - **30 seconds to connect.**
 - **3 attempts, waiting 1 then 2 seconds** — the default retry budget above,
-  which also covers timeouts.
+  for rate limits and server errors.
 
-A timeout ends that *attempt*, not the run: it counts as a transient failure
-and is retried. Only once the retry budget is spent does the error reach the
-console and the run stop, rather than carrying on without an answer. In the
-worst case a dead provider therefore costs about three minutes — three silent
-minutes plus the backoff — where before these limits were set a single attempt
-alone could hold the run for fifteen.
+A provider that falls silent is **not** retried: a minute of silence is reported
+once, the error reaches the console and the run stops, rather than carrying on
+without an answer. Retrying would hold the run for three silent minutes on a
+provider that has already shown it is not answering — where before these limits
+were set a single attempt alone could hold it for fifteen.
 
 #### An answer that was cut off is not shown as an answer
 
@@ -2512,8 +2734,9 @@ working setups:
 | **Google** | Yes — its client reports a broken stream as an error on its own. |
 | **Ollama** | **No.** Its client never sends the finishing marker at all, so its absence proves nothing; checking for it would fail every healthy run. |
 | **Anthropic** | **No.** We could not produce a trustworthy test either way, and guessing is exactly the failure this check exists to prevent. |
+| **OpenRouter**, **Groq**, **OpenAI-compatible server** | **No — not yet measured.** Whether each server sends the marker is checked on a device before it is relied on. |
 
-For the bottom two rows a connection that drops mid-answer can still leave you
+For the rows marked **No**, a connection that drops mid-answer can still leave you
 with a reply that is shorter than it should be and looks finished. If an answer
 from one of those ends abruptly for no obvious reason, ask again before
 concluding the model had nothing more to say.
@@ -2678,13 +2901,15 @@ Basic:
   unattended.
 - **Block network from local model** — when on, no model request leaves this
   device or your own network:
-  - **Cloud providers** (OpenAI, Anthropic, Google, DeepSeek) are refused even
-    with a key saved — for Cloud steps, `delegate_task` and memory alike.
+  - **Hosted providers** (OpenAI, Anthropic, Google, DeepSeek, OpenRouter,
+    Groq) are refused even with a key saved — for Cloud steps, `delegate_task`
+    and memory alike.
     If OpenAI is your **Embedding model**, memory switches to the on-device
     model while the restriction is on. Memories embedded by OpenAI are recalled
     poorly until you turn it off, and memories saved meanwhile are recalled
     poorly after you do — run **Re-embed** once you have settled on one.
-  - **Ollama** answers only when its address is `localhost` or a private IP
+  - **A server you run** — Ollama or an OpenAI-compatible server — answers only
+    when its address is `localhost` or a private IP
     address (`127.x.x.x`, `10.x.x.x`, `172.16.x.x`–`172.31.x.x`,
     `192.168.x.x`), over `http` or `https`. A server on the internet is refused
     even over `https`, and so is **any host name** — `ollama.lan`, `nas.local` —
@@ -2735,7 +2960,7 @@ Basic:
 - **Scheduled task results** — when on, finishing a scheduled background task
   posts a **Task completed** notification with the first line of the answer (or
   **Task failed** with the reason); tapping it opens the conversation the result
-  landed in. On by default.
+  landed in. The same toggle covers **Trigger overdue**. On by default.
 
 Advanced:
 

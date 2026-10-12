@@ -50,6 +50,7 @@ Paths below are relative to `src/main/java/app/knotwork/design/`.
     - `HitlConfirmationCard.kt` - full HITL card (risk pill, tool name, summary, JSON args block, destructive type-confirm, action row).
     - `HitlConfirmationModel.kt` - immutable payload for `ChatContent.Confirmation`.
     - `HitlConfirmationState.kt` - pure-Kotlin gating helpers (Allow-enabled, Always-allow visibility, type-confirm word).
+    - `HitlRequestContext.kt` - What the run behind an approval was asked to do — the request block a `HitlConfirmationCard` shows above the call, so the user judges the call against the request it came from.
     - `ImageAttachmentCatalogContent.kt` - harness exercising the attachment components together (thumbnail states, image bubble with and without caption, composer attachment affordance, chooser rows) with deterministic images for the Roborazzi baseline.
     - `ImageThumbnail.kt` - Coil-backed attachment image (thumbnail or full-bleed) with its own **loading** and **missing-file** fallbacks — the latter is the state an attachment reaches once retention has swept the stored file.
     - `ImageViewer.kt` - full-screen viewer opened from a thumbnail: full-bleed image on an always-dark scrim (photo viewing reads the same in both themes), file name + dimensions in the top bar, an optional share action; no pinch-zoom.
@@ -79,6 +80,14 @@ Paths below are relative to `src/main/java/app/knotwork/design/`.
     - `ConsoleEntryStrip.kt` - the console's own entry point: `console │ [NODE] idle · ready ⌃`. One element in two positions — above the composer when closed, the console sheet's own header when open. It carries the literal word because `Role.Button` plus a content description was not enough to make it findable by eye.
     - `ConsoleModels.kt` - `ConsoleSnap`, `ConsoleTab`, `ConsoleSource`, `ConsoleLevel`, `ConsoleFilter`, `ConsoleLine`, `ConsoleVarRow`, `ConsoleTraceSpan`, `SpanStatus`.
     - `ConsolePane.kt` - bottom-sheet container with sticky header, three tabs, source-filter chips, and per-tab body.
+    - `HashChip.kt` - A copyable short-hash chip: the shared shape of the console chips and the recorded / replayed hashes of a diverged visit.
+    - `RunAgainConfirmDialog.kt` - The confirmation before starting a run again with its seed.
+    - `RunExportSheet.kt` - The trace export: the file's name and size in mono, what the file holds — every prompt the model read, memory excerpts and chat history inside them — the not-signed sentence, then Share and Save to file, as the journals offer them.
+    - `RunHeaderStrip.kt` - The run strip: the run the console belongs to, between the console's handle and its tabs.
+    - `RunHeaderUi.kt` - What the console's run strip shows about the run the console belongs to: one line collapsed, every recorded field, the promise and three actions expanded.
+    - `VerificationSheet.kt` - The check of a finished run, in its own sheet over the console, on the app's surface (it follows the theme; the console behind it stays dark).
+    - `VerificationUi.kt` - What the check's sheet shows: the run it checks, where the check stands, and every node visit of the run in run order with its verdict.
+    - `VerifyConfirmDialog.kt` - The confirmation before a long check: how many re-runs, from what, with which seed, compared how, and that tools are not run again; then the estimate in mono and that the model is busy until it finishes.
   - `controls/` - text-input + slider atoms per `inputs-and-chips.md` §1–§5.
     - `KnotworkCompactSlider.kt` - 4×18 dp pill thumb + 4 dp track.
     - `KnotworkField.kt` - caps-label + helper / error wrapper (M3 floating label intentionally off across the design system).
@@ -111,6 +120,7 @@ Paths below are relative to `src/main/java/app/knotwork/design/`.
     - `KnotworkSnackbar.kt` - Knotwork snackbar — thin wrapper over Material3 `Snackbar` that recolours by `variant` and pushes the action label through `KnotworkTextStyles`.
     - `KnotworkSnackbarHost.kt` - The one snackbar host of the app: Material3's `SnackbarHost` rendering every message as a `KnotworkSnackbar` with Material's outer margin.
     - `KnotworkStatCell.kt` - Single stat-grid cell used by the Settings → Memory card's 4-up counter row (CHUNKS / SIZE / THREADS / AVG SCORE).
+    - `KnotworkTestProbeRow.kt` - A test row: glyph, label, status and one button, on a bordered surface.
     - `KnotworkWarningBanner.kt` - A persistent, warning-toned notice with one inline action.
     - `StripedPlaceholder.kt` - Knotwork striped placeholder — the canonical "missing asset" stand-in for any product surface that ships before its real illustration / hero image is available.
   - `pipelineeditor/` - pipeline-editor base components.
@@ -118,15 +128,24 @@ Paths below are relative to `src/main/java/app/knotwork/design/`.
     - `EditorToolbar.kt` - editor top toolbar (back, inline-editable name, subtitle, overflow). No run action: the editor composes pipelines, it does not execute them.
     - `NodeCard.kt` - unified node card covering idle / selected / multi-selected / error states with dynamic port dots and header tint.
     - `NodeConfig.kt` - sealed `NodeConfig` interface + 12 per-type payload data classes (`InputConfig`, `OutputConfig`, …).
-    - `NodeConfigForms.kt` - per-type form bodies (12 variants) with shared helpers (`FieldLabel`, `InlineError`, `VariableChipsRow`).
+    - `NodeConfigFields.kt` - Field composables the node-config forms share: label, caption, inline error, prompt-variable chips, title and text fields, sliders, toggle, segmented chips and the engine-provider row.
+    - `NodeConfigFlowForms.kt` - Config forms of the nodes that steer the run: Input, Intent Router, If Condition, Clarification (with its quick replies) and Queue Processor.
+    - `NodeConfigForms.kt` - Per-type form dispatcher for `NodeConfigSheet`: the title field plus the form body matching the config's type.
+    - `NodeConfigModelForms.kt` - Config forms of the nodes that prompt a model: Output, LiteRT (with its local-model picker), Cloud, Decomposition, Evaluation and Summary.
     - `NodeConfigSheet.kt` - modal bottom sheet hosting the per-type forms with sticky Cancel/Save row and optional app-provided sections.
+    - `NodeConfigTargetForms.kt` - Config forms of the nodes that call something else — Tool, Pipeline and Skill — with their pickers and empty-state notes.
     - `NodeConfigValidation.kt` - pure-Kotlin validator for `NodeConfig` rules (title uniqueness, range bounds, JSON parsing) → field-keyed error map.
     - `NodeError.kt` - sealed `Validation` / `Runtime` error states surfaced on `NodeCard` borders and bodies.
     - `NodeIcons.kt` - `NodeType` → header glyph extension over `AppIcons`.
     - `NodePorts.kt` - `OutboundPort` sealed class + `NodePorts` descriptor of inbound/outbound port topology per node type.
     - `NodeType.kt` - enum of the 12 editor node types (Input, Output, LiteRT, Cloud, IntentRouter, IfCondition, Clarification, Tool, Decomposition, QueueProcessor, Evaluation, Summary).
     - `NodeTypeColors.kt` - composables mapping `NodeType` to header tint, luminance-banded foreground, and display label.
+    - `NodeTypeGroup.kt` - What a node type is for, as the node-type picker groups the types.
+    - `NodeTypePickerSheetBody.kt` - The body of an "Add node" sheet for the pipeline editor: every node type, grouped by what it is for, each with its name and one-line description, and a search over them.
+    - `NodeTypeSearch.kt` - The node-type picker's search: which types a query keeps, grouped as the picker lists them.
+    - `NodeTypeText.kt` - The string resources holding one node type's name and its one-line description — the app's own text for the type.
     - `PipelineEditorCatalogContent.kt` - scrollable harness exercising every pipeline-editor base component + theme previews.
+    - `ProviderChoices.kt` - What the node sheet's provider fields know about this device: which providers are set up here and with which model, what *Auto* would pick, and the on-device model.
   - `prompt/` - prompt-facing components: the preview sheet that shows a rendered prompt with its placeholders resolved, and its unresolved ones marked as errors.
     - `PromptPreviewPreview.kt` - Preview fixtures for the prompt-preview sheet.
     - `PromptPreviewSheet.kt` - Bottom sheet displaying a prompt with its `$VARIABLES` already substituted.
@@ -263,6 +282,8 @@ Paths below are relative to `src/main/java/app/knotwork/design/`.
     - `ChatHomeContentPreview.kt` - Android Studio `@Preview` group for the chat variants in both themes.
     - `ChatHomeDrawer.kt` - the alternate-nav drawer overlay extracted from `ChatHomeContent.kt`: sessions list, `+ New chat` pill, the thread row (`⋮` menu = Rename / Archive / — / Delete chat, plus a one-action Archive swipe and TalkBack custom actions; drops its status dot at font-scale 200 %) and the footer rows (`Archived chats` only when the count is positive, `Import chat`, `Settings`).
     - `ChatHomePreviewData.kt` - deterministic preview fixtures for the chat surface (thread, model, message rows, HITL / clarification cards).
+    - `ChatHomeRunPreview.kt` - Fixtures for the run strip, the check's sheet, the confirmations and the export sheet, over the chat with the console open.
+    - `ChatHomeRunSurfaces.kt` - The surfaces of the run the console shows: the check's sheet, the export sheet and the two confirmations, each drawn while its state is set.
     - `ChatHomeViewState.kt` - visual-state enum (Loading / Empty / Idle / Generating / HitlConfirm / Clarification / Error / DrawerOpen / ConsoleExpanded) + message / thread row models.
     - `ReportResponseDialog.kt` - Dialog collecting a user's flag against a model-authored message.
     - `ReportResponseDialogPreview.kt` - Preview fixtures for the content-report dialog.
@@ -289,6 +310,7 @@ Paths below are relative to `src/main/java/app/knotwork/design/`.
     - `HelpStrings.kt` - Every string the Help surfaces draw, supplied by the app's resources.
   - `memory/` - Long-term-memory pages.
     - `MemoryContent.kt` - Memory Manager surface (stats header, category chips, semantic search, provenance breakdown, entry cards).
+    - `MemoryHistorySection.kt` - The Memory screen's history and pair parts: the collapsible *Earlier versions* section with per-version delete, the row's earlier-versions marker and pair line, an update row drawn inset under its pinned entry, the sheet's pair block (*Use the update* / *Keep pinned*), and the edit-mode note.
     - `MemoryType.kt` - per-element typography overrides transcribed from the Memory Manager design spec.
     - `MemoryViewState.kt` - visual-state enum + sort/filter enums and segment / stat / category / row models.
   - `models/` - Local-models page and the performance card. Model discovery is `discover/`.
@@ -329,9 +351,9 @@ Paths below are relative to `src/main/java/app/knotwork/design/`.
     - `GenerationSettingsContent.kt` - system instructions, restrictions and the LLM generation parameters.
     - `KnotworkMonoTextArea.kt` - multi-line monospace textarea (brand outline) for system instructions.
     - `KnotworkParamSlider.kt` - labelled numeric-parameter slider with value label, optional validation error, and (inside a settings screen) its own help glyph and explanation panel under the track.
-    - `KnotworkProviderRow.kt` - cloud-provider row with optional Ollama-specific fields (base URL, model) and validation.
     - `MemoryImportDialog.kt` - Strategy choice raised after a memory-import file parses.
     - `MemorySettingsContent.kt` - long-term-memory controls (extraction, retrieval thresholds, re-embed).
+    - `ModelPickerSheet.kt` - The list of a server's model ids, full height over the provider form.
     - `ModelsSettingsContent.kt` - local model + inference backend and the cloud-provider list.
     - `PipelinesSettingsContent.kt` - pipeline / structured-output controls. Basic tier is the **Run limits** entry row, carrying the current step and token limits as its subtitle.
     - `PrivacySettingsContent.kt` - privacy, retention and telemetry controls (links out to the usage-statistics surface).
@@ -365,6 +387,8 @@ Paths below are relative to `src/main/java/app/knotwork/design/`.
   - `tools/` - Tools page and the `http_request` domain-allowlist editor.
     - `AllowedDomainsContent.kt` - pushed editor for the `http_request` host allowlist — the gesture that opts the device into outbound HTTP. Empty state (globe hero, the tool-is-off explanation, an amber risk note) and populated state (explainer + host list with per-row removal), mirroring the MCP-server editor's structure.
     - `AllowedDomainsViewState.kt` - screen state plus the sealed `AddHostState` feedback for the add-a-host field (`Idle` / `NormalizedPreview` / `Duplicate` / `Invalid`); only `NormalizedPreview` enables **Add**. Normalisation itself is the host's (`HttpRequestPolicy`) job.
+    - `McpServerConfigContent.kt` - Full-screen MCP-server configuration surface.
+    - `ToolDetailContent.kt` - Stateless tool-detail surface — schema preview + enable/disable toggle.
     - `ToolsContent.kt` - Tools surface (built-in AppFunctions section + MCP servers with expandable tool lists and connection states).
     - `ToolsViewState.kt` - visual-state enum + risk-tier / MCP connection enums + tool / server row models.
   - `triggers/` - automation-trigger surfaces (`TriggersContent` list with inline enable switch + health badge, `TriggerEditorContent` full-screen editor, `TriggerDeleteDialogContent`, and the detail below).
@@ -412,8 +436,11 @@ matters.
     - `ChatCatalogPageSnapshotTest.kt` - Roborazzi snapshot baseline for `ChatCatalogContent` in both themes plus a reduced-motion variant that pins `FixedKnotworkA11y` so the long-press scale + composer morph behave deterministically.
     - `ChatComposerTapTest.kt` - A tap anywhere on the composer belongs to the composer.
     - `ChatMessageContextMenuTest.kt` - Pins the roster of the long-press message context menu.
+    - `HitlConfirmationCardRequestTest.kt` - Behaviour of the request block of `HitlConfirmationCard`: one TalkBack node that says whose words these are and what they were, a Show all / Show less action only when there is more to show, the request as literal text, and the call described as what the agent wants to do.
+    - `HitlConfirmationCardSnapshotTest.kt` - Roborazzi baselines for the request block of `HitlConfirmationCard` — what the run was asked to do, above the call — in every state the design draws: each source, a long request collapsed and expanded, the destructive card with its typed confirmation, a trigger that can no longer be named, an image with and without text, right-to-left and mixed scripts, and the card without a request.
     - `HitlConfirmationCardTest.kt` - Pins both halves of `HitlConfirmationCard`'s summary contract: a blank summary drops the line entirely, a real one still renders alongside the tool id.
     - `HitlConfirmationStateTest.kt` - Pure-JVM tests for `HitlConfirmationState` — the gating logic behind `HitlConfirmationCard`'s Allow CTA, Always-Allow visibility, and destructive typed-confirm row.
+    - `HitlRequestContextTest.kt` - `label` — the one place that names whose words a request is.
     - `ImageAttachmentCatalogPageSnapshotTest.kt` - Roborazzi snapshot baseline for `ImageAttachmentCatalogContent` in both themes plus a reduced-motion variant.
     - `InterruptedRunCardTest.kt` - Behavioural coverage for `InterruptedRunCard` — the status card the chat stream pins when the session's most recent pipeline run died with its process.
   - `chips/` - chips and pills. The behavioural tests here exist for one reason: colour is never the only signal, so every variant must announce its state.
@@ -430,6 +457,8 @@ matters.
     - `ConsoleFilterTest.kt` - Pure-JVM tests for `ConsoleFilter` — the predicate used by `ConsolePane`'s Logs tab to drop filtered-out sources.
     - `ConsoleSearchAffordanceTest.kt` - Pins the console's Search action to the Logs tab.
     - `ConsoleSnapTest.kt` - Documents the discrete `ConsoleSnap` heights as preview-only fixtures.
+    - `FullHashLayoutTest.kt` - `FullHash` keeps every group of eight whole: when four groups do not fit on a line, fewer go on it, and no group breaks across lines character by character.
+    - `RunHeaderAffordanceTest.kt` - What the run strip, the hash chips and the check's sheet do when used: the line toggles, each copy button hands over the whole value, a disabled action does nothing yet stays readable, and a mismatch's button names where it is fixed.
   - `dialogs/` - the shared dialog shapes, currently the outcome family.
     - `DialogsSnapshotTest.kt` - Roborazzi baselines for the two field-free dialogs that moved out of the settings screen.
     - `OutcomeDialogSnapshotTest.kt` - Roborazzi baselines for the `OutcomeDialog` family — the four import outcomes and the re-import question, in one shape.
@@ -447,6 +476,10 @@ matters.
     - `NodeConfigSheetSnapshotTest.kt` - Visual baselines for the node configuration sheets.
     - `NodeConfigValidationTest.kt` - Tests for `NodeConfigValidation` — covers happy path + every failure mode listed in `node-specs.md` §Validation rules.
     - `NodePortsTest.kt` - Pure-JVM tests for `NodePorts.forType` — the single source for the outbound-port enumeration per node type.
+    - `NodeTypePickerSheetBodyTest.kt` - Behaviour of `NodeTypePickerSheetBody`: what a search keeps, what a tap returns, and what TalkBack is given.
+    - `NodeTypePickerSnapshotTest.kt` - Roborazzi baselines for the "Add node" sheet's body, one per state the design draws: the sheet as opened, a search that keeps several groups, one that keeps a single type, a search nothing matches, and the opened and searching sheets at 200 % font scale, where nothing may be cut.
+    - `NodeTypeSearchTest.kt` - The picker's grouping and search rules, without Compose.
+    - `NodeTypeTextTest.kt` - `NodeType.text` maps every node type to its own name and description.
     - `PipelineEditorCatalogPageSnapshotTest.kt` - Roborazzi snapshot baseline for `PipelineEditorCatalogContent` in both themes plus a reduced-motion variant that pins `FixedKnotworkA11y` so the NodeCard running pulse renders deterministically.
   - `prompt/` - baselines for the prompt-facing components.
     - `PromptPreviewSheetSnapshotTest.kt` - Roborazzi baselines for the prompt-preview sheet.
@@ -469,7 +502,10 @@ matters.
     - `ChatHomeContentSnapshotTest.kt` - Roborazzi snapshot baseline for `ChatHomeContent` across every documented state of `compose/screens/README.md §C1`.
     - `ChatHomeEmptyFitTest.kt` - A new chat's suggestion cards must all be reachable, however little height the screen leaves them.
     - `HeroSnapshotTest.kt` - Roborazzi baselines for the README hero shots at the canonical pixel resolution promised in `README.md` (1080 × 2400, the de-facto-standard Pixel-class portrait viewport used by every modern Android-store marketing surface).
+    - `HitlConfirmationFitTest.kt` - The tallest approval card fits on the screen whole.
     - `ReportResponseDialogSnapshotTest.kt` - Roborazzi baselines for the content-report dialog.
+    - `RunHeaderSnapshotTest.kt` - Roborazzi baselines for the run strip in every state the design draws, the Traces and Vars hash chips, the run-again confirmation and the export sheet — over the chat with the console open, in both themes.
+    - `VerificationSheetSnapshotTest.kt` - Roborazzi baselines for the check of a run: its confirmation, the sheet while calls are repeated, and every ending — all matched, mixed with cloud calls, diverged, nothing verifiable, cancelled, the model failing to load — over the console, in both themes.
   - `chatarchive/` - the chat archive, including the font-scale-200 % layouts where the row sheds its decoration.
     - `ChatArchiveAccessibilityTest.kt` - Accessibility audit of the chat-archive surface.
     - `ChatArchiveContentSnapshotTest.kt` - Roborazzi baselines for the chat-archive surface across its documented states in both themes, plus the two font-scale-200 % layouts where the row sheds its decoration.
@@ -510,7 +546,9 @@ matters.
   - `SecretFieldImeTest.kt` - Every field that takes a credential tells the keyboard it is a password.
   - `settings/` - the settings hub and its category sub-screens, including the hint affordance, the search surface, and the provider / run-limits details.
     - `HeroSnapshotTest.kt` - Roborazzi baseline for the README "Settings" hero shot at the canonical 1080 × 2400 resolution.
+    - `ModelPickerSheetTest.kt` - Behaviour of `ModelPickerSheetContent`: what a server's list becomes, and what a pick returns.
     - `ProviderDetailSnapshotTest.kt` - Roborazzi baselines for the provider detail screen.
+    - `ProviderPreview.kt` - Preview fixtures of the external providers: the Models list with all eight rows, the *Add provider* picker, each provider form in its states, and the model list.
     - `RunLimitsSnapshotTest.kt` - Roborazzi baselines for the run-limits screen.
     - `SettingsCategorySnapshotTest.kt` - Roborazzi baseline for the settings category sub-screens.
     - `SettingsHintBehaviourTest.kt` - Behaviour of the settings hint affordance: the parts a Roborazzi baseline cannot show.

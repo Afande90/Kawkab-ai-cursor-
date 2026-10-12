@@ -4,6 +4,7 @@ import app.knotwork.android.domain.models.MemoryChunk
 import app.knotwork.android.domain.models.MemorySource
 import app.knotwork.android.domain.models.MemoryStats
 import app.knotwork.android.domain.models.MemorySummary
+import app.knotwork.android.domain.models.MemoryWithHistory
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -89,7 +90,7 @@ interface MemoryRepository {
      * to the similarity, never multiplied into it, so no candidate can be
      * scored out of the results by age alone. The pool is
      * bounded in practice by the compaction hard-limit
-     * (`SettingsRepository.maxMemoryChunks`), which is the explicit
+     * (`MemorySettings.maxMemoryChunks`), which is the explicit
      * performance cap; implementations log a warning when the scanned pool
      * grows large enough for the linear scan to become noticeable.
      *
@@ -206,30 +207,37 @@ interface MemoryRepository {
     suspend fun getExistingMemoryIds(): Set<Long>
 
     /**
-     * Bulk-inserts imported chunks (the Merge strategy), preserving each chunk's
-     * id, text, embedding, timestamp, provenance, pin state, and tags. Usage
-     * telemetry (`useCount` / `lastUsedAt`) is reset because it does not survive
-     * a transfer.
+     * Bulk-inserts imported chunks with their earlier versions (the Merge
+     * strategy), in one transaction, preserving each chunk's id, text, embedding,
+     * timestamp, provenance, pin state, and tags. Usage telemetry (`useCount` /
+     * `lastUsedAt`) is reset because it does not survive a transfer. An earlier
+     * version is stored only as history.
      *
-     * @param chunks The chunks to insert (already filtered against existing ids).
+     * @param memories The chunks to insert with their versions (already filtered
+     *   against existing ids).
      * @param needsReembedding When `true`, every inserted chunk is flagged for
      *   background re-embedding because the file was exported under a different
      *   embedding provider.
+     * @return Success once the chunks are stored; a failure when the store refused
+     *   the transaction — which then wrote nothing.
      */
-    suspend fun insertImportedMemories(chunks: List<MemoryChunk>, needsReembedding: Boolean)
+    suspend fun insertImportedMemories(memories: List<MemoryWithHistory>, needsReembedding: Boolean): Result<Unit>
 
     /**
-     * Atomically replaces the entire memory table with [chunks] (the Replace
-     * strategy): the wipe and the bulk insert run in a single transaction, so a
-     * failure mid-insert never leaves the store empty. Field preservation and
+     * Atomically replaces the entire memory table with [memories] (the Replace
+     * strategy): the wipe — stored history and waiting updates included — and the
+     * load of the chunks and their earlier versions run in a single transaction,
+     * so a failure mid-insert never leaves the store empty. Field preservation and
      * the [needsReembedding] flag match [insertImportedMemories].
      *
-     * @param chunks The chunks to load (must be non-empty; the caller guards
-     *   against wiping with nothing to insert).
+     * @param memories The chunks to load with their versions (must be non-empty;
+     *   the caller guards against wiping with nothing to insert).
      * @param needsReembedding When `true`, every loaded chunk is flagged for
      *   background re-embedding.
+     * @return Success once the store holds exactly [memories]; a failure when the
+     *   store refused the transaction — which then left the old store in place.
      */
-    suspend fun replaceImportedMemories(chunks: List<MemoryChunk>, needsReembedding: Boolean)
+    suspend fun replaceImportedMemories(memories: List<MemoryWithHistory>, needsReembedding: Boolean): Result<Unit>
 
     /**
      * One-shot count of chunks awaiting re-embedding. Backs the cheap startup

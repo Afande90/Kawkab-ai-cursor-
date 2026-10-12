@@ -21,6 +21,7 @@ import app.knotwork.android.domain.repositories.PipelineRunRepository
 import app.knotwork.android.domain.repositories.RunTraceRepository
 import app.knotwork.android.domain.repositories.SettingsRepository
 import app.knotwork.android.domain.usecases.AgentOrchestratorUseCase
+import app.knotwork.android.domain.usecases.ApprovalRequestContextFixtures
 import app.knotwork.android.domain.usecases.GetContextWindowUseCase
 import app.knotwork.android.domain.usecases.LoadModelUseCase
 import app.knotwork.design.components.console.ConsoleLevel
@@ -59,7 +60,6 @@ import org.junit.Test
  * every step.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-@Suppress("LongMethod")
 class ChatHomeConsoleStreamingTest {
 
     private val testDispatcher = StandardTestDispatcher()
@@ -157,7 +157,10 @@ class ChatHomeConsoleStreamingTest {
         agentOrchestratorUseCase,
         chatRepository,
         pipelineRepository,
-        settingsRepository,
+        appStateSettings = settingsRepository,
+        generationSettings = settingsRepository,
+        entryPointSettings = settingsRepository,
+        runSettings = settingsRepository,
         getContextWindowUseCase,
         llmInferenceEngine,
         clarificationRepository,
@@ -183,6 +186,8 @@ class ChatHomeConsoleStreamingTest {
         mockk(relaxed = true),
         mockk(relaxed = true),
         mockk(relaxed = true),
+        mockk(relaxed = true),
+        ApprovalRequestContextFixtures.none(),
     ).also { vm ->
         // Keep the replay projection on the test scheduler so
         // advanceUntilIdle() deterministically covers it.

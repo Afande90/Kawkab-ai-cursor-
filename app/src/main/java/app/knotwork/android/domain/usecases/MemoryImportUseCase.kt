@@ -1,10 +1,10 @@
 package app.knotwork.android.domain.usecases
 
 import app.knotwork.android.domain.memoryio.MemoryJsonSerializer
-import app.knotwork.android.domain.models.MemoryChunk
 import app.knotwork.android.domain.models.MemoryExportDocument
 import app.knotwork.android.domain.models.MemoryImportOutcome
 import app.knotwork.android.domain.models.MemoryImportStrategy
+import app.knotwork.android.domain.models.MemoryWithHistory
 import app.knotwork.android.domain.repositories.MemoryRepository
 import app.knotwork.android.domain.services.EmbeddingProviderResolver
 import app.knotwork.android.domain.services.MemoryReembedScheduler
@@ -95,18 +95,21 @@ class MemoryImportUseCase @Inject constructor(
      * @param document The parsed document to import.
      * @param strategy How to reconcile with the existing store.
      * @return A [MemoryImportResult] describing how many chunks were imported
-     *   and skipped, and whether a re-embed was scheduled.
+     *   and skipped, and whether a re-embed was scheduled; or a failure when the
+     *   store refused the import — which then changed nothing.
      */
-    suspend fun import(document: MemoryExportDocument, strategy: MemoryImportStrategy): MemoryImportResult {
+    suspend fun import(document: MemoryExportDocument, strategy: MemoryImportStrategy): Result<MemoryImportResult> {
         val needsReembedding = isProviderMismatched(document)
         val toInsert = when (strategy) {
             MemoryImportStrategy.Replace -> {
                 // Guard: never wipe the store when there is nothing to load.
                 if (document.chunks.isEmpty()) {
-                    return MemoryImportResult(imported = 0, skipped = 0, needsReembedding = false)
+                    return Result.success(MemoryImportResult(imported = 0, skipped = 0, needsReembedding = false))
                 }
-                val deduped = document.chunks.dedupById()
-                memoryRepository.replaceImportedMemories(deduped, needsReembedding)
+                val deduped = document.memories.dedupById()
+                memoryRepository.replaceImportedMemories(deduped, needsReembedding).onFailure {
+                    return Result.failure(it)
+                }
                 deduped
             }
             MemoryImportStrategy.Merge -> {
@@ -116,8 +119,10 @@ class MemoryImportUseCase @Inject constructor(
                 // keeps every id-0 chunk while collapsing positive-id duplicates
                 // within the file, so the count matches what REPLACE-on-conflict
                 // actually persists.
-                val fresh = document.chunks.filter { it.id !in existing }.dedupById()
-                memoryRepository.insertImportedMemories(fresh, needsReembedding)
+                val fresh = document.memories.filter { it.chunk.id !in existing }.dedupById()
+                memoryRepository.insertImportedMemories(fresh, needsReembedding).onFailure {
+                    return Result.failure(it)
+                }
                 fresh
             }
         }
@@ -127,10 +132,12 @@ class MemoryImportUseCase @Inject constructor(
         if (scheduledReembed) {
             reembedScheduler.schedule()
         }
-        return MemoryImportResult(
-            imported = toInsert.size,
-            skipped = document.chunks.size - toInsert.size,
-            needsReembedding = scheduledReembed,
+        return Result.success(
+            MemoryImportResult(
+                imported = toInsert.size,
+                skipped = document.chunks.size - toInsert.size,
+                needsReembedding = scheduledReembed,
+            ),
         )
     }
 
@@ -140,11 +147,11 @@ class MemoryImportUseCase @Inject constructor(
      * chunks sharing a positive id into a single row (last wins). Chunks with
      * `id == 0` are never deduped — each gets its own auto-assigned key.
      */
-    private fun List<MemoryChunk>.dedupById(): List<MemoryChunk> {
-        val byId = LinkedHashMap<Long, MemoryChunk>()
-        val autoAssigned = ArrayList<MemoryChunk>()
-        for (chunk in this) {
-            if (chunk.id == 0L) autoAssigned.add(chunk) else byId[chunk.id] = chunk
+    private fun List<MemoryWithHistory>.dedupById(): List<MemoryWithHistory> {
+        val byId = LinkedHashMap<Long, MemoryWithHistory>()
+        val autoAssigned = ArrayList<MemoryWithHistory>()
+        for (memory in this) {
+            if (memory.chunk.id == 0L) autoAssigned.add(memory) else byId[memory.chunk.id] = memory
         }
         return byId.values + autoAssigned
     }

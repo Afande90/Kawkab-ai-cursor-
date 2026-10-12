@@ -34,6 +34,7 @@ import app.knotwork.android.buildtools.VerifyMergedManifestTask
 import app.knotwork.android.buildtools.VerifyMermaidDiagramsTask
 import app.knotwork.android.buildtools.VerifyNoOrphanedKdocTask
 import app.knotwork.android.buildtools.VerifyNoSlf4jProviderTask
+import app.knotwork.android.buildtools.VerifySizeSuppressionsTask
 import app.knotwork.android.buildtools.VerifySupplyChainPinsTask
 import app.knotwork.android.buildtools.VerifyVersionSourcesTask
 import com.android.build.api.artifact.ScopedArtifact
@@ -217,6 +218,12 @@ android {
         // hash. Falls back to "unknown" when `git` is unavailable (e.g. a
         // tarball build).
         buildConfigField("String", "GIT_SHA", "\"${resolveGitSha()}\"")
+
+        // The on-device inference runtime's version, recorded in every pipeline
+        // run's header: LiteRT-LM exposes no version at runtime, and a repeat of a
+        // run is promised to match only on the same runtime. Read from the version
+        // catalog, so the recorded value is the version the APK was built against.
+        buildConfigField("String", "LITERT_LM_VERSION", "\"${libs.versions.litertlm.get()}\"")
 
         // Build date surfaced in the Settings top-app-bar
         // subtitle (`v0.9.2 · alpha · 2026.05.18`). Captured at configuration
@@ -704,8 +711,8 @@ kover {
                     "*_Provide*Factory$*",
                     "dagger.hilt.internal.*",
                     "hilt_aggregated_deps.*",
-                    // Room-generated DAO implementations and the database impl
-                    // (the schema migrations themselves are bundled inside it).
+                    // Room-generated DAO implementations and the database impl.
+                    // The schema migrations (`data.local.migrations`) are measured.
                     "*_Impl",
                     "*_Impl$*",
                     "app.knotwork.android.data.local.AppDatabase",
@@ -985,6 +992,34 @@ val verifyNoOrphanedKdoc by tasks.registering(VerifyNoOrphanedKdocTask::class) {
 }
 tasks.named("check") { dependsOn(verifyNoOrphanedKdoc) }
 
+// Size-suppression ratchet.
+//
+// Five detekt rules measure size and complexity, and a suppression of one is a
+// standing exception to its threshold. When they were first counted, 126 of the
+// 155 in the repository suppressed nothing: the code had shrunk, the rule ignored
+// the declaration anyway, or the rule never ran on that source set. Every
+// remaining one is listed in `config/detekt/size-suppressions.txt`; an unlisted
+// suppression fails the build, and so does a listed one that is gone, so the
+// list only shrinks. The comparison is `SizeSuppressionRatchet` (buildSrc, unit-
+// tested). Scans every module's sources and build scripts, test sets included:
+// a suppression where the rule does not run is exactly the dead kind.
+val verifySizeSuppressions by tasks.registering(VerifySizeSuppressionsTask::class) {
+    group = "verification"
+    description = "Fails the build if size/complexity suppressions differ from config/detekt/size-suppressions.txt."
+    repositoryRoot.set(rootProject.layout.projectDirectory)
+    sources.from(
+        fileTree(rootDir) {
+            include("*.kts")
+            listOf("app", "catalog", "buildSrc", "tools-probe").forEach { module ->
+                include("$module/*.kts", "$module/src/**/*.kt", "$module/src/**/*.kts")
+            }
+        },
+    )
+    listFile.set(file("$rootDir/config/detekt/size-suppressions.txt"))
+    stampFile.set(layout.buildDirectory.file("reports/detekt/size-suppressions.txt"))
+}
+tasks.named("check") { dependsOn(verifySizeSuppressions) }
+
 // Forbidden-vocabulary gate.
 //
 // The product was renamed, and the old name kept greeting every user from the
@@ -1094,6 +1129,9 @@ val dialogInventoryAllowlist = mapOf(
         "Hosts the catalog's PromptPresetPickerSheet.",
     "app/src/main/java/app/knotwork/android/presentation/ui/orchestrator/presets/PresetPickerSheet.kt" to
         "Hosts the catalog's PresetPickerSheetBody.",
+    "app/src/main/java/app/knotwork/android/presentation/ui/pipeline/editor/sheet/NodeTypePickerSheet.kt" to
+        "Hosts the catalog's NodeTypePickerSheetBody. Besides the wrapper it draws only the drag-handle " +
+        "mark, because Material's own handle is a TalkBack stop.",
 
     // ── Deliberate deviations. Each composes its own dialog, and each has a
     // reason that is not "nobody got to it".
@@ -1139,6 +1177,10 @@ tasks.named("check") { dependsOn(verifyDialogInventory) }
 val browserEditorHtmlFile = file("$rootDir/pipeline-editor.html")
 val browserEditorNodeTypeFile =
     file("$projectDir/src/main/java/app/knotwork/android/domain/models/NodeType.kt")
+// Every node type's name and one-line description — the app's own texts. Read by
+// this generator (palette label and tooltip) and by the cookbook's (each entry's opening
+// sentence), so neither document keeps a copy of its own.
+val nodeTypeStringsFile = file("$rootDir/catalog/src/main/res/values/strings_node_types.xml")
 val browserEditorDefaultPromptsFile =
     file("$projectDir/src/main/java/app/knotwork/android/domain/constants/DefaultPrompts.kt")
 val browserEditorPromptModuleFile =
@@ -1169,6 +1211,7 @@ val browserEditorRouteLabelsFile =
 val browserEditorInputFiles: Set<File> = browserEditorClassSourceFiles + browserEditorPresetFiles +
     browserEditorTemplateFiles + setOf(
         browserEditorNodeTypeFile,
+        nodeTypeStringsFile,
         browserEditorDefaultPromptsFile,
         browserEditorPromptModuleFile,
         browserEditorToolsModuleFile,
@@ -1193,6 +1236,7 @@ val generateBrowserEditorConstants by tasks.registering {
         val rendered = BrowserEditorConstantsGenerator.render(
             html = current,
             nodeTypeSource = browserEditorNodeTypeFile.readText(),
+            nodeTypeStringsSource = nodeTypeStringsFile.readText(),
             defaultPromptsSource = browserEditorDefaultPromptsFile.readText(),
             promptTemplateModuleSource = browserEditorPromptModuleFile.readText(),
             localToolsModuleSource = browserEditorToolsModuleFile.readText(),
@@ -1299,6 +1343,7 @@ val verifyBrowserEditorConstants by tasks.registering {
         val drifted = BrowserEditorConstantsGenerator.drift(
             html = browserEditorHtmlFile.readText(),
             nodeTypeSource = browserEditorNodeTypeFile.readText(),
+            nodeTypeStringsSource = nodeTypeStringsFile.readText(),
             defaultPromptsSource = browserEditorDefaultPromptsFile.readText(),
             promptTemplateModuleSource = browserEditorPromptModuleFile.readText(),
             localToolsModuleSource = browserEditorToolsModuleFile.readText(),
@@ -1460,7 +1505,8 @@ tasks.named("check") { dependsOn(verifyExternalAutomationDocs) }
 //
 // `generateCookbookDocs` rebuilds the AUTO-GEN blocks from the sources that
 // define a node — the domain enum, the `:catalog` mirror, the ports factory,
-// the context defaults, the config hierarchy and the default prompts;
+// the context defaults, the config hierarchy, the default prompts and the
+// app's own node-type names and descriptions (`strings_node_types.xml`);
 // `verifyCookbookDocs` (wired into `check`) fails the build on drift. The pure
 // generation logic lives in `buildSrc` (`CookbookDocsGenerator`) and is
 // unit-tested there.
@@ -1496,6 +1542,7 @@ val cookbookInputFiles: Set<File> = setOf(
     cookbookNodeContextConfigFile,
     cookbookNodeConfigFile,
     cookbookDefaultPromptsFile,
+    nodeTypeStringsFile,
 )
 
 // Built inline in each task action rather than by a shared helper: a `doLast`
@@ -1519,6 +1566,7 @@ val generateCookbookDocs by tasks.registering {
                 nodeContextConfig = cookbookNodeContextConfigFile.readText(),
                 nodeConfig = cookbookNodeConfigFile.readText(),
                 defaultPrompts = cookbookDefaultPromptsFile.readText(),
+                nodeTypeStrings = nodeTypeStringsFile.readText(),
             ),
         )
         if (rendered != current) {
@@ -1545,6 +1593,7 @@ val verifyCookbookDocs by tasks.registering {
                 nodeContextConfig = cookbookNodeContextConfigFile.readText(),
                 nodeConfig = cookbookNodeConfigFile.readText(),
                 defaultPrompts = cookbookDefaultPromptsFile.readText(),
+                nodeTypeStrings = nodeTypeStringsFile.readText(),
             ),
         )
         if (drifted.isNotEmpty()) {
@@ -1943,6 +1992,17 @@ tasks.withType<Test>().configureEach {
     inputs.file(layout.projectDirectory.file("build.gradle.kts"))
         .withPropertyName("appBuildScript")
         .withPathSensitivity(PathSensitivity.RELATIVE)
+    // `GoldenTraceTest` compares every shipped pipeline's run trace with a committed golden
+    // file under `src/test/golden/`, which is on no classpath — the Roborazzi baselines of
+    // `:catalog` are declared for the same reason. `-PrecordGoldenTraces` switches the test
+    // from comparing to rewriting; a system property is a task input, so a record run is
+    // never answered from a cached comparison.
+    inputs.dir(layout.projectDirectory.dir("src/test/golden"))
+        .withPropertyName("goldenTraces")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    if (providers.gradleProperty("recordGoldenTraces").isPresent) {
+        systemProperty("knotwork.goldenTraces.record", "true")
+    }
 }
 
 // Hilt/Dagger reads Kotlin metadata via `kotlin-metadata-jvm`, which is unshaded

@@ -1,11 +1,12 @@
 package app.knotwork.android.data.tools.local.executors
 
 import app.knotwork.android.domain.constants.SettingsDefaults
+import app.knotwork.android.domain.models.CloudProvider
 import app.knotwork.android.domain.models.ToolExecutionContext
 import app.knotwork.android.domain.repositories.ApiKeyRepository
 import app.knotwork.android.domain.repositories.LocalToolExecutor
 import app.knotwork.android.domain.repositories.NetworkActivityTracker
-import app.knotwork.android.domain.repositories.SettingsRepository
+import app.knotwork.android.domain.repositories.ToolSettings
 import app.knotwork.android.domain.services.HttpRequestPolicy
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart
@@ -43,7 +44,7 @@ import kotlin.math.min
  *     [HttpRequestPolicy.methodRisk] also drives the per-method HITL risk
  *     (`GET` → SENSITIVE, the rest → DESTRUCTIVE), resolved upstream in
  *     `ToolRepositoryImpl.getRisk` from the same source.
- *  2. **Allowlist gate** — while [SettingsRepository.allowedHttpDomains] is
+ *  2. **Allowlist gate** — while [ToolSettings.allowedHttpDomains] is
  *     empty the tool is not even published to the agent; a direct call is
  *     refused here. A target host matching no entry is refused before connect.
  *  3. **Transport gate** — public hosts must use `https://`; cleartext is only
@@ -61,7 +62,7 @@ import kotlin.math.min
  *     re-validated against the same allowlist / transport rules, and a redirect
  *     pointing outside the allowlist aborts the call.
  *
- * The response is read up to [SettingsRepository.httpToolMaxResponseBytes] and a
+ * The response is read up to [ToolSettings.httpToolMaxResponseBytes] and a
  * truncation marker is appended past the cap, bounding how much untrusted remote
  * content one call can inject into the local model's context. Every failure is
  * mapped to a readable observation string instead of throwing — the agent sees
@@ -75,7 +76,7 @@ import kotlin.math.min
  *
  * @property okHttpClient Shared client; a per-call derivative disables automatic
  *   redirect following so each hop can be validated.
- * @property settingsRepository Source of the allowlist and the response-size cap.
+ * @property toolSettings Source of the allowlist and the response-size cap.
  * @property apiKeyRepository Source of the stored provider keys scanned for leaks.
  * @property networkActivityTracker Told about every hop sent, so the More tab's privacy
  *   indicator counts this tool's requests.
@@ -84,7 +85,7 @@ import kotlin.math.min
  */
 class HttpRequestExecutor internal constructor(
     private val okHttpClient: OkHttpClient,
-    private val settingsRepository: SettingsRepository,
+    private val toolSettings: ToolSettings,
     private val apiKeyRepository: ApiKeyRepository,
     private val networkActivityTracker: NetworkActivityTracker,
     private val callDeadlineMs: Long,
@@ -94,17 +95,17 @@ class HttpRequestExecutor internal constructor(
      * Creates the executor with the production call deadline.
      *
      * @param okHttpClient Shared client.
-     * @param settingsRepository Source of the allowlist and the response-size cap.
+     * @param toolSettings Source of the allowlist and the response-size cap.
      * @param apiKeyRepository Source of the stored provider keys scanned for leaks.
      * @param networkActivityTracker Told about every hop sent.
      */
     @Inject
     constructor(
         okHttpClient: OkHttpClient,
-        settingsRepository: SettingsRepository,
+        toolSettings: ToolSettings,
         apiKeyRepository: ApiKeyRepository,
         networkActivityTracker: NetworkActivityTracker,
-    ) : this(okHttpClient, settingsRepository, apiKeyRepository, networkActivityTracker, CALL_DEADLINE_MS)
+    ) : this(okHttpClient, toolSettings, apiKeyRepository, networkActivityTracker, CALL_DEADLINE_MS)
 
     override val toolName: String = TOOL_NAME
 
@@ -125,7 +126,7 @@ class HttpRequestExecutor internal constructor(
         val rawUrl = json.optString("url", "").trim()
         if (rawUrl.isEmpty()) return "Error: missing 'url' argument."
 
-        val allowed = settingsRepository.allowedHttpDomains.firstOrNull().orEmpty()
+        val allowed = toolSettings.allowedHttpDomains.firstOrNull().orEmpty()
         if (allowed.isEmpty()) {
             return "Error: http_request is disabled — no allowed domains are configured. " +
                 "Add a domain in Settings → Tools → Allowed domains to enable it."
@@ -164,7 +165,7 @@ class HttpRequestExecutor internal constructor(
             return "Error: request contains a stored credential — refusing to send a saved API key off-device."
         }
 
-        val maxBytes = settingsRepository.httpToolMaxResponseBytes.firstOrNull()
+        val maxBytes = toolSettings.httpToolMaxResponseBytes.firstOrNull()
             ?: SettingsDefaults.HTTP_TOOL_MAX_RESPONSE_BYTES_DEFAULT
 
         return withContext(Dispatchers.IO) {
@@ -313,7 +314,7 @@ class HttpRequestExecutor internal constructor(
 
     /**
      * Renders [response] as `HTTP <code>` + truncated headers + a body capped at
-     * [SettingsRepository.httpToolMaxResponseBytes]. Always closes the response.
+     * [ToolSettings.httpToolMaxResponseBytes]. Always closes the response.
      */
     private fun formatResponse(response: Response, maxBytes: Long): String = response.use {
         val headerText = it.headers
@@ -370,13 +371,17 @@ class HttpRequestExecutor internal constructor(
         return result
     }
 
-    /** Reads all stored, non-blank provider API key values for the credential scan. */
-    private suspend fun collectStoredSecrets(): List<String> = listOfNotNull(
-        apiKeyRepository.getOpenAIKey().firstOrNull(),
-        apiKeyRepository.getAnthropicKey().firstOrNull(),
-        apiKeyRepository.getGoogleKey().firstOrNull(),
-        apiKeyRepository.getDeepSeekKey().firstOrNull(),
-    ).filter { it.isNotBlank() }
+    /**
+     * Reads every stored, non-blank provider API key for the credential scan.
+     *
+     * Iterates [CloudProvider.entries] instead of naming providers: the scan is a security
+     * control, and a hand-written list of four keys would have let the key of any provider
+     * added later travel to an allowlisted host unnoticed.
+     */
+    private suspend fun collectStoredSecrets(): List<String> = CloudProvider.entries
+        .filter { it.usesApiKey }
+        .mapNotNull { apiKeyRepository.getApiKey(it).firstOrNull() }
+        .filter { it.isNotBlank() }
 
     companion object {
         /** Tool name as exposed to the LLM and used as the DI map key. */

@@ -5,6 +5,8 @@ import app.knotwork.android.domain.constants.SettingsDefaults
 import app.knotwork.android.domain.engine.LlmInferenceEngine
 import app.knotwork.android.domain.models.AgentOrchestratorState
 import app.knotwork.android.domain.models.AppError
+import app.knotwork.android.domain.models.ApprovalRequestContext
+import app.knotwork.android.domain.models.ApprovalRequestSource
 import app.knotwork.android.domain.models.ChatImportException
 import app.knotwork.android.domain.models.ChatMessage
 import app.knotwork.android.domain.models.ChatSession
@@ -12,6 +14,7 @@ import app.knotwork.android.domain.models.ClarificationRequest
 import app.knotwork.android.domain.models.HardCeilingBreach
 import app.knotwork.android.domain.models.LocalBackend
 import app.knotwork.android.domain.models.LocalModel
+import app.knotwork.android.domain.models.LocalSampling
 import app.knotwork.android.domain.models.MessageAttachment
 import app.knotwork.android.domain.models.NodeModel
 import app.knotwork.android.domain.models.NodeType
@@ -25,6 +28,7 @@ import app.knotwork.android.domain.models.Role
 import app.knotwork.android.domain.models.RunCeilingAxis
 import app.knotwork.android.domain.models.RunNoticeCause
 import app.knotwork.android.domain.models.RunOrigin
+import app.knotwork.android.domain.models.RunSampler
 import app.knotwork.android.domain.models.RunTerminationReason
 import app.knotwork.android.domain.models.ToolRisk
 import app.knotwork.android.domain.repositories.ChatRepository
@@ -41,6 +45,7 @@ import app.knotwork.android.domain.services.AudioRecorder
 import app.knotwork.android.domain.services.ImageCaptureStore
 import app.knotwork.android.domain.services.RecordingState
 import app.knotwork.android.domain.usecases.AgentOrchestratorUseCase
+import app.knotwork.android.domain.usecases.ApprovalRequestContextFixtures
 import app.knotwork.android.domain.usecases.ArchiveChatUseCase
 import app.knotwork.android.domain.usecases.CheckImageAttachmentUseCase
 import app.knotwork.android.domain.usecases.EntryInferenceKind
@@ -48,6 +53,7 @@ import app.knotwork.android.domain.usecases.ExportChatUseCase
 import app.knotwork.android.domain.usecases.GetContextWindowUseCase
 import app.knotwork.android.domain.usecases.LoadModelUseCase
 import app.knotwork.android.domain.usecases.PendingSubmissionOutcome
+import app.knotwork.android.domain.usecases.ResolveApprovalRequestContextUseCase
 import app.knotwork.android.domain.usecases.ResolveEntryInferenceUseCase
 import app.knotwork.android.domain.usecases.ResumeOutcome
 import app.knotwork.android.domain.usecases.ResumePipelineRunUseCase
@@ -59,6 +65,12 @@ import app.knotwork.android.domain.usecases.SubmitClarificationAnswerUseCase
 import app.knotwork.android.domain.usecases.TranscribeAudioUseCase
 import app.knotwork.android.domain.usecases.TranscriptionOutcome
 import app.knotwork.android.domain.usecases.UnarchiveChatUseCase
+import app.knotwork.android.domain.verification.DescribeRunUseCase
+import app.knotwork.android.domain.verification.Reproducibility
+import app.knotwork.android.domain.verification.RunAgainAvailability
+import app.knotwork.android.domain.verification.RunAgainRequest
+import app.knotwork.android.domain.verification.RunDescription
+import app.knotwork.android.domain.verification.VerifyAvailability
 import app.knotwork.android.presentation.state.ActiveSessionTracker
 import app.knotwork.android.presentation.ui.common.ImageAttachmentBlockCopy
 import app.knotwork.design.components.chat.ChatContent
@@ -69,6 +81,7 @@ import app.knotwork.design.components.chips.Risk
 import app.knotwork.design.components.console.ConsoleSnap
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -116,12 +129,6 @@ import org.junit.Test
  *  - Drawer / overflow / model-picker callbacks
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-@Suppress(
-    // Reason: chat home tests cover a 12-method ViewModel surface — every
-    // public entry-point gets at least one happy-path assertion.
-    "LargeClass",
-    "LongMethod",
-)
 class ChatHomeViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
@@ -165,6 +172,9 @@ class ChatHomeViewModelTest {
     private lateinit var archiveChatUseCase: ArchiveChatUseCase
     private lateinit var unarchiveChatUseCase: UnarchiveChatUseCase
     private lateinit var exportChatUseCase: ExportChatUseCase
+    private val runUseCases: ChatHomeRunUseCases = mockk(relaxed = true)
+    private val resolveApprovalRequestContext: ResolveApprovalRequestContextUseCase =
+        ApprovalRequestContextFixtures.none()
 
     @Before
     fun setUp() {
@@ -279,7 +289,10 @@ class ChatHomeViewModelTest {
         agentOrchestratorUseCase,
         chatRepository,
         pipelineRepository,
-        settingsRepository,
+        appStateSettings = settingsRepository,
+        generationSettings = settingsRepository,
+        entryPointSettings = settingsRepository,
+        runSettings = settingsRepository,
         getContextWindowUseCase,
         llmInferenceEngine,
         clarificationRepository,
@@ -305,6 +318,8 @@ class ChatHomeViewModelTest {
         archiveChatUseCase,
         exportChatUseCase,
         unarchiveChatUseCase,
+        runUseCases,
+        resolveApprovalRequestContext,
     ).also { vm ->
         // Keep the replay projection on the test scheduler so
         // advanceUntilIdle() deterministically covers it.
@@ -675,6 +690,124 @@ class ChatHomeViewModelTest {
             }
             assertEquals("typed while reading the error", viewModel.state.value.composer.value)
         }
+
+    @Test
+    fun `given the run strip when a run is started again with its seed then the send carries its pipeline and seed`() =
+        runTest(testDispatcher) {
+            every { llmInferenceEngine.isInitialized } returns true
+            every { settingsRepository.localModelBackend } returns flowOf("CPU")
+            var observedSession = ""
+            every { pipelineRunRepository.observeRunsForSession(any()) } answers {
+                observedSession = firstArg()
+                flowOf(listOf(finishedRun(observedSession)))
+            }
+            val sampling = LocalSampling(RunSampler(0.3, 12, 0.5), seed = 1_482_913)
+            val describeRun = mockk<DescribeRunUseCase>()
+            coEvery { describeRun(any()) } answers {
+                RunDescription(
+                    run = finishedRun(observedSession),
+                    models = emptyList(),
+                    localCalls = 0,
+                    cloudCalls = 0,
+                    digest = null,
+                    reproducibility = Reproducibility.Promised(emptySet(), usedCloud = false),
+                    verify = VerifyAvailability.NoLocalCalls,
+                    runAgain = RunAgainAvailability.Available(
+                        RunAgainRequest(observedSession, "recorded-pipeline", "Daily brief", "the message", sampling),
+                    ),
+                )
+            }
+            every { runUseCases.describeRun } returns describeRun
+            viewModel = createViewModel()
+            advanceUntilIdle()
+            val sessionId = viewModel.state.value.thread.currentSessionId
+
+            viewModel.run.runAgain()
+            viewModel.run.confirmRunAgain()
+            advanceUntilIdle()
+
+            coVerify {
+                agentOrchestratorUseCase(
+                    sessionId = sessionId,
+                    userPrompt = "the message",
+                    pipelineId = "recorded-pipeline",
+                    attachment = null,
+                    displayContent = null,
+                    origin = any(),
+                    // A new turn in the thread: the question shows above the new answer.
+                    persistUserMessage = true,
+                    samplingOverride = sampling,
+                )
+            }
+        }
+
+    @Test
+    fun `given the model was released when a run is started again with its seed then it loads the model first`() =
+        runTest(testDispatcher) {
+            var modelLoaded = false
+            every { llmInferenceEngine.isInitialized } answers { modelLoaded }
+            coEvery { loadModelUseCase() } answers {
+                modelLoaded = true
+                Result.Success(Unit)
+            }
+            every { settingsRepository.localModelBackend } returns flowOf("CPU")
+            var observedSession = ""
+            every { pipelineRunRepository.observeRunsForSession(any()) } answers {
+                observedSession = firstArg()
+                flowOf(listOf(finishedRun(observedSession)))
+            }
+            val sampling = LocalSampling(RunSampler(0.3, 12, 0.5), seed = 7)
+            val describeRun = mockk<DescribeRunUseCase>()
+            coEvery { describeRun(any()) } answers {
+                RunDescription(
+                    run = finishedRun(observedSession),
+                    models = emptyList(),
+                    localCalls = 0,
+                    cloudCalls = 0,
+                    digest = null,
+                    reproducibility = Reproducibility.Promised(emptySet(), usedCloud = false),
+                    verify = VerifyAvailability.NoLocalCalls,
+                    runAgain = RunAgainAvailability.Available(
+                        RunAgainRequest(observedSession, "recorded-pipeline", "Daily brief", "the message", sampling),
+                    ),
+                )
+            }
+            every { runUseCases.describeRun } returns describeRun
+            viewModel = createViewModel()
+            advanceUntilIdle()
+
+            viewModel.run.runAgain()
+            viewModel.run.confirmRunAgain()
+            advanceUntilIdle()
+
+            coVerifyOrder {
+                loadModelUseCase()
+                agentOrchestratorUseCase(
+                    sessionId = any(),
+                    userPrompt = "the message",
+                    pipelineId = "recorded-pipeline",
+                    attachment = null,
+                    displayContent = null,
+                    origin = any(),
+                    persistUserMessage = true,
+                    samplingOverride = sampling,
+                )
+            }
+        }
+
+    /** A finished chat run of [sessionId]. */
+    private fun finishedRun(sessionId: String) = PipelineRun(
+        id = "recorded-run",
+        sessionId = sessionId,
+        pipelineId = "recorded-pipeline",
+        origin = RunOrigin.CHAT,
+        status = PipelineRunStatus.COMPLETED,
+        currentNodeId = null,
+        startedAt = 0L,
+        finishedAt = 1L,
+        errorMessage = null,
+        graphContentHash = null,
+    )
 
     @Test
     fun `retryAfterError never re-runs a row imported from a chat file`() = runTest(testDispatcher) {
@@ -2692,6 +2825,55 @@ class ChatHomeViewModelTest {
             coVerify(exactly = 1) { submitApprovalDecisionUseCase(sessionId, "run-parked", true) }
         }
 
+    @Test
+    fun `given a run parked on approval when its card is restored then it shows what the run was asked`() =
+        runTest(testDispatcher) {
+            // The record keeps no copy of the request; the card reads it again
+            // from the parked run, so it shows what the live card did.
+            val sessionId = "session-parked-context"
+            seedSavedSession(sessionId)
+            coEvery { pipelineRunRepository.getActiveRunForSession(sessionId) } returns
+                runRecord(sessionId, PipelineRunStatus.WAITING_APPROVAL)
+            every { agentOrchestratorUseCase.observe(sessionId) } returns
+                flowOf(AgentOrchestratorState.ConsoleLog(events = emptyList(), runId = "run-1"))
+            every { agentOrchestratorUseCase.pendingApprovalFor(sessionId) } returns null
+            coEvery { pendingInteractionRepository.getForSession(sessionId) } returns parkedApproval(
+                sessionId,
+                requestId = "request-parked",
+            )
+            coEvery { resolveApprovalRequestContext("run-parked") } returns ASKED_IN_CHAT
+
+            viewModel = createViewModel()
+            advanceUntilIdle()
+
+            assertEquals(ASKED_IN_CHAT, viewModel.state.value.pending.tool?.context)
+        }
+
+    @Test
+    fun `given a live approval with its request when the session reattaches then the card keeps the request`() =
+        runTest(testDispatcher) {
+            val sessionId = "session-live-context"
+            seedSavedSession(sessionId)
+            coEvery { pipelineRunRepository.getActiveRunForSession(sessionId) } returns
+                runRecord(sessionId, PipelineRunStatus.WAITING_APPROVAL)
+            every { agentOrchestratorUseCase.observe(sessionId) } returns
+                flowOf(AgentOrchestratorState.ConsoleLog(events = emptyList(), runId = "run-1"))
+            every { agentOrchestratorUseCase.pendingApprovalFor(sessionId) } returns
+                AgentOrchestratorState.WaitingForApproval(
+                    toolName = "send_message",
+                    arguments = "{}",
+                    risk = ToolRisk.SENSITIVE,
+                    requestId = "request-live",
+                    context = ASKED_IN_CHAT,
+                )
+
+            viewModel = createViewModel()
+            advanceUntilIdle()
+
+            assertEquals(ASKED_IN_CHAT, viewModel.state.value.pending.tool?.context)
+            coVerify(exactly = 0) { resolveApprovalRequestContext(any()) }
+        }
+
     /** A parked SENSITIVE approval record of run `run-parked` in [sessionId]. */
     private fun parkedApproval(sessionId: String, requestId: String?) = PendingInteraction(
         runId = "run-parked",
@@ -3436,6 +3618,14 @@ class ChatHomeViewModelTest {
         const val DEFAULT_TOKENS_MAX: Int = 4096
         const val ALT_TOKENS_MAX: Int = 8192
         const val AUDIO_LIMIT_SEC: Int = 30
+
+        /** What a chat run waiting for an approval was asked, as the resolver finds it. */
+        val ASKED_IN_CHAT = ApprovalRequestContext(
+            source = ApprovalRequestSource.Chat,
+            request = "Tell Anna I am late",
+            shortened = false,
+            hadImage = false,
+        )
     }
 
     @Test

@@ -73,7 +73,7 @@ internal fun buildHubViewState(uiState: SettingsUiState): SettingsHubViewState =
     blockDestructive = uiState.blockDestructiveTools,
     backendLabel = stringResource(R.string.settings_row_inference_backend_subtitle, uiState.localModelBackend),
     selectedBackend = uiState.localModelBackend,
-    backendOptions = LocalBackend.entries.map { it.key },
+    backendOptions = LocalBackend.selectable.map { it.key },
     crashReportingEnabled = uiState.crashReportingEnabled,
     restartRequiredMessage = stringResource(R.string.settings_restart_required_message)
         .takeIf { uiState.restartRequired },
@@ -143,6 +143,8 @@ internal fun buildModelsViewState(uiState: SettingsUiState, context: Context): M
                 model = summary.model,
                 endpointHint = summary.endpointHint,
                 isLan = summary.isLanLocal,
+                usesAddress = summary.id.cloudProvider.usesBaseUrl,
+                modelMissing = summary.modelMissing,
             )
         },
         restartRequiredMessage = stringResource(R.string.settings_restart_required_message)
@@ -151,7 +153,6 @@ internal fun buildModelsViewState(uiState: SettingsUiState, context: Context): M
 
 /** Builds the Memory category state (lifecycle toggles, tuning sliders, data actions). */
 @Composable
-@Suppress("LongMethod")
 internal fun buildMemoryViewState(uiState: SettingsUiState, context: Context): MemorySettingsViewState {
     val locale = LocalConfiguration.current.locales[0]
     return MemorySettingsViewState(
@@ -427,7 +428,7 @@ private fun buildLocalModelCard(uiState: SettingsUiState, context: Context): Loc
         modelName = activeMeta?.name,
         metaLine = activeMeta?.let { formatActiveModelMeta(it, context) },
         backendLabel = stringResource(R.string.settings_row_inference_backend_subtitle, uiState.localModelBackend),
-        backendOptions = LocalBackend.entries.map { it.key },
+        backendOptions = LocalBackend.selectable.map { it.key },
         selectedBackend = uiState.localModelBackend,
         testProbeText = formatTestProbe(uiState, context),
         testProbeIsError = uiState.lastTestProbeResult?.success == false,

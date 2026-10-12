@@ -12,7 +12,6 @@ import app.knotwork.android.data.repositories.RunTraceRepositoryImpl
 import app.knotwork.android.data.repositories.TriggerJournalRepositoryImpl
 import app.knotwork.android.data.repositories.TriggerRepositoryImpl
 import app.knotwork.android.domain.engine.ChatHistoryWindowPlanner
-import app.knotwork.android.domain.engine.GraphExecutionEngine
 import app.knotwork.android.domain.engine.LlmInferenceEngine
 import app.knotwork.android.domain.engine.NodeContextBuilder
 import app.knotwork.android.domain.engine.executors.ClarificationNodeExecutor
@@ -31,7 +30,10 @@ import app.knotwork.android.domain.engine.executors.ToolInvocationGate
 import app.knotwork.android.domain.engine.executors.ToolNodeExecutor
 import app.knotwork.android.domain.engine.structured.CloudStructuredInferenceClientFactory
 import app.knotwork.android.domain.engine.structured.StructuredOutputGate
+import app.knotwork.android.domain.engine.testGraphExecutionEngine
 import app.knotwork.android.domain.models.AgentTool
+import app.knotwork.android.domain.models.ApprovalRequestContext
+import app.knotwork.android.domain.models.ApprovalRequestSource
 import app.knotwork.android.domain.models.ChatMessage
 import app.knotwork.android.domain.models.ConnectionModel
 import app.knotwork.android.domain.models.NetworkState
@@ -78,6 +80,7 @@ import app.knotwork.android.domain.usecases.ParkedRunResumer
 import app.knotwork.android.domain.usecases.PendingSubmissionOutcome
 import app.knotwork.android.domain.usecases.RecordTriggerEvaluationUseCase
 import app.knotwork.android.domain.usecases.RecordTriggerHitlEventUseCase
+import app.knotwork.android.domain.usecases.ResolveApprovalRequestContextUseCase
 import app.knotwork.android.domain.usecases.ResolveRunCeilingsUseCase
 import app.knotwork.android.domain.usecases.ResumePipelineRunUseCase
 import app.knotwork.android.domain.usecases.RetrieveRelevantMemoryUseCase
@@ -371,8 +374,19 @@ class TriggerBackgroundRunIntegrationTest {
                     process.pendingRepository.getForRun(runId) != null &&
                     process.taskQueueManager.pendingApproval(SESSION_ID) == null
             }
+            // Both notifications name the trigger and show the prompt the run
+            // was fired with — read back through the real journal and run store.
+            val asked = ApprovalRequestContext(
+                source = ApprovalRequestSource.Trigger(name = TRIGGER_NAME),
+                request = USER_PROMPT,
+                shortened = false,
+                hadImage = false,
+            )
             verify(atLeast = 1) {
-                process.approvalNotifier.sendApprovalRequest(any(), any(), any(), any(), any())
+                process.approvalNotifier.sendApprovalRequest(any(), any(), any(), any(), any(), asked)
+            }
+            verify(exactly = 1) {
+                process.approvalNotifier.sendPersistentApprovalRequest(runId, any(), any(), any(), any(), any(), asked)
             }
 
             // ── Approve from the notification — the run resumes and completes ──
@@ -499,6 +513,11 @@ class TriggerBackgroundRunIntegrationTest {
             chatRepository,
             pendingRepository,
             recordTriggerHitlEvent = recordTriggerHitlEvent,
+            resolveRequestContext = ResolveApprovalRequestContextUseCase(
+                runRepository,
+                triggerJournal,
+                TriggerRepositoryImpl(database.triggerDao()),
+            ),
         )
         val toolNodeExecutor = ToolNodeExecutor(
             llmEngine,
@@ -557,7 +576,7 @@ class TriggerBackgroundRunIntegrationTest {
             ),
             mockk<SkillNodeExecutor>(relaxed = true),
         )
-        val engine = GraphExecutionEngine(
+        val engine = testGraphExecutionEngine(
             nodeExecutorFactory,
             toolNodeExecutor,
             chatRepository,
@@ -582,7 +601,7 @@ class TriggerBackgroundRunIntegrationTest {
         val taskQueueManager = TaskQueueManagerImpl(
             chatRepository = chatRepository,
             pipelineRepository = pipelineRepository,
-            settingsRepository = settingsRepository,
+            entryPointSettings = settingsRepository,
             graphExecutionEngine = engine,
             pipelineRunRepository = runRepository,
             runTraceRepository = traceRepository,
@@ -632,7 +651,10 @@ class TriggerBackgroundRunIntegrationTest {
      */
     private fun scriptedLlmEngine(): LlmInferenceEngine = mockk {
         every { currentModelPath } returns null
-        every { generateResponseStream(any()) } answers {
+        // A recorded on-device call notes what the engine ran on.
+        every { activeBackend } returns null
+        every { activeContextLength } returns null
+        every { generateResponseStream(any(), any(), any()) } answers {
             val prompt = firstArg<String>()
             flowOf(
                 when {

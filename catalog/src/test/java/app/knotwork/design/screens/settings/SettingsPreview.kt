@@ -21,9 +21,9 @@ internal object SettingsPreview {
         approveSensitiveLabel = "Sensitive",
         approveNeverLabel = "Never",
         blockDestructive = true,
-        backendLabel = "NPU (QNN) · auto-fallback to GPU then CPU.",
-        selectedBackend = "NPU · auto",
-        backendOptions = listOf("NPU · auto", "GPU", "CPU"),
+        backendLabel = "GPU · falls back to CPU if it fails to start.",
+        selectedBackend = "GPU",
+        backendOptions = listOf("CPU", "GPU"),
         crashReportingEnabled = false,
     )
 
@@ -464,9 +464,9 @@ internal object SettingsPreview {
     private fun localModel(): LocalModelCardState = LocalModelCardState(
         modelName = "gemma-2b-it-q4",
         metaLine = "1.4 GB · 2 048 ctx · Q4_K_M · downloaded 12 May",
-        backendLabel = "NPU (QNN) · auto-fallback to GPU then CPU.",
-        backendOptions = listOf("NPU · auto", "GPU", "CPU"),
-        selectedBackend = "NPU · auto",
+        backendLabel = "GPU · falls back to CPU if it fails to start.",
+        backendOptions = listOf("CPU", "GPU"),
+        selectedBackend = "GPU",
         testProbeText = "Last probe · 248 tok in 1.42 s · 174 tok/s",
         testProbeIsError = false,
     )
@@ -542,97 +542,6 @@ internal object SettingsPreview {
             5f,
             1f..50f,
             anchorKey = "MEMORY_SUMMARY_DEFAULT_LIMIT",
-        ),
-    )
-
-    // ─── Provider detail ─────────────────────────────────────────────────────
-
-    /**
-     * A key-based provider. Every string arrives resolved, as it does in
-     * production — this module never learns which providers exist.
-     */
-    fun providerDetail(): ProviderDetailViewState = ProviderDetailViewState(
-        title = "OpenAI settings",
-        providerLabel = "OpenAI",
-        backContentDescription = "Back",
-        apiKey = "sk-live-4f2b9c",
-        apiKeyLabel = "OpenAI API key",
-        model = "gpt-4o-mini",
-        modelLabel = "OpenAI model",
-        availableModels = listOf("gpt-4o", "gpt-4o-mini", "o3-mini"),
-        retry = cloudRetry(),
-    )
-
-    /**
-     * Ollama: `apiKey = null`, which hides the field rather than showing an
-     * empty one. It runs LAN-local without authentication, and a blank key box
-     * would read as one the user had forgotten to fill.
-     */
-    fun providerDetailOllama(): ProviderDetailViewState = providerDetail().copy(
-        title = "Ollama settings",
-        providerLabel = "Ollama",
-        apiKey = null,
-        apiKeyLabel = "",
-        model = "llama3.1",
-        modelLabel = "Model name",
-        availableModels = emptyList(),
-        ollama = OllamaProviderInputs(
-            baseUrl = "http://192.168.1.24:11434",
-            baseUrlPlaceholder = "http://localhost:11434",
-            baseUrlValidationError = null,
-            contextWindow = "8192",
-            contextWindowLabel = "Context window",
-            baseUrlLabel = "Base URL",
-        ),
-    )
-
-    /**
-     * The state the whole screen was migrated for: an unencrypted origin waiting
-     * to be allowed. It had no baseline at all, on a screen that had quietly
-     * grown a visual language of its own.
-     */
-    fun providerDetailCleartext(): ProviderDetailViewState = providerDetailOllama().copy(
-        cleartextConsent = CleartextConsentUi(
-            body = "Traffic to 192.168.1.24:11434 is not encrypted. Allow it for this address?",
-            actionLabel = "Allow",
-        ),
-    )
-
-    /** A base URL the parser rejected — the error sits under the field, not in a dialog. */
-    fun providerDetailInvalidUrl(): ProviderDetailViewState = providerDetailOllama().copy(
-        ollama = requireNotNull(providerDetailOllama().ollama).copy(
-            baseUrl = "192.168.1.24",
-            baseUrlValidationError = "Enter a full URL, including http:// or https://",
-        ),
-    )
-
-    /** Retry policy at its defaults; bounds match `SettingsDefaults`. */
-    private fun cloudRetry(): CloudRetryViewState = CloudRetryViewState(
-        sectionTitle = "Retry policy",
-        sectionAnchor = "CLOUD_RETRY_POLICY",
-        attempts = 3,
-        attemptsLabel = "Attempts",
-        attemptsValueLabel = "3",
-        attemptsRange = 1f..5f,
-        attemptsSteps = 3,
-        attemptsAnchor = "CLOUD_RETRY_MAX_ATTEMPTS",
-        delayMs = 1_000L,
-        delayLabel = "Base delay",
-        delayValueLabel = "1000 ms",
-        delayRange = 100f..10_000f,
-        delayAnchor = "CLOUD_RETRY_BASE_DELAY_MS",
-    )
-
-    /** Every provider on offer, in the order the picker lists them. */
-    fun providerPicker(): ProviderPickerViewState = ProviderPickerViewState(
-        title = "Add provider",
-        backContentDescription = "Back",
-        rows = listOf(
-            ProviderPickerRowUi(id = "OpenAi", title = "OpenAI"),
-            ProviderPickerRowUi(id = "Anthropic", title = "Anthropic"),
-            ProviderPickerRowUi(id = "Google", title = "Google"),
-            ProviderPickerRowUi(id = "DeepSeek", title = "DeepSeek"),
-            ProviderPickerRowUi(id = "Ollama", title = "Ollama"),
         ),
     )
 }

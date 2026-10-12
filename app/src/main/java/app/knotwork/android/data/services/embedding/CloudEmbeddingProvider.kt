@@ -23,7 +23,7 @@ import kotlin.coroutines.cancellation.CancellationException
  *
  * This provider never silently falls back to another backend: doing so would
  * break its [dimension] contract (a caller sizing buffers on `dimension = 1536`
- * must not receive a 512-d on-device vector). When no key is configured
+ * must not receive a 100-d on-device vector). When no key is configured
  * [isAvailable] reports `false` so `EmbeddingProviderResolver` substitutes the
  * on-device default *before* this provider is ever returned; if [embed] is
  * nonetheless called without a key it fails loudly with an [EmbeddingException].
@@ -55,8 +55,8 @@ class CloudEmbeddingProvider @Inject constructor(
     override val dimension: Int = DIMENSION
 
     /** Available only when the network gate admits cloud providers and a non-blank OpenAI API key is configured. */
-    override suspend fun isAvailable(): Boolean =
-        modelNetworkGate.cloudRefusal() == null && !apiKeyRepository.getOpenAIKey().firstOrNull().isNullOrBlank()
+    override suspend fun isAvailable(): Boolean = modelNetworkGate.cloudRefusal() == null &&
+        !apiKeyRepository.getApiKey(CloudProvider.OPENAI).firstOrNull().isNullOrBlank()
 
     override suspend fun embed(text: String): FloatArray = embed(listOf(text)).first()
 
@@ -76,7 +76,7 @@ class CloudEmbeddingProvider @Inject constructor(
         modelNetworkGate.cloudRefusal()?.let { refusal ->
             throw EmbeddingException(refusal.message(CloudProvider.OPENAI))
         }
-        val key = apiKeyRepository.getOpenAIKey().firstOrNull()
+        val key = apiKeyRepository.getApiKey(CloudProvider.OPENAI).firstOrNull()
         if (key.isNullOrBlank()) {
             throw EmbeddingException("OpenAI API key is not configured")
         }

@@ -65,6 +65,8 @@ class MyNewNodeExecutor @Inject constructor(
         inputText: String,
         sessionId: String,
         originalPrompt: String,
+        runId: String?,
+        scope: ExecutionScope,
     ): Flow<NodeOutput> = flow {
         // 1. emit NodeOutput.State events for progress
         // 2. emit exactly one terminal NodeOutput.Result at the end
@@ -79,6 +81,11 @@ Contract reminders:
 - The flow must terminate with **exactly one** `NodeOutput.Result`
   carrying a `NodeExecutionResult`. `NodeOutput.State` events in
   between are forwarded to the inline mini-console.
+- Report a failure in the result's `error`. An `AgentOrchestratorState.Error`
+  your executor emits is not forwarded: it becomes the node's error, and the
+  engine decides whether the run ends on it — inside a queue whose
+  `stopOnError` is off it becomes that item's result instead. The engine
+  emits the run's one `Error` itself.
 - If your executor calls into the LLM, run the assembled prompt
   through `PromptTemplateEngine.render(...)` first so `$DATE`,
   `$TOOLS` and friends get substituted.
@@ -86,6 +93,15 @@ Contract reminders:
   with the matching `DefaultPrompts.<Node>.SYSTEM_FALLBACK` so an
   unset prompt does not produce an empty system message:
   `val sp = node.systemPrompt ?: DefaultPrompts.MyNode.SYSTEM_FALLBACK`.
+- If your executor calls the **on-device** model, call it through the visit's
+  `scope.inference.local(engine, prompt)` — never
+  `LlmInferenceEngine.generateResponseStream` directly. The scope's inference
+  runs the call on the run's sampler with a seed derived from the run seed and
+  records the full prompt and answer, which is what makes a run checkable later;
+  a direct call would run on a random seed and leave no record
+  (`LocalInferenceSeamKonsistTest` fails the build). A node that answers through
+  a **cloud** client notes each call with `scope.inference.cloudCall(provider,
+  model)` (a structured client: wrap it in `CloudCallNotingClient`).
 
 ### 1.3. Register the executor in the factory
 
@@ -116,10 +132,11 @@ fresh class.
 **Detecting an image attachment.** Only text travels the graph — the picture
 itself reaches a single on-device vision step. If your executor needs to know
 *whether* the run carries an image (e.g. to branch on it), read
-`scope.imageDelivery != null` from the `ExecutionScope` passed to `execute`. The
-holder is non-null for the whole run tree whenever the input has an image,
-regardless of whether the vision step has consumed it yet, so it is a stable
-"the user sent a picture" signal that never leaks the pixels. `IF_CONDITION`
+`scope.run.imagePresent` from the `ExecutionScope` passed to `execute`. It is
+`true` for the whole run tree whenever the input had an image — whether or not
+the vision step has consumed it yet, and on a resumed run too, which never
+re-delivers the image — so it is a stable "the user sent a picture" signal
+that never leaks the pixels. `IF_CONDITION`
 (via its `Branch True when input has an image` toggle) and `INTENT_ROUTER`
 (which appends `DefaultPrompts.System.IMAGE_PRESENT_NOTE` to its prompt) both
 use it.
@@ -166,7 +183,7 @@ reference) and the cross-entity checks in a dedicated repository-backed
 validator invoked from the relevant use case. [`PipelineCompositionValidator`](../app/src/main/java/app/knotwork/android/domain/services/PipelineCompositionValidator.kt)
 is the reference example: `SavePipelineUseCase` runs it alongside
 `validate()` to reject reference cycles, dangling targets, and chains
-nested deeper than `SettingsRepository.pipelineMaxNestingDepth` before a
+nested deeper than `RunSettings.pipelineMaxNestingDepth` before a
 graph can be persisted.
 
 ### 1.6. Mirror the new type into the browser editor
@@ -180,18 +197,32 @@ quietly undo it, and a local-first product whose editor needs a CDN is a
 contradiction a reader will find.
 
 The editor is also the most common place where changes drift out of sync —
-every change to the `NodeType` set must be reflected here in **three**
+every change to the `NodeType` set must be reflected here in **two**
 places:
 
-1. `NODE_TYPES` array (around line 827) — add a row with `id`,
-   `label`, `color`, `icon`, `inputs`, `outputs`. Match the
+1. The `NODE_TYPES` array is generated: add the type's `color`, `icon`,
+   `inputs` and `outputs` to `BrowserEditorConstantsGenerator.NODE_TYPE_META`
+   and run `./gradlew :app:generateBrowserEditorConstants`. Match the
    inputs/outputs to your executor's connector shape (most types are
    `1/1`; `INPUT` is `0/1`; `OUTPUT` is `1/0`; branching types like
-   `IF_CONDITION` and `QUEUE_PROCESSOR` are `1/2`).
-2. `defaultContextConfig(typeId)` (around line 972) — add a `case`
+   `IF_CONDITION` and `QUEUE_PROCESSOR` are `1/2`). The palette `label`
+   and its hover `tooltip` are not written here — they are the type's name
+   and one-line description from the node-type resource file (below).
+2. `defaultContextConfig(typeId)` — add a `case`
    that returns the same flags as your Kotlin `defaultForType` branch.
-3. `NODE_TYPE_TOOLTIPS` (around line 1059) — add a one-line tooltip
-   for the palette item.
+
+**The name and the one-line description** are written once, in
+[`catalog/src/main/res/values/strings_node_types.xml`](../catalog/src/main/res/values/strings_node_types.xml)
+(`knotwork_node_type_<id>_name` and `knotwork_node_type_<id>_description`),
+and mapped in `NodeType.text` (`catalog/.../pipelineeditor/NodeTypeText.kt`),
+whose exhaustive `when` stops a type without them from compiling. They are
+the app's own text for the type; the cookbook opens the type's entry with the
+description and the browser editor's palette uses both. A
+description is **one sentence of at most 85 characters** — two lines or fewer
+in the picker on a 360 dp phone; anything more belongs in the cookbook entry's
+continuation. The file is plain text only: the generators that read it refuse
+an over-long description, a second sentence, markup, format arguments and
+escapes other than `\'` and `\"`.
 
 If your node has a custom default system prompt, also add it to
 `DEFAULT_SYSTEM_PROMPTS` (around line 855) so the editor seeds new
@@ -230,12 +261,13 @@ target pipeline, `SKILL` → skill), there are two extra obligations:
 
 The public node reference in [`docs/cookbook.md`](cookbook.md) is the
 other mirror, and unlike the HTML it is generated: add the type to
-`CookbookDocsGenerator.NODE_DOC_META` with a reader-facing sentence, give
-every field of its `NodeConfig` a verdict in `FIELD_REACH`, then run
+`CookbookDocsGenerator.NODE_DOC_META` with the sentences that continue its
+one-line description in the entry (or `null` when the description says it
+all), give every field of its `NodeConfig` a verdict in `FIELD_REACH`, then run
 `./gradlew :app:generateCookbookDocs` and commit the result.
 `verifyCookbookDocs` fails the build until you do, and generation itself
-fails if either table is missing an entry — the reference cannot silently
-lose a node type or a field.
+fails if any table or the resource file is missing an entry — the reference
+cannot silently lose a node type or a field.
 
 ### 1.7. Tests
 
@@ -335,7 +367,7 @@ from other packages), the default is `SENSITIVE` — the platform
 `AppFunctionManager` metadata gives no trustworthy signal about side
 effects. The user can downgrade a specific tool to `READ_ONLY` (or
 upgrade it to `DESTRUCTIVE`) via
-[`SettingsRepository.setToolRiskOverride(toolKey, risk)`](../app/src/main/java/app/knotwork/android/domain/repositories/SettingsRepository.kt),
+[`ToolSettings.setToolRiskOverride(toolKey, risk)`](../app/src/main/java/app/knotwork/android/domain/repositories/ToolSettings.kt),
 which writes into the `toolRiskOverrides` flow persisted under
 DataStore key `app_function_risk_overrides`. `ToolRepository.getRisk(name)`
 consults the override map first and falls back to the conservative
@@ -601,7 +633,22 @@ Add a constant to
 [`domain/models/CloudProvider.kt`](../app/src/main/java/app/knotwork/android/domain/models/CloudProvider.kt)
 with a stable wire-id (the lowercase string used in pipeline JSON,
 e.g. `"mistral"`). Existing values are
-`OPENAI`, `ANTHROPIC`, `GOOGLE`, `DEEPSEEK`, `OLLAMA`.
+`OPENAI`, `ANTHROPIC`, `GOOGLE`, `DEEPSEEK`, `OPENROUTER`, `GROQ`, `OLLAMA`,
+`OPENAI_COMPATIBLE`.
+
+The constant also declares how the provider is reached: `usesApiKey` (a key
+the user saves), `usesBaseUrl` (a server address the user enters, as for
+Ollama; a key is then optional) and `requiresModel` (no default model ships
+with the app, so one must be chosen). The credential store, the settings screens, the stored-key scan of
+`http_request` and the provider list of `delegate_task` read that shape
+instead of naming providers, so a new constant reaches all of them. The
+wire-id also names the provider's stored entries (3.4), so it can never
+change once shipped.
+
+`"auto"` on a Cloud node is the exception, on purpose: it chooses only among
+`AUTO_ORDER` in `CloudLlmNodeExecutor`. A new provider joins it only by a
+deliberate edit there — otherwise saving its key would silently move every
+`"auto"` node's prompt to it.
 
 Then add a `case` for the new id to `wireToTile` in `pipeline-editor.html`,
 on the tile it belongs to. The browser editor reads a pipeline file's provider
@@ -616,7 +663,12 @@ Add a branch in
 that constructs the Koog executor for the new provider. If the
 provider's SDK needs extra configuration (base URL, organization id),
 keep all of that inside the helper method — `CloudLlmNodeExecutor`
-should remain provider-agnostic.
+should remain provider-agnostic. A provider that speaks the OpenAI API
+needs no new Koog module: add it to
+[`OpenAiCompatibleClients`](../app/src/main/java/app/knotwork/android/data/engine/OpenAiCompatibleClients.kt),
+as OpenRouter and Groq are. Build the client on the `http` factory the
+factory passes in: that transport checks every hop, redirects included,
+and records `Retry-After` for the retry policy.
 
 ### 3.3. Teach the model resolver
 
@@ -630,11 +682,14 @@ can map a free-text model id to a concrete Koog `LLModel`.
 API keys live in the Keystore-backed encrypted store only — never in
 DataStore, never in `local.properties`, never committed to git.
 
-- Add a new key constant in
-  [`ApiKeyManager`](../app/src/main/java/app/knotwork/android/data/local/ApiKeyManager.kt)
-  (e.g. `MISTRAL_KEY`).
-- Add reader/writer methods for the new key (or extend the generic
-  ones if your provider follows the standard shape).
+There is nothing to add for a provider of the usual shape.
+[`ApiKeyRepository`](../app/src/main/java/app/knotwork/android/domain/repositories/ApiKeyRepository.kt)
+is keyed by `CloudProvider` — `getApiKey`/`setApiKey`, `getModel`/`setModel`,
+`getBaseUrl`/`setBaseUrl` — and
+[`ApiKeyManager`](../app/src/main/java/app/knotwork/android/data/local/ApiKeyManager.kt)
+names each entry after the wire-id: `<id>_api_key`, `<id>_model`,
+`<id>_base_url`. `ApiKeyManagerTest` pins the names already shipped, because
+renaming one would read every saved key as missing.
 
 ### 3.5. Add a Settings section
 
@@ -658,33 +713,43 @@ To add a new external LLM provider:
    [`ProviderSummary.kt`](../app/src/main/java/app/knotwork/android/domain/models/ProviderSummary.kt)
    with its `cloudProvider` mapping (the wire id used for navigation and
    key storage).
-2. Add a `providerSummary(ProviderId.<Name>, "<Name>", …)` row to the
-   **External providers** block in
+2. Give it its display name in
+   [`ProviderId.displayName()`](../app/src/main/java/app/knotwork/android/presentation/ui/settings/provider/ProviderDisplayName.kt)
+   — the exhaustive `when` asks for it. The **External providers** row, the
+   *Add provider* picker and the detail title all read that one function;
    [`ModelsSettingsDelegate`](../app/src/main/java/app/knotwork/android/presentation/ui/settings/ModelsSettingsDelegate.kt)
-   — this renders the provider row inside the Models category and links it
-   to its editor.
-3. For a standard cloud provider there is nothing to wire in the editor:
+   builds a row for every `ProviderId` by itself.
+3. For a standard cloud provider there is little else to wire in the editor:
    [`ProviderDetailScreen`](../app/src/main/java/app/knotwork/android/presentation/ui/settings/provider/ProviderDetailScreen.kt)
-   dispatches on the wire id and renders the shared catalog
-   [`KnotworkProviderRow`](../catalog/src/main/java/app/knotwork/design/screens/settings/KnotworkProviderRow.kt).
-   A network-local provider (Ollama-style) supplies an
-   `OllamaProviderInputs` bundle for the extra base-URL and context-window
-   fields.
+   projects the fields the provider's shape asks for (`usesApiKey`,
+   `usesBaseUrl`, `requiresModel`) onto the catalog's
+   [`ProviderDetailContent`](../catalog/src/main/java/app/knotwork/design/screens/settings/ProviderDetailContent.kt)
+   form in `toViewState`: a built-in model list goes in `builtInModels`, a fixed
+   address in `fixedAddressOf`, and *Test connection* works through
+   `ProviderConnectionChecker` once the provider can list its models. The node
+   sheet's provider list and the browser editor take a new entry in the catalog's
+   `CloudProvider` enum and `CloudProviderMapper`.
 4. Persist the key and model through `ApiKeyRepository` (Keystore-backed)
-   and `SettingsRepository`, exactly as `ProviderDetailViewModel` already
-   does for the built-in providers.
+   and `NetworkSettings` (retry budget, approved unencrypted origins),
+   exactly as `ProviderDetailViewModel` already does for the built-in
+   providers.
 
 To add a **non-provider setting**: declare a `SettingEntry` in the right
-category list of `SettingsRegistry`, add its persisted key to
-`SettingsRepository` with a default in
+category list of `SettingsRegistry`, add its property and setter to the
+settings section it belongs to (`MemorySettings`, `ToolSettings`, … in
+`domain/repositories/`) with a default in
 [`SettingsDefaults`](../app/src/main/java/app/knotwork/android/domain/constants/SettingsDefaults.kt),
-and render the control in that category's `*SettingsContent` (plus its
-delegate). The hub, sub-screen placement and search index pick it up from
+add the new key to `PreferenceStorageSnapshotTest`, and render the control
+in that category's `*SettingsContent` (plus its delegate). Code that reads the
+new setting depends on its section, not on `SettingsRepository`. The hub,
+sub-screen placement and search index pick it up from
 the registry entry.
 
 The catalog composables that power these screens:
 
-- `KnotworkProviderRow` — collapsible provider card.
+- `ProviderDetailContent` — a provider's form: address, key, test row, model.
+- `KnotworkTestProbeRow` — the *Test connection* row and its states.
+- `ModelPickerSheet` — the searchable list of a server's model ids.
 - `KnotworkParamSlider` — branded labelled slider.
 - `KnotworkMonoTextArea` — multi-line mono text input.
 
@@ -1012,7 +1077,12 @@ field-for-field. It is additive: `PipelineJsonSerializer` round-trips it as
 an opaque blob into `NodeModel.configJson`, the runtime engine ignores it
 (it reads only the flat `config` fields), and documents without it import
 fine — the app derives a default rich config from the flat fields on first
-edit. The browser editor emits it automatically on export.
+edit. The browser editor emits it automatically on export. A setting both
+copies carry — `fallbackClass`, `maxSubtasks`, `stopOnError`, a SUMMARY's
+prompt (`systemPrompt` / `customPrompt`) — must hold the same value in each:
+the run reads the flat one, the editors show and save the envelope.
+`BundledPresetEditabilityTest` holds the bundled presets and the cookbook
+recipes to it.
 
 **Bundled presets must carry it on every node** (enforced by
 `PipelinePresetCatalogValidationTest`), because the legacy derivation is
@@ -1472,9 +1542,9 @@ double-check it for every recipe in this guide.**
 
 | You changed …                | Files you must also update                                                                                                                                                                                                                                          |
 |------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| A new `NodeType`             | `domain/models/NodeType.kt` · a new `NodeExecutor` implementation · `domain/engine/executors/NodeExecutorFactory.kt` · `domain/models/NodeContextConfig.kt` (`defaultForType`) · `domain/models/PipelineGraph.kt` (`validate`, if special invariants) · `buildtools/BrowserEditorConstantsGenerator.kt` (`NODE_TYPE_META`) + run `./gradlew :app:generateBrowserEditorConstants` · `buildtools/CookbookDocsGenerator.kt` (`NODE_DOC_META` + a `FIELD_REACH` entry per config field) + run `./gradlew :app:generateCookbookDocs` · **`pipeline-editor.html`** (`defaultContextConfig`, `NODE_TYPE_TOOLTIPS`, optional `DEFAULT_SYSTEM_PROMPTS`; for typed config also `defaultRichConfig` / `richToFlat` / `encodeRichEnvelope` / `decodeRichEnvelope` / `deriveRichFromFlat` / `renderFormFields` / `validateRichConfig`) · executor unit test · `GraphExecutionEngineTest` |
+| A new `NodeType`             | `domain/models/NodeType.kt` · a new `NodeExecutor` implementation · `domain/engine/executors/NodeExecutorFactory.kt` · `domain/models/NodeContextConfig.kt` (`defaultForType`) · `domain/models/PipelineGraph.kt` (`validate`, if special invariants) · `catalog/.../res/values/strings_node_types.xml` (name + one-line description) and `catalog/.../pipelineeditor/NodeTypeText.kt` (`NodeType.text`) · `buildtools/BrowserEditorConstantsGenerator.kt` (`NODE_TYPE_META`) + run `./gradlew :app:generateBrowserEditorConstants` · `buildtools/CookbookDocsGenerator.kt` (`NODE_DOC_META` + a `FIELD_REACH` entry per config field) + run `./gradlew :app:generateCookbookDocs` · **`pipeline-editor.html`** (`defaultContextConfig`, optional `DEFAULT_SYSTEM_PROMPTS`; for typed config also `defaultRichConfig` / `richToFlat` / `encodeRichEnvelope` / `decodeRichEnvelope` / `deriveRichFromFlat` / `renderFormFields` / `validateRichConfig`) · executor unit test · `GraphExecutionEngineTest` |
 | A node type that **references another entity by id** (`PIPELINE` / `SKILL`) | the flat `NodeModel` field (`targetPipelineId` / `skillId`) · `domain/pipelineio/PipelineJsonSerializer.kt` (emit + read the id in the flat `config` block) · `domain/models/PipelineGraph.kt` (`validate` → `MissingTargetPipeline` / `MissingSkill`) · `domain/services/PipelineCompositionValidator.kt` (transitive cycle / depth) · **`pipeline-editor.html`** (flat `config` key in `exportToJson`/`importFromJson`, reference form, self-ref + unresolved-id validation, node badge) · `PipelineJsonSerializerTest` round-trip |
-| A new field on a `NodeConfig` (catalog) | `catalog/.../pipelineeditor/NodeConfig.kt` · `NodeConfigForms.kt` + `NodeConfigValidation.kt` if it is edited · `presentation/ui/pipeline/editor/config/NodeConfigCodec.kt` (encode/decode, and `apply` if it must reach the runtime) · `buildtools/CookbookDocsGenerator.kt` (`FIELD_REACH` — generation fails without it) + run `./gradlew :app:generateCookbookDocs` · `CookbookRuntimeReachTest` checks the published verdict against the codec · **`pipeline-editor.html`** envelope encode/decode so the field round-trips — and, if its verdict is `RoundTripOnly`, **no** control in `renderFormFields`: `verifyBrowserEditorConstants` fails on a form control for a field no run reads. A `Runtime` field needs the whole chain instead — read from the flat `config` in `importFromJson`, set in `deriveRichFromFlat`, a control in `renderFormFields`, written by `encodeRichEnvelope` and `richToFlat`, exported by `exportToJson`, and never read from the envelope in `decodeRichEnvelope` (the one exception is the closed `LEGACY_ENVELOPE_FALLBACK` list in `BrowserEditorRuntimeFieldGuard`, for files older editors wrote); the same task names the missing link. The browser's import may read only `config` keys the app's importer reads (`CONFIG_KEYS` in `PipelineJsonSerializer`) — `BrowserEditorImportParityGuard` |
+| A new field on a `NodeConfig` (catalog) | `catalog/.../pipelineeditor/NodeConfig.kt` · the type's form body (`NodeConfigModelForms.kt`, `NodeConfigFlowForms.kt` or `NodeConfigTargetForms.kt`) + `NodeConfigValidation.kt` if it is edited · `presentation/ui/pipeline/editor/config/NodeConfigCodec.kt` (encode/decode, and `apply` if it must reach the runtime) · `buildtools/CookbookDocsGenerator.kt` (`FIELD_REACH` — generation fails without it) + run `./gradlew :app:generateCookbookDocs` · `CookbookRuntimeReachTest` checks the published verdict against the codec · **`pipeline-editor.html`** envelope encode/decode so the field round-trips — and, if its verdict is `RoundTripOnly`, **no** control in `renderFormFields`: `verifyBrowserEditorConstants` fails on a form control for a field no run reads. A `Runtime` field needs the whole chain instead — read from the flat `config` in `importFromJson`, set in `deriveRichFromFlat`, a control in `renderFormFields`, written by `encodeRichEnvelope` and `richToFlat`, exported by `exportToJson`, and never read from the envelope in `decodeRichEnvelope` (the one exception is the closed `LEGACY_ENVELOPE_FALLBACK` list in `BrowserEditorRuntimeFieldGuard`, for files older editors wrote); the same task names the missing link. The browser's import may read only `config` keys the app's importer reads (`CONFIG_KEYS` in `PipelineJsonSerializer`) — `BrowserEditorImportParityGuard` |
 | A new `Tool`                 | a new `LocalToolExecutor` implementation · `di/LocalToolsModule.kt` (`@Binds @IntoMap @StringKey`) · declare `ToolRisk` correctly · executor unit test · optional Compose test if new UI                                                                            |
 | A new **workspace tool**     | a new `LocalToolExecutor` that goes through `AgentWorkspace` (never raw `File`) · `di/LocalToolsModule.kt` (`@Binds @IntoMap @StringKey`) · risk tier in `ToolRepositoryImpl` built-in list · `docs/user-guide.md` (built-in-tools table) · executor unit test against a `@TempDir`-backed `AgentWorkspace` (happy path + `../` traversal + quota/not-found) |
 | A new callee-side AppFunction | an injectable logic class under `data/tools/local/appfunctions/` · a one-line `@AppFunction(isDescribedByKDoc = true)` method on `AgentAppFunctionService` (KDoc written for the calling agent) · logic-class unit test · scenario in `AppFunctionsEndToEndTest` |

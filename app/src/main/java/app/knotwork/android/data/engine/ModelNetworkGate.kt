@@ -1,7 +1,9 @@
 package app.knotwork.android.data.engine
 
+import app.knotwork.android.domain.connection.AddressRefusal
+import app.knotwork.android.domain.connection.EndpointRule
 import app.knotwork.android.domain.engine.CloudClientUnavailability
-import app.knotwork.android.domain.repositories.SettingsRepository
+import app.knotwork.android.domain.repositories.NetworkSettings
 import app.knotwork.android.domain.services.CleartextPolicy
 import app.knotwork.android.domain.services.LocalOnlyPolicy
 import kotlinx.coroutines.flow.first
@@ -31,15 +33,16 @@ import javax.inject.Singleton
  * network from local model" that left a model-composed query reaching wikipedia.org would
  * be false by its own name, so [networkToolRefusal] closes that path with the rest.
  *
- * @property settingsRepository Source of the restriction flag and the approved cleartext
+ * @property networkSettings Source of the restriction flag and the approved cleartext
  *   origins, both read on every call so a change applies to the next request.
  */
 @Singleton
-class ModelNetworkGate @Inject constructor(private val settingsRepository: SettingsRepository) {
+class ModelNetworkGate @Inject constructor(private val networkSettings: NetworkSettings) {
 
     /**
-     * Decides whether a hosted cloud provider (OpenAI, Anthropic, Google, DeepSeek) may be
-     * reached. Credentials are the caller's concern; this answers only the policy question.
+     * Decides whether a hosted cloud provider (OpenAI, Anthropic, Google, DeepSeek, OpenRouter,
+     * Groq) may be reached. Credentials are the caller's concern; this answers only the policy
+     * question.
      *
      * @return [CloudClientUnavailability.BlockedByLocalOnlyMode] while the restriction is
      *   on, otherwise `null`.
@@ -51,26 +54,53 @@ class ModelNetworkGate @Inject constructor(private val settingsRepository: Setti
     }
 
     /**
-     * Decides whether the user's Ollama server at [url] may be reached, applying both
-     * rules that concern it: while the restriction is on the host must be local
-     * ([LocalOnlyPolicy]), whatever the scheme; and unencrypted traffic must go only to an
-     * approved private address ([CleartextPolicy]).
+     * Decides whether a server the user runs, at the address [url] they entered — Ollama, or
+     * an OpenAI-compatible server — may be reached, applying both rules that concern it: while
+     * the restriction is on the host must be local ([LocalOnlyPolicy]), whatever the scheme;
+     * and unencrypted traffic must go only to an approved private address ([CleartextPolicy]).
+     * The decision is [EndpointRule]'s — the one the transport applies to every hop and the
+     * settings form shows while an address is typed.
      *
-     * @param url The configured, non-blank Ollama base URL.
+     * @param url The configured, non-blank server address.
      * @return The refusal, or `null` when a connection may be opened.
      */
-    suspend fun ollamaRefusal(url: String): CloudClientUnavailability? {
-        if (isLocalOnlyMode() && !LocalOnlyPolicy.isLocalEndpoint(url)) {
-            val host = CleartextPolicy.hostOf(url)
-            Timber.w("ModelNetworkGate: Ollama at %s refused — not a local address in local-only mode", host)
-            return CloudClientUnavailability.EndpointNotLocal(host)
-        }
-        val verdict = CleartextPolicy.classify(url, settingsRepository.approvedCleartextOrigins.first())
-        return CleartextPolicy.refusalMessage(verdict)?.let { reason ->
-            Timber.w("ModelNetworkGate: Ollama refused — %s", reason)
-            CloudClientUnavailability.CleartextRefused(reason)
+    suspend fun endpointRefusal(url: String): CloudClientUnavailability? {
+        val approved = networkSettings.approvedCleartextOrigins.first()
+        return when (val refusal = EndpointRule.refusal(url, approved, isLocalOnlyMode())) {
+            is AddressRefusal.HostNotLocal -> {
+                val host = CleartextPolicy.hostOf(url)
+                Timber.w("ModelNetworkGate: server at %s refused — not a local address in local-only mode", host)
+                CloudClientUnavailability.EndpointNotLocal(host)
+            }
+            is AddressRefusal.PublicCleartext -> cleartextRefused(CleartextPolicy.Verdict.PublicRefused)
+            is AddressRefusal.CleartextNeedsApproval ->
+                cleartextRefused(CleartextPolicy.Verdict.NeedsApproval(refusal.origin))
+            null -> null
         }
     }
+
+    /** [CloudClientUnavailability.CleartextRefused] worded by [CleartextPolicy.refusalMessage] for [verdict]. */
+    private fun cleartextRefused(verdict: CleartextPolicy.Verdict): CloudClientUnavailability {
+        val reason = checkNotNull(CleartextPolicy.refusalMessage(verdict)) { "a refused verdict has a message" }
+        Timber.w("ModelNetworkGate: server refused — %s", reason)
+        return CloudClientUnavailability.CleartextRefused(reason)
+    }
+
+    /**
+     * The rule every request of a model client must pass on its way out — the first one and
+     * every redirect after it — taken from the settings as they are now.
+     *
+     * [endpointRefusal] judges the address the user entered, once, before a client is built.
+     * A server can then redirect; inside the Koog/Ktor stack nothing used to look at where to,
+     * so an approved LAN address could forward the prompt anywhere (the residual risk the
+     * cleartext rule's move into the app named). The transport applies this rule to every hop.
+     *
+     * @return A snapshot of the restriction flag and the approved unencrypted origins.
+     */
+    suspend fun hopRule(): ModelHopRule = ModelHopRule(
+        approvedCleartextOrigins = networkSettings.approvedCleartextOrigins.first(),
+        localOnly = isLocalOnlyMode(),
+    )
 
     /**
      * Decides whether a built-in tool that reaches the network on its own may run.
@@ -94,6 +124,5 @@ class ModelNetworkGate @Inject constructor(private val settingsRepository: Setti
             "Turn the restriction off to use it."
     }
 
-    private suspend fun isLocalOnlyMode(): Boolean =
-        settingsRepository.blockNetworkFromLocalModel.firstOrNull() ?: false
+    private suspend fun isLocalOnlyMode(): Boolean = networkSettings.blockNetworkFromLocalModel.firstOrNull() ?: false
 }
