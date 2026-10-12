@@ -1417,7 +1417,14 @@ check is enabled **per provider and only where measured**
 (`providerReportsFinishReason`), because the inverse mistake fails working
 runs: Koog's Ollama client never emits a finish reason at all, and the harness
 could not produce a stream Anthropic's parser accepts, so both are excluded and
-a mid-answer cut on those two still reads as a short but complete reply.
+a mid-answer cut on those two still reads as a short but complete reply. On
+OpenAI the check also depends on the model: Koog streams a model that supports
+only the Responses API (the Codex and Pro lines) through that API, where a
+complete answer ends without a finish reason and a cut one fails inside Koog
+(`requireEndFrame`), so the check applies to Chat Completions models only.
+`OpenAiResponsesStreamEndToEndTest` runs every OpenAI model the app offers
+through Koog's real client against a local server, so a model routed differently
+from that assumption fails the build.
 
 **Error text is scrubbed before it is shown.** Google authenticates by query
 parameter, so an ordinary socket timeout arrives carrying the API key in the

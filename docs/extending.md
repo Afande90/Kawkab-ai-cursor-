@@ -778,6 +778,13 @@ Return `false` when you have no evidence, and say why in the KDoc:
   crafted SSE fixture) — the existing entries record "excluded pending
   measurement" rather than a guess, and so should yours.
 
+The answer can depend on the model, not only the provider: Koog's OpenAI
+client sends a model that supports only the Responses API through that API,
+where every complete answer ends without a finish reason. That is why the
+function takes the model too, and why OpenAI checks only its Chat Completions
+models — treating the provider as one answer rejected every reply of the Codex
+and Pro models.
+
 To measure it, point the client's `baseUrl` at a local socket stub from a
 JVM test and cut the socket mid-stream: the Koog clients accept `baseUrl`
 in their settings, so this exercises the real SSE branch on the same
@@ -794,7 +801,9 @@ it is based on.
 - Cover the finish-reason decision from §3.6 in
   `CloudLlmNodeExecutorTest`: a stream that ends without a finish reason
   must fail the node when the provider is `true`, and must succeed when
-  it is `false`.
+  it is `false`. If the client picks an API per model, run every model the
+  app offers end to end, as `OpenAiResponsesStreamEndToEndTest` does for
+  OpenAI.
 - If the Settings UI gained a new field, add a Compose test that
   verifies the field round-trips through the ViewModel.
 

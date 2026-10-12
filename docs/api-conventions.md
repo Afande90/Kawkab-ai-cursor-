@@ -261,6 +261,10 @@ interface Tool {
   instead of forwarding a half-written answer. The check is per provider and
   enabled only where the behaviour was measured — Koog's Ollama client never
   emits a finish reason at all, so enabling it there would fail healthy runs.
+  On OpenAI it also depends on the model: Koog sends a model that supports only
+  the Responses API (the Codex and Pro lines) through that API, whose complete
+  answers end without a finish reason, and fails a cut Responses stream itself.
+  The check applies there to Chat Completions models only.
 - **Provider error text is scrubbed before it is shown, logged or stored**
   (`CloudErrorSanitizer`). Google authenticates by query parameter, so its
   transport errors arrive carrying the API key; credentials must never reach the
