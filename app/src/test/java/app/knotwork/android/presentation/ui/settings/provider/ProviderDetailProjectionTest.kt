@@ -1,5 +1,6 @@
 package app.knotwork.android.presentation.ui.settings.provider
 
+import app.knotwork.android.data.engine.KoogCloudModelCatalog
 import app.knotwork.android.data.engine.OpenAiCompatibleClients
 import app.knotwork.android.domain.connection.AddressRefusal
 import app.knotwork.android.domain.connection.ConnectionCheckResult
@@ -32,9 +33,18 @@ class ProviderDetailProjectionTest {
 
     private val reachable = ConnectionTestState.Finished(ConnectionCheckResult.Reachable(listOf("a", "b")))
 
+    private val catalog = KoogCloudModelCatalog()
+
+    /** The state [ProviderDetailViewModel] binds for [id]: [base] plus what the catalog says of its model. */
+    private fun bound(id: ProviderId, base: ProviderDetailUiState): ProviderDetailUiState = base.copy(
+        offeredModels = catalog.offeredModels(id.cloudProvider),
+        modelInUse = catalog.modelInUse(id.cloudProvider, base.model),
+    )
+
     @Test
     fun `given a hosted provider with a built-in list then it has a key and a dropdown, and no address`() {
-        val state = ProviderDetailUiState(apiKey = "sk-1", model = "gpt-4o").toViewState(ProviderId.OpenAi, context)
+        val state = bound(ProviderId.OpenAi, ProviderDetailUiState(apiKey = "sk-1", model = "gpt-4o"))
+            .toViewState(ProviderId.OpenAi, context)
 
         assertEquals("sk-1", state.apiKey?.value)
         assertEquals("gpt-4o", state.model.value)
@@ -42,6 +52,40 @@ class ProviderDetailProjectionTest {
         assertNull(state.address)
         assertNull(state.fixedAddress)
         assertEquals("OpenAI", state.title)
+        assertNull("The chosen model is the one used: nothing to say.", state.model.note)
+    }
+
+    @Test
+    fun `given a built-in list and no model chosen then the note names the model runs use`() {
+        val state = bound(ProviderId.OpenAi, ProviderDetailUiState(apiKey = "sk-1"))
+            .toViewState(ProviderId.OpenAi, context)
+
+        assertEquals("", state.model.value)
+        assertEquals("No model chosen — runs use gpt-5.4.", state.model.note)
+    }
+
+    @Test
+    fun `given a built-in list and a saved model it no longer offers then the note says which is used instead`() {
+        val state = bound(ProviderId.Anthropic, ProviderDetailUiState(apiKey = "sk-1", model = "claude-3-opus"))
+            .toViewState(ProviderId.Anthropic, context)
+
+        assertEquals("claude-3-opus", state.model.value)
+        assertEquals(
+            "claude-3-opus is no longer offered — runs use claude-sonnet-4-5. Choose a model above.",
+            state.model.note,
+        )
+    }
+
+    @Test
+    fun `given Ollama with no model typed then the empty field shows the model runs use`() {
+        val empty = bound(ProviderId.Ollama, ProviderDetailUiState()).toViewState(ProviderId.Ollama, context)
+        val typed = bound(
+            ProviderId.Ollama,
+            ProviderDetailUiState(model = "qwen3"),
+        ).toViewState(ProviderId.Ollama, context)
+
+        assertEquals("llama3", empty.model.placeholder)
+        assertNull("A typed model needs no stand-in.", typed.model.placeholder)
     }
 
     @Test

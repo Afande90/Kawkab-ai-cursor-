@@ -2617,7 +2617,7 @@ The active on-device model, its backend, and external cloud providers.
   the hosted ones (**OpenAI**, **Anthropic**, **Google**, **DeepSeek**,
   **OpenRouter**, **Groq**), then the servers you run (**Ollama**, an
   **OpenAI-compatible server**). A row shows the masked key fingerprint — or, for
-  a server you run, its address and a **LAN** pill — and the selected model; tap
+  a server you run, its address and a **LAN** pill — and the model its runs use; tap
   it to open the provider's screen. An unset row says what it needs (*tap to add
   API key*, *tap to add the server address*). A row that ends in **no model
   selected** is the one that would fail if a step used it: OpenRouter, Groq and an
@@ -2635,11 +2635,14 @@ A provider's screen shows its fields in the order you fill them, with
 **Test connection** → model.
 
 - **OpenAI, Anthropic, Google, DeepSeek** — an API key, and a model from a
-  built-in list.
+  built-in list. With none chosen, runs use the provider's default, and a note
+  under the list names it. A saved model the list no longer offers — retired by
+  its provider, say — is replaced by the default too, and the note says so.
 - **OpenRouter, Groq** — the address they send to is shown read-only under
   **Sends to**; an API key (**required**) and a **Model id** (**required**) that
   you type or choose from the provider's list.
-- **Ollama** — its base URL, a model name, and the context window.
+- **Ollama** — its base URL, a model name (left empty, runs use `llama3`, as
+  the empty field shows), and the context window.
 - **OpenAI-compatible server** — for vLLM, LM Studio, llama.cpp or any server
   that speaks the OpenAI API. Enter the **Server address** the way the server
   documents it, including **`/v1`** (`http://192.168.1.20:8000/v1`); the paths

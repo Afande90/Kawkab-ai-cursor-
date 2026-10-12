@@ -1,6 +1,7 @@
 package app.knotwork.android.presentation.ui.settings
 
 import android.content.Context
+import app.knotwork.android.data.engine.KoogCloudModelCatalog
 import app.knotwork.android.domain.constants.SettingsDefaults
 import app.knotwork.android.domain.models.CloudProvider
 import app.knotwork.android.domain.models.Identity
@@ -809,6 +810,7 @@ class SettingsViewModelTest {
         appContext = context,
         settingsRepository = settings,
         apiKeyRepository = apiKeys,
+        cloudModelCatalog = KoogCloudModelCatalog(),
         localModelRepository = localModels,
         memoryRepository = memory,
         identityRepository = identity,

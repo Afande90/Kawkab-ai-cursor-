@@ -1,5 +1,6 @@
 package app.knotwork.android.presentation.ui.settings
 
+import app.knotwork.android.data.engine.KoogCloudModelCatalog
 import app.knotwork.android.domain.models.CloudProvider
 import app.knotwork.android.domain.models.ProviderId
 import app.knotwork.android.domain.models.ProviderSummary
@@ -18,6 +19,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -50,6 +52,7 @@ class ModelsSettingsDelegateTest {
                 every { localModelBackend } returns flowOf("cpu")
             },
             apiKeyRepository = apiKeyRepository,
+            modelCatalog = KoogCloudModelCatalog(),
             localModelRepository = mockk<LocalModelRepository>(relaxed = true),
             testBackendUseCase = mockk(relaxed = true),
         )
@@ -88,5 +91,27 @@ class ModelsSettingsDelegateTest {
         assertEquals("http://192.168.1.20:8000/v1", row.endpointHint)
         assertTrue("A model is required and none is chosen.", row.modelMissing)
         assertTrue(row.isLanLocal)
+    }
+
+    @Test
+    fun `given saved models when summarised then each row names the model its runs use`() = runTest {
+        keys[CloudProvider.OPENAI] = "sk-1"
+        keys[CloudProvider.ANTHROPIC] = "sk-2"
+        models[CloudProvider.ANTHROPIC] = "claude-3-opus"
+        keys[CloudProvider.GOOGLE] = "AIza"
+        models[CloudProvider.GOOGLE] = "gemini-2.5-pro"
+        addresses[CloudProvider.OLLAMA] = "http://192.168.1.20:11434"
+
+        val rows = summaries()
+
+        assertEquals("Nothing chosen: the default.", "gpt-5.4", rows.getValue(ProviderId.OpenAi).model)
+        assertEquals(
+            "A choice the app no longer offers is not what runs use.",
+            "claude-sonnet-4-5",
+            rows.getValue(ProviderId.Anthropic).model,
+        )
+        assertEquals("gemini-2.5-pro", rows.getValue(ProviderId.Google).model)
+        assertEquals("llama3", rows.getValue(ProviderId.Ollama).model)
+        assertNull("No default and nothing chosen.", rows.getValue(ProviderId.OpenRouter).model)
     }
 }

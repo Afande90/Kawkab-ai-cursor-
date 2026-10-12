@@ -1,6 +1,7 @@
 package app.knotwork.android.presentation.ui.orchestrator
 
 import app.knotwork.android.domain.engine.AutoProvider
+import app.knotwork.android.domain.engine.CloudModelCatalog
 import app.knotwork.android.domain.models.CloudProvider
 import app.knotwork.android.domain.models.PipelineTargetAvailability
 import app.knotwork.android.domain.models.Skill
@@ -32,7 +33,8 @@ import javax.inject.Inject
  * @property localModelRepository The installed on-device models for a LITE_RT node.
  * @property compositionValidator Which pipelines a PIPELINE node may call.
  * @property skillRepository The skills a SKILL node can run.
- * @property apiKeyRepository Which cloud providers are set up, and their models.
+ * @property apiKeyRepository Which cloud providers are set up, and their saved models.
+ * @property modelCatalog Which model a run uses for each provider's saved choice.
  * @property promptTemplateEngine Renders a prompt's `$VARIABLE`s for the preview.
  * @property promptVariableProviders Every registered prompt variable.
  */
@@ -43,6 +45,7 @@ class OrchestratorNodeSheetSources @Inject constructor(
     val compositionValidator: PipelineCompositionValidator,
     val skillRepository: SkillRepository,
     val apiKeyRepository: ApiKeyRepository,
+    val modelCatalog: CloudModelCatalog,
     val promptTemplateEngine: PromptTemplateEngine,
     val promptVariableProviders: Set<@JvmSuppressWildcards PromptVariableProvider>,
 )
@@ -152,16 +155,19 @@ class OrchestratorNodeSheetDelegate(
      * Read when a sheet opens rather than kept as state: it changes only in Settings, which the
      * editor is not on at the same time.
      *
-     * @return The availability; a provider's model is `null` when it uses its default. Empty when
+     * @return The availability, each provider with the model a run of it uses. Empty when
      *   the stored values cannot be read — the fields then show every provider as not set up,
      *   which still lets the user choose one.
      */
     suspend fun loadProviderAvailability(): ProviderAvailability = try {
         val configured = CloudProvider.entries.filter { sources.apiKeyRepository.isConfigured(it) }
         ProviderAvailability(
-            models = configured.associateWith { provider ->
-                sources.apiKeyRepository.getModel(provider).first()?.takeIf { it.isNotBlank() }
-            },
+            // A configured provider always has a model in use: its own default, or the model
+            // being configured requires.
+            models = configured.mapNotNull { provider ->
+                val saved = sources.apiKeyRepository.getModel(provider).first()
+                sources.modelCatalog.modelInUse(provider, saved)?.let { provider to it.id }
+            }.toMap(),
             auto = AutoProvider.resolve(sources.apiKeyRepository),
         )
     } catch (e: CancellationException) {

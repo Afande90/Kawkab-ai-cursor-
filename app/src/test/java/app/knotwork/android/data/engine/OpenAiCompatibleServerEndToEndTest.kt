@@ -54,7 +54,10 @@ class OpenAiCompatibleServerEndToEndTest {
     private suspend fun client(keys: ApiKeyRepository): Pair<LLMClient, LLModel> {
         val factory = KoogClientFactory(keys, ModelNetworkGate(networkSettings), CloudRetryWrapper(networkSettings))
         val client = factory.createClient(CloudProvider.OPENAI_COMPATIBLE) as LLMClient
-        val model = KoogCloudLlmModelResolver(keys).resolveModel(CloudProvider.OPENAI_COMPATIBLE) as LLModel
+        val model = KoogCloudLlmModelResolver(
+            keys,
+            KoogCloudModelCatalog(),
+        ).resolveModel(CloudProvider.OPENAI_COMPATIBLE) as LLModel
         return client to model
     }
 

@@ -20,8 +20,9 @@ Only Kotlin files appear inside the generated blocks.
     - `AndroidRunEnvironment.kt` - `RunEnvironment` read from the build and the device.
     - `CloudClientTimeouts.kt` - Network deadlines applied to every Koog model client the app builds — the chat clients in `KoogClientFactory` and the embedding clients in `app.knotwork.android.data.services.embedding.DefaultKoogEmbedderFactory`.
     - `KoogClientFactory.kt` - Factory for Koog clients; data-layer impl of `domain/engine/CloudLlmClientFactory`. Every constructed client is retry-wrapped via `CloudRetryWrapper` and carries an explicit `ConnectionTimeoutConfig` (60 s socket / 30 s connect / 900 s request) — the per-read socket value bounds provider silence rather than answer length. `createClient` threads a `CloudRetryListener` for console observability; it is the one entry point for every caller, `delegate_task` included.
-    - `KoogCloudLlmModelResolver.kt` - Data-layer impl of `domain/engine/CloudLlmModelResolver`; owns per-provider default model ids and Ollama context-window lookup.
-    - `KoogModelMapper.kt` - Maps string identifiers to Koog LLModel constants.
+    - `KoogCloudLlmModelResolver.kt` - Data-layer impl of `domain/engine/CloudLlmModelResolver`: turns the model `CloudModelCatalog` names for the saved id into the Koog `LLModel` a run sends, with Ollama's context window.
+    - `KoogCloudModelCatalog.kt` - Data-layer implementation of `CloudModelCatalog`: the built-in lists and defaults of `KoogModelMapper`, and Ollama's default.
+    - `KoogModelMapper.kt` - The models offered for each hosted provider Koog lists, and each one's default — Koog's own `LLModel` constants, each written once.
     - `KoogProviderConnectionChecker.kt` - `ProviderConnectionChecker` on the Koog clients a run uses: the model list of each provider, asked once, with the values in the form.
     - `KoogStructuredInferenceClientFactory.kt` - Data-layer impl of `domain/engine/structured/CloudStructuredInferenceClientFactory`; builds a retry-wrapped Koog client and exposes a `StructuredInferenceClient` that collapses the streamed response for the gate; no JSON mode is switched on.
     - `KoogTransportFactory.kt` - The transport every Koog model client the app builds runs on: Koog's own Ktor client, extended to check every hop (first request and each redirect) against `ModelHopRule` and to record the `Retry-After` of each error answer for the retry policy.
@@ -365,6 +366,7 @@ Only Kotlin files appear inside the generated blocks.
     - `CloudErrorSanitizer.kt` - Strips credentials (secret-named query parameters, `Bearer` tokens) out of cloud-provider error text before it reaches the console, the run trace or logcat. Needed because providers that authenticate by query parameter quote the failing URL — key included — in ordinary transport errors.
     - `CloudLlmClientFactory.kt` - Domain interface for constructing cloud LLM clients (data-layer impl: `KoogClientFactory`).
     - `CloudLlmModelResolver.kt` - Domain interface for resolving cloud-LLM model objects (data-layer impl: `KoogCloudLlmModelResolver`).
+    - `CloudModelCatalog.kt` - The cloud models the app offers, and the model a run uses for what the user saved.
     - `DefaultPipelineFactory.kt` - Factory for default pipelines.
     - `executors/` - Per-`NodeType` `NodeExecutor` strategies dispatched by `NodeExecutorFactory`.
       - `ClarificationNodeExecutor.kt` - Executor for `NodeType.CLARIFICATION` that asks the local LLM to generate a question/options JSON, suspends on `ClarificationRepository.requestAnswer`, and forwards the user's reply downstream.

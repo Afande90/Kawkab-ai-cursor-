@@ -102,6 +102,12 @@ details.
 
 ### Changed
 
+- **A provider's settings name the model your runs use.** With no model chosen
+  for OpenAI, Anthropic, Google or DeepSeek, the list stayed blank while runs
+  used the provider's default, and a saved model the app no longer offers was
+  swapped for that default without a word. A note under the list now names the
+  model runs use, and the provider's row in Settings and the node sheet show the
+  same model. An empty Ollama model field shows `llama3`, the model it asks for.
 - **Adding a node opens a list you can read.** The editor's radial menu is gone:
   on a phone its labels overlapped. The **+** button and a long-press on the
   canvas now open an **Add node** sheet that lists every node type by what it is

@@ -96,8 +96,9 @@ data class ProviderKeyUi(
  * @property options A built-in list; non-empty makes the field a dropdown.
  * @property marker "required", in the mono slot after the label; `null` for none.
  * @property placeholder Example id shown while a typed field is empty.
- * @property note A note under a typed field — what to do before a test, or that the server sent
- *   no list.
+ * @property note A note under the field — on a typed field, what to do before a test or that the
+ *   server sent no list; under a built-in list, which model is used when none is chosen or the
+ *   chosen one is no longer offered.
  * @property chooseLabel The label of the action that opens the server's list, shown on a typed
  *   field once a test has brought one; `null` hides the action.
  */
