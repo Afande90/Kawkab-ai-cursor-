@@ -1,5 +1,6 @@
 package app.knotwork.android.architecture
 
+import com.lemonappdev.konsist.api.declaration.KoClassDeclaration
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -72,8 +73,13 @@ class SettingsSingletonScopeTest {
         .parents()
         .mapTo(mutableSetOf()) { it.name }
 
-    private fun settingsImplementations() = ArchitectureScope.production.classes(includeNested = true)
-        .filter { it.hasParentWithName(sectionNames() + COMPOSITE, indirectParents = true) }
+    private fun settingsImplementations(): List<KoClassDeclaration> {
+        // Read once: inside the filter, every class walked all of the scope's interfaces again,
+        // and the guard took over a minute per flavour.
+        val parents = sectionNames() + COMPOSITE
+        return ArchitectureScope.production.classes(includeNested = true)
+            .filter { it.hasParentWithName(parents, indirectParents = true) }
+    }
 
     private companion object {
         const val COMPOSITE = "SettingsRepository"
