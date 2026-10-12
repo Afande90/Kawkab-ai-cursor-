@@ -89,10 +89,13 @@ fun ProviderDetailScreen(
     val elapsedSeconds by elapsedSecondsOf(test)
     val context = LocalContext.current
     val hints = remember(context) { retryHints(context) }
+    // From the provider alone, not from [ProviderDetailViewModel.bind]: the bind runs after the
+    // first frame, which would otherwise draw a typed field where the list belongs.
+    val offeredModels = remember(providerId) { viewModel.offeredModels(providerId) }
 
     CompositionLocalProvider(LocalSettingsHints provides hints) {
         ProviderDetailContent(
-            state = uiState.toViewState(providerId, context, test, elapsedSeconds),
+            state = uiState.toViewState(providerId, context, offeredModels, test, elapsedSeconds),
             callbacks = ProviderDetailCallbacks(
                 onBack = onBack,
                 onApiKeyChange = { value -> viewModel.updateKey(providerId, value) },
@@ -122,6 +125,8 @@ fun ProviderDetailScreen(
  *
  * @param providerId Which provider the screen was opened for.
  * @param context Resource resolution.
+ * @param offeredModels The provider's built-in model list ([ProviderDetailViewModel.offeredModels]);
+ *   `null` for a provider whose model is typed.
  * @param test The *Test connection* row's state.
  * @param elapsedSeconds Seconds since a running test started.
  * @return The resolved view state.
@@ -130,6 +135,7 @@ fun ProviderDetailScreen(
 internal fun ProviderDetailUiState.toViewState(
     providerId: ProviderId,
     context: Context,
+    offeredModels: List<String>? = null,
     test: ConnectionTestState = ConnectionTestState.Idle,
     elapsedSeconds: Long = 0,
 ): ProviderDetailViewState {
@@ -152,7 +158,7 @@ internal fun ProviderDetailUiState.toViewState(
         },
         apiKey = keyUi(providerId, context),
         test = test.toTestProbeUi(context, subject, elapsedSeconds),
-        model = modelUi(providerId, context, test, listed),
+        model = modelUi(providerId, context, offeredModels, test, listed),
         contextWindow = if (providerId == ProviderId.Ollama) {
             ProviderContextWindowUi(
                 label = context.getString(R.string.settings_ollama_context_label),
@@ -237,6 +243,7 @@ private fun ProviderDetailUiState.keyUi(providerId: ProviderId, context: Context
 private fun ProviderDetailUiState.modelUi(
     providerId: ProviderId,
     context: Context,
+    offeredModels: List<String>?,
     test: ConnectionTestState,
     listed: List<String>?,
 ): ProviderModelUi {
@@ -401,7 +408,6 @@ private fun retryHints(context: Context): SettingsHintController = SettingsHintC
  * @property addressRefusal Why the rules refuse [baseUrl], judged as it is typed by the rule a
  *   request is held to ([EndpointRule]); `null` when they do not.
  * @property modelSheetOpen Whether the server's model list is open over the form.
- * @property offeredModels The provider's built-in model list; `null` for one whose model is typed.
  * @property modelInUse The model a run uses with the saved [model], and why it differs if it
  *   does; `null` when the provider is not usable until a model is chosen.
  */
@@ -416,7 +422,6 @@ data class ProviderDetailUiState(
     val cloudRetryBaseDelayMs: Long = SettingsDefaults.CLOUD_RETRY_BASE_DELAY_MS_DEFAULT,
     val addressRefusal: AddressRefusal? = null,
     val modelSheetOpen: Boolean = false,
-    val offeredModels: List<String>? = null,
     val modelInUse: CloudModelInUse? = null,
 )
 
@@ -477,6 +482,15 @@ class ProviderDetailViewModel @Inject constructor(
     }
 
     /**
+     * The built-in model list of [providerId] — a fact about the provider, so the screen reads it
+     * before [bind] and draws the right field from the first frame.
+     *
+     * @param providerId The provider the screen shows.
+     * @return The offered model ids, or `null` for a provider whose model is typed.
+     */
+    fun offeredModels(providerId: ProviderId): List<String>? = modelCatalog.offeredModels(providerId.cloudProvider)
+
+    /**
      * Binds the screen to the flows of [providerId]: its key when it uses one, its model with the
      * model a run uses for it ([CloudModelCatalog]), and
      * — for a provider reached at an address the user enters — that address with its
@@ -493,7 +507,6 @@ class ProviderDetailViewModel @Inject constructor(
                 .onEach { v -> _uiState.update { it.copy(apiKey = v.orEmpty()) } }
                 .launchIn(viewModelScope)
         }
-        _uiState.update { it.copy(offeredModels = modelCatalog.offeredModels(provider)) }
         apiKeyRepository.getModel(provider)
             .onEach { v ->
                 _uiState.update { it.copy(model = v.orEmpty(), modelInUse = modelCatalog.modelInUse(provider, v)) }

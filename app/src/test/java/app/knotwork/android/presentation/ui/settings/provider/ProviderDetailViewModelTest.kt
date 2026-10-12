@@ -105,29 +105,34 @@ class ProviderDetailViewModelTest {
     }
 
     @Test
-    fun `given a provider with a built-in list when bind then its list and the model runs use flow into state`() =
-        runTest {
-            every { apiKeyRepository.getApiKey(CloudProvider.ANTHROPIC) } returns flowOf("sk-ant")
-            val saved = MutableStateFlow<String?>("claude-3-opus")
-            every { apiKeyRepository.getModel(CloudProvider.ANTHROPIC) } returns saved
+    fun `given the screen before its bind then the offered list is already known for each provider`() {
+        val catalog = KoogCloudModelCatalog()
 
-            viewModel.bind(ProviderId.Anthropic)
-            advanceUntilIdle()
-
-            assertEquals(
-                KoogCloudModelCatalog().offeredModels(CloudProvider.ANTHROPIC),
-                viewModel.uiState.value.offeredModels,
-            )
-            assertEquals(
-                CloudModelInUse("claude-sonnet-4-5", CloudModelFallback.NoLongerOffered("claude-3-opus")),
-                viewModel.uiState.value.modelInUse,
-            )
-
-            saved.value = "claude-opus-4-6"
-            advanceUntilIdle()
-
-            assertEquals(CloudModelInUse("claude-opus-4-6"), viewModel.uiState.value.modelInUse)
+        ProviderId.entries.forEach { id ->
+            assertEquals("$id", catalog.offeredModels(id.cloudProvider), viewModel.offeredModels(id))
         }
+        assertTrue(viewModel.offeredModels(ProviderId.OpenAi)!!.isNotEmpty())
+    }
+
+    @Test
+    fun `given a provider with a built-in list when bind then the model runs use flows into state`() = runTest {
+        every { apiKeyRepository.getApiKey(CloudProvider.ANTHROPIC) } returns flowOf("sk-ant")
+        val saved = MutableStateFlow<String?>("claude-3-opus")
+        every { apiKeyRepository.getModel(CloudProvider.ANTHROPIC) } returns saved
+
+        viewModel.bind(ProviderId.Anthropic)
+        advanceUntilIdle()
+
+        assertEquals(
+            CloudModelInUse("claude-sonnet-4-5", CloudModelFallback.NoLongerOffered("claude-3-opus")),
+            viewModel.uiState.value.modelInUse,
+        )
+
+        saved.value = "claude-opus-4-6"
+        advanceUntilIdle()
+
+        assertEquals(CloudModelInUse("claude-opus-4-6"), viewModel.uiState.value.modelInUse)
+    }
 
     @Test
     fun `given a hosted provider when bind then no server address is read`() = runTest {

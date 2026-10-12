@@ -6,6 +6,7 @@ import app.knotwork.android.domain.connection.AddressRefusal
 import app.knotwork.android.domain.connection.ConnectionCheckResult
 import app.knotwork.android.domain.connection.ConnectionFailure
 import app.knotwork.android.domain.constants.SettingsDefaults
+import app.knotwork.android.domain.models.CloudProvider
 import app.knotwork.android.domain.models.ProviderId
 import app.knotwork.android.presentation.ui.common.ConnectionTestState
 import app.knotwork.design.components.misc.TestProbeTone
@@ -35,16 +36,17 @@ class ProviderDetailProjectionTest {
 
     private val catalog = KoogCloudModelCatalog()
 
-    /** The state [ProviderDetailViewModel] binds for [id]: [base] plus what the catalog says of its model. */
-    private fun bound(id: ProviderId, base: ProviderDetailUiState): ProviderDetailUiState = base.copy(
-        offeredModels = catalog.offeredModels(id.cloudProvider),
-        modelInUse = catalog.modelInUse(id.cloudProvider, base.model),
-    )
+    /**
+     * The screen of [id] as [ProviderDetailScreen] projects it once bound: [base] with what the
+     * catalog says of its model, and the provider's own list.
+     */
+    private fun view(id: ProviderId, base: ProviderDetailUiState) =
+        base.copy(modelInUse = catalog.modelInUse(id.cloudProvider, base.model))
+            .toViewState(id, context, offeredModels = catalog.offeredModels(id.cloudProvider))
 
     @Test
     fun `given a hosted provider with a built-in list then it has a key and a dropdown, and no address`() {
-        val state = bound(ProviderId.OpenAi, ProviderDetailUiState(apiKey = "sk-1", model = "gpt-4o"))
-            .toViewState(ProviderId.OpenAi, context)
+        val state = view(ProviderId.OpenAi, ProviderDetailUiState(apiKey = "sk-1", model = "gpt-4o"))
 
         assertEquals("sk-1", state.apiKey?.value)
         assertEquals("gpt-4o", state.model.value)
@@ -56,9 +58,19 @@ class ProviderDetailProjectionTest {
     }
 
     @Test
+    fun `given the screen before its bind then a provider with a built-in list already draws the list`() {
+        // The list is a fact about the provider; the first frame comes before the bind fills the
+        // state, and must not draw a typed field where the dropdown belongs.
+        val state = ProviderDetailUiState()
+            .toViewState(ProviderId.OpenAi, context, offeredModels = catalog.offeredModels(CloudProvider.OPENAI))
+
+        assertTrue(state.model.options.isNotEmpty())
+        assertNull("Nothing is known yet about the model in use.", state.model.note)
+    }
+
+    @Test
     fun `given a built-in list and no model chosen then the note names the model runs use`() {
-        val state = bound(ProviderId.OpenAi, ProviderDetailUiState(apiKey = "sk-1"))
-            .toViewState(ProviderId.OpenAi, context)
+        val state = view(ProviderId.OpenAi, ProviderDetailUiState(apiKey = "sk-1"))
 
         assertEquals("", state.model.value)
         assertEquals("No model chosen — runs use gpt-5.4.", state.model.note)
@@ -66,8 +78,7 @@ class ProviderDetailProjectionTest {
 
     @Test
     fun `given a built-in list and a saved model it no longer offers then the note says which is used instead`() {
-        val state = bound(ProviderId.Anthropic, ProviderDetailUiState(apiKey = "sk-1", model = "claude-3-opus"))
-            .toViewState(ProviderId.Anthropic, context)
+        val state = view(ProviderId.Anthropic, ProviderDetailUiState(apiKey = "sk-1", model = "claude-3-opus"))
 
         assertEquals("claude-3-opus", state.model.value)
         assertEquals(
@@ -78,11 +89,8 @@ class ProviderDetailProjectionTest {
 
     @Test
     fun `given Ollama with no model typed then the empty field shows the model runs use`() {
-        val empty = bound(ProviderId.Ollama, ProviderDetailUiState()).toViewState(ProviderId.Ollama, context)
-        val typed = bound(
-            ProviderId.Ollama,
-            ProviderDetailUiState(model = "qwen3"),
-        ).toViewState(ProviderId.Ollama, context)
+        val empty = view(ProviderId.Ollama, ProviderDetailUiState())
+        val typed = view(ProviderId.Ollama, ProviderDetailUiState(model = "qwen3"))
 
         assertEquals("llama3", empty.model.placeholder)
         assertNull("A typed model needs no stand-in.", typed.model.placeholder)
