@@ -52,13 +52,34 @@ class RestoredPreferencesMigrationTest {
             stringPreferencesKey("system_prompt_prefix") to "Be brief.",
         )
         layout.stagedPreferences.writeText(PreferencesBackupJson.encode(archive))
-        migration = RestoredPreferencesMigration(layout)
+        migration = RestoredPreferencesMigration(layout) { true }
     }
 
     @Test
     fun `given a staged restore that is not committed when the DataStore opens then it does not migrate`() = runTest {
         assertFalse(migration.shouldMigrate(phone))
     }
+
+    @Test
+    fun `given a committed restore whose database is not in place yet when the DataStore opens then it waits`() =
+        runTest {
+            // Given — the start could not move the database the restored settings point into.
+            commit()
+            layout.stagedDatabase.writeText("restored database")
+
+            // Then
+            assertFalse(migration.shouldMigrate(phone))
+        }
+
+    @Test
+    fun `given a committed restore when the DataStore opens in the restart's own process then it does not migrate`() =
+        runTest {
+            // Given
+            commit()
+
+            // Then
+            assertFalse(RestoredPreferencesMigration(layout) { false }.shouldMigrate(phone))
+        }
 
     @Test
     fun `given a committed restore when migrated then each setting follows its policy`() = runTest {

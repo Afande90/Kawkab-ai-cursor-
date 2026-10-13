@@ -1,6 +1,7 @@
 package app.knotwork.android.data.backup
 
 import android.content.Context
+import android.database.sqlite.SQLiteFullException
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import app.knotwork.android.data.local.AppDatabase
@@ -46,8 +47,9 @@ internal interface StagedDatabasePreparer {
  * database is brought up to date and every database is checked against this build's schema here, in
  * staging, before anything of the app's is replaced.
  *
- * Every statement goes through a call that reports a failed step (`RawExecSqlGuardTest`). A reported
- * corruption only logs: the stock handler would delete files.
+ * Every statement goes through a call that reports a failed step (`RawExecSqlGuardTest`). A full disk
+ * anywhere in that work is [RestoreFailure.NO_SPACE], never a damaged archive ([failureOf]). A reported
+ * corruption only logs: the stock handler deletes nothing only because this build has a codec.
  */
 @Singleton
 internal class SqlCipherStagedDatabasePreparer @Inject constructor(@ApplicationContext private val context: Context) :
@@ -58,7 +60,7 @@ internal class SqlCipherStagedDatabasePreparer @Inject constructor(@ApplicationC
         val version = try {
             checkAndRekey(file, archiveKey, phoneKey)
         } catch (e: RuntimeException) {
-            throw BackupRestoreException(RestoreFailure.DATABASE_UNUSABLE, "the archive's database failed a check", e)
+            throw failureOf(e, "the archive's database failed a check")
         }
         migrate(file, phoneKey)
         return version
@@ -93,18 +95,19 @@ internal class SqlCipherStagedDatabasePreparer @Inject constructor(@ApplicationC
 
     private fun migrate(file: File, phoneKey: ByteArray) {
         val passphrase = phoneKey.copyOf()
-        val room = Room.databaseBuilder(context, AppDatabase::class.java, file.absolutePath)
-            .openHelperFactory(SupportOpenHelperFactory(passphrase))
-            .addMigrations(*ALL_MIGRATIONS.toTypedArray())
-            // One file, no write-ahead log beside it, so the start moves a single file into place.
-            .setJournalMode(RoomDatabase.JournalMode.TRUNCATE)
-            .build()
+        var room: AppDatabase? = null
         try {
+            room = Room.databaseBuilder(context, AppDatabase::class.java, file.absolutePath)
+                .openHelperFactory(SupportOpenHelperFactory(passphrase))
+                .addMigrations(*ALL_MIGRATIONS.toTypedArray())
+                // One file, no write-ahead log beside it, so the start moves a single file into place.
+                .setJournalMode(RoomDatabase.JournalMode.TRUNCATE)
+                .build()
             room.openHelper.writableDatabase.version
         } catch (e: RuntimeException) {
-            throw BackupRestoreException(RestoreFailure.DATABASE_UNUSABLE, "the archive's database did not migrate", e)
+            throw failureOf(e, "the archive's database did not migrate")
         } finally {
-            room.close()
+            room?.close()
             passphrase.fill(0)
         }
     }
@@ -112,12 +115,30 @@ internal class SqlCipherStagedDatabasePreparer @Inject constructor(@ApplicationC
     private fun unusable(reason: String): Nothing =
         throw BackupRestoreException(RestoreFailure.DATABASE_UNUSABLE, reason)
 
-    private companion object {
-        const val NATIVE_LIBRARY = "sqlcipher"
-        const val QUICK_CHECK_OK = "ok"
+    /** Names a failure of the work on the staged database. */
+    companion object {
+        private const val NATIVE_LIBRARY = "sqlcipher"
+
+        /**
+         * What [e] tells the user: the phone running out of space when SQLite says so anywhere in the chain,
+         * otherwise a database that cannot be used.
+         *
+         * @param e The failure.
+         * @param reason A diagnostic for logs.
+         * @return The failure to throw.
+         */
+        internal fun failureOf(e: RuntimeException, reason: String): BackupRestoreException {
+            val full = generateSequence<Throwable>(e) { it.cause }.any { it is SQLiteFullException }
+            return if (full) {
+                BackupRestoreException(RestoreFailure.NO_SPACE, "the phone ran out of space keying the database", e)
+            } else {
+                BackupRestoreException(RestoreFailure.DATABASE_UNUSABLE, reason, e)
+            }
+        }
+        private const val QUICK_CHECK_OK = "ok"
 
         /** Logs a reported corruption and does nothing else: no file is deleted on a restore's account. */
-        val LOG_ONLY = DatabaseErrorHandler { _, e ->
+        private val LOG_ONLY = DatabaseErrorHandler { _, e ->
             Timber.e(e, "SQLCipher reported a staged database corrupt; left as it is")
         }
     }

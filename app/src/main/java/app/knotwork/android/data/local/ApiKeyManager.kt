@@ -93,19 +93,26 @@ class ApiKeyManager @Inject constructor(@ApplicationContext private val context:
         null
     }
 
-    /** Each provider's model, server address and API key, and the Ollama context window. */
-    override suspend fun restore(entries: Map<String, String>): Int {
+    /**
+     * Each provider's model and server address and the Ollama context window; each provider's API key only
+     * with [secrets]. Written synchronously: the restore's own copy is destroyed right after.
+     */
+    override suspend fun restore(entries: Map<String, String>, secrets: Boolean): Int {
         var written = 0
         CloudProvider.entries.forEach { provider ->
-            listOf(modelEntry(provider), baseUrlEntry(provider), apiKeyEntry(provider)).forEach { name ->
+            val names = listOf(modelEntry(provider), baseUrlEntry(provider)) +
+                listOfNotNull(apiKeyEntry(provider).takeIf { secrets })
+            names.forEach { name ->
                 entries[name]?.let {
-                    write(name, it)
+                    store.putString(name, it, synchronous = true)
+                    entry(name).value = it
                     written++
                 }
             }
         }
         entries[OLLAMA_CONTEXT_ENTRY]?.toIntOrNull()?.let {
-            setOllamaContextWindowSize(it)
+            store.putString(OLLAMA_CONTEXT_ENTRY, it.toString(), synchronous = true)
+            ollamaContextFlow.value = it
             written++
         }
         return written

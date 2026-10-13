@@ -8,6 +8,7 @@ import org.json.JSONException
 import org.json.JSONObject
 import timber.log.Timber
 import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 
 /**
@@ -82,14 +83,24 @@ internal class RestoreLayout(
      */
     fun writeCommit(marker: CommitMarker) {
         val temporary = File(staging, "$COMMIT_FILE.tmp")
-        temporary.writeText(
-            JSONObject()
-                .put(KEY_APPLY_SECRETS, marker.applySecrets)
-                .put(KEY_BACKGROUND_STOPPED, marker.backgroundStopped)
-                .toString(),
-        )
+        val json = JSONObject()
+            .put(KEY_APPLY_SECRETS, marker.applySecrets)
+            .put(KEY_BACKGROUND_STOPPED, marker.backgroundStopped)
+            .toString()
+        FileOutputStream(temporary).use {
+            it.write(json.toByteArray(Charsets.UTF_8))
+            it.fd.sync()
+        }
         if (!temporary.renameTo(commitMarker)) throw IOException("the restore's commit marker was not written")
     }
+
+    /**
+     * Withdraws the confirmation once the restore is complete — before what it staged is removed, so a start
+     * that follows a crash half-way through the removal finds nothing committed and only clears up.
+     *
+     * @return `true` when no marker is left.
+     */
+    fun clearCommit(): Boolean = commitMarker.delete() || !commitMarker.exists()
 
     /**
      * Reads the confirmation.

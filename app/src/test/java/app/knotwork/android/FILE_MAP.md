@@ -83,6 +83,7 @@ Only Kotlin files appear inside the generated blocks.
     - `PreferencesBackupJsonTest.kt` - `PreferencesBackupJson`: every type is written with its name, a float reads back as the same float, and only settings the policy lets travel are written.
     - `RestoredPreferencesMigrationTest.kt` - `RestoredPreferencesMigration` writes a committed restore's settings over this phone's: travelling settings are replaced, those that stay are kept, those that reset are cleared — and it never fails the DataStore.
     - `SqlCipherDatabaseSnapshotterTest.kt` - What `SqlCipherDatabaseSnapshotter` decides before it opens anything: a key that is not 32 bytes is refused, and a phone without room for the copy is reported full.
+    - `StagedDatabasePreparerFailureTest.kt` - How `SqlCipherStagedDatabasePreparer` names a failure of the staged database's work: a full disk anywhere in the chain is the phone being full, never a damaged archive; anything else is a database that cannot be used.
   - `engine/` - Tests for the inference engines, client factories and the task queue.
     - `CloudModelListGuardTest.kt` - The cloud model lists against Koog's own catalogue: every model the app offers is one of Koog's chat constants, and every chat constant Koog declares for the four providers it lists is either offered or left out here with a reason.
     - `KoogClientFactoryTest.kt` - Tests for KoogClientFactory.

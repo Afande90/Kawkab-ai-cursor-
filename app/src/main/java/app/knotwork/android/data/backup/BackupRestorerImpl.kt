@@ -1,6 +1,7 @@
 package app.knotwork.android.data.backup
 
 import android.content.Context
+import android.database.sqlite.SQLiteFullException
 import android.system.ErrnoException
 import android.system.OsConstants
 import app.knotwork.android.di.IoDispatcher
@@ -18,7 +19,10 @@ import app.knotwork.android.domain.services.TriggerScheduler
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.job
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -89,20 +93,26 @@ internal class BackupRestorerImpl(
         password: CharArray,
         onProgress: (RestoreProgress) -> Unit,
     ): StagedRestore = mutex.withLock {
-        withContext(ioDispatcher) {
-            source.use {
-                check(!layout.isCommitted) { "a committed restore waits for the restart" }
-                clearStaging()
-                try {
-                    stager.stage(it, password, onProgress)
-                } catch (e: CancellationException) {
+        check(!layout.isCommitted) { "a committed restore waits for the restart" }
+        var staged = false
+        try {
+            withContext(ioDispatcher) {
+                source.use {
                     clearStaging()
-                    throw e
-                } catch (e: Exception) {
-                    clearStaging()
-                    throw failureOf(e)
+                    val job = coroutineContext.job
+                    try {
+                        stager.stage(it, password, onProgress) { job.ensureActive() }
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        throw failureOf(e)
+                    }
                 }
-            }
+            }.also { staged = true }
+        } finally {
+            // Whatever stopped it — a failure, or the caller going away even after the last byte — leaves
+            // nothing staged.
+            if (!staged) withContext(NonCancellable + ioDispatcher) { clearStaging() }
         }
     }
 
@@ -110,16 +120,20 @@ internal class BackupRestorerImpl(
         withContext(ioDispatcher) {
             check(layout.stagedManifest.isFile && !layout.isCommitted) { "no staged restore to commit" }
             layout.writeCommit(RestoreLayout.CommitMarker(applySecrets, backgroundStopped = false))
-            try {
-                taskScheduler.cancelAllBackgroundRuns()
-                triggerScheduler.stopWatching(triggerRepository.observeActiveTriggers().first().map { it.id })
-                layout.writeCommit(RestoreLayout.CommitMarker(applySecrets, backgroundStopped = true))
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                // Committed all the same: the start cancels the queued runs, and a watch whose trigger is gone
-                // ends itself on its next wake.
-                Timber.e(e, "Background work could not all be stopped before a restore; the start retries")
+            // Past the marker the restore completes, so stopping what would run against it does too.
+            withContext(NonCancellable) {
+                try {
+                    // Watches first: one stopped after the runs could queue another in between.
+                    triggerScheduler.stopWatching(triggerRepository.observeActiveTriggers().first().map { it.id })
+                    taskScheduler.cancelAllBackgroundRuns()
+                    layout.writeCommit(RestoreLayout.CommitMarker(applySecrets, backgroundStopped = true))
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    // Committed all the same: the start cancels the queued runs, and a watch whose trigger is
+                    // gone ends itself on its next wake.
+                    Timber.e(e, "Background work could not all be stopped before a restore; the start retries")
+                }
             }
         }
     }
@@ -136,7 +150,7 @@ internal class BackupRestorerImpl(
         withContext(ioDispatcher) {
             clearStaging()
             layout.report.delete()
-            !layout.staging.exists() && !layout.report.exists()
+            !layout.staging.exists() && !layout.replaced.exists() && !layout.report.exists()
         }
     }
 
@@ -144,7 +158,7 @@ internal class BackupRestorerImpl(
         withContext(ioDispatcher) {
             val marker = layout.readCommit()
             when {
-                marker == null -> if (layout.staging.exists()) clearStaging()
+                marker == null -> if (layout.staging.exists() || layout.replaced.exists()) clearStaging()
                 // The start could not move every file; it tries again, and so does this.
                 !layout.isSwapped -> Timber.w("A committed restore's files are not all in place yet")
                 else -> finisher.finish(marker)
@@ -169,7 +183,8 @@ internal class BackupRestorerImpl(
      */
     private fun failureOf(e: Exception): Exception = when {
         e is BackupFormatException || e is BackupRestoreException -> e
-        generateSequence<Throwable>(e) { it.cause }.any { it is ErrnoException && it.errno == OsConstants.ENOSPC } ->
+        generateSequence<Throwable>(e) { it.cause }
+            .any { (it is ErrnoException && it.errno == OsConstants.ENOSPC) || it is SQLiteFullException } ->
             BackupRestoreException(RestoreFailure.NO_SPACE, "the phone ran out of space while staging", e)
         else -> {
             Timber.w("A restore could not be staged: %s", e.javaClass.simpleName)

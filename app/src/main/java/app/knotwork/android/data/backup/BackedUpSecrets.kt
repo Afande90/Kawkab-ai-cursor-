@@ -54,9 +54,11 @@ interface BackedUpSecrets {
      *
      * @param entries The archive's entries of [storeName], by entry name; owners sharing a store each get
      *   all of them and take their own.
+     * @param secrets Whether these are the archive's secrets — taken only when the user chose them — rather
+     *   than its provider settings. An owner takes a secret only in the first case, whichever entry it came in.
      * @return How many entries were written.
      */
-    suspend fun restore(entries: Map<String, String>): Int
+    suspend fun restore(entries: Map<String, String>, secrets: Boolean): Int
 
     /** The names of the stores whose owners implement this. */
     companion object {

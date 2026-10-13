@@ -55,6 +55,7 @@ import app.knotwork.android.presentation.notifications.ClarificationNotification
 import app.knotwork.android.presentation.notifications.ScheduledTaskNotifierImpl
 import app.knotwork.android.presentation.run.RunOutcomeAnnouncerImpl
 import app.knotwork.android.presentation.state.ActiveSessionTracker
+import com.jakewharton.processphoenix.ProcessPhoenix
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -99,7 +100,11 @@ object AppModule {
     @Singleton
     fun providePreferencesDataStore(@ApplicationContext appContext: Context): DataStore<Preferences> =
         PreferenceDataStoreFactory.create(
-            migrations = listOf(RestoredPreferencesMigration(RestoreLayout.of(appContext))),
+            migrations = listOf(
+                RestoredPreferencesMigration(RestoreLayout.of(appContext)) {
+                    !ProcessPhoenix.isPhoenixProcess(appContext)
+                },
+            ),
             produceFile = { appContext.preferencesDataStoreFile(USER_PREFERENCES_NAME) },
         )
 

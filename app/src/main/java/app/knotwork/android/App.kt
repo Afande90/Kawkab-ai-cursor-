@@ -10,6 +10,7 @@ import app.knotwork.android.domain.repositories.CrashReportingRepository
 import app.knotwork.android.domain.repositories.PrivacySettings
 import app.knotwork.android.domain.services.ScheduledTaskNotifier
 import app.knotwork.android.presentation.theme.KnotworkFontsBootstrap
+import com.jakewharton.processphoenix.ProcessPhoenix
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -72,6 +73,9 @@ class App :
         // the dependencies are built in super.onCreate().
         val restoreFailure = applyCommittedRestore()
         super.onCreate()
+        // A restart passes through a short-lived process that runs this class too; it must not read the
+        // settings or the database while the old process is still alive.
+        if (ProcessPhoenix.isPhoenixProcess(this)) return
         // Install the bundled Inter / JetBrains Mono families into the
         // design-system typography sheet before the first Compose composition
         // so screens render against the brand fonts on the very first frame.
@@ -93,6 +97,8 @@ class App :
         }
     }
 
+    private fun isMainProcess(): Boolean = Application.getProcessName() == packageName
+
     /**
      * Puts a committed restore's database and files in place, in the app's main process only — a
      * restart passes through a short-lived process of its own, which runs this class too.
@@ -101,7 +107,7 @@ class App :
      *   nothing to apply.
      */
     private fun applyCommittedRestore(): IOException? {
-        if (Application.getProcessName() != packageName) return null
+        if (!isMainProcess()) return null
         return try {
             PendingRestoreApplier.applyIfCommitted(RestoreLayout.of(this))
             null

@@ -22,6 +22,7 @@ import app.knotwork.android.domain.backup.BackupReadFailure
 import app.knotwork.android.domain.backup.BackupRestoreException
 import app.knotwork.android.domain.backup.RestoreFailure
 import app.knotwork.android.domain.backup.RestoreReport
+import app.knotwork.android.domain.backup.RestoreStep
 import app.knotwork.android.domain.models.DbPassphraseUnavailableException
 import app.knotwork.android.domain.models.LocalModel
 import app.knotwork.android.domain.models.Trigger
@@ -42,6 +43,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.job
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -88,7 +91,7 @@ class BackupRestorerImplTest {
     private val dataStoreScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val dataStore: DataStore<Preferences> by lazy {
         PreferenceDataStoreFactory.create(
-            migrations = listOf(RestoredPreferencesMigration(layout)),
+            migrations = listOf(RestoredPreferencesMigration(layout) { true }),
             scope = dataStoreScope,
             produceFile = { dataStoreFile },
         )
@@ -104,7 +107,8 @@ class BackupRestorerImplTest {
     }
     private val models = mockk<LocalModelRepository>(relaxed = true)
     private val modelFiles = mockk<DownloadedModelFiles>()
-    private var usableBytes = Long.MAX_VALUE
+    private val cipher = FakeAeadCipher()
+    private var usableBytes: (File) -> Long = { Long.MAX_VALUE }
 
     @Before
     fun setUp() {
@@ -117,7 +121,7 @@ class BackupRestorerImplTest {
         )
         dataStoreFile = File(app, "files/datastore/agent_preferences.preferences_pb")
         stagedEntries = RestoreStagedEntries(
-            KeystoreBackedPrefsStore(context, "restore_staging_test", "test.restore", FakeAeadCipher()),
+            KeystoreBackedPrefsStore(context, "restore_staging_test", "test.restore", cipher),
         )
         coEvery { models.getAllModels() } returns flowOf(
             listOf(
@@ -138,6 +142,10 @@ class BackupRestorerImplTest {
     @Test
     fun `given a valid archive when staged then everything is checked into staging and nothing else changes`() =
         runTest {
+            // Given
+            layout.liveDatabase.parentFile!!.mkdirs()
+            layout.liveDatabase.writeText("phone database")
+
             // When
             val staged = restorer(testScheduler).stage(input(archive()), password.toCharArray()) { }
 
@@ -155,7 +163,7 @@ class BackupRestorerImplTest {
             )
             assertTrue(stagedEntries.has(RestoreStagedEntries.Kind.SECRETS))
             assertFalse("staging is not committing", layout.isCommitted)
-            assertFalse("the app's own database is untouched", layout.liveDatabase.exists())
+            assertEquals("the app's own database is untouched", "phone database", layout.liveDatabase.readText())
         }
 
     @Test
@@ -202,7 +210,7 @@ class BackupRestorerImplTest {
     fun `given too little free space when staged then it is refused before unpacking, with the bytes needed`() =
         runTest {
             // Given
-            usableBytes = 1_000
+            usableBytes = { 1_000 }
 
             // When
             val failure = runCatchingRestore {
@@ -288,10 +296,47 @@ class BackupRestorerImplTest {
         assertTrue(stagedEntries.has(RestoreStagedEntries.Kind.SECRETS))
     }
 
+    @Test
+    fun `given room for the archive but not for keying its database when staged then the phone is full`() = runTest {
+        // Given — the content fits; the database's re-key and migration need as much again.
+        var calls = 0
+        usableBytes = { if (calls++ == 0) Long.MAX_VALUE else DATABASE_BYTES.size.toLong() }
+
+        // When
+        val failure = runCatchingRestore {
+            restorer(testScheduler).stage(input(archive()), password.toCharArray()) { }
+        }
+
+        // Then
+        assertEquals(RestoreFailure.NO_SPACE, failure.failure)
+        assertTrue(failure.neededBytes > DATABASE_BYTES.size)
+        assertTrue("the database is not touched", preparer.calls.isEmpty())
+        assertNothingStaged()
+    }
+
+    @Test
+    fun `given the caller is cancelled while the archive is unpacked when staged then nothing is left`() = runTest {
+        // Given
+        val restorer = restorer(testScheduler)
+
+        // When — the caller goes away at the first sign of progress.
+        val job = launch {
+            restorer.stage(input(archive()), password.toCharArray()) { progress ->
+                if (progress.step == RestoreStep.UNPACK) coroutineContext.job.cancel()
+            }
+        }
+        job.join()
+
+        // Then
+        assertTrue(job.isCancelled)
+        assertTrue("the database is not touched", preparer.calls.isEmpty())
+        assertNothingStaged()
+    }
+
     // --- Committing ---
 
     @Test
-    fun `given a staged restore when committed then the marker is written before background work is stopped`() =
+    fun `given a staged restore when committed then the marker comes first, then the watches, then the runs`() =
         runTest {
             // Given
             val restorer = restorer(testScheduler)
@@ -305,9 +350,10 @@ class BackupRestorerImplTest {
             // Then — past the marker the restore completes whatever happens to the process.
             assertTrue(committedWhenStopping)
             assertEquals(RestoreLayout.CommitMarker(applySecrets = true, backgroundStopped = true), layout.readCommit())
+            // A watch stopped after the runs could queue one more in between.
             coVerifyOrder {
-                taskScheduler.cancelAllBackgroundRuns()
                 triggerScheduler.stopWatching(listOf("t1", "t2"))
+                taskScheduler.cancelAllBackgroundRuns()
             }
         }
 
@@ -491,20 +537,112 @@ class BackupRestorerImplTest {
         assertNull(restorer.report())
     }
 
+    @Test
+    fun `given the secrets store cannot be read when the app starts then the restore still completes`() = runTest {
+        // Given
+        val restorer = restorer(testScheduler)
+        restorer.stage(input(archive()), password.toCharArray()) { }
+        restorer.commit(applySecrets = true)
+        PendingRestoreApplier.applyIfCommitted(layout)
+        cipher.failDecrypt = true
+
+        // When
+        restorer.finishPending()
+
+        // Then — no secret was written, and nothing is left half-way for every later start to retry.
+        assertTrue(apiKeys.restored.isEmpty())
+        assertFalse(layout.isCommitted)
+        assertFalse(layout.staging.exists())
+        assertFalse(restorer.report()!!.secretsApplied)
+    }
+
+    @Test
+    fun `given the process dies while a restore is cleared when the app starts again then the report stands`() =
+        runTest {
+            // Given — a restore finished up to clearing its kept entries, where the process dies.
+            val restorer = restorer(testScheduler)
+            restorer.stage(input(archive()), password.toCharArray()) { }
+            restorer.commit(applySecrets = true)
+            PendingRestoreApplier.applyIfCommitted(layout)
+            cipher.deleteKeyFailure = Error("process died")
+            try {
+                restorer.finishPending()
+            } catch (e: Error) {
+                // The process is gone.
+            }
+
+            // When — the next start.
+            cipher.deleteKeyFailure = null
+            restorer.finishPending()
+
+            // Then — nothing was committed any more, so nothing was finished twice.
+            assertFalse(layout.isCommitted)
+            assertTrue(restorer.report()!!.secretsApplied)
+            assertEquals(listOf(mapOf("hugging_face_token" to "hf_x")), settingsSecrets.restored)
+        }
+
+    @Test
+    fun `given one owner fails when the app starts then the others still get their entries`() = runTest {
+        // Given
+        val restorer =
+            restorer(testScheduler, owners = setOf(FailingOwner(BackedUpSecrets.API_KEYS_STORE), settingsSecrets))
+        restorer.stage(input(archive()), password.toCharArray()) { }
+        restorer.commit(applySecrets = true)
+        PendingRestoreApplier.applyIfCommitted(layout)
+
+        // When
+        restorer.finishPending()
+
+        // Then
+        assertEquals(listOf(mapOf("hugging_face_token" to "hf_x")), settingsSecrets.restored)
+    }
+
+    @Test
+    fun `given files a restore moved aside when the app starts or the wipe runs then they are deleted`() = runTest {
+        // Given — what applying parked, and could not delete before the app was up.
+        val restorer = restorer(testScheduler)
+        File(layout.replaced, "agent_workspace/old.md").apply { parentFile!!.mkdirs() }.writeText("old")
+
+        // When
+        val erased = restorer.erase()
+
+        // Then
+        assertTrue(erased)
+        assertFalse(layout.replaced.exists())
+    }
+
+    @Test
+    fun `given a committed restore whose files are not in place when settings are read then they are this phone's`() =
+        runTest {
+            // Given
+            seedPhoneSettings()
+            val restorer = restorer(testScheduler)
+            restorer.stage(input(archive()), password.toCharArray()) { }
+            restorer.commit(applySecrets = false)
+
+            // When — the start could not move the files; something reads the settings.
+            val settings = dataStore.data.first()
+
+            // Then — the restored settings wait for the restored database they point into.
+            assertEquals(0.9f, settings[floatPreferencesKey("temperature")])
+            assertTrue(layout.stagedPreferences.isFile)
+        }
+
     // --- Helpers ---
 
     private fun restorer(
         scheduler: TestCoroutineScheduler,
         phoneKey: () -> ByteArray = { this.phoneKey.copyOf() },
+        owners: Set<BackedUpSecrets> = setOf(apiKeys, settingsSecrets),
     ): BackupRestorerImpl {
         val io = UnconfinedTestDispatcher(scheduler)
         return BackupRestorerImpl(
             layout = layout,
-            stager = RestoreStager(layout, derivation, preparer, stagedEntries, phoneKey) { usableBytes },
+            stager = RestoreStager(layout, derivation, preparer, stagedEntries, phoneKey) { usableBytes(it) },
             finisher = RestoreFinisher(
                 layout,
                 stagedEntries,
-                setOf(apiKeys, settingsSecrets),
+                owners,
                 dataStore,
                 models,
                 modelFiles,
@@ -656,6 +794,16 @@ class BackupRestorerImplTest {
         }
     }
 
+    /** An owner whose store fails every write. */
+    private class FailingOwner(override val storeName: String) : BackedUpSecrets {
+        override suspend fun alwaysEntries(): Map<String, String> = emptyMap()
+
+        override suspend fun secretEntries(): Map<String, String> = emptyMap()
+
+        override suspend fun restore(entries: Map<String, String>, secrets: Boolean): Int =
+            throw IllegalStateException("keystore")
+    }
+
     /** An owner that records what it is asked to restore. */
     private class RecordingOwner(override val storeName: String) : BackedUpSecrets {
         val restored = mutableListOf<Map<String, String>>()
@@ -664,7 +812,7 @@ class BackupRestorerImplTest {
 
         override suspend fun secretEntries(): Map<String, String> = emptyMap()
 
-        override suspend fun restore(entries: Map<String, String>): Int {
+        override suspend fun restore(entries: Map<String, String>, secrets: Boolean): Int {
             restored += entries
             return entries.size
         }

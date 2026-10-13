@@ -14,6 +14,8 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -209,27 +211,35 @@ class WorkManagerTriggerSchedulerTest {
     }
 
     @Test
-    fun `given triggers to stop when stopped then each watch and the charging watch are cancelled and awaited`() =
-        runTest {
-            // Given
-            val operations = mutableMapOf<String, Operation>()
-            every { workManager.cancelUniqueWork(any()) } answers {
-                doneOperation().also { operations[firstArg()] = it }
-            }
-
-            // When
-            scheduler.stopWatching(listOf("a", "b"))
-
-            // Then — every cancellation is awaited: the caller ends the process right after.
-            assertEquals(setOf("trigger-watch-a", "trigger-watch-b", "trigger-charging-watch"), operations.keys)
-            operations.values.forEach { operation -> verify { operation.result } }
+    fun `given triggers to stop when stopped then it returns only once every cancellation is recorded`() = runTest {
+        // Given — cancellations the runtime has not recorded yet.
+        val listeners = mutableListOf<Runnable>()
+        var recorded = false
+        val names = mutableListOf<String>()
+        every { workManager.cancelUniqueWork(any()) } answers {
+            names += firstArg<String>()
+            pendingOperation(listeners) { recorded }
         }
 
-    /** An operation that has already succeeded, as `await()` expects. */
-    private fun doneOperation(): Operation {
+        // When
+        val stopping = launch(UnconfinedTestDispatcher(testScheduler)) { scheduler.stopWatching(listOf("a", "b")) }
+
+        // Then — the caller ends the process right after, so it waits for every one.
+        assertEquals(listOf("trigger-watch-a", "trigger-watch-b", "trigger-charging-watch"), names)
+        assertFalse(stopping.isCompleted)
+        recorded = true
+        listeners.toList().forEach { it.run() }
+        assertTrue(stopping.isCompleted)
+    }
+
+    /** An operation the runtime finishes when [done] says so and its listeners are run. */
+    private fun pendingOperation(listeners: MutableList<Runnable>, done: () -> Boolean): Operation {
         val future = mockk<ListenableFuture<Operation.State.SUCCESS>> {
-            every { isDone } returns true
+            every { isDone } answers { done() }
             every { get() } returns Operation.SUCCESS
+            every { addListener(any(), any()) } answers { listeners += firstArg<Runnable>() }
+            every { isCancelled } returns false
+            every { cancel(any()) } returns true
         }
         return mockk { every { result } returns future }
     }

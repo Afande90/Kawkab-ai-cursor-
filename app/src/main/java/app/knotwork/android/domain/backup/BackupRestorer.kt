@@ -36,6 +36,7 @@ interface BackupRestorer {
      * @throws BackupFormatException When the archive cannot be read: not an archive, a newer format, the
      *   wrong password, damaged or cut short.
      * @throws BackupRestoreException When the archive was read but cannot be restored here.
+     * @throws IllegalStateException When a committed restore waits for the restart: nothing more can be staged.
      */
     suspend fun stage(source: InputStream, password: CharArray, onProgress: (RestoreProgress) -> Unit): StagedRestore
 

@@ -14,15 +14,23 @@ import timber.log.Timber
  * only of their declared type); settings that stay with the phone are kept; settings that reset are
  * cleared. A key the policy does not know is kept.
  *
+ * It waits for the restored database and files to be in place — the settings point into them — and runs
+ * only in the app's main process: a restart passes through a short-lived process while the old one is still
+ * alive, and two processes must never write the one DataStore file.
+ *
  * It never throws: a migration that failed would leave the DataStore unable to open at all. A staged entry
  * that cannot be read leaves this phone's settings as they were, and is deleted all the same.
  *
  * @param layout Where the restore is staged.
+ * @param isMainProcess Whether this is the app's main process, not the restart's short-lived one.
  */
-internal class RestoredPreferencesMigration(private val layout: RestoreLayout) : DataMigration<Preferences> {
+internal class RestoredPreferencesMigration(
+    private val layout: RestoreLayout,
+    private val isMainProcess: () -> Boolean,
+) : DataMigration<Preferences> {
 
     override suspend fun shouldMigrate(currentData: Preferences): Boolean =
-        layout.isCommitted && layout.stagedPreferences.isFile
+        isMainProcess() && layout.isCommitted && layout.isSwapped && layout.stagedPreferences.isFile
 
     override suspend fun migrate(currentData: Preferences): Preferences {
         val restored = try {

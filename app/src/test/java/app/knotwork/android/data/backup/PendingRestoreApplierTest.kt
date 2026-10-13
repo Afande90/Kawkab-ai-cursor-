@@ -66,7 +66,11 @@ class PendingRestoreApplierTest {
         assertEquals(listOf("plan.md"), layout.liveWorkspace.list()!!.toList())
         assertEquals("an archive without attachments leaves none", 0, layout.liveAttachments.list()!!.size)
         assertTrue(layout.isSwapped)
-        assertFalse("what was replaced is deleted", layout.replaced.exists())
+        assertEquals(
+            "what was replaced is moved aside, to be deleted once the app is up",
+            setOf("agent_workspace", "attachments"),
+            layout.replaced.list()!!.toSet(),
+        )
         assertTrue("the marker stays for the rest of the restore", layout.isCommitted)
     }
 

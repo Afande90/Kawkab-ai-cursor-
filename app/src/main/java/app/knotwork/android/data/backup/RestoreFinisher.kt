@@ -27,8 +27,9 @@ import javax.inject.Singleton
  * In order: the settings (opening the DataStore runs [RestoredPreferencesMigration]); this phone's queued
  * background runs, when the process ended before the commit stopped them; the provider settings, and the
  * secrets when the user chose them, written through their owners; the model registry's paths, pointed at
- * this phone's files; the report; and the staging area, removed. Each part is attempted on its own — one
- * that fails is logged and the rest go on — so the restore is never left half-way by one stubborn part.
+ * this phone's files; the report; and the staging area and what applying moved aside, removed. Each part —
+ * and each owner — is attempted on its own: one that fails is logged and the rest go on, so the restore is
+ * never left half-way by one stubborn part.
  *
  * @param layout Where the restore is staged.
  * @param stagedEntries The provider settings and secrets kept for the restore.
@@ -77,10 +78,8 @@ internal class RestoreFinisher(
     suspend fun finish(marker: RestoreLayout.CommitMarker) {
         attempt("settings") { dataStore.data.first() }
         if (!marker.backgroundStopped) attempt("background runs") { taskScheduler.cancelAllBackgroundRuns() }
-        attempt("provider settings") { restoreEntries(RestoreStagedEntries.Kind.PROVIDERS) }
-        val secretsApplied = marker.applySecrets &&
-            stagedEntries.has(RestoreStagedEntries.Kind.SECRETS) &&
-            attempt("secrets") { restoreEntries(RestoreStagedEntries.Kind.SECRETS) }
+        restoreEntries(RestoreStagedEntries.Kind.PROVIDERS)
+        val secretsApplied = marker.applySecrets && restoreEntries(RestoreStagedEntries.Kind.SECRETS)
         val modelsToDownload = attemptOrNull("model paths") { repointModels() }.orEmpty()
         attempt("report") {
             val manifest = BackupManifestJson.decode(layout.stagedManifest.readText())
@@ -92,15 +91,33 @@ internal class RestoreFinisher(
         clear()
     }
 
-    /** Removes the staging area and the kept entries. */
+    /**
+     * Removes everything a restore keeps but its report: the commit marker first — a start that follows a
+     * crash part-way through finds nothing committed and only clears up — then the kept entries, the staging
+     * area and what applying moved aside.
+     */
     fun clear() {
+        if (!layout.clearCommit()) Timber.w("The restore's commit marker could not be deleted")
         attemptBlocking("staged entries") { stagedEntries.clear() }
         if (!layout.staging.deleteRecursively()) Timber.w("The restore's staging area could not all be deleted")
+        if (!layout.replaced.deleteRecursively()) Timber.w("Files a restore replaced could not all be deleted")
     }
 
-    private suspend fun restoreEntries(kind: RestoreStagedEntries.Kind) {
-        val stores = stagedEntries.entries(kind)
-        secretOwners.forEach { owner -> stores[owner.storeName]?.let { owner.restore(it) } }
+    /**
+     * Writes the entries kept for [kind] through their owners, each owner on its own: one that fails does not
+     * stop the others.
+     *
+     * @return `true` when there were entries and every owner wrote its own.
+     */
+    private suspend fun restoreEntries(kind: RestoreStagedEntries.Kind): Boolean {
+        val stores = attemptOrNull("staged entries") { stagedEntries.entries(kind) }.orEmpty()
+        val secrets = kind == RestoreStagedEntries.Kind.SECRETS
+        val results = secretOwners.mapNotNull { owner ->
+            stores[owner.storeName]?.let { entries ->
+                attempt("an owner's entries") { owner.restore(entries, secrets) }
+            }
+        }
+        return results.isNotEmpty() && results.all { it }
     }
 
     /**

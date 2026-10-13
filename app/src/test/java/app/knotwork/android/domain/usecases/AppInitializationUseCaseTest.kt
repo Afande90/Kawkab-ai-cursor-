@@ -75,7 +75,7 @@ class AppInitializationUseCaseTest {
         useCase().toList()
 
         // Then
-        assertFalse("nothing reads the restored data before the restore is complete", initializedFirst)
+        assertFalse("initialization does not run before the restore is complete", initializedFirst)
         coVerifyOrder {
             backupRestorer.finishPending()
             initializeAppUseCase()

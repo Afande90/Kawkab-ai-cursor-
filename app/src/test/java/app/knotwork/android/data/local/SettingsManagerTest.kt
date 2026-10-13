@@ -1188,8 +1188,11 @@ class SettingsManagerTest {
                 val generation = GenerationSettingsStore(ds, secretStore)
 
                 // When
-                val mcpWritten = tool.restore(carried + mapOf("hugging_face_token" to "hf_restored"))
-                val tokenWritten = generation.restore(carried + mapOf("hugging_face_token" to "hf_restored"))
+                val withToken = carried + mapOf("hugging_face_token" to "hf_restored")
+                assertEquals("provider settings never carry these", 0, tool.restore(withToken, secrets = false))
+                assertEquals(0, generation.restore(withToken, secrets = false))
+                val mcpWritten = tool.restore(withToken, secrets = true)
+                val tokenWritten = generation.restore(withToken, secrets = true)
 
                 // Then — the same instance and a fresh one both read the restored entries.
                 assertEquals(2, mcpWritten)

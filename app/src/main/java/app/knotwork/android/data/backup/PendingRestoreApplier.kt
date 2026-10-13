@@ -1,6 +1,5 @@
 package app.knotwork.android.data.backup
 
-import timber.log.Timber
 import java.io.File
 import java.io.IOException
 
@@ -10,8 +9,9 @@ import java.io.IOException
  *
  * Only renames: the staged files live on the same file system as the live ones. Each part is done when
  * its staged source is gone, so a start interrupted half-way finishes the rest the next time, and a
- * second run does nothing. The settings, the secret stores and the model registry are completed later,
- * once the app is up ([BackupRestorer.finishPending][app.knotwork.android.domain.backup.BackupRestorer]).
+ * second run does nothing. What it moves aside goes to [RestoreLayout.replaced]; that, the settings, the
+ * secret stores and the model registry are dealt with later, once the app is up
+ * ([BackupRestorer.finishPending][app.knotwork.android.domain.backup.BackupRestorer]).
  */
 internal object PendingRestoreApplier {
 
@@ -29,9 +29,7 @@ internal object PendingRestoreApplier {
         replaceDatabase(layout)
         replaceDirectory(layout.stagedWorkspace, layout.liveWorkspace, layout.replaced)
         replaceDirectory(layout.stagedAttachments, layout.liveAttachments, layout.replaced)
-        if (layout.replaced.exists() && !layout.replaced.deleteRecursively()) {
-            Timber.w("Files a restore replaced could not all be deleted; the next start tries again")
-        }
+        // What was moved aside is deleted later, off the main thread, once the app is up.
         return true
     }
 
