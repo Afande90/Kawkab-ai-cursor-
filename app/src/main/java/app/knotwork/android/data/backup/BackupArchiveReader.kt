@@ -6,6 +6,7 @@ import app.knotwork.android.domain.backup.BackupFormatException
 import app.knotwork.android.domain.backup.BackupKeys
 import app.knotwork.android.domain.backup.BackupReadFailure
 import java.io.Closeable
+import java.io.EOFException
 import java.io.FilterInputStream
 import java.io.InputStream
 import java.util.zip.ZipException
@@ -19,8 +20,9 @@ import java.util.zip.ZipInputStream
  * authenticated only when [nextEntry] has returned `null`: until then a later chunk may still turn out
  * damaged, so a caller writes entries to a staging place and replaces nothing before the end. The first
  * entry must be [BackupFormat.MANIFEST_ENTRY] — authenticated content that holds no entries, or starts
- * with another, is damaged; so is a name that breaks [BackupEntryName], a directory entry or a repeated
- * name.
+ * with another, is damaged; so is a name that breaks [BackupEntryName], a directory entry, a repeated
+ * name or one that is a file and a directory at once ([BackupEntryNameSet]), and any content that is not
+ * a well-formed ZIP stream.
  *
  * @param source The archive, positioned at its first chunk (just after the header). Closed by [close].
  * @param parsed The header read from [source].
@@ -33,55 +35,72 @@ internal class BackupArchiveReader(source: InputStream, parsed: ParsedBackupHead
 
     private val decrypting = BackupDecryptingInputStream(source, parsed, keys)
     private val zip = ZipInputStream(decrypting)
-    private val names = HashSet<String>()
+    private val names = BackupEntryNameSet()
+    private var generation = 0
 
     /**
      * Moves to the next entry.
      *
-     * @return The entry, whose [BackupArchiveEntry.content] is valid until the next call; or `null`
-     *   after the last one, once the rest of the file has been authenticated and its end checked.
+     * @return The entry, whose [BackupArchiveEntry.content] is valid until the next call — reading it
+     *   afterwards throws [IllegalStateException]; or `null` after the last one, once the rest of the
+     *   file has been authenticated and its end checked.
      */
     fun nextEntry(): BackupArchiveEntry? {
-        val entry = try {
-            zip.nextEntry
-        } catch (e: ZipException) {
-            damaged("not a valid entry list: ${e.javaClass.simpleName}")
-        }
+        generation++
+        val entry = zipCall { zip.nextEntry }
         if (entry == null) {
-            if (names.isEmpty()) damaged("no manifest entry")
+            if (names.isEmpty) damaged("no manifest entry")
             decrypting.readToEnd()
             return null
         }
         accept(entry.name, entry.isDirectory)
+        val issued = generation
         val content = object : FilterInputStream(zip) {
-            override fun read(): Int = entryRead { super.read() }
+            override fun read(): Int = current { zipCall { super.read() } }
 
-            override fun read(b: ByteArray, off: Int, len: Int): Int = entryRead { super.read(b, off, len) }
+            override fun read(b: ByteArray, off: Int, len: Int): Int = current { zipCall { super.read(b, off, len) } }
+
+            override fun skip(n: Long): Long = current { zipCall { super.skip(n) } }
+
+            override fun available(): Int = current { zipCall { super.available() } }
 
             override fun close() {
                 // The archive stays open for the next entry.
+            }
+
+            private inline fun <T> current(block: () -> T): T {
+                check(issued == generation) { "entry content read after the next entry was opened" }
+                return block()
             }
         }
         return BackupArchiveEntry(entry.name, content)
     }
 
-    private fun accept(name: String, isDirectory: Boolean) {
-        if (names.isEmpty() && name != BackupFormat.MANIFEST_ENTRY) damaged("the first entry is not the manifest")
-        if (isDirectory || !BackupEntryName.isValid(name)) damaged("entry name breaks the rule")
-        if (!names.add(name)) damaged("entry name repeats")
-    }
-
-    private inline fun entryRead(read: () -> Int): Int = try {
-        read()
-    } catch (e: ZipException) {
-        damaged("entry content is not valid: ${e.javaClass.simpleName}")
-    }
-
-    private fun damaged(reason: String): Nothing = throw BackupFormatException(BackupReadFailure.DAMAGED, reason)
-
     override fun close() {
         zip.close()
     }
+
+    private fun accept(name: String, isDirectory: Boolean) {
+        if (names.isEmpty && name != BackupFormat.MANIFEST_ENTRY) damaged("the first entry is not the manifest")
+        if (isDirectory || !BackupEntryName.isValid(name)) damaged("entry name breaks the rule")
+        if (!names.add(name)) damaged("entry name repeats, or is a file and a directory at once")
+    }
+
+    /**
+     * Runs a call into the ZIP reader, turning what it throws about malformed content into
+     * [BackupReadFailure.DAMAGED]. A [BackupFormatException] from the chunks below passes unchanged.
+     */
+    private inline fun <T> zipCall(call: () -> T): T = try {
+        call()
+    } catch (e: ZipException) {
+        damaged("content is not a valid entry list: ${e.javaClass.simpleName}")
+    } catch (e: EOFException) {
+        damaged("content ends inside an entry: ${e.javaClass.simpleName}")
+    } catch (e: IllegalArgumentException) {
+        damaged("an entry name is not UTF-8: ${e.javaClass.simpleName}")
+    }
+
+    private fun damaged(reason: String): Nothing = throw BackupFormatException(BackupReadFailure.DAMAGED, reason)
 }
 
 /**

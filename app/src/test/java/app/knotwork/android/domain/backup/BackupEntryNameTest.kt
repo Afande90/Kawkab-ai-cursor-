@@ -21,6 +21,7 @@ class BackupEntryNameTest {
             "a".repeat(BackupEntryName.MAX_LENGTH),
             "files/.hidden",
             "files/..notes",
+            "files/\uD83D\uDC68\u200d\uD83D\uDC69\u200d\uD83D\uDC67.md",
         )
 
         // Then
@@ -42,6 +43,9 @@ class BackupEntryNameTest {
             "files/no\u0000te",
             "files/no\nte",
             "files/no\u007fte",
+            "files/no\u0085te",
+            "files/gpj.\u202eexe",
+            "files/\u2066note\u2069",
             "a".repeat(BackupEntryName.MAX_LENGTH + 1),
             ".",
             "..",

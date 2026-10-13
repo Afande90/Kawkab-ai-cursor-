@@ -7,6 +7,7 @@ import app.knotwork.android.data.backup.BackupTestArchives.encrypt
 import app.knotwork.android.data.backup.BackupTestArchives.frames
 import app.knotwork.android.data.backup.BackupTestArchives.header
 import app.knotwork.android.data.backup.BackupTestArchives.keys
+import app.knotwork.android.data.local.crypto.AesGcmCodec
 import app.knotwork.android.domain.backup.BackupFormatException
 import app.knotwork.android.domain.backup.BackupKeys
 import app.knotwork.android.domain.backup.BackupReadFailure
@@ -15,6 +16,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Test
 import java.io.ByteArrayInputStream
+import java.nio.ByteBuffer
 
 /**
  * [BackupDecryptingInputStream] against [BackupEncryptingOutputStream]: content of every size around the
@@ -204,6 +206,72 @@ class BackupDecryptingInputStreamTest {
 
         // Then
         assertEquals(BackupReadFailure.TRUNCATED, failure.failure)
+    }
+
+    @Test
+    fun `given a failure when the stream is read again then it fails the same way and hands out nothing`() {
+        // Given — a byte after the last chunk, then a copy of the last chunk.
+        val archive = encrypt(content(10))
+        val last = frames(archive).last()
+        val extended = archive + byteArrayOf(0) + archive.copyOfRange(last.first, last.last + 1)
+        val input = ByteArrayInputStream(extended)
+        val stream = BackupDecryptingInputStream(input, BackupHeaderCodec.read(input), keys())
+
+        // When
+        val first = assertThrows(BackupFormatException::class.java) { stream.read() }
+        val second = assertThrows(BackupFormatException::class.java) { stream.read() }
+
+        // Then
+        assertEquals(BackupReadFailure.DAMAGED, first.failure)
+        assertEquals(BackupReadFailure.DAMAGED, second.failure)
+    }
+
+    @Test
+    fun `given a short chunk that is not flagged last when read then the archive is damaged`() {
+        // Given — two frames sealed by hand under the right keys: ten bytes not flagged last, then the last.
+        val keys = keys()
+        val headerBytes = BackupHeaderCodec.encode(header(), keys.headerKey)
+        val digest = BackupHeaderCodec.digest(headerBytes.copyOf(headerBytes.size - BackupHeaderCodec.MAC_LENGTH))
+        val archive = headerBytes + frame(digest, index = 0, flags = 0, plain = content(10)) +
+            frame(digest, index = 1, flags = BackupChunkFrame.FLAG_FINAL, plain = content(10))
+
+        // Then
+        assertFailure(BackupReadFailure.DAMAGED, archive)
+    }
+
+    @Test
+    fun `given the rest of the file zero-filled where the last chunk should be when read then it is truncated`() {
+        // Given — a copy that reserved the file's length but stopped writing.
+        val archive = encrypt(content(2 * SMALL_CHUNK + 1))
+        val zeroed = archive.copyOf().also { it.fill(0, frames(archive).last().first, it.size) }
+
+        // Then
+        assertFailure(BackupReadFailure.TRUNCATED, zeroed)
+    }
+
+    @Test
+    fun `given bounds outside the buffer when read then it refuses before consuming anything`() {
+        // Given
+        val content = content(10)
+        val input = ByteArrayInputStream(encrypt(content))
+        val stream = BackupDecryptingInputStream(input, BackupHeaderCodec.read(input), keys())
+
+        // When
+        assertThrows(IndexOutOfBoundsException::class.java) { stream.read(ByteArray(4), 2, 3) }
+
+        // Then — no chunk was decrypted for the refused call.
+        assertEquals(0, stream.available())
+        assertEquals(content[0].toInt() and 0xFF, stream.read())
+    }
+
+    private fun frame(digest: ByteArray, index: Long, flags: Int, plain: ByteArray): ByteArray {
+        val sealed = AesGcmCodec.encrypt(
+            BackupChunkFrame.aesKey(keys().contentKey),
+            BackupChunkFrame.associatedData(digest, index, flags),
+            plain,
+        )
+        return ByteBuffer.allocate(1 + Int.SIZE_BYTES + sealed.size).put(flags.toByte()).putInt(sealed.size).put(sealed)
+            .array()
     }
 
     private fun assertFailure(expected: BackupReadFailure, archive: ByteArray, keys: BackupKeys = keys()) {

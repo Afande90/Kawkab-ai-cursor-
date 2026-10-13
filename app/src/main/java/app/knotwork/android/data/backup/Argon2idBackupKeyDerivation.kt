@@ -19,7 +19,7 @@ import javax.inject.Singleton
  * The password is normalised to Unicode NFC and encoded as UTF-8; one derivation of
  * `2 · KEY_LENGTH` bytes is split into the content key (first half) and the header key (second half).
  * Before allocating, the derivation checks that the heap can spare the memory the parameters ask
- * for, with headroom, and refuses with [BackupReadFailure.TOO_DEMANDING] instead of running out of
+ * for and a quarter more, and refuses with [BackupReadFailure.TOO_DEMANDING] instead of running out of
  * memory on a header written for a larger device.
  *
  * @param availableHeapBytes Reports how many bytes the heap can still grow by; injectable for tests.
@@ -36,7 +36,8 @@ class Argon2idBackupKeyDerivation internal constructor(private val availableHeap
     })
 
     override fun deriveKeys(password: CharArray, salt: ByteArray, params: BackupKdfParams): BackupKeys {
-        val needed = params.memoryKiB.toLong() * BYTES_PER_KIB * HEAP_HEADROOM_FACTOR
+        val blocks = params.memoryKiB.toLong() * BYTES_PER_KIB
+        val needed = blocks + blocks / HEAP_HEADROOM_DIVISOR
         if (needed > availableHeapBytes()) {
             throw BackupFormatException(
                 BackupReadFailure.TOO_DEMANDING,
@@ -61,8 +62,11 @@ class Argon2idBackupKeyDerivation internal constructor(private val availableHeap
     private companion object {
         const val BYTES_PER_KIB = 1024L
 
-        /** Twice the block memory: the generator's working arrays sit beside the heap the app uses. */
-        const val HEAP_HEADROOM_FACTOR = 2L
+        /**
+         * A quarter on top of the block memory, an estimate: the generator holds one 1 KiB `long[]` per
+         * block, each with its object headers, and the app's own objects share the heap.
+         */
+        const val HEAP_HEADROOM_DIVISOR = 4L
     }
 }
 

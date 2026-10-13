@@ -42,13 +42,15 @@ All integers are big-endian.
 | Magic | 8 | ASCII `KNOTWORK` |
 | Format version | 2 | `1` |
 | Writer version name length | 2 | at most 256 |
-| Writer version name | n | UTF-8, e.g. `0.12.0` |
+| Writer version name | n | a version, e.g. `0.12.0`: 1 to 32 ASCII letters, digits, `.`, `+` or `-` |
 | Body length | 4 | 1 to 4096 |
 | Body | n | below |
 | MAC | 32 | HMAC-SHA256 under the header key, over every byte above |
 
 The fields up to the body length are the same in every format version, so a
-reader of an older format can still say which build wrote a newer file.
+reader of an older format can still say which build wrote a newer file. That name
+is read before anything is authenticated, so a reader shows it only when it looks
+like a version; a format-1 header whose name does not is damaged.
 
 Body of format 1:
 
@@ -105,8 +107,11 @@ reports:
 | Newer format | the format version is above the one the reader knows |
 | Too demanding | the key costs are out of bounds, or the device cannot spare the memory |
 | Wrong password | the header's MAC does not match |
-| Damaged | a chunk does not authenticate, has an impossible length or flags, a non-last chunk is short, bytes follow the last chunk, or the content is not a valid entry list |
-| Incomplete | the file ends before the chunk flagged as last |
+| Damaged | a header field is out of range (format version 0, an unknown KDF, a salt that is not 16 bytes, a chunk size, body length, name or flavour out of its bounds, a negative content size, a body that ends early); a chunk does not authenticate, has an impossible length or flags, or is short without being the last; bytes follow the last chunk; or the content is not a valid entry list |
+| Incomplete | the file ends inside the header or before the chunk flagged as last, or continues with zeros where a chunk should start — as a copy that stopped does |
+
+The first failure is final: a reader that is asked again reports it again and
+hands out nothing that follows.
 
 ## Content
 
@@ -115,17 +120,21 @@ compressing would not help (the database, images).
 
 - The first entry is `manifest.json`. Content without it is damaged.
 - Every entry is a file, named once. A name is a relative path of `/`-separated
-  segments of at most 1024 characters, with no leading `/`, no `\`, no empty,
-  `.` or `..` segment and no control character. Anything else is damaged.
+  segments, at most 1024 UTF-16 code units, with no leading `/`, no `\`, no
+  empty, `.` or `..` segment, no control character (C0, C1 or DEL) and no
+  bidirectional formatting character. A name may not also be the directory of
+  another (`files/a` and `files/a/b`). Anything else is damaged, and so is
+  content that is not a well-formed ZIP stream.
 - A reader unpacks into a staging place and replaces nothing until the last
   chunk has authenticated: before that, a later chunk can still turn out damaged.
 
 ## What the format does not hide
 
-The header is readable without the password: the version of the build that wrote
-the file, its flavour, the database schema version, when the file was written,
-the estimated content size and the key costs. Everything else — every entry name
-and every byte of content — is encrypted.
+The header is readable without the password: the version name and code of the
+build that wrote the file, its flavour, the database schema version, when the file
+was written, the estimated content size, the chunk size and the key costs. The
+file's length gives away the size of the compressed content. Everything else —
+every entry name and every byte of content — is encrypted.
 
 The password is the only defence of a file that leaves the phone. It is never
 stored, and there is no recovery: a file whose password is lost cannot be opened,

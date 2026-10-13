@@ -93,17 +93,21 @@ class Argon2idBackupKeyDerivationTest {
 
     @Test
     fun `given parameters the heap cannot spare when derived then it refuses as too demanding`() {
-        // Given — twice the block memory is needed; one byte less is available.
+        // Given — the block memory and a quarter more is needed.
         val params = BackupKdfParams(memoryKiB = 1024, iterations = 1, parallelism = 1)
-        val tight = Argon2idBackupKeyDerivation { 2L * 1024 * 1024 - 1 }
+        val needed = 1024L * 1024 * 5 / 4
+        val tight = Argon2idBackupKeyDerivation { needed - 1 }
+        val enough = Argon2idBackupKeyDerivation { needed }
 
         // When
         val failure = assertThrows(BackupFormatException::class.java) {
             tight.deriveKeys("correct horse battery staple".toCharArray(), salt, params)
         }
+        val keys = enough.deriveKeys("correct horse battery staple".toCharArray(), salt, params)
 
         // Then
         assertEquals(BackupReadFailure.TOO_DEMANDING, failure.failure)
+        assertEquals(BackupFormat.KEY_LENGTH, keys.contentKey.size)
     }
 
     @Test
