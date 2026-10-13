@@ -281,6 +281,7 @@ at all? [docs/faq.md](docs/faq.md) answers both, briefly.
 | Network          | OkHttp + Ktor (via Koog)                                |
 | Image loading    | Coil 3 (attachment thumbnails / viewer)                 |
 | Local storage    | Room + DataStore                                        |
+| Backup archive   | Argon2id (Bouncy Castle, MIT) + AES-256-GCM; [format](docs/backup-format.md) |
 | Crash reporting  | Firebase Crashlytics (`full` flavour) / none (`foss`)   |
 | Distribution     | `full` (Play / direct APK) + `foss` (F-Droid, no Google)|
 | Testing          | JUnit + MockK; instrumented suite on an emulator matrix in CI |

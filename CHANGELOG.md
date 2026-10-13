@@ -102,6 +102,11 @@ details.
 
 ### Changed
 
+- **Bouncy Castle is bundled, and the licence list names it.** The backup
+  archive's key is derived from its password with Argon2id, which the platform
+  does not provide; the app now carries Bouncy Castle's implementation (MIT,
+  about 10–35 KB once shrunk). `THIRD_PARTY_LICENSES.txt` quotes its notice. The
+  archive format is described in [docs/backup-format.md](docs/backup-format.md).
 - **Current cloud models to choose from.** The model lists of OpenAI, Anthropic,
   Google and DeepSeek now follow the client library the app is built on: GPT-5.4
   Mini, GPT-5.5 and GPT-5.6 Sol, Terra and Luna; Claude Sonnet 4.6, Sonnet 5,

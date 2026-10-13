@@ -64,6 +64,14 @@ Only Kotlin files appear inside the generated blocks.
 - `data/` - Tests for the data layer.
   - `audio/` - Tests for voice-input capture and the WAV header builder.
     - `WavHeaderTest.kt` - Unit tests for `WavHeader`, the pure 44-byte canonical PCM WAV header builder.
+  - `backup/` - Backup archive format: key derivation, header, chunk streams, container, tamper matrix and the format-1 fixture.
+    - `Argon2idBackupKeyDerivationTest.kt` - `Argon2idBackupKeyDerivation` and the raw `argon2id` it runs on: the RFC 9106 test vector, the split into two keys, Unicode normalisation of the password, and the refusal of parameters the heap cannot spare.
+    - `BackupArchiveReaderTest.kt` - `BackupArchiveWriter` and `BackupArchiveReader` together: named entries survive, compressed or stored; the writer refuses a name the reader would refuse; the reader refuses a crafted entry list; and an archive is authenticated to its end before the reader reports the last entry.
+    - `BackupDecryptingInputStreamTest.kt` - `BackupDecryptingInputStream` against `BackupEncryptingOutputStream`: content of every size around the chunk boundary survives the round trip, and every way of altering the file — a changed byte, chunks swapped, a chunk from another archive, a relabelled last chunk, a cut at any point, bytes appended, another key — is reported with its own reason and hands out no content it did not authenticate.
+    - `BackupEncryptingOutputStreamTest.kt` - `BackupEncryptingOutputStream`: the archive opens with the header it was given, every chunk but the last holds exactly one chunk of content, only `BackupEncryptingOutputStream.finish` flags a chunk as last, and nothing can be written after it.
+    - `BackupFormatV1FixtureTest.kt` - Reads the committed format-1 archive `src/test/resources/backup/format-1.knotwork` — the regression anchor of the public format (`docs/backup-format.md`).
+    - `BackupHeaderCodecTest.kt` - `BackupHeaderCodec`: the header survives a round trip, its MAC tells a wrong key, and every field a reader cannot trust before the password is bounded — each failure with its own reason.
+    - `BackupTestArchives.kt` - Builders shared by the archive tests: fixed keys and headers, an archive of given content, and the byte ranges of its chunk frames — so a test can cut, swap or alter one frame exactly.
   - `engine/` - Tests for the inference engines, client factories and the task queue.
     - `CloudModelListGuardTest.kt` - The cloud model lists against Koog's own catalogue: every model the app offers is one of Koog's chat constants, and every chat constant Koog declares for the four providers it lists is either offered or left out here with a reason.
     - `KoogClientFactoryTest.kt` - Tests for KoogClientFactory.
@@ -234,6 +242,9 @@ Only Kotlin files appear inside the generated blocks.
       - `LocalAppFunctionManagerTest.kt` - Unit tests for `LocalAppFunctionManager`.
       - `SearchToolTest.kt` - Unit tests for `SearchTool`.
 - `domain/` - Tests for the domain layer.
+  - `backup/` - Backup format contract: key-derivation bounds and the entry-name rule.
+    - `BackupEntryNameTest.kt` - `BackupEntryName`: relative file paths in any script pass; every name that could leave the directory it is unpacked into, or hide a character, is refused.
+    - `BackupKdfParamsTest.kt` - `BackupKdfParams.isAcceptable`: the writer's parameters and every bound are accepted, one step past any bound is refused.
   - `connection/` - Tests of the connection-check rules: the address rule and the preconditions a Test button is disabled by.
     - `ConnectionPreconditionsTest.kt` - Unit tests for `ConnectionPreconditions` — why a Test button is disabled, and the first thing a check asks.
     - `EndpointRuleTest.kt` - Unit tests for `EndpointRule` — the one decision the address gate, the per-hop check and the settings form read.
