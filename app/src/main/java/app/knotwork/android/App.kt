@@ -3,11 +3,14 @@ package app.knotwork.android
 import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import app.knotwork.android.data.backup.PendingRestoreApplier
+import app.knotwork.android.data.backup.RestoreLayout
 import app.knotwork.android.data.logging.CrashlyticsTimberTree
 import app.knotwork.android.domain.repositories.CrashReportingRepository
 import app.knotwork.android.domain.repositories.PrivacySettings
 import app.knotwork.android.domain.services.ScheduledTaskNotifier
 import app.knotwork.android.presentation.theme.KnotworkFontsBootstrap
+import com.jakewharton.processphoenix.ProcessPhoenix
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -16,6 +19,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import timber.log.Timber
+import java.io.IOException
 import javax.inject.Inject
 
 /**
@@ -65,7 +69,13 @@ class App :
             .build()
 
     override fun onCreate() {
+        // A restore the user confirmed replaces the database and the files before anything can open them:
+        // the dependencies are built in super.onCreate().
+        val restoreFailure = applyCommittedRestore()
         super.onCreate()
+        // A restart passes through a short-lived process that runs this class too; it must not read the
+        // settings or the database while the old process is still alive.
+        if (ProcessPhoenix.isPhoenixProcess(this)) return
         // Install the bundled Inter / JetBrains Mono families into the
         // design-system typography sheet before the first Compose composition
         // so screens render against the brand fonts on the very first frame.
@@ -81,6 +91,28 @@ class App :
             // process lifetime — skip it entirely (a release build plants no
             // tree until the user opts in anyway).
             observeCrashReportingOptIn()
+        }
+        restoreFailure?.let {
+            Timber.e(it, "A confirmed restore's files could not all be moved; the next start retries")
+        }
+    }
+
+    private fun isMainProcess(): Boolean = Application.getProcessName() == packageName
+
+    /**
+     * Puts a committed restore's database and files in place, in the app's main process only — a
+     * restart passes through a short-lived process of its own, which runs this class too.
+     *
+     * @return What stopped it, to be logged once logging is set up; `null` when it finished or there was
+     *   nothing to apply.
+     */
+    private fun applyCommittedRestore(): IOException? {
+        if (!isMainProcess()) return null
+        return try {
+            PendingRestoreApplier.applyIfCommitted(RestoreLayout.of(this))
+            null
+        } catch (e: IOException) {
+            e
         }
     }
 

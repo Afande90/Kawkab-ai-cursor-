@@ -5,13 +5,17 @@ import app.knotwork.android.data.backup.BackedUpSecrets
 import app.knotwork.android.data.backup.BackupContentCollector
 import app.knotwork.android.data.backup.BackupContentSource
 import app.knotwork.android.data.backup.BackupExporterImpl
+import app.knotwork.android.data.backup.BackupRestorerImpl
 import app.knotwork.android.data.backup.DatabaseSnapshotter
 import app.knotwork.android.data.backup.SqlCipherDatabaseSnapshotter
+import app.knotwork.android.data.backup.SqlCipherStagedDatabasePreparer
+import app.knotwork.android.data.backup.StagedDatabasePreparer
 import app.knotwork.android.data.local.ApiKeyManager
 import app.knotwork.android.data.local.settings.GenerationSettingsStore
 import app.knotwork.android.data.local.settings.ToolSettingsStore
 import app.knotwork.android.domain.backup.BackupExporter
 import app.knotwork.android.domain.backup.BackupKeyDerivation
+import app.knotwork.android.domain.backup.BackupRestorer
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -19,8 +23,9 @@ import dagger.hilt.components.SingletonComponent
 import dagger.multibindings.IntoSet
 
 /**
- * Wires the encrypted backup: the exporter, the key derivation, the database snapshot, the content it
- * gathers, and every owner of encrypted-store entries ([BackedUpSecrets]). The bound classes are
+ * Wires the encrypted backup: the exporter and the restorer, the key derivation, the database snapshot
+ * and the staged database's preparation, the content it gathers, and every owner of encrypted-store
+ * entries ([BackedUpSecrets]). The bound classes are
  * class-level singletons, so each binding here shares their one instance.
  */
 @Module
@@ -38,6 +43,14 @@ internal abstract class BackupModule {
     /** The SQLCipher snapshot. */
     @Binds
     abstract fun bindDatabaseSnapshotter(impl: SqlCipherDatabaseSnapshotter): DatabaseSnapshotter
+
+    /** The restore. */
+    @Binds
+    abstract fun bindBackupRestorer(impl: BackupRestorerImpl): BackupRestorer
+
+    /** The staged database's check, re-key and migration on SQLCipher and Room. */
+    @Binds
+    abstract fun bindStagedDatabasePreparer(impl: SqlCipherStagedDatabasePreparer): StagedDatabasePreparer
 
     /** What the export gathers. */
     @Binds

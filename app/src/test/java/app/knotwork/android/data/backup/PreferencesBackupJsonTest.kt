@@ -9,9 +9,12 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.mutablePreferencesOf
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
+import app.knotwork.android.domain.backup.BackupFormatException
+import app.knotwork.android.domain.backup.BackupReadFailure
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 /**
@@ -86,4 +89,53 @@ class PreferencesBackupJsonTest {
         assertFalse("a legacy secret never reaches the archive: $json", json.contains("hf_plain_legacy"))
         assertEquals(PreferencesBackupJson.VERSION, JSONObject(json).getInt("preferencesVersion"))
     }
+
+    @Test
+    fun `given an encoded entry when decoded then every travelling setting comes back with its own type`() {
+        // Given — each with the type the app declares it with.
+        val preferences = mutablePreferencesOf(
+            booleanPreferencesKey("auto_extract_enabled") to true,
+            intPreferencesKey("top_k") to 40,
+            longPreferencesKey("tool_call_timeout_ms") to 30_000L,
+            floatPreferencesKey("temperature") to 0.7f,
+            stringPreferencesKey("system_prompt_prefix") to "Be brief.",
+            stringSetPreferencesKey("approved_cleartext_origins") to setOf("http://b", "http://a"),
+        )
+
+        // When
+        val decoded = PreferencesBackupJson.decode(PreferencesBackupJson.encode(preferences))
+
+        // Then
+        assertEquals(preferences.asMap(), decoded)
+    }
+
+    @Test
+    fun `given values that do not fit their setting when decoded then each is left out and the rest come back`() {
+        // Given — written by hand: a type the setting is not declared with, a fraction for a whole number, a
+        // number too large for an int, a setting that stays with the phone, and a name no setting has.
+        val values = JSONObject()
+            .put("temperature", typed("double", 0.4))
+            .put("top_k", typed("int", 2.5))
+            .put("max_context_length", typed("int", Long.MAX_VALUE))
+            .put("crash_reporting_enabled", typed("boolean", true))
+            .put("left_by_an_old_release", typed("string", "x"))
+            .put("system_prompt_prefix", typed("string", "kept"))
+        val json = JSONObject().put("preferencesVersion", 1).put("values", values).toString()
+
+        // When
+        val decoded = PreferencesBackupJson.decode(json)
+
+        // Then
+        assertEquals(mapOf(Pair(stringPreferencesKey("system_prompt_prefix"), "kept")), decoded)
+    }
+
+    @Test
+    fun `given text that is not a settings entry this build reads when decoded then the archive is damaged`() {
+        listOf("{not json", """{"preferencesVersion":2,"values":{}}""", """{"preferencesVersion":1}""").forEach {
+            val failure = assertThrows(BackupFormatException::class.java) { PreferencesBackupJson.decode(it) }
+            assertEquals(it, BackupReadFailure.DAMAGED, failure.failure)
+        }
+    }
+
+    private fun typed(type: String, value: Any): JSONObject = JSONObject().put("type", type).put("value", value)
 }

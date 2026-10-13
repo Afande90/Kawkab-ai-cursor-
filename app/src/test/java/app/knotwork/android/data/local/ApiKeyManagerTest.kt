@@ -221,4 +221,49 @@ class ApiKeyManagerTest {
         assertEquals(emptyMap<String, String>(), manager().alwaysEntries())
         assertEquals(emptyMap<String, String>(), manager().secretEntries())
     }
+
+    @Test
+    fun `given entries a backup carried when restored then each is written and readers see it`() = runTest {
+        // Given — this phone already has a key for another provider, and an observer of the restored one.
+        val subject = manager()
+        subject.setApiKey(CloudProvider.ANTHROPIC, "sk-ant-kept")
+        val observed = subject.getApiKey(CloudProvider.OPENAI)
+
+        // When
+        val written = subject.restore(
+            mapOf(
+                OPENAI_KEY to "sk-restored",
+                "openai_model" to "gpt-5.4",
+                "ollama_context" to "8192",
+                "not_an_entry_of_this_store" to "x",
+            ),
+            secrets = true,
+        )
+
+        // Then
+        assertEquals(3, written)
+        assertEquals("sk-restored", observed.first())
+        assertEquals("gpt-5.4", manager().getModel(CloudProvider.OPENAI).first())
+        assertEquals(8192, manager().getOllamaContextWindowSize().first())
+        assertEquals("sk-ant-kept", manager().getApiKey(CloudProvider.ANTHROPIC).first())
+        assertFalse(prefs.values.containsKey("not_an_entry_of_this_store"))
+    }
+
+    @Test
+    fun `given provider settings that carry a key when restored without secrets then the key is not taken`() = runTest {
+        // Given — the user declined the secrets; this phone keeps its own key.
+        val subject = manager()
+        subject.setApiKey(CloudProvider.OPENAI, "sk-phone")
+
+        // When
+        val written = subject.restore(
+            mapOf(OPENAI_KEY to "sk-archive", "openai_model" to "gpt-5.4"),
+            secrets = false,
+        )
+
+        // Then
+        assertEquals(1, written)
+        assertEquals("sk-phone", manager().getApiKey(CloudProvider.OPENAI).first())
+        assertEquals("gpt-5.4", manager().getModel(CloudProvider.OPENAI).first())
+    }
 }

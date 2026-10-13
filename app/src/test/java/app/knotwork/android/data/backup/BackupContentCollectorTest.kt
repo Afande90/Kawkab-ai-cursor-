@@ -230,5 +230,7 @@ class BackupContentCollectorTest {
         override suspend fun alwaysEntries() = always
 
         override suspend fun secretEntries() = secret
+
+        override suspend fun restore(entries: Map<String, String>, secrets: Boolean): Int = 0
     }
 }

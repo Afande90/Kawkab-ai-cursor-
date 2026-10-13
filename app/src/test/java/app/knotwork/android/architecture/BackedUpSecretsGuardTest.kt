@@ -59,6 +59,7 @@ class BackedUpSecretsGuardTest {
             "EncryptedDbPassphraseProvider.kt" to "the database key never leaves the phone; a restore rekeys the copy",
             "AppModule.kt" to "provides the settings-secrets store; its entries belong to the stores that use it",
             "KeystoreBackedPrefsStore.kt" to "the store itself",
+            "RestoreStagedEntries.kt" to "a staged restore's own copy of an archive's entries, destroyed once applied",
         )
     }
 }

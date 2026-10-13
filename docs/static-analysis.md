@@ -476,7 +476,7 @@ flag them with spurious, environment-dependent violations.
 | `PathContainmentGuardTest`         | No production file outside `PathContainment` prefix-tests a path string: `absolutePath.startsWith(root)` passes `root/../elsewhere`, so containment is always canonicalise-then-compare. |
 | `RawExecSqlGuardTest`              | No production file runs a statement through SQLCipher's `rawExecSQL`. sqlcipher-android steps it and drops the result code, so a statement that fails when stepped — a full disk, a lock — returns as if it had run. The backup's database snapshot once ran its `ATTACH` and export that way: on a device both failed, and only the next statement's compile error reached the caller — a failure later in the export would have left a partial copy reported as whole. The device test `SqlCipherDatabaseSnapshotterTest` pins the library's behaviour. |
 | `PersistentStorageInventoryGuardTest` | Every storage root the production code reaches is inventoried with three decisions — kept out of Android backup and device transfer, erased or kept by the recovery wipe, and written into the app's own encrypted backup or left out with a reason. Backup is off, both extraction sections exclude every domain, the plain-text directories are also excluded by the names production code uses, the wipe calls the owner of every root recorded as erased, every archive entry the format names is claimed by a root, and the backup code names every entry a root claims (that it is written is the exporter's end-to-end test). |
-| `PreferenceStorageSnapshotTest`   | Every preference key keeps its name and value type, and the settings keep their file names: a renamed or retyped key, or a renamed file, loses the user's value on the next read without failing anything. The key census reads the production sources, so a key moving to another file does not matter; every key must be declared with a literal name, and there is one DataStore file. A new key is added to the snapshot in the same change. |
+| `PreferenceStorageSnapshotTest`   | Every preference key keeps its name and value type, and the settings keep their file names: a renamed or retyped key, or a renamed file, loses the user's value on the next read without failing anything. The key census reads the production sources, so a key moving to another file does not matter; every key must be declared with a literal name — the one file that builds keys from names is the restore's, and only for the travelling keys `PreferenceBackupPolicy` lists, which its own test holds against the census — and there is one DataStore file. A new key is added to the snapshot in the same change. |
 | `SettingsCompositeConsumersTest`  | No production file depends on the whole `SettingsRepository` composite unless it is on the list of existing consumers, and a listed file that no longer does fails too — so the list only shrinks. Code depends on the settings section it reads (`MemorySettings`, `ToolSettings`, …); a KDoc mention does not count. |
 | `SettingsSingletonScopeTest`      | Every class that implements a settings section is a class-level `@Singleton`. Each section has its own binding, and a scope on a `@Binds` method caches per binding: with the class unscoped, the generated component built one instance per binding, each with its own in-memory credential cache. The sections are read from `SettingsRepository`'s supertype list. |
 | `TimeLimitedForegroundServiceGuardTest` | The only foreground-service type with an Android time limit that either flavour ships is `dataSync` (read from the merged-manifest expectations, so a library's `dataSync` or `mediaProcessing` counts too; a library's `shortService` has no permission to show), and every file that starts one books against `DownloadForegroundBudget`. A foreground service still running when its time limit runs out takes the app down. |
@@ -1029,11 +1029,15 @@ anyone deciding. Three guards make the decision a build error:
 - `PreferenceBackupPolicyTest` holds `PreferenceBackupPolicy` against the key
   census: every DataStore key the code declares travels, stays with the phone or
   is reset by a restore, each one decided once, and a key that does not travel
-  carries its reason.
+  carries its reason. A travelling key also carries the type the code declares it
+  with: a restore writes a value only of that type, since a setting read back as
+  another type fails every read of it.
 - `BackedUpSecretsGuardTest` finds every file that builds a Keystore-backed store
   or takes one as a dependency. Each must implement `BackedUpSecrets` and be bound
   into the backup's set in `BackupModule`, or be named with its reason — the
-  database passphrase never leaves the phone. It holds owners, not entries: which
+  database passphrase never leaves the phone, and a staged restore's own store is
+  destroyed once the restore is applied. An owner also writes its entries back on
+  a restore, only under the names it writes. It holds owners, not entries: which
   of its entries an owner reports is the owner's test. Each owner also settles
   secrets an older release kept inside a setting, and scrubs them from what a
   backup writes — MCP sign-ins once lived inside the plain server list.

@@ -3,8 +3,8 @@
 A Knotwork backup is one file, locked with a password the user chooses. This page
 describes the file byte by byte, so that it can be read without the app.
 
-> **Status: format 1 is defined and tested, and so is the export that writes it.**
-> Restore is being built on it, and neither is in the app's screens yet. From the first release that writes archives, every format version stays
+> **Status: format 1 is defined and tested, and so are the export that writes it and the restore that reads it.**
+> Neither is in the app's screens yet. From the first release that writes archives, every format version stays
 > readable: a reader that meets a newer version refuses the file instead of
 > guessing.
 
@@ -193,6 +193,33 @@ the name of the encrypted store they come from.
 { "entriesVersion": 1,
   "stores": { "secure_api_keys_v2": { "openai_model": "gpt-5.4", "ollama_base_url": "http://192.168.1.5:11434" } } }
 ```
+
+## Restoring
+
+What the app does with an archive, in the order it does it. Each step can refuse;
+until the user confirms, nothing of the app's own changes.
+
+1. **Check.** The header, its authentication code with the password, the schema
+   (a database from a later version of the app is refused — the app would recreate
+   it empty rather than downgrade it), free space for the announced content, then
+   every entry, unpacked into a staging area as it authenticates. An entry name
+   this version does not know is skipped. The database is checked page by page
+   and as a database, re-keyed from the archive's key to this phone's, and opened
+   once with every migration, so an older database is brought up to date here.
+   The provider settings and secrets go to a Keystore-backed store of their own,
+   never to a file.
+2. **Confirm.** The user types a word. From then on the restore always completes:
+   this phone's queued background runs and trigger watches are stopped, and the
+   app restarts.
+3. **Apply.** At the start, before anything opens it, the database and the two
+   directories are moved into place. Then the settings: a travelling setting is
+   replaced by the archive's — only when it has the type this version declares
+   the setting with, so a value its readers cannot read is never written — a
+   setting that stays with the phone is kept, and the switch for other apps is
+   cleared. Then the provider settings, and the secrets if the user chose them,
+   each written by the part of the app that owns it and only under the names it
+   writes. Then each model the restored list names is pointed at the file of the
+   same name on this phone; the rest are listed for download.
 
 ## What the format does not hide
 

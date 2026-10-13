@@ -19,6 +19,9 @@ class FakeAeadCipher : AeadCipher {
     /** Aliases passed to [deleteKey], in call order. */
     val deletedAliases: MutableList<String> = mutableListOf()
 
+    /** When set, [deleteKey] throws it — an `Error` stands in for the process dying mid-way. */
+    var deleteKeyFailure: Throwable? = null
+
     override fun encrypt(keyAlias: String, associatedData: ByteArray, plaintext: ByteArray): ByteArray =
         header(keyAlias, associatedData) + plaintext
 
@@ -34,6 +37,7 @@ class FakeAeadCipher : AeadCipher {
     }
 
     override fun deleteKey(keyAlias: String) {
+        deleteKeyFailure?.let { throw it }
         deletedAliases += keyAlias
     }
 

@@ -1690,7 +1690,8 @@ The passphrase lifecycle is asymmetric by design
 - The confirmed wipe (`ResetLockedDatabaseUseCase`) deletes the database
   and its passphrase through `DatabaseResetService`, then — only if that
   succeeded — asks `AgentWorkspace`, `AttachmentStore` and
-  `TransientCacheSweeper` to erase their content. Settings and the other
+  `TransientCacheSweeper` to erase their content, and `BackupRestorer` to
+  erase a restore staged from a backup (it holds copies of those files). Settings and the other
   secret stores are kept, and so are downloaded model files: the next
   start's `RediscoverDownloadedModelsUseCase` (a stage of
   `AppInitializationUseCase`) registers every model file in the downloads
@@ -1754,6 +1755,7 @@ explicitly in [`SECURITY.md`](../SECURITY.md) (*Agent file workspace*).
 | **DataStore** (Preferences)   | Non-sensitive settings: sampling params, timeouts, default pipeline id, opt-in flags, `allowed_http_domains`, `app_function_risk_overrides` | **FBE + app sandbox only** (plaintext within the sandbox; no app cipher)   |
 | **Agent workspace** (`files/agent_workspace/`) | Agent-produced and user-imported files (reports, exports, inputs)                                              | **FBE + app sandbox only** — *not* SQLCipher-encrypted (see `SECURITY.md`) |
 | **Attachment store** (`files/attachments/`) | Downscaled JPEG image attachments of chat messages                                                            | **FBE + app sandbox only** — *not* SQLCipher-encrypted (same posture as the workspace) |
+| **Restore staging** (`files/restore/`) | A restore from the app's own backup, checked and unpacked, from the check until the next start applies it; then the report of what it left for the user | Database: **SQLCipher** under this phone's passphrase. Settings and files: **FBE + app sandbox only**. The archive's provider settings and secrets are not here: a Keystore-backed store of their own holds them, destroyed with its key once applied |
 
 **Image attachments.** A user message can carry one image. A picked or shared
 image is read from its content URI — only another app's `content://` provider,

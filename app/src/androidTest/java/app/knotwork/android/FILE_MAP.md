@@ -16,6 +16,7 @@ Only Kotlin files appear inside the generated blocks.
 - `data/` - Instrumented tests for the data layer.
   - `backup/` - Backup export on a real device: the SQLCipher database snapshot.
     - `SqlCipherDatabaseSnapshotterTest.kt` - `SqlCipherDatabaseSnapshotter` against real SQLCipher: the copy opens under the archive's key and no other, holds every row and the schema version, is not a plain SQLite file, and the database it was taken from — held open throughout, as Room holds it — stays in write-ahead logging and writable.
+    - `SqlCipherStagedDatabasePreparerTest.kt` - `SqlCipherStagedDatabasePreparer` against real SQLCipher and Room: a database copy from an archive comes out keyed for this phone and at this build's schema — an older one migrated, the rows kept — and one of a later schema, one that is not a database, and one under another key are refused.
   - `local/` - Instrumented tests for the on-device database.
     - `AppDatabaseMigrationHelperTest.kt` - Frozen-schema migration regression suite built on Room's `MigrationTestHelper`.
     - `AppDatabaseMigrationTest.kt` - Regression suite invoking every `MIGRATION_*` declared on `AppDatabase` against a real on-disk SQLite file (per-step + chained v17→v23 run).

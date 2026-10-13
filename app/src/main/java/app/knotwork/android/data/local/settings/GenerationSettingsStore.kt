@@ -127,6 +127,17 @@ class GenerationSettingsStore @Inject constructor(
         return token?.let { mapOf(SecretKeys.HUGGING_FACE_TOKEN to it) }.orEmpty()
     }
 
+    /**
+     * The Hugging Face token, only with [secrets]: written synchronously, as the restore's own copy is
+     * destroyed right after, and with any legacy plain copy dropped as the settings screen drops it.
+     */
+    override suspend fun restore(entries: Map<String, String>, secrets: Boolean): Int {
+        val token = entries[SecretKeys.HUGGING_FACE_TOKEN]?.takeIf { secrets } ?: return 0
+        secretsStore.putString(SecretKeys.HUGGING_FACE_TOKEN, token, synchronous = true)
+        setHuggingFaceAuthToken(token)
+        return 1
+    }
+
     override val huggingFaceAuthToken: Flow<String?> = flow {
         migrateLegacyHuggingFaceToken()
         emitAll(huggingFaceTokenFlow)

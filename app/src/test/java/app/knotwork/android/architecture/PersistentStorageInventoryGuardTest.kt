@@ -2,6 +2,7 @@ package app.knotwork.android.architecture
 
 import android.content.Context
 import androidx.datastore.preferences.preferencesDataStoreFile
+import app.knotwork.android.data.backup.RestoreLayout
 import app.knotwork.android.data.local.AgentWorkspaceImpl
 import app.knotwork.android.data.local.AttachmentStoreImpl
 import io.mockk.every
@@ -106,6 +107,7 @@ class PersistentStorageInventoryGuardTest {
         assertEquals("${dataStoreDir.relativeTo(filesDir).path}/", StorageRoot.DATASTORE.plaintextPath)
         assertEquals("${AttachmentStoreImpl.ATTACHMENTS_DIR}/", StorageRoot.ATTACHMENTS.plaintextPath)
         assertEquals("${AgentWorkspaceImpl.WORKSPACE_DIR_NAME}/", StorageRoot.WORKSPACE.plaintextPath)
+        assertEquals("${RestoreLayout.RESTORE_DIR}/", StorageRoot.RESTORE.plaintextPath)
     }
 
     @Test
@@ -307,6 +309,34 @@ class PersistentStorageInventoryGuardTest {
             notArchived = null,
         ),
 
+        /**
+         * A restore from the app's own backup: the checked archive staged under `restore/` — the database
+         * keyed for this phone, the settings entry, copies of the workspace and attachments — until the
+         * next start applies it or a start of the screen removes it, then the report of what it left for
+         * the user. Plain files, so excluded by name.
+         */
+        RESTORE(
+            domain = "file",
+            plaintextPath = "restore/",
+            erasedBy = "BackupRestorer",
+            kept = null,
+            archive = emptyList(),
+            notArchived = "a restore's own working copy of an archive and its report",
+        ),
+
+        /**
+         * The provider settings and secrets of a staged restore, in a Keystore-backed store of their own
+         * between the check and the restart, destroyed with its key once the restore is done.
+         */
+        RESTORE_STAGED_ENTRIES(
+            domain = "sharedpref",
+            plaintextPath = null,
+            erasedBy = "BackupRestorer",
+            kept = null,
+            archive = emptyList(),
+            notArchived = "a restore's own copy of an archive's entries",
+        ),
+
         /** Downloaded model files — public content from the model hub. */
         DOWNLOADED_MODELS(
             domain = "external",
@@ -396,7 +426,7 @@ class PersistentStorageInventoryGuardTest {
         val FILES_DIR_USE = Regex("""\bfilesDir\b""")
 
         /** Names a `filesDir` use must carry: the inventoried directories' production constants. */
-        val FILES_DIR_NAMES = listOf("ATTACHMENTS_DIR", "WORKSPACE_DIR_NAME")
+        val FILES_DIR_NAMES = listOf("ATTACHMENTS_DIR", "WORKSPACE_DIR_NAME", "RESTORE_DIR")
 
         /** Every production file that reaches a storage root, by path suffix, with the root. */
         val KNOWN_SITES = mapOf(
@@ -413,6 +443,8 @@ class PersistentStorageInventoryGuardTest {
             "/data/services/DownloadForegroundBudget.kt" to "DOWNLOAD_BUDGET",
             "/data/backup/SqlCipherDatabaseSnapshotter.kt" to "DATABASE, read for a backup's snapshot",
             "/data/backup/BackupFileSource.kt" to "WORKSPACE and ATTACHMENTS, read for a backup",
+            "/data/backup/RestoreLayout.kt" to "RESTORE, and the DATABASE, WORKSPACE, ATTACHMENTS it replaces",
+            "/data/backup/StagedDatabasePreparer.kt" to "RESTORE: the staged database, opened once through Room",
         )
     }
 }

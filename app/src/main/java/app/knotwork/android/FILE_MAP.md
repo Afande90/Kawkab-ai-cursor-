@@ -29,9 +29,17 @@ Only Kotlin files appear inside the generated blocks.
     - `BackupExporterImpl.kt` - `BackupExporter`: derives the keys, gathers the content, writes the archive.
     - `BackupFileSource.kt` - The files a backup carries: the agent's workspace and the image attachments, each as an archive entry.
     - `BackupHeaderCodec.kt` - Writes and reads the open header of a backup archive (`docs/backup-format.md` § Header).
+    - `BackupRestorerImpl.kt` - `BackupRestorer` over the app's own storage: `RestoreStager` checks and stages, the start applies the files (`PendingRestoreApplier`) and `RestoreFinisher` completes the rest.
+    - `PendingRestoreApplier.kt` - Puts the database and the files of a committed restore in place, at the very start of the process — before the app's dependencies exist, so nothing has the database or a file open.
     - `PreferenceBackupPolicy.kt` - Which settings go into a backup and which stay with the phone.
     - `PreferencesBackupJson.kt` - The settings entry of an archive (`app.knotwork.android.domain.backup.BackupFormat.PREFERENCES_ENTRY`): every travelling DataStore value with its type, so a restore writes back exactly what was there.
+    - `RestoredPreferencesMigration.kt` - Writes a committed restore's settings into the app's DataStore when it is first opened after the restart — before anything reads a setting.
+    - `RestoreFinisher.kt` - Completes a committed restore once the app is up, after the start put its database and files in place (`PendingRestoreApplier`).
+    - `RestoreLayout.kt` - Where a restore keeps what it has staged, and where what it replaces lives.
+    - `RestoreStagedEntries.kt` - Holds a staged restore's encrypted-store entries — the provider settings, and the secrets when the archive carries them — between the check and the restart, in a Keystore-backed store of their own, so no secret of the archive is ever written to disk as plain text.
+    - `RestoreStager.kt` - Reads an archive with the user's password into the staging area (`RestoreLayout.staging`).
     - `SqlCipherDatabaseSnapshotter.kt` - `DatabaseSnapshotter` on SQLCipher's `sqlcipher_export()`.
+    - `StagedDatabasePreparer.kt` - Makes a staged database ready to replace the app's own.
   - `engine/` - Core LLM and inference engines.
     - `AndroidRunEnvironment.kt` - `RunEnvironment` read from the build and the device.
     - `CloudClientTimeouts.kt` - Network deadlines applied to every Koog model client the app builds — the chat clients in `KoogClientFactory` and the embedding clients in `app.knotwork.android.data.services.embedding.DefaultKoogEmbedderFactory`.
@@ -361,6 +369,7 @@ Only Kotlin files appear inside the generated blocks.
     - `BackupManifest.kt` - What an archive holds — the first entry of every archive (`BackupFormat.MANIFEST_ENTRY`), written by the export and read before a restore replaces anything.
     - `BackupManifestJson.kt` - The JSON of `BackupManifest` — part of the public format (`docs/backup-format.md` § Manifest).
     - `BackupReadFailure.kt` - Why an archive could not be read.
+    - `BackupRestorer.kt` - Restores the app's data from an archive `BackupExporter` wrote, in three steps.
   - `connection/` - Connection checks (Test connection): what a check found, why it sent nothing, the one address rule a request is held to, and the checker contracts.
     - `ConnectionCheckResult.kt` - What one connection check found: the server answered with its list, a rule kept the request from being sent, or the request was sent and failed.
     - `ConnectionPreconditions.kt` - What stops a connection check before it sends anything, judged from the form and the network settings — the reason the Test button is disabled, and the first thing a check that runs asks.

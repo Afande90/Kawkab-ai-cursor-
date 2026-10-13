@@ -28,6 +28,18 @@ class PreferenceBackupPolicyTest {
     }
 
     @Test
+    fun `given the key census when compared with the travelling types then each is the type the code declares`() {
+        // Given
+        val declared = PreferenceKeyCensus.declared.toMap()
+
+        // Then
+        PreferenceBackupPolicy.decided.filterValues { it == Membership.TRAVELS }.keys.forEach { key ->
+            assertEquals(key, declared[key], PreferenceBackupPolicy.typeOf(key)?.wire)
+        }
+        assertEquals(null, PreferenceBackupPolicy.typeOf("crash_reporting_enabled"))
+    }
+
+    @Test
     fun `given a key that does not travel when asked why then it has a reason`() {
         // Then
         PreferenceBackupPolicy.decided.filterValues { it != Membership.TRAVELS }.keys.forEach { key ->

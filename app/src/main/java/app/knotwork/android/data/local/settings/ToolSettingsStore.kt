@@ -172,6 +172,27 @@ class ToolSettingsStore @Inject constructor(
     }
 
     /**
+     * The sign-ins and custom headers of the servers in the restored list, as they were stored — secrets
+     * all, so only with [secrets]. An entry for a server the list does not hold is not taken. Read after the
+     * restored settings are in place.
+     */
+    override suspend fun restore(entries: Map<String, String>, secrets: Boolean): Int {
+        if (!secrets) return 0
+        var written = 0
+        mcpServers.first().forEach { server ->
+            listOf(SecretKeys.mcpAuthKey(server.url), SecretKeys.mcpHeadersKey(server.url)).forEach { name ->
+                entries[name]?.let {
+                    secretsStore.putString(name, it, synchronous = true)
+                    written++
+                }
+            }
+            mcpAuthCache.remove(server.url)
+            mcpHeadersCache.remove(server.url)
+        }
+        return written
+    }
+
+    /**
      * Every MCP server's sign-in and custom headers, as stored, by entry name. Entries left by a server
      * that is no longer in the list are not carried.
      */
