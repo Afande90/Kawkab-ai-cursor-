@@ -16,6 +16,14 @@ Only Kotlin files appear inside the generated blocks.
   - `audio/` - Voice-input capture.
     - `AudioRecorderImpl.kt` - `AudioRecorder` backed by platform `AudioRecord`: captures 16 kHz mono 16-bit PCM into a WAV inside `AudioCaptureStore`, ticks elapsed seconds into `RecordingState`, and auto-stops at the limit. Mic opened only after the composer permission gate (`@SuppressLint("MissingPermission")`). Excluded from Kover (Android-bound).
     - `WavHeader.kt` - Pure builder for the 44-byte canonical PCM WAV (RIFF) header (16 kHz mono 16-bit), split out from the recorder so the byte layout is JVM-unit-testable.
+  - `backup/` - Backup archive format: Argon2id keys, the authenticated header, AES-256-GCM chunk streams and the entry container.
+    - `Argon2idBackupKeyDerivation.kt` - `BackupKeyDerivation` on Bouncy Castle's Argon2id (RFC 9106, version 0x13).
+    - `BackupArchiveReader.kt` - Reads the entries of an archive one by one, after its header has been read and while every chunk is authenticated by `BackupDecryptingInputStream`.
+    - `BackupArchiveWriter.kt` - Writes the content of an archive: a ZIP stream of named entries, encrypted as it is written by `BackupEncryptingOutputStream` (`docs/backup-format.md` § Content).
+    - `BackupChunkFrame.kt` - The frame every encrypted chunk of an archive travels in (`docs/backup-format.md` § Chunks).
+    - `BackupDecryptingInputStream.kt` - Reads the content of an archive whose header has been read, checking the header's authentication code first and every chunk as it arrives.
+    - `BackupEncryptingOutputStream.kt` - Writes an archive: the authenticated header first, then everything written to this stream as AES-256-GCM chunks of `BackupHeader.chunkSize` plaintext bytes in `BackupChunkFrame`s.
+    - `BackupHeaderCodec.kt` - Writes and reads the open header of a backup archive (`docs/backup-format.md` § Header).
   - `engine/` - Core LLM and inference engines.
     - `AndroidRunEnvironment.kt` - `RunEnvironment` read from the build and the device.
     - `CloudClientTimeouts.kt` - Network deadlines applied to every Koog model client the app builds — the chat clients in `KoogClientFactory` and the embedding clients in `app.knotwork.android.data.services.embedding.DefaultKoogEmbedderFactory`.
@@ -333,6 +341,13 @@ Only Kotlin files appear inside the generated blocks.
   - `PromptTemplateModule.kt` - Hilt multibinding module for prompt variable providers.
   - `SettingsModule.kt` - Hilt bindings of the settings sections and of the transitional `SettingsRepository` composite.
 - `domain/` - Domain layer containing core business logic and Use Cases.
+  - `backup/` - Backup archive format contract: header, key-derivation bounds, read failures, entry-name rule.
+    - `BackupEntryName.kt` - The rule every entry name inside an archive obeys, checked by the writer before it writes an entry and by the reader before it hands one out.
+    - `BackupFormat.kt` - The fixed numbers of the backup archive format — the public contract described in `docs/backup-format.md`.
+    - `BackupHeader.kt` - The open header of a backup archive: everything a reader needs before the password, and what the app shows about a file before asking for it.
+    - `BackupKdfParams.kt` - Argon2id cost parameters (RFC 9106) the archive key is derived with.
+    - `BackupKeyDerivation.kt` - Turns the password the user chose into the two keys of an archive.
+    - `BackupReadFailure.kt` - Why an archive could not be read.
   - `connection/` - Connection checks (Test connection): what a check found, why it sent nothing, the one address rule a request is held to, and the checker contracts.
     - `ConnectionCheckResult.kt` - What one connection check found: the server answered with its list, a rule kept the request from being sent, or the request was sent and failed.
     - `ConnectionPreconditions.kt` - What stops a connection check before it sends anything, judged from the form and the network settings — the reason the Test button is disabled, and the first thing a check that runs asks.

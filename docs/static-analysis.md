@@ -1010,6 +1010,38 @@ version 23 exists now`.
 
 ---
 
+## Backup format fixture (`BackupFormatV1FixtureTest`)
+
+The backup archive format is public ([backup-format.md](backup-format.md)): a
+file one release writes has to open in every later one. Nothing else in the
+build would notice a change to the header codec, the chunk framing, the
+associated data, the key derivation or the entry rules that breaks files already
+written — the round-trip tests write and read with the same code.
+
+The test reads a committed format-1 archive,
+`app/src/test/resources/backup/format-1.knotwork`, with the reader of the build,
+in both flavours' suites, and checks every header field and every entry's name,
+order, size and SHA-256. The file was written with the app's own key costs and
+the smallest chunk size, so a few kilobytes span many chunks.
+`-PrecordBackupFixture` writes it anew — only before a release has shipped format
+1. After that the file never changes, and a later format version adds its own
+fixture beside it.
+
+**What it cannot see:** a reader that accepts what it should refuse. The tamper
+matrix (`BackupDecryptingInputStreamTest`, `BackupArchiveReaderTest`,
+`BackupHeaderCodecTest`) covers that side.
+
+### Observed failing
+
+With the chunk index left out of the associated data, the fixture fails to open
+and the test that swaps two chunks fails; with one byte of the fixture flipped,
+the fixture test fails alone. Normalising the password to NFD instead of NFC, or
+not at all, fails the test that derives a composed and a decomposed password —
+an earlier version of that test compared the two with each other only, and
+passed under NFD.
+
+---
+
 ## Settings help-text guards (`SettingsHelpCatalogTest`, `verifySettingsHelpDocs`)
 
 Two guards, one rule: **a setting's meaning is written once**, in

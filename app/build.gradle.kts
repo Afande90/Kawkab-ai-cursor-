@@ -458,6 +458,10 @@ android {
             excludes += "org/fusesource/jansi/internal/native/Linux/**"
             excludes += "org/fusesource/jansi/internal/native/FreeBSD/**"
             excludes += "META-INF/native-image/jansi/**"
+            // Bouncy Castle's jar carries the X.509 path reviewer's message
+            // bundles (~96 KB uncompressed); the app uses only its Argon2id
+            // generator, which never reads them.
+            excludes += "org/bouncycastle/x509/CertPathReviewerMessages*.properties"
         }
         jniLibs {
             // MediaPipe `tasks-text` 1.0.0 added `TextSummarizer` and `TextProofreader`,
@@ -2012,6 +2016,13 @@ tasks.withType<Test>().configureEach {
     if (providers.gradleProperty("recordGoldenTraces").isPresent) {
         systemProperty("knotwork.goldenTraces.record", "true")
     }
+    // `BackupFormatV1FixtureTest` reads the committed format-1 archive from the test
+    // classpath (`src/test/resources/backup/`), so it is an input already.
+    // `-PrecordBackupFixture` writes it anew — only before a release has shipped format 1;
+    // afterwards the file is the regression anchor every later reader must open.
+    if (providers.gradleProperty("recordBackupFixture").isPresent) {
+        systemProperty("knotwork.backupFixture.record", "true")
+    }
 }
 
 // Hilt/Dagger reads Kotlin metadata via `kotlin-metadata-jvm`, which is unshaded
@@ -2139,6 +2150,12 @@ dependencies {
 
     // SQLCipher for Android (encrypted Room database)
     implementation(libs.sqlcipher.android)
+
+    // Bouncy Castle (MIT): Argon2id for the backup archive's password key
+    // (RFC 9106). Only the lightweight generator is reached; R8 keeps ~10–35 KB
+    // of DEX. Pinned at 1.85 or later: CVE-2026-59648 (OpenPGP Argon2 S2K)
+    // predates it.
+    implementation(libs.bouncycastle.bcprov)
 
     // AppFunctions
     implementation(libs.androidx.appfunctions)
