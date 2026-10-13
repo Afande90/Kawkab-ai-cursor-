@@ -111,9 +111,10 @@ storage and credentials:
   `chat_sessions`), long-term memory (`memory_chunks`), pipeline run traces
   (`trace_steps`, `model_calls`), **custom pipelines** (`pipelines`, `pipeline_nodes`,
   `pipeline_connections`), and **saved presets and prompt templates**
-  (`pipeline_presets`, `prompt_presets`, `prompt_templates`). The migrations
-  across the exported-schema baseline range are covered by a `MigrationTestHelper`
-  regression suite that validates the resulting schema and data preservation.
+  (`pipeline_presets`, `prompt_presets`, `prompt_templates`). Every migration
+  step from the oldest exported schema (v23) on is validated against the schema
+  exported for its target version in the build gate, and a `MigrationTestHelper`
+  regression suite on the emulator checks data preservation and the whole chain.
 - **Residual pre-1.0 caveats.**
   - *Downgrade.* Installing an **older** build over a newer database recreates
     it empty (`fallbackToDestructiveMigrationOnDowngrade`), since forward

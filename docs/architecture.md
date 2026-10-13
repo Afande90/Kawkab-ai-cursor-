@@ -1614,9 +1614,11 @@ Migration rules:
   development instead of silently dropping tables. Destructive recreation is
   retained only on **downgrade** (`fallbackToDestructiveMigrationOnDowngrade`),
   which forward migrations cannot handle. A JVM test fails when the list has a
-  gap or does not end at the schema version the build exports; a
-  `MigrationTestHelper` suite covers the steps across the exported-schema
-  range and runs the whole list from the oldest exported schema to the newest.
+  gap or does not end at the schema version the build exports; another runs
+  every step from the oldest exported schema (v23) on real SQLite and validates
+  the schema it leaves against the exported one, in the build gate; an
+  emulator `MigrationTestHelper` suite checks data preservation step by step
+  and runs the whole list from the oldest exported schema to the newest.
 - Auto-migrations are allowed for additive changes only.
 - DAO methods returning `Flow<T>` are annotated with `@Query` — no
   ad-hoc reactive wrapping.

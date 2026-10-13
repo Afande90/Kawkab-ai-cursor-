@@ -432,8 +432,17 @@ android {
     // androidTest classpath so `MigrationTestHelper` (which reads them from
     // `assets/`) can validate every migration step against the frozen
     // snapshots in `app/schemas/`.
+    //
+    // The JVM suite needs them too (`MigrationStepGuardTest` validates every
+    // step in `check`), and Robolectric reads only the tested variant's merged
+    // assets: schemas put in the `test` source set's assets, or added to the
+    // unit test through `androidComponents` host-test sources, never reach it
+    // (47 of 47 steps failed to find their schema, measured). So they are
+    // `debug` assets as well — the debug APK carries ~1.9 MB of schema JSON,
+    // the release APK none.
     sourceSets {
         getByName("androidTest").assets.srcDir("$projectDir/schemas")
+        getByName("debug").assets.srcDir("$projectDir/schemas")
     }
 
     packaging {
@@ -2175,6 +2184,9 @@ dependencies {
     // notification builder, and Doze (`ShadowPowerManager`) paths under
     // `data.services`. The version is pinned in `gradle/libs.versions.toml`.
     testImplementation(libs.robolectric)
+    // Room's `MigrationTestHelper` for `MigrationStepGuardTest`, the JVM
+    // guard that validates every migration step against its exported schema.
+    testImplementation(libs.room.testing)
     // Konsist (Apache-2.0) backs the architecture guard suite under
     // `app/src/test/.../architecture/`: JVM JUnit tests that fail `check`
     // when Clean Architecture layer boundaries regress (e.g. a `domain`
