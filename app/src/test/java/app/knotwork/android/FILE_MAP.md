@@ -67,6 +67,8 @@ Only Kotlin files appear inside the generated blocks.
   - `engine/` - Tests for the inference engines, client factories and the task queue.
     - `KoogClientFactoryTest.kt` - Tests for KoogClientFactory.
     - `KoogClientFactoryTimeoutTest.kt` - Guards the network deadlines applied to cloud clients.
+    - `KoogCloudLlmModelResolverTest.kt` - Unit tests for `KoogCloudLlmModelResolver` — the model object a Cloud node sends, resolved from the saved id through `KoogCloudModelCatalog`, the same answer the screens show.
+    - `KoogCloudModelCatalogTest.kt` - Unit tests for `KoogCloudModelCatalog` — which model a run of each provider uses for what the user saved, the answer every screen naming a provider's model and the resolver share.
     - `KoogProviderConnectionCheckerTest.kt` - `KoogProviderConnectionChecker` on the wire: the request each provider's check sends, what it makes of the answer, and that a refused check sends nothing and tells the privacy indicator nothing.
     - `KoogStructuredInferenceClientFactoryTest.kt` - Unit tests for `KoogStructuredInferenceClientFactory` — the cloud-backed `app.knotwork.android.domain.engine.structured.StructuredInferenceClient` seam for the structured-output gate.
     - `KoogTimeoutReflection.kt` - Reads the `ConnectionTimeoutConfig` a Koog provider client was built with.

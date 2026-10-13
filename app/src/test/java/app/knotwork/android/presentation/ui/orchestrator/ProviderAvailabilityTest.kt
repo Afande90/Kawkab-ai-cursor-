@@ -10,15 +10,15 @@ import app.knotwork.design.components.pipelineeditor.CloudProvider as CatalogClo
 class ProviderAvailabilityTest {
 
     @Test
-    fun `given providers set up here then the sheet sees each with its model, or the default label`() {
+    fun `given providers set up here then the sheet sees each with the model its runs use`() {
         val choices = ProviderAvailability(
-            models = mapOf(CloudProvider.OPENAI to null, CloudProvider.OPENAI_COMPATIBLE to "qwen2.5-7b-instruct"),
+            models = mapOf(CloudProvider.OPENAI to "gpt-5.4", CloudProvider.OPENAI_COMPATIBLE to "qwen2.5-7b-instruct"),
             auto = CloudProvider.OPENAI,
-        ).toProviderChoices(defaultModel = "default model", onDeviceModel = "gemma")
+        ).toProviderChoices(onDeviceModel = "gemma")
 
         assertEquals(
             mapOf(
-                CatalogCloudProvider.OPEN_AI to "default model",
+                CatalogCloudProvider.OPEN_AI to "gpt-5.4",
                 CatalogCloudProvider.OPENAI_COMPATIBLE to "qwen2.5-7b-instruct",
             ),
             choices.configuredModels,
@@ -29,7 +29,7 @@ class ProviderAvailabilityTest {
 
     @Test
     fun `given nothing set up then auto resolves to nothing`() {
-        val choices = ProviderAvailability().toProviderChoices(defaultModel = "default model", onDeviceModel = null)
+        val choices = ProviderAvailability().toProviderChoices(onDeviceModel = null)
 
         assertEquals(emptyMap<CatalogCloudProvider, String>(), choices.configuredModels)
         assertNull(choices.autoResolvesTo)

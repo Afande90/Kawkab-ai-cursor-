@@ -652,10 +652,8 @@ fun PipelineEditorScreen(viewModel: OrchestratorViewModel, onBack: () -> Unit) {
                 // the sheet opens — it changes only in Settings.
                 var providerAvailability by remember(node.id) { mutableStateOf(ProviderAvailability()) }
                 LaunchedEffect(node.id) { providerAvailability = viewModel.nodeSheet.loadProviderAvailability() }
-                val defaultModel = stringResource(R.string.node_provider_default_model)
-                val providerChoices = remember(providerAvailability, uiState.availableLocalModels, defaultModel) {
+                val providerChoices = remember(providerAvailability, uiState.availableLocalModels) {
                     providerAvailability.toProviderChoices(
-                        defaultModel = defaultModel,
                         onDeviceModel = uiState.availableLocalModels.firstOrNull { it.isActive }?.name,
                     )
                 }

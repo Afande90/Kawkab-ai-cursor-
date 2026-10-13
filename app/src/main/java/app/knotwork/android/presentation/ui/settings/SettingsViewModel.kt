@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.knotwork.android.R
+import app.knotwork.android.domain.engine.CloudModelCatalog
 import app.knotwork.android.domain.models.CloudProvider
 import app.knotwork.android.domain.models.EntrySurface
 import app.knotwork.android.domain.models.MemoryImportStrategy
@@ -66,6 +67,7 @@ class SettingsViewModel @Inject constructor(
     @ApplicationContext private val appContext: Context,
     settingsRepository: SettingsRepository,
     apiKeyRepository: ApiKeyRepository,
+    cloudModelCatalog: CloudModelCatalog,
     localModelRepository: LocalModelRepository,
     memoryRepository: MemoryRepository,
     identityRepository: IdentityRepository,
@@ -102,6 +104,7 @@ class SettingsViewModel @Inject constructor(
         appContext = appContext,
         generationSettings = settingsRepository,
         apiKeyRepository = apiKeyRepository,
+        modelCatalog = cloudModelCatalog,
         localModelRepository = localModelRepository,
         testBackendUseCase = testBackendUseCase,
     )

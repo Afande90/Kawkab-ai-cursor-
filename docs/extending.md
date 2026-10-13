@@ -673,9 +673,19 @@ and records `Retry-After` for the retry policy.
 ### 3.3. Teach the model resolver
 
 [`KoogCloudLlmModelResolver`](../app/src/main/java/app/knotwork/android/data/engine/KoogCloudLlmModelResolver.kt)
-owns the per-provider default model id and (for Ollama-shaped
-providers) the context-window lookup. Add an entry so the resolver
-can map a free-text model id to a concrete Koog `LLModel`.
+turns the saved model id into the Koog `LLModel` a run sends (and, for
+Ollama-shaped providers, adds the context window). Which id that is comes from
+[`CloudModelCatalog`](../app/src/main/java/app/knotwork/android/domain/engine/CloudModelCatalog.kt):
+the models offered and the one used when nothing is chosen or the choice is no
+longer offered. The provider's screen, its row in Settings and the node sheet
+ask the same catalog, so none of them can name a model a run would not use.
+
+A provider Koog lists gets an entry in
+[`KoogModelMapper`](../app/src/main/java/app/knotwork/android/data/engine/KoogModelMapper.kt):
+its default and the models it offers, as Koog's own constants — never an
+`LLModel` built by hand, since Koog's client routes by a constant's
+capabilities. A provider whose model is typed needs no entry; give it a default
+in `KoogCloudModelCatalog` only if it has one.
 
 ### 3.4. Store the API key securely
 
@@ -724,7 +734,7 @@ To add a new external LLM provider:
    projects the fields the provider's shape asks for (`usesApiKey`,
    `usesBaseUrl`, `requiresModel`) onto the catalog's
    [`ProviderDetailContent`](../catalog/src/main/java/app/knotwork/design/screens/settings/ProviderDetailContent.kt)
-   form in `toViewState`: a built-in model list goes in `builtInModels`, a fixed
+   form in `toViewState`: a built-in model list comes from `CloudModelCatalog` (§3.3), a fixed
    address in `fixedAddressOf`, and *Test connection* works through
    `ProviderConnectionChecker` once the provider can list its models. The node
    sheet's provider list and the browser editor take a new entry in the catalog's
@@ -1557,7 +1567,7 @@ double-check it for every recipe in this guide.**
 | A new `Tool`                 | a new `LocalToolExecutor` implementation · `di/LocalToolsModule.kt` (`@Binds @IntoMap @StringKey`) · declare `ToolRisk` correctly · executor unit test · optional Compose test if new UI                                                                            |
 | A new **workspace tool**     | a new `LocalToolExecutor` that goes through `AgentWorkspace` (never raw `File`) · `di/LocalToolsModule.kt` (`@Binds @IntoMap @StringKey`) · risk tier in `ToolRepositoryImpl` built-in list · `docs/user-guide.md` (built-in-tools table) · executor unit test against a `@TempDir`-backed `AgentWorkspace` (happy path + `../` traversal + quota/not-found) |
 | A new callee-side AppFunction | an injectable logic class under `data/tools/local/appfunctions/` · a one-line `@AppFunction(isDescribedByKDoc = true)` method on `AgentAppFunctionService` (KDoc written for the calling agent) · logic-class unit test · scenario in `AppFunctionsEndToEndTest` |
-| A new cloud provider         | `domain/models/CloudProvider.kt` · `data/engine/KoogClientFactory.kt` · `data/engine/KoogCloudLlmModelResolver.kt` · `data/local/ApiKeyManager.kt` · `domain/models/ProviderSummary.kt` (`ProviderId` — the Settings provider list and picker) · **`domain/engine/executors/CloudLlmNodeExecutor.kt`** (`providerReportsFinishReason` — exhaustive `when`, decide it by measurement per §3.6) · `docs/user-guide.md` (the truncated-answer table under Settings → Models) · factory / resolver / executor unit tests |
+| A new cloud provider         | `domain/models/CloudProvider.kt` · `data/engine/KoogClientFactory.kt` · `data/engine/KoogCloudLlmModelResolver.kt` · `data/engine/KoogModelMapper.kt` (a provider Koog lists) · `data/local/ApiKeyManager.kt` · `domain/models/ProviderSummary.kt` (`ProviderId` — the Settings provider list and picker) · **`domain/engine/executors/CloudLlmNodeExecutor.kt`** (`providerReportsFinishReason` — exhaustive `when`, decide it by measurement per §3.6) · `docs/user-guide.md` (the truncated-answer table under Settings → Models) · factory / resolver / executor unit tests |
 | A new prompt variable        | a new `PromptVariableProvider` implementation · `di/PromptTemplateModule.kt` (`@Binds @IntoSet`) · **`pipeline-editor.html`** (`PROMPT_VARIABLES`) · `docs/user-guide.md` (variables table) · provider unit test · `PromptTemplateEngine` round-trip test           |
 | A new bundled pipeline preset | a JSON file under `assets/presets/pipelines/` · `PipelinePresetCatalogValidationTest.expectedFileNames` · `BundledPresetCatalog.DISPLAY_ORDER` (unless `internal`) · run `./gradlew :app:generateBrowserEditorConstants` (`BUILTIN_PIPELINE_PRESETS` is generated) · catalogue + `PipelinePresetIntegrationTest` already cover the directory |
 | A new bundled prompt preset  | a JSON file under `assets/presets/prompts/` · `PromptPresetCatalogValidationTest.expectedFileNames` · run `./gradlew :app:generateBrowserEditorConstants` (`BUILTIN_PROMPT_TEMPLATES` is generated) · catalogue + `PromptPresetIntegrationTest` already cover the directory |

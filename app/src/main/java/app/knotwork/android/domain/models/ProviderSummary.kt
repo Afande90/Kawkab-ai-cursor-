@@ -46,8 +46,9 @@ enum class ProviderId(
  * @property keyFingerprint Masked fingerprint of the configured API key
  *   (e.g. `sk-…3a9f`). `null` when no key is configured — the UI then
  *   renders "Not configured · tap to add API key".
- * @property model Currently selected model name (e.g. `gpt-4o-mini`).
- *   `null` when no model has been picked.
+ * @property model The model a run of this provider uses (e.g. `gpt-4o-mini`): the selected
+ *   one, or the default that stands in for a missing or no longer offered choice. `null` when
+ *   the provider has no default and no model has been picked.
  * @property isLanLocal `true` for a provider reached at an address the user
  *   enters ([CloudProvider.usesBaseUrl] — today Ollama) — drives the LAN pill
  *   rendered next to the row title.

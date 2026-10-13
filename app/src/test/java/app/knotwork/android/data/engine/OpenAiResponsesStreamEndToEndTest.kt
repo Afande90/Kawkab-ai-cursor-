@@ -76,7 +76,7 @@ class OpenAiResponsesStreamEndToEndTest {
 
     @Test
     fun `given each OpenAI model the app offers when its answer streams whole then the node delivers it`() {
-        val offered = KoogModelMapper.getOpenAIModelIdList()
+        val offered = checkNotNull(KoogCloudModelCatalog().offeredModels(CloudProvider.OPENAI))
 
         val failures = offered.mapNotNull { id ->
             val result = runNode(id)
@@ -164,7 +164,7 @@ class OpenAiResponsesStreamEndToEndTest {
                 keys,
                 mockk(relaxed = true),
                 factory,
-                KoogCloudLlmModelResolver(keys),
+                KoogCloudLlmModelResolver(keys, KoogCloudModelCatalog()),
                 mockk(relaxed = true),
             )
             val node = NodeModel("1", NodeType.CLOUD, 0f, 0f, cloudProvider = CloudProvider.OPENAI.id)

@@ -78,6 +78,10 @@
     <string name="settings_model_note_before_test">Type the id, or run Test to choose from the server’s list.</string>
     <string name="settings_model_action_choose">Choose</string>
     <string name="settings_model_note_no_list">This server sent no model list. Type the id it serves.</string>
+    <!-- Under a provider's built-in model list when nothing is chosen. %1$s: the model id a run uses. -->
+    <string name="settings_model_note_not_chosen">No model chosen — runs use %1$s.</string>
+    <!-- Under a provider's built-in model list when the saved model left the list. %1$s: the saved id; %2$s: the id a run uses instead. -->
+    <string name="settings_model_note_not_offered">%1$s is no longer offered — runs use %2$s. Choose a model above.</string>
 
     <!-- Add provider -->
     <string name="settings_provider_picker_compat_desc">vLLM, LM Studio, llama.cpp, or any server that speaks the OpenAI API.</string>

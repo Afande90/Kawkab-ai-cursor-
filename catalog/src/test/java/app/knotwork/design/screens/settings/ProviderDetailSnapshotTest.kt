@@ -100,6 +100,14 @@ class ProviderDetailSnapshotTest {
         detail("key_refused", dark = true, ProviderPreview.providerDetailKeyRefused())
 
     @Test
+    fun provider_detail_model_not_offered_light() =
+        detail("model_not_offered", dark = false, ProviderPreview.providerDetailModelNoLongerOffered())
+
+    @Test
+    fun provider_detail_model_not_offered_dark() =
+        detail("model_not_offered", dark = true, ProviderPreview.providerDetailModelNoLongerOffered())
+
+    @Test
     fun provider_detail_ollama_light() = detail("ollama", dark = false, ProviderPreview.providerDetailOllama())
 
     @Test

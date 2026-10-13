@@ -2,6 +2,7 @@ package app.knotwork.android.di
 
 import app.knotwork.android.data.engine.KoogClientFactory
 import app.knotwork.android.data.engine.KoogCloudLlmModelResolver
+import app.knotwork.android.data.engine.KoogCloudModelCatalog
 import app.knotwork.android.data.engine.KoogStructuredInferenceClientFactory
 import app.knotwork.android.data.tools.local.SearchTool
 import app.knotwork.android.data.tools.local.executors.AppendFileExecutor
@@ -17,6 +18,7 @@ import app.knotwork.android.data.tools.local.executors.SearchToolExecutor
 import app.knotwork.android.data.tools.local.executors.WriteFileExecutor
 import app.knotwork.android.domain.engine.CloudLlmClientFactory
 import app.knotwork.android.domain.engine.CloudLlmModelResolver
+import app.knotwork.android.domain.engine.CloudModelCatalog
 import app.knotwork.android.domain.engine.structured.CloudStructuredInferenceClientFactory
 import app.knotwork.android.domain.repositories.LocalToolExecutor
 import dagger.Binds
@@ -112,6 +114,14 @@ abstract class LocalToolsModule {
     @Binds
     @Singleton
     abstract fun bindCloudLlmModelResolver(impl: KoogCloudLlmModelResolver): CloudLlmModelResolver
+
+    /**
+     * Domain-level binding for the cloud model catalog: the models the app offers and the model a
+     * run uses — read by the resolver and by every screen that names a provider's model.
+     */
+    @Binds
+    @Singleton
+    abstract fun bindCloudModelCatalog(impl: KoogCloudModelCatalog): CloudModelCatalog
 
     /**
      * Domain-level binding for the cloud structured-inference client factory.

@@ -89,6 +89,21 @@ internal object ProviderPreview {
         ),
     )
 
+    /**
+     * A hosted provider whose saved model left the built-in list: the note under the dropdown names
+     * the model runs use instead.
+     */
+    fun providerDetailModelNoLongerOffered(): ProviderDetailViewState = providerDetail().copy(
+        title = "Anthropic",
+        apiKey = ProviderKeyUi(label = "Anthropic API key", value = "sk-ant-api03-7c1d"),
+        model = ProviderModelUi(
+            label = "Anthropic model",
+            value = "claude-opus-4-1",
+            options = listOf("claude-haiku-4-5", "claude-sonnet-4-5", "claude-opus-4-6"),
+            note = "claude-opus-4-1 is no longer offered — runs use claude-sonnet-4-5. Choose a model above.",
+        ),
+    )
+
     /** Ollama: an address and no key, a typed model, and its context window. */
     fun providerDetailOllama(): ProviderDetailViewState = ProviderDetailViewState(
         title = "Ollama",
