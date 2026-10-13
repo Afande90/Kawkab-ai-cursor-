@@ -88,8 +88,9 @@ details.
   disk afterwards is read again. Groundwork for runs that can be checked later:
   the checksum names exactly which model file a run used.
 - **Each downloaded model remembers where it came from.** A model downloaded
-  from a link or from Discover keeps that address with it; a file copied in by
-  hand has none. Groundwork for the encrypted backup, which carries the list of
+  from a link or from Discover keeps that address with it. A model found on
+  disk at start-up — after *Erase data*, or a file copied into the app's folder
+  — has none. Groundwork for the encrypted backup, which carries the list of
   models rather than the files: a restored phone can offer each one for
   download again.
 - **An approval shows what was asked.** The approval card puts the request the
