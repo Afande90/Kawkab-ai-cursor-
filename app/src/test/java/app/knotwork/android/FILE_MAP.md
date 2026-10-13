@@ -65,6 +65,7 @@ Only Kotlin files appear inside the generated blocks.
   - `audio/` - Tests for voice-input capture and the WAV header builder.
     - `WavHeaderTest.kt` - Unit tests for `WavHeader`, the pure 44-byte canonical PCM WAV header builder.
   - `engine/` - Tests for the inference engines, client factories and the task queue.
+    - `CloudModelListGuardTest.kt` - The cloud model lists against Koog's own catalogue: every model the app offers is one of Koog's chat constants, and every chat constant Koog declares for the four providers it lists is either offered or left out here with a reason.
     - `KoogClientFactoryTest.kt` - Tests for KoogClientFactory.
     - `KoogClientFactoryTimeoutTest.kt` - Guards the network deadlines applied to cloud clients.
     - `KoogCloudLlmModelResolverTest.kt` - Unit tests for `KoogCloudLlmModelResolver` — the model object a Cloud node sends, resolved from the saved id through `KoogCloudModelCatalog`, the same answer the screens show.

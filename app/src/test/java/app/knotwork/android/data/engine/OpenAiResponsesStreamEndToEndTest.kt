@@ -92,7 +92,7 @@ class OpenAiResponsesStreamEndToEndTest {
 
     @Test
     fun `given a Responses-only model when its answer streams whole then it is delivered, not called cut off`() {
-        val result = runNode(OpenAIModels.Chat.GPT5_2Codex.id)
+        val result = runNode(OpenAIModels.Chat.GPT5_3Codex.id)
 
         assertEquals(listOf(RESPONSES_PATH), paths)
         assertNull(result.error)
@@ -103,7 +103,7 @@ class OpenAiResponsesStreamEndToEndTest {
     fun `given a Responses-only model when the stream stops before it completes then the node fails`() {
         cutStreams = true
 
-        val result = runNode(OpenAIModels.Chat.GPT5_2Codex.id)
+        val result = runNode(OpenAIModels.Chat.GPT5_3Codex.id)
 
         assertEquals(listOf(RESPONSES_PATH), paths)
         assertNull("the partial text must not become node output", result.outputText)

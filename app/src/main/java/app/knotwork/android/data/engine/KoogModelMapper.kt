@@ -15,6 +15,10 @@ import app.knotwork.android.domain.models.CloudProvider
  * capabilities Koog's client routes by (OpenAI's Responses-only models, for one). The id a user
  * saved maps back to its constant through [offeredModels]; [KoogCloudModelCatalog] decides what
  * a saved id that is not offered falls back to.
+ *
+ * Every chat constant Koog declares for these four providers is either offered here or left out
+ * with a reason: `CloudModelListGuardTest` holds the two in step, so a Koog upgrade fails the
+ * build until its new models are sorted.
  */
 object KoogModelMapper {
 
@@ -42,40 +46,47 @@ object KoogModelMapper {
             OpenAIModels.Chat.GPT5,
             OpenAIModels.Chat.GPT5Mini,
             OpenAIModels.Chat.GPT5Nano,
-            OpenAIModels.Chat.GPT5Codex,
             OpenAIModels.Chat.GPT5_1,
-            OpenAIModels.Chat.GPT5_1Codex,
-            OpenAIModels.Chat.GPT5_1CodexMax,
             OpenAIModels.Chat.GPT5_2,
             OpenAIModels.Chat.GPT5_2Pro,
-            OpenAIModels.Chat.GPT5_2Codex,
             OpenAIModels.Chat.GPT5_3Codex,
             OpenAIModels.Chat.GPT5_4,
+            OpenAIModels.Chat.GPT5_4Mini,
             OpenAIModels.Chat.GPT5_4Pro,
+            OpenAIModels.Chat.GPT5_5,
+            OpenAIModels.Chat.GPT5_6Sol,
+            OpenAIModels.Chat.GPT5_6Terra,
+            OpenAIModels.Chat.GPT5_6Luna,
         ),
     )
 
     private val ANTHROPIC = Offer(
-        default = AnthropicModels.Sonnet_4_5,
+        default = AnthropicModels.Sonnet_4_6,
         offered = listOf(
             AnthropicModels.Haiku_4_5,
-            AnthropicModels.Sonnet_4,
             AnthropicModels.Sonnet_4_5,
-            AnthropicModels.Opus_4,
-            AnthropicModels.Opus_4_1,
+            AnthropicModels.Sonnet_4_6,
+            AnthropicModels.Sonnet_5,
             AnthropicModels.Opus_4_5,
             AnthropicModels.Opus_4_6,
+            AnthropicModels.Opus_4_7,
+            AnthropicModels.Opus_4_8,
+            AnthropicModels.Opus_5,
+            AnthropicModels.Fable_5,
         ),
     )
 
     private val GOOGLE = Offer(
         default = GoogleModels.Gemini3_Flash_Preview,
         offered = listOf(
-            GoogleModels.Gemini2_5Pro,
             GoogleModels.Gemini2_5Flash,
             GoogleModels.Gemini2_5FlashLite,
             GoogleModels.Gemini3_Flash_Preview,
             GoogleModels.Gemini3_1Pro_Preview,
+            GoogleModels.Gemini3_5Flash,
+            GoogleModels.Gemini3_5FlashLite,
+            GoogleModels.Gemini3_6Flash,
+            GoogleModels.Gemini3_7Flash,
         ),
     )
 
@@ -84,6 +95,7 @@ object KoogModelMapper {
         offered = listOf(
             DeepSeekModels.DeepSeekV4Flash,
             DeepSeekModels.DeepSeekV4Pro,
+            DeepSeekModels.DeepSeekV4FlashVisionExp,
         ),
     )
 

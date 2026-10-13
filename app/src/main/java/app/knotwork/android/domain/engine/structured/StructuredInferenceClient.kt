@@ -26,7 +26,9 @@ fun interface StructuredInferenceClient {
      *   `null` to use the caller's configured default. The gate passes
      *   [StructuredOutputGate.REPAIR_TEMPERATURE] on repair re-inferences so the
      *   model is nudged towards a more deterministic, schema-obedient retry, and
-     *   `null` on the first attempt so normal generation is unaffected.
+     *   `null` on the first attempt so normal generation is unaffected. An
+     *   implementation may leave it unsent: the cloud one does, because some
+     *   providers refuse a non-default temperature.
      * @return The concatenated model output (never `null`; an empty string is a
      *   valid — and validation-failing — result).
      */

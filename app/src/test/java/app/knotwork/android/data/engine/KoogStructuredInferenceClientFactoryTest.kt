@@ -11,6 +11,7 @@ import ai.koog.prompt.message.Message
 import ai.koog.prompt.streaming.StreamFrame
 import app.knotwork.android.domain.engine.CloudLlmClientFactory
 import app.knotwork.android.domain.engine.CloudLlmModelResolver
+import app.knotwork.android.domain.engine.structured.StructuredOutputGate
 import app.knotwork.android.domain.models.CloudProvider
 import app.knotwork.android.domain.repositories.NetworkActivityTracker
 import io.mockk.coEvery
@@ -58,6 +59,21 @@ class KoogStructuredInferenceClientFactoryTest {
         factory.create(CloudProvider.OPENAI) { }!!.infer("prompt", temperature = null)
 
         assertNull(client.lastPrompt?.params?.schema)
+    }
+
+    @Test
+    fun `given a repair asking for a lowered temperature when infer then the request carries none`() = runTest {
+        // Claude 4.7 and later answer a non-default temperature with a 400, which would fail the
+        // repair that is meant to fix the answer; every provider gets its own default instead.
+        val client = FakeStreamingClient(flowOf(StreamFrame.TextDelta("{}")))
+        coEvery { clientFactory.createClient(CloudProvider.ANTHROPIC, any()) } returns client
+        coEvery { modelResolver.resolveModel(CloudProvider.ANTHROPIC) } returns
+            LLModel(LLMProvider.Anthropic, "claude-opus-5", listOf(LLMCapability.Temperature))
+
+        factory.create(CloudProvider.ANTHROPIC) {
+        }!!.infer("prompt", temperature = StructuredOutputGate.REPAIR_TEMPERATURE)
+
+        assertNull(client.lastPrompt?.params?.temperature)
     }
 
     @Test

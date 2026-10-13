@@ -99,7 +99,7 @@ class ModelsSettingsDelegateTest {
         keys[CloudProvider.ANTHROPIC] = "sk-2"
         models[CloudProvider.ANTHROPIC] = "claude-3-opus"
         keys[CloudProvider.GOOGLE] = "AIza"
-        models[CloudProvider.GOOGLE] = "gemini-2.5-pro"
+        models[CloudProvider.GOOGLE] = "gemini-2.5-flash"
         addresses[CloudProvider.OLLAMA] = "http://192.168.1.20:11434"
 
         val rows = summaries()
@@ -107,10 +107,10 @@ class ModelsSettingsDelegateTest {
         assertEquals("Nothing chosen: the default.", "gpt-5.4", rows.getValue(ProviderId.OpenAi).model)
         assertEquals(
             "A choice the app no longer offers is not what runs use.",
-            "claude-sonnet-4-5",
+            "claude-sonnet-4-6",
             rows.getValue(ProviderId.Anthropic).model,
         )
-        assertEquals("gemini-2.5-pro", rows.getValue(ProviderId.Google).model)
+        assertEquals("gemini-2.5-flash", rows.getValue(ProviderId.Google).model)
         assertEquals("llama3", rows.getValue(ProviderId.Ollama).model)
         assertNull("No default and nothing chosen.", rows.getValue(ProviderId.OpenRouter).model)
     }

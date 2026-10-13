@@ -102,6 +102,18 @@ details.
 
 ### Changed
 
+- **Current cloud models to choose from.** The model lists of OpenAI, Anthropic,
+  Google and DeepSeek now follow the client library the app is built on: GPT-5.4
+  Mini, GPT-5.5 and GPT-5.6 Sol, Terra and Luna; Claude Sonnet 4.6, Sonnet 5,
+  Opus 4.7, Opus 4.8, Opus 5 and Fable 5; Gemini 3.5 Flash, 3.5 Flash-Lite, 3.6
+  Flash and 3.7 Flash; DeepSeek V4 Flash Vision. Models their providers have
+  retired are gone: GPT-5 Codex, GPT-5.1 Codex and Codex Max, GPT-5.2 Codex,
+  Claude Sonnet 4, Opus 4 and Opus 4.1, and Gemini 2.5 Pro, which Google keeps for
+  earlier users only. A saved choice that left the list runs on the provider's
+  default, and the provider's screen says so.
+- **Anthropic's default model is Claude Sonnet 4.6.** Anthropic retires Sonnet
+  4.5, the default until now, on 30 November 2026. A model you chose yourself
+  stays as it is.
 - **A provider's settings name the model your runs use.** With no model chosen
   for OpenAI, Anthropic, Google or DeepSeek, the list stayed blank while runs
   used the provider's default, and a saved model the app no longer offers was
@@ -217,6 +229,12 @@ details.
 
 ### Fixed
 
+- **A cloud model's repair no longer sends a temperature.** When a Tool,
+  Decomposition or other structured step on a cloud model got an answer that did
+  not parse, the second try asked the provider for a low temperature. Claude 4.7
+  and later refuse any temperature but their default, so the try meant to fix the
+  answer would fail instead. The cloud try now uses each provider's default; the
+  on-device model still repairs at a low temperature.
 - **An overdue trigger tells you.** A trigger the phone stops checking — a battery
   saver or deep idle holding the app back — showed only as an *Overdue* badge on
   the Triggers screen. A check that runs every few hours now sends one **Trigger

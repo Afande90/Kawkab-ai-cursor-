@@ -2,7 +2,6 @@ package app.knotwork.android.data.engine
 
 import ai.koog.prompt.executor.clients.LLMClient
 import ai.koog.prompt.llm.LLModel
-import ai.koog.prompt.params.LLMParams
 import ai.koog.prompt.streaming.StreamFrame
 import app.knotwork.android.domain.engine.CloudLlmClientFactory
 import app.knotwork.android.domain.engine.CloudLlmModelResolver
@@ -33,8 +32,13 @@ import ai.koog.prompt.dsl.prompt as buildPrompt
  * different output shapes (a JSON object, a top-level JSON array, and a bare
  * constrained token), and no single response schema fits all three. A cloud
  * answer can therefore be prose like a local one, and the gate validates and
- * repairs it with the same configured budget. The lowered temperature on repair
- * attempts is forwarded through [LLMParams].
+ * repairs it with the same configured budget.
+ *
+ * **No temperature, on repairs either.** The gate asks for a lowered temperature on a
+ * repair, and the request does not carry it: Claude 4.7 and later answer a temperature
+ * other than the default with a 400 (Anthropic's documentation), so a repair would fail
+ * where it should fix the answer. Each provider's own default applies, as on a first
+ * attempt; the on-device path keeps the lowered temperature.
  *
  * @property cloudLlmClientFactory Builds the retry-wrapped Koog client.
  * @property cloudLlmModelResolver Resolves the configured model per provider.
@@ -74,10 +78,16 @@ private class KoogStructuredInferenceClient(
     private val onToken: suspend (String) -> Unit,
 ) : StructuredInferenceClient {
 
+    /**
+     * Runs one structured inference in the cloud.
+     *
+     * @param prompt The rendered prompt.
+     * @param temperature The gate's override; deliberately not sent (see the factory's KDoc).
+     * @return The concatenated streamed text.
+     */
     override suspend fun infer(prompt: String, temperature: Float?): String {
         networkActivityTracker.recordOutbound()
-        val params = if (temperature != null) LLMParams(temperature = temperature.toDouble()) else LLMParams()
-        val builtPrompt = buildPrompt(id = "structured", params = params) { user(prompt) }
+        val builtPrompt = buildPrompt(id = "structured") { user(prompt) }
         val accumulated = StringBuilder()
         client.executeStreaming(builtPrompt, model)
             // Told again per frame, so a long answer keeps the indicator "online".

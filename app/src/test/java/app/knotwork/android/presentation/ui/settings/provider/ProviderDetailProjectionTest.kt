@@ -82,7 +82,7 @@ class ProviderDetailProjectionTest {
 
         assertEquals("claude-3-opus", state.model.value)
         assertEquals(
-            "claude-3-opus is no longer offered — runs use claude-sonnet-4-5. Choose a model above.",
+            "claude-3-opus is no longer offered — runs use claude-sonnet-4-6. Choose a model above.",
             state.model.note,
         )
     }
