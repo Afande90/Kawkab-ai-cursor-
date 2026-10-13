@@ -701,7 +701,7 @@ flowchart TD
     Extract --> Validate{Valid shape?}
     Validate -->|yes| Success[GateResult.Success]
     Validate -->|no| Budget{repairs left?}
-    Budget -->|yes| Repair[Repair re-inference<br/>invalid output + error<br/>at REPAIR_TEMPERATURE]
+    Budget -->|yes| Repair[Repair re-inference<br/>invalid output + error<br/>at REPAIR_TEMPERATURE on device]
     Repair -->|RepairListener: console + metric| Infer
     Budget -->|no| Failed[GateResult.Failed]
 ```
