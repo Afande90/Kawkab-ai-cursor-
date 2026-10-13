@@ -87,6 +87,11 @@ details.
   before this release — and keeps the checksum with the model. A file replaced on
   disk afterwards is read again. Groundwork for runs that can be checked later:
   the checksum names exactly which model file a run used.
+- **Each downloaded model remembers where it came from.** A model downloaded
+  from a link or from Discover keeps that address with it; a file copied in by
+  hand has none. Groundwork for the encrypted backup, which carries the list of
+  models rather than the files: a restored phone can offer each one for
+  download again.
 - **An approval shows what was asked.** The approval card puts the request the
   run started from above the tool call — your message, shared text, a trigger's
   name and prompt, another app's request, or an instruction the agent scheduled
@@ -400,6 +405,14 @@ details.
   version, so a new step is covered as soon as it is added to the list. The
   steps that start below the oldest saved schema cannot be compared; no
   installed copy of the app can run them, and they are listed by name.
+  On the first new version the check could not find the schema it had just
+  been given: the build packed the saved schemas before writing the new one.
+  It now writes first.
+
+- **A database statement that fails can no longer read as done.** The database
+  library has a call that runs a statement and drops its error, so a step that
+  failed — a full disk, a lock — returned as if it had run. The test suite now
+  refuses that call in the app's code.
 
 ## [0.11.1] - 2026-10-02
 

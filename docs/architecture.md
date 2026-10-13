@@ -1700,8 +1700,9 @@ The passphrase lifecycle is asymmetric by design
 None of these stores enters Android backup or device transfer
 ([SECURITY.md § Backup and device transfer](../SECURITY.md#backup-and-device-transfer)).
 `PersistentStorageInventoryGuardTest` inventories every storage root the
-code uses, with its backup and wipe decision, and checks the backup rules
-and the wipe against it.
+code uses, with three decisions — Android backup, the wipe, and the app's own
+encrypted backup archive — and checks the backup rules, the wipe and the
+archive's entries against it.
 
 Inside the encrypted database, `memory_chunks.embedding` is stored as a
 **BLOB of little-endian IEEE-754 float32 values** (4 bytes per
