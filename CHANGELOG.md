@@ -387,6 +387,15 @@ details.
   the emulator suite runs the whole list from the oldest saved schema to the
   newest. Each step now sits in a file of its own.
 
+- **Every database upgrade step is checked against its saved schema.** A step
+  was checked on its own only where someone had written a test for it; three
+  steps an installed app can still run were checked only inside the full
+  emulator run, against the final schema. The test suite now runs every step on
+  a real database and compares what it leaves with the schema saved for that
+  version, so a new step is covered as soon as it is added to the list. The
+  steps that start below the oldest saved schema cannot be compared; no
+  installed copy of the app can run them, and they are listed by name.
+
 ## [0.11.1] - 2026-10-02
 
 ### Changed

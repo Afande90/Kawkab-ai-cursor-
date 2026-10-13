@@ -963,6 +963,53 @@ offered and left out at once`.
 
 ---
 
+## Room migration guard (`MigrationStepGuardTest`)
+
+The database upgrades through `ALL_MIGRATIONS`, one step per schema version.
+`AppDatabaseMigrationChainTest` holds the list's shape — no gap, ends at the
+current version — and the instrumented `AppDatabaseMigrationHelperTest`
+validates the whole chain and the steps someone wrote a test for, on the
+emulator matrix only. Three steps an installed database can still run (33→34,
+35→36, 36→37) were checked nowhere but inside that chain, against its final
+schema.
+
+The guard runs every registered step with Room's `MigrationTestHelper` under
+Robolectric, one test case per step: it creates the database from the schema
+Room exported for the step's start version, runs the step, and validates every
+table, view and index against the exported schema of its target version. It
+fails when:
+
+- a step leaves a schema that differs from its exported target;
+- a step has no exported schema for its start or target version — Room writes
+  `app/schemas/<version>.json` on build, and the file has to be committed;
+- a step listed as unexported now has a starting schema, or the list names a
+  step `ALL_MIGRATIONS` does not register.
+
+**Unexported steps.** Schemas are exported from version 23. The 14 steps that
+start below it (9→10 … 22→23) are listed in the test: no build under this
+application id shipped a schema below 28, so no installed database runs them.
+The list cannot grow.
+
+**Where the schemas come from.** Robolectric reads only the tested variant's
+merged assets, so the schemas are `debug` assets as well as `androidTest`
+assets (`app/build.gradle.kts`). The `test` source set's assets and the
+host-test sources of `androidComponents` were tried and never reach it.
+
+**What it cannot see:** whether data survives a step. Data preservation stays
+with the per-migration tests (`AppDatabaseMigrationTest`,
+`AppDatabaseMigrationHelperTest`).
+
+### Observed failing
+
+With the `staleNoticeFor` column dropped from `MIGRATION_69_70`, the case
+`69->70` fails with `Migration didn't properly handle: triggers`, every other
+case passing. With the unexported list widened to start at 8, a case `8->9`
+appears and fails with `UNEXPORTED_STEPS lists 8->9, which ALL_MIGRATIONS does
+not register`; widened to end at 23, the case `23->24` fails with `a schema for
+version 23 exists now`.
+
+---
+
 ## Settings help-text guards (`SettingsHelpCatalogTest`, `verifySettingsHelpDocs`)
 
 Two guards, one rule: **a setting's meaning is written once**, in

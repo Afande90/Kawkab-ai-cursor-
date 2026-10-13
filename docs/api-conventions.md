@@ -292,6 +292,12 @@ interface Tool {
   `ALL_MIGRATIONS` — the only list the database builder registers.
   `AppDatabaseMigrationChainTest` fails on a gap in the list or a list that
   does not end at the schema version.
+- Commit the schema Room exports for the new version (`app/schemas/`).
+  `MigrationStepGuardTest` runs every step of the list on real SQLite and
+  validates what it leaves against the exported schema of its target
+  version, so a new step is covered as soon as it is listed — and fails the
+  build without its schema. Data preservation is a test of its own per
+  migration.
 - Always inject a `CoroutineDispatcher` into `DataSource` classes so they
   remain testable.
 
