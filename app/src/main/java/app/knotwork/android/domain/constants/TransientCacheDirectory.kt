@@ -39,6 +39,13 @@ enum class TransientCacheDirectory(val dirName: String) {
 
     /** Voice-input clips, recorded or picked, waiting to be transcribed. */
     VOICE_CLIP("audio"),
+
+    /**
+     * The database snapshot a backup export streams into its archive — SQLCipher-encrypted under the
+     * archive's own key, deleted as soon as the export ends. Not shared with any app; listed so a
+     * process death mid-export cannot leave it behind for good.
+     */
+    BACKUP_SNAPSHOT("backup"),
     ;
 
     /** The retention rule shared by every directory in the registry. */

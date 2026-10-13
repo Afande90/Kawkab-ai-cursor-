@@ -731,6 +731,8 @@ class ExternalAutomationBackgroundRunIntegrationTest {
 
         override fun cancelAllScheduled() = Unit
 
+        override suspend fun countScheduled(): Int = 0
+
         override suspend fun cancelAllBackgroundRuns() = Unit
 
         override suspend fun pruneOrphanPrompts(): Int = 0

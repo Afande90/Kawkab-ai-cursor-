@@ -169,4 +169,38 @@ class ApiKeyManagerTest {
         assertNull(manager().getApiKey(CloudProvider.OLLAMA).first())
         assertNull(manager().getBaseUrl(CloudProvider.OPENAI).first())
     }
+
+    @Test
+    fun `given keys, models and an address when backed up then only the keys are secrets`() = runTest {
+        // Given
+        val subject = manager()
+        subject.setApiKey(CloudProvider.OPENAI, "sk-test-123")
+        subject.setModel(CloudProvider.OPENAI, "gpt-5.4")
+        subject.setBaseUrl(CloudProvider.OLLAMA, "http://192.168.1.5:11434")
+        subject.setModel(CloudProvider.OLLAMA, "llama3")
+        subject.setOllamaContextWindowSize(8192)
+
+        // When
+        val always = subject.alwaysEntries()
+        val secrets = subject.secretEntries()
+
+        // Then — the store's own entry names, so a restore writes back exactly what was there.
+        assertEquals(PREFS_NAME, subject.storeName)
+        assertEquals(
+            mapOf(
+                "openai_model" to "gpt-5.4",
+                "ollama_base_url" to "http://192.168.1.5:11434",
+                "ollama_model" to "llama3",
+                OLLAMA_CONTEXT to "8192",
+            ),
+            always,
+        )
+        assertEquals(mapOf(OPENAI_KEY to "sk-test-123"), secrets)
+    }
+
+    @Test
+    fun `given nothing stored when backed up then both sets are empty`() = runTest {
+        assertEquals(emptyMap<String, String>(), manager().alwaysEntries())
+        assertEquals(emptyMap<String, String>(), manager().secretEntries())
+    }
 }

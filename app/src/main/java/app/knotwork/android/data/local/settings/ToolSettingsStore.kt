@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
+import app.knotwork.android.data.backup.BackedUpSecrets
 import app.knotwork.android.data.local.McpServerCollisionCheck
 import app.knotwork.android.data.local.crypto.SecretStore
 import app.knotwork.android.data.local.crypto.SecureValueUnreadableException
@@ -60,7 +61,8 @@ import javax.inject.Singleton
 class ToolSettingsStore @Inject constructor(
     private val dataStore: DataStore<Preferences>,
     private val secretsStore: SecretStore,
-) : ToolSettings {
+) : ToolSettings,
+    BackedUpSecrets {
 
     private object Keys {
 
@@ -129,6 +131,23 @@ class ToolSettingsStore @Inject constructor(
         private fun sha256Hex(value: String): String = java.security.MessageDigest.getInstance("SHA-256")
             .digest(value.toByteArray(Charsets.UTF_8))
             .joinToString("") { "%02x".format(it) }
+    }
+
+    override val storeName: String = BackedUpSecrets.SETTINGS_SECRETS_STORE
+
+    /** Nothing in the settings-secrets store is anything but a secret. */
+    override suspend fun alwaysEntries(): Map<String, String> = emptyMap()
+
+    /**
+     * Every MCP server's sign-in and custom headers, as stored, by entry name. Entries left by a server
+     * that is no longer in the list are not carried.
+     */
+    override suspend fun secretEntries(): Map<String, String> = buildMap {
+        mcpServers.first().forEach { server ->
+            listOf(SecretKeys.mcpAuthKey(server.url), SecretKeys.mcpHeadersKey(server.url)).forEach { name ->
+                readMcpSecret(name, "entry")?.plaintext?.let { put(name, it) }
+            }
+        }
     }
 
     override val mcpServers: Flow<List<McpServerConfig>> = flow {

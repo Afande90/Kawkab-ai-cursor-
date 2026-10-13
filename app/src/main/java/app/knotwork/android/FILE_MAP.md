@@ -18,13 +18,20 @@ Only Kotlin files appear inside the generated blocks.
     - `WavHeader.kt` - Pure builder for the 44-byte canonical PCM WAV (RIFF) header (16 kHz mono 16-bit), split out from the recorder so the byte layout is JVM-unit-testable.
   - `backup/` - Backup archive format: Argon2id keys, the authenticated header, AES-256-GCM chunk streams and the entry container.
     - `Argon2idBackupKeyDerivation.kt` - `BackupKeyDerivation` on Bouncy Castle's Argon2id (RFC 9106, version 0x13).
+    - `BackedUpSecrets.kt` - The entries one owner keeps in a Keystore-backed store, as a backup sees them.
     - `BackupArchiveReader.kt` - Reads the entries of an archive one by one, after its header has been read and while every chunk is authenticated by `BackupDecryptingInputStream`.
     - `BackupArchiveWriter.kt` - Writes the content of an archive: a ZIP stream of named entries, encrypted as it is written by `BackupEncryptingOutputStream` (`docs/backup-format.md` § Content).
     - `BackupChunkFrame.kt` - The frame every encrypted chunk of an archive travels in (`docs/backup-format.md` § Chunks).
+    - `BackupContentCollector.kt` - `BackupContentSource` over the app's database, DataStore, encrypted stores and files.
     - `BackupDecryptingInputStream.kt` - Reads the content of an archive whose header has been read, checking the header's authentication code first and every chunk as it arrives.
     - `BackupEncryptingOutputStream.kt` - Writes an archive: the authenticated header first, then everything written to this stream as AES-256-GCM chunks of `BackupHeader.chunkSize` plaintext bytes in `BackupChunkFrame`s.
     - `BackupEntryNameSet.kt` - The entry names an archive has used so far, kept by the writer and the reader alike: a name may appear once, and may not be a file and a directory at once — `files/a` and `files/a/b` cannot both be unpacked, whichever comes first.
+    - `BackupExporterImpl.kt` - `BackupExporter`: derives the keys, gathers the content, writes the archive.
+    - `BackupFileSource.kt` - The files a backup carries: the agent's workspace and the image attachments, each as an archive entry.
     - `BackupHeaderCodec.kt` - Writes and reads the open header of a backup archive (`docs/backup-format.md` § Header).
+    - `PreferenceBackupPolicy.kt` - Which settings go into a backup and which stay with the phone.
+    - `PreferencesBackupJson.kt` - The settings entry of an archive (`app.knotwork.android.domain.backup.BackupFormat.PREFERENCES_ENTRY`): every travelling DataStore value with its type, so a restore writes back exactly what was there.
+    - `SqlCipherDatabaseSnapshotter.kt` - `DatabaseSnapshotter` on SQLCipher's `sqlcipher_export()`.
   - `engine/` - Core LLM and inference engines.
     - `AndroidRunEnvironment.kt` - `RunEnvironment` read from the build and the device.
     - `CloudClientTimeouts.kt` - Network deadlines applied to every Koog model client the app builds — the chat clients in `KoogClientFactory` and the embedding clients in `app.knotwork.android.data.services.embedding.DefaultKoogEmbedderFactory`.
@@ -155,6 +162,7 @@ Only Kotlin files appear inside the generated blocks.
       - `Migration67To68.kt` - v67 → v68: adds `model_calls.durationMs` — how long an on-device call's stream took.
       - `Migration68To69.kt` - v68 → v69: lets a newer statement of a memory fact replace the stored one without losing it.
       - `Migration69To70.kt` - v69 → v70: lets a trigger's health be measured from when it was switched on, and remembers which silence the user was told about.
+      - `Migration70To71.kt` - v70 → v71: remembers where each downloaded model came from.
       - `Migration9To10.kt` - Migration from version 9 to 10.
     - `models/` - Local DB entity models.
       - `BackgroundPromptEntity.kt` - The prompt of one queued background run, kept in the encrypted database so the background runtime's own store — unencrypted — never holds it.
@@ -333,6 +341,7 @@ Only Kotlin files appear inside the generated blocks.
 - `di/` - Dependency Injection configurations (Hilt).
   - `ApplicationScope.kt` - `@Qualifier` for the application-lifetime `CoroutineScope` provided by `CoroutinesModule`.
   - `AppModule.kt` - General app-level DI module.
+  - `BackupModule.kt` - Wires the encrypted backup: the exporter, the key derivation, the database snapshot, the content it gathers, and every owner of encrypted-store entries (`BackedUpSecrets`).
   - `CoroutinesModule.kt` - Provides the `@ApplicationScope` application-lifetime `CoroutineScope` (`SupervisorJob` + `Dispatchers.Default`) for singletons that own fire-and-forget background work (e.g. the voice recorder).
   - `DataModule.kt` - Data layer DI module.
   - `EmbeddingModule.kt` - Hilt multibinding for the `EmbeddingProvider` map (`use` / `openai_3_small` / `ollama`) and the `KoogEmbedderFactory` binding.
@@ -344,10 +353,13 @@ Only Kotlin files appear inside the generated blocks.
 - `domain/` - Domain layer containing core business logic and Use Cases.
   - `backup/` - Backup archive format contract: header, key-derivation bounds, read failures, entry-name rule.
     - `BackupEntryName.kt` - The rule every entry name inside an archive obeys, checked by the writer before it writes an entry and by the reader before it hands one out.
+    - `BackupExporter.kt` - Writes the whole app's data into one archive, encrypted with a password (`docs/backup-format.md`).
     - `BackupFormat.kt` - The fixed numbers of the backup archive format — the public contract described in `docs/backup-format.md`.
     - `BackupHeader.kt` - The open header of a backup archive: everything a reader needs before the password, and what the app shows about a file before asking for it.
     - `BackupKdfParams.kt` - Argon2id cost parameters (RFC 9106) the archive key is derived with.
     - `BackupKeyDerivation.kt` - Turns the password the user chose into the two keys of an archive.
+    - `BackupManifest.kt` - What an archive holds — the first entry of every archive (`BackupFormat.MANIFEST_ENTRY`), written by the export and read before a restore replaces anything.
+    - `BackupManifestJson.kt` - The JSON of `BackupManifest` — part of the public format (`docs/backup-format.md` § Manifest).
     - `BackupReadFailure.kt` - Why an archive could not be read.
   - `connection/` - Connection checks (Test connection): what a check found, why it sent nothing, the one address rule a request is held to, and the checker contracts.
     - `ConnectionCheckResult.kt` - What one connection check found: the server answered with its list, a rule kept the request from being sent, or the request was sent and failed.
@@ -721,6 +733,7 @@ Only Kotlin files appear inside the generated blocks.
     - `EstimateCompactionUseCase.kt` - LLM-free preview of a prospective compaction pass: loads the same candidate set as `MemoryCompactionUseCase`, derives the clusterer's `k`, and returns a `CompactionEstimate` (≈ removed chunks / freed bytes / runtime) for the Memory screen's "Compact memory?" confirm dialog.
     - `EvaluateIfConditionUseCase.kt` - Use case for evaluating IF condition nodes.
     - `EvaluateTriggerFiringUseCase.kt` - Pure `Fire`/`ReArm`/`Skip` decision core given a device-state + clock snapshot. Time conditions fire on the clock (interval debounce = half the interval so WorkManager flex can't drop a cycle; daily once per calendar day); event conditions (charging/network) fire on the false→true device-state edge via the `Trigger.armed` latch (fire when satisfied & armed, re-arm when the condition drops). Android-free, exhaustively unit-tested.
+    - `ExportBackupUseCase.kt` - Backs up the whole app into one password-locked file the user picked (Settings → Privacy → Backup & restore → Back up).
     - `ExportChatUseCase.kt` - Serialises one session (active *or* archived) into the transferable `ChatExportDocument` that round-trips through `ChatRepository.importChat`. Lives in `domain` because export is not a property of the *open* chat — the archive exports a conversation it is not showing.
     - `ExportMemoryBaseUseCase.kt` - Serialises the memory table to a portable `schemaVersion: 1` JSON blob via `MemoryJsonSerializer` (stamping the active `embeddingProviderId` + `exportedAt`). SAF-driven from `SettingsScreen` (full table) and from the Memory screen's multi-select "Export selected" action (optional `ids` subset). The import counterpart is `MemoryImportUseCase`.
     - `ExportPipelineBundleUseCase.kt` - Walks the transitive `PIPELINE`-dependency closure of a root pipeline (library-then-preset resolution, visited-set for diamonds/cycles) and serialises it into a self-contained bundle; fails fast on an unresolvable dependency or an over-limit closure.

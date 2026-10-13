@@ -38,6 +38,27 @@ object BackupFormat {
     /** The name of the first entry of every archive: the manifest that says what the archive holds. */
     const val MANIFEST_ENTRY: String = "manifest.json"
 
+    /** The database snapshot, a SQLCipher file encrypted under [DATABASE_KEY_ENTRY]'s key. */
+    const val DATABASE_ENTRY: String = "database/agent_database.db"
+
+    /** The 32 random bytes the database snapshot is encrypted with — this archive's own, not a device's. */
+    const val DATABASE_KEY_ENTRY: String = "database/key"
+
+    /** The settings that travel, as typed values (`docs/backup-format.md` § Entries). */
+    const val PREFERENCES_ENTRY: String = "preferences.json"
+
+    /** Each provider's chosen model and server address — not secrets, so always in the archive. */
+    const val PROVIDERS_ENTRY: String = "providers.json"
+
+    /** API keys, the Hugging Face token and MCP sign-ins — only when the user asked for them. */
+    const val SECRETS_ENTRY: String = "secrets.json"
+
+    /** Prefix of every file of the agent's workspace, followed by its path inside the workspace. */
+    const val WORKSPACE_PREFIX: String = "files/agent_workspace/"
+
+    /** Prefix of every image attachment, followed by its file name. */
+    const val ATTACHMENTS_PREFIX: String = "files/attachments/"
+
     /** The file name extension the app suggests when saving an archive. */
     const val FILE_EXTENSION: String = "knotwork"
 

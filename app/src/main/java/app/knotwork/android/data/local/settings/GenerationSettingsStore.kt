@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import app.knotwork.android.data.backup.BackedUpSecrets
 import app.knotwork.android.data.local.crypto.SecretStore
 import app.knotwork.android.data.local.crypto.SecureValueUnreadableException
 import app.knotwork.android.domain.constants.DefaultPrompts
@@ -51,7 +52,8 @@ import javax.inject.Singleton
 class GenerationSettingsStore @Inject constructor(
     private val dataStore: DataStore<Preferences>,
     private val secretsStore: SecretStore,
-) : GenerationSettings {
+) : GenerationSettings,
+    BackedUpSecrets {
 
     private object Keys {
         val HUGGING_FACE_TOKEN = stringPreferencesKey("hugging_face_token")
@@ -100,6 +102,15 @@ class GenerationSettingsStore @Inject constructor(
     /** Serializes the legacy-DataStore migration so concurrent collectors run it once. */
     private val huggingFaceMigrationMutex = Mutex()
     private var huggingFaceMigrationDone = false
+
+    override val storeName: String = BackedUpSecrets.SETTINGS_SECRETS_STORE
+
+    /** Nothing in the settings-secrets store is anything but a secret. */
+    override suspend fun alwaysEntries(): Map<String, String> = emptyMap()
+
+    /** The Hugging Face token, after the one-time move out of plain DataStore. */
+    override suspend fun secretEntries(): Map<String, String> =
+        huggingFaceAuthToken.first()?.let { mapOf(SecretKeys.HUGGING_FACE_TOKEN to it) }.orEmpty()
 
     override val huggingFaceAuthToken: Flow<String?> = flow {
         migrateLegacyHuggingFaceToken()

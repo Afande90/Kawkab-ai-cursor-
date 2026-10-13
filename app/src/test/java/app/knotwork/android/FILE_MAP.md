@@ -14,6 +14,7 @@ Only Kotlin files appear inside the generated blocks.
 - `architecture/` - Structural guards run as tests: Konsist layer and domain-purity rules, Firebase isolation, the usage-telemetry no-network rule, the tab-root entry guard and the instrumented-test exclusion roster.
   - `AppFunctionServiceManifestGuardTest.kt` - Every AppFunctions entry point is registered in its module's manifest exactly as the compiler generated it, and nothing else is registered as an AppFunctions service.
   - `ArchitectureScope.kt` - Shared Konsist scope for the architecture guard suite.
+  - `BackedUpSecretsGuardTest.kt` - Every owner of entries in a Keystore-backed store tells the backup what it holds.
   - `BundledDocumentationRoutingGuardTest.kt` - Keeps a document that ships in the app from opening in the browser.
   - `ComposableUseCaseKonsistTest.kt` - Konsist guard for the presentation rule "Composables observe a ViewModel / UiState, never the use-case layer directly".
   - `ContentUriReadInventoryTest.kt` - Inventory of every production file that opens a URI through `ContentResolver`, with where that URI comes from.
@@ -67,11 +68,16 @@ Only Kotlin files appear inside the generated blocks.
   - `backup/` - Backup archive format: key derivation, header, chunk streams, container, tamper matrix and the format-1 fixture.
     - `Argon2idBackupKeyDerivationTest.kt` - `Argon2idBackupKeyDerivation` and the raw `argon2id` it runs on: the RFC 9106 test vector, the split into two keys, Unicode normalisation of the password, and the refusal of parameters the heap cannot spare.
     - `BackupArchiveReaderTest.kt` - `BackupArchiveWriter` and `BackupArchiveReader` together: named entries survive, compressed or stored; the writer refuses a name the reader would refuse; the reader refuses a crafted entry list; and an archive is authenticated to its end before the reader reports the last entry.
+    - `BackupContentCollectorTest.kt` - `BackupContentCollector`: the snapshot is taken under a fresh 32-byte key into the given file; the manifest counts what the app holds and lists the models with their current hash and source; settings come from DataStore; the encrypted stores' entries are merged per store, secrets only when asked.
     - `BackupDecryptingInputStreamTest.kt` - `BackupDecryptingInputStream` against `BackupEncryptingOutputStream`: content of every size around the chunk boundary survives the round trip, and every way of altering the file — a changed byte, chunks swapped, a chunk from another archive, a relabelled last chunk, a cut at any point, bytes appended, another key — is reported with its own reason and hands out no content it did not authenticate.
     - `BackupEncryptingOutputStreamTest.kt` - `BackupEncryptingOutputStream`: the archive opens with the header it was given, every chunk but the last holds exactly one chunk of content, only `BackupEncryptingOutputStream.finish` flags a chunk as last, and nothing can be written after it.
+    - `BackupExporterImplTest.kt` - `BackupExporterImpl` end to end, against a scripted content source and the real format: the archive opens with the password and holds every entry in order, secrets only when asked; progress runs through the three steps to the total; cancelled, the file reads as incomplete; a failing document and failing data are told apart (no space among them); the database snapshot never outlives the export.
+    - `BackupFileSourceTest.kt` - `BackupFileSource`: regular files of both directories become entries under their prefixes, sorted; unfinished writes and symbolic links stay out; a path that cannot be an entry name is counted, not written; a missing directory is simply empty.
     - `BackupFormatV1FixtureTest.kt` - Reads the committed format-1 archive `src/test/resources/backup/format-1.knotwork` — the regression anchor of the public format (`docs/backup-format.md`).
     - `BackupHeaderCodecTest.kt` - `BackupHeaderCodec`: the header survives a round trip, its MAC tells a wrong key, and every field a reader cannot trust before the password is bounded — each failure with its own reason.
     - `BackupTestArchives.kt` - Builders shared by the archive tests: fixed keys and headers, an archive of given content, and the byte ranges of its chunk frames — so a test can cut, swap or alter one frame exactly.
+    - `PreferenceBackupPolicyTest.kt` - `PreferenceBackupPolicy` decides every setting the production code declares, and nothing else — so a new setting does not build until someone says whether it travels.
+    - `PreferencesBackupJsonTest.kt` - `PreferencesBackupJson`: every type is written with its name, a float reads back as the same float, and only settings the policy lets travel are written.
   - `engine/` - Tests for the inference engines, client factories and the task queue.
     - `CloudModelListGuardTest.kt` - The cloud model lists against Koog's own catalogue: every model the app offers is one of Koog's chat constants, and every chat constant Koog declares for the four providers it lists is either offered or left out here with a reason.
     - `KoogClientFactoryTest.kt` - Tests for KoogClientFactory.
@@ -245,6 +251,7 @@ Only Kotlin files appear inside the generated blocks.
   - `backup/` - Backup format contract: key-derivation bounds and the entry-name rule.
     - `BackupEntryNameTest.kt` - `BackupEntryName`: relative file paths in any script pass; every name that could leave the directory it is unpacked into, or hide a character, is refused.
     - `BackupKdfParamsTest.kt` - `BackupKdfParams.isAcceptable`: the writer's parameters and every bound are accepted, one step past any bound is refused.
+    - `BackupManifestJsonTest.kt` - `BackupManifestJson`: a manifest survives the round trip, unknown keys are ignored, optional fields are omitted rather than written empty, and anything else is refused with its reason.
   - `connection/` - Tests of the connection-check rules: the address rule and the preconditions a Test button is disabled by.
     - `ConnectionPreconditionsTest.kt` - Unit tests for `ConnectionPreconditions` — why a Test button is disabled, and the first thing a check asks.
     - `EndpointRuleTest.kt` - Unit tests for `EndpointRule` — the one decision the address gate, the per-hop check and the settings form read.
@@ -450,6 +457,7 @@ Only Kotlin files appear inside the generated blocks.
     - `EstimateCompactionUseCaseTest.kt` - Unit tests for `EstimateCompactionUseCase`.
     - `EvaluateIfConditionUseCaseTest.kt` - Tests for `EvaluateIfConditionUseCase`, including the structured-output gate path (constrained `{"True","False"}` token with repair).
     - `EvaluateTriggerFiringUseCaseTest.kt` - Unit tests for `EvaluateTriggerFiringUseCase` — the pure fire/skip/re-arm decision core.
+    - `ExportBackupUseCaseTest.kt` - `ExportBackupUseCase`: a password of at least twelve characters, counted as code points, reaches the exporter; a shorter one is refused before anything is written, and the stream is closed either way.
     - `ExportChatUseCaseTest.kt` - Unit tests for `ExportChatUseCase`.
     - `ExportMemoryBaseUseCaseTest.kt` - Unit tests for `ExportMemoryBaseUseCase`.
     - `ExportPipelineBundleUseCaseTest.kt` - Tests for `ExportPipelineBundleUseCase` — the dependency-closure walk with diamond/cycle collapse, the library-then-preset resolution order, and the fail-fast guards.

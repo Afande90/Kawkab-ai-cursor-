@@ -13,6 +13,8 @@ import app.knotwork.android.data.local.crypto.FakeAeadCipher
 import app.knotwork.android.data.local.crypto.InMemorySharedPreferences
 import app.knotwork.android.data.local.crypto.KeystoreBackedPrefsStore
 import app.knotwork.android.data.local.crypto.SecretStore
+import app.knotwork.android.data.local.settings.GenerationSettingsStore
+import app.knotwork.android.data.local.settings.ToolSettingsStore
 import app.knotwork.android.domain.constants.SettingsDefaults
 import app.knotwork.android.domain.models.LocalBackend
 import app.knotwork.android.domain.models.McpAuth
@@ -1129,6 +1131,42 @@ class SettingsManagerTest {
         val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
         val ds = PreferenceDataStoreFactory.create(scope = scope, produceFile = { file })
         return Triple(testSettingsManager(ds, secretStore), ds, scope)
+    }
+
+    @Test
+    fun `given a token and an MCP sign-in when backed up then the secrets are their stored entries`() = runTest {
+        val (manager, ds, scope) = freshManagerWithExposedDataStore()
+        try {
+            // Given
+            val url = "https://mcp.example"
+            manager.setHuggingFaceAuthToken("hf_secret_token")
+            manager.addMcpServer(
+                McpServerConfig(
+                    url = url,
+                    name = "S",
+                    auth = McpAuth.Bearer(token = "tok"),
+                    headers = mapOf(
+                        "X-Org" to "a",
+                    ),
+                ),
+            )
+            val generation = GenerationSettingsStore(ds, secretStore)
+            val tool = ToolSettingsStore(ds, secretStore)
+
+            // When
+            val token = generation.secretEntries()
+            val mcp = tool.secretEntries()
+
+            // Then — the store's own entry names and stored payloads; nothing here is "always".
+            assertEquals(mapOf("hugging_face_token" to "hf_secret_token"), token)
+            assertEquals(setOf(mcpAuthSecretKey(url), mcpHeadersSecretKey(url)), mcp.keys)
+            assertTrue(mcp.getValue(mcpAuthSecretKey(url)).contains("tok"))
+            assertEquals(emptyMap<String, String>(), generation.alwaysEntries() + tool.alwaysEntries())
+            assertEquals("secure_settings_secrets", tool.storeName)
+            assertEquals("secure_settings_secrets", generation.storeName)
+        } finally {
+            scope.cancel()
+        }
     }
 
     @Test
