@@ -27,9 +27,9 @@ import org.robolectric.RuntimeEnvironment
  * schema each step produces.
  *
  * **Steps without an exported schema.** Schemas are exported from version 23 on, so the steps that
- * start below it cannot be validated; they are listed in [UNEXPORTED_STEPS]. No build published under
- * this application id carried a schema below 28 (v0.1.0–v0.3.0 shipped as another application id), so
- * no installed database can run them. The list cannot grow: a listed step whose starting schema
+ * start below it cannot be validated; they are listed in [UNEXPORTED_STEPS]. No build under this
+ * application id carried a schema below 28 (the tags v0.1.0–v0.3.0 were built under another
+ * application id), so no installed database can run them. The list cannot grow: a listed step whose starting schema
  * exists, or one the list names but [ALL_MIGRATIONS] does not register, fails its case.
  *
  * The exported schemas reach the JVM through the `debug` source set's assets: Robolectric reads only
