@@ -39,16 +39,16 @@ class KoogCloudLlmModelResolverTest {
     @Test
     fun `given an offered model saved then Koog's own constant is sent, capabilities and all`() = runTest {
         // The constant, not a look-alike: Koog routes a Responses-only model by its capabilities.
-        val model = resolver(CloudProvider.OPENAI, OpenAIModels.Chat.GPT5_2Codex.id).resolveModel(CloudProvider.OPENAI)
+        val model = resolver(CloudProvider.OPENAI, OpenAIModels.Chat.GPT5_3Codex.id).resolveModel(CloudProvider.OPENAI)
 
-        assertSame(OpenAIModels.Chat.GPT5_2Codex, model)
+        assertSame(OpenAIModels.Chat.GPT5_3Codex, model)
     }
 
     @Test
     fun `given nothing saved then the provider's default constant is sent`() = runTest {
         assertSame(OpenAIModels.Chat.GPT5_4, resolver(CloudProvider.OPENAI, null).resolveModel(CloudProvider.OPENAI))
         assertSame(
-            AnthropicModels.Sonnet_4_5,
+            AnthropicModels.Sonnet_4_6,
             resolver(CloudProvider.ANTHROPIC, null).resolveModel(CloudProvider.ANTHROPIC),
         )
     }
@@ -57,7 +57,7 @@ class KoogCloudLlmModelResolverTest {
     fun `given a saved model no longer offered then the default is sent, as the screen says`() = runTest {
         val model = resolver(CloudProvider.ANTHROPIC, "claude-3-opus").resolveModel(CloudProvider.ANTHROPIC)
 
-        assertSame(AnthropicModels.Sonnet_4_5, model)
+        assertSame(AnthropicModels.Sonnet_4_6, model)
     }
 
     @Test

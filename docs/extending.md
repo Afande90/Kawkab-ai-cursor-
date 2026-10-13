@@ -685,7 +685,10 @@ A provider Koog lists gets an entry in
 its default and the models it offers, as Koog's own constants — never an
 `LLModel` built by hand, since Koog's client routes by a constant's
 capabilities. A provider whose model is typed needs no entry; give it a default
-in `KoogCloudModelCatalog` only if it has one.
+in `KoogCloudModelCatalog` only if it has one. `CloudModelListGuardTest` then
+holds the list against Koog's catalogue: every chat constant Koog declares for
+the provider is offered or left out in the test with a reason, so a Koog upgrade
+fails the build until its new models are sorted.
 
 ### 3.4. Store the API key securely
 

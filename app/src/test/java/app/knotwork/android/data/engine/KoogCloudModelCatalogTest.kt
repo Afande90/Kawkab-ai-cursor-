@@ -70,7 +70,7 @@ class KoogCloudModelCatalogTest {
         val inUse = catalog.modelInUse(CloudProvider.ANTHROPIC, "claude-3-opus")
 
         assertEquals(
-            CloudModelInUse("claude-sonnet-4-5", CloudModelFallback.NoLongerOffered("claude-3-opus")),
+            CloudModelInUse("claude-sonnet-4-6", CloudModelFallback.NoLongerOffered("claude-3-opus")),
             inUse,
         )
     }

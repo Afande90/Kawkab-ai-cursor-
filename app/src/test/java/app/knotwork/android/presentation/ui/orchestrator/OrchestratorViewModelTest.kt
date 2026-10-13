@@ -1597,7 +1597,7 @@ class OrchestratorViewModelTest {
             val availability = vm.nodeSheet.loadProviderAvailability()
 
             assertEquals(
-                mapOf(CloudProvider.OPENAI to "gpt-5.4", CloudProvider.ANTHROPIC to "claude-sonnet-4-5"),
+                mapOf(CloudProvider.OPENAI to "gpt-5.4", CloudProvider.ANTHROPIC to "claude-sonnet-4-6"),
                 availability.models,
             )
         }

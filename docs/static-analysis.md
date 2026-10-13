@@ -65,6 +65,7 @@ means a document is being generated from a rule nobody is checking.
 | `:app:testFullDebugUnitTest` (Konsist suite)      | Architecture guard: Clean-Architecture layer boundaries (see below).        |
 | `:app:testFullDebugUnitTest` (`TopBarInsetGuardTest`) | Fails if a bar at the top of a screen neither applies the status-bar inset nor names the parent that does (see below). |
 | `:app:testFullDebugUnitTest` (`BundledDocumentationRoutingGuardTest`) | Fails if a call that can open a document bundled into the app passes no in-app reader, and so sends it to the browser (see below). |
+| `:app:testFullDebugUnitTest` (`CloudModelListGuardTest`) | Fails if a cloud model the app offers is not one of Koog's chat constants, or a chat constant Koog declares is neither offered nor left out with a reason (see below). |
 | `:app:testFullDebugUnitTest` (`ShippedPipelineLayoutTest`) | Fails if two node cards overlap in a bundled pipeline preset or a cookbook recipe (see below). |
 | `:app:testFullDebugUnitTest` (`GoldenTraceTest`, `GoldenTraceCatalogueTest`) | Fails if running a bundled preset, a cookbook recipe or a test fixture through the real engine produces a trace that differs from its committed golden file, or a pipeline file, a node type or a golden file falls out of the catalogue (see below). |
 | `:catalog:verifyRoborazziDebug`               | Fails if a design-system screenshot differs from its committed baseline (see below). |
@@ -921,6 +922,44 @@ useful — it checks that a reader is handed over, not where it goes.
 With the onboarding call's reader argument removed, the first test reports
 `OnboardingScreen.kt` opening `[faq]` without a reader. With the settings help
 catalogue pointed at the troubleshooting document, it reports `SettingsScreens.kt`.
+
+---
+
+## Cloud model list guard (`CloudModelListGuardTest`)
+
+The models the app offers for OpenAI, Anthropic, Google and DeepSeek are written
+by hand in `KoogModelMapper`, and the list fell behind without a sound: a Koog
+upgrade brought 22 chat models the app never offered, while models their
+providers had already retired stayed on offer.
+
+The guard reads Koog's chat constants by reflection — every static `LLModel`
+field of `OpenAIModels.Chat`, `AnthropicModels`, `GoogleModels` and
+`DeepSeekModels`, not Koog's own `models` lists, which are kept by hand and mix in
+embedding and audio models — and fails when:
+
+- an offered model is not one of those constants for its provider: a hand-built
+  `LLModel` loses the capabilities Koog routes by;
+- a constant is neither offered nor in the guard's `notOffered` list with a
+  reason — so a Koog upgrade that adds a model fails the build until the model
+  is offered or left out on purpose;
+- an entry in `notOffered` is not a chat constant of its provider, is offered as
+  well, or has no reason.
+
+A model is left out when its provider has retired it (the provider's
+deprecation page, or a request with a real key answering "not found"), when a
+shutdown date is already announced, or when no request to it has been measured
+on a path the app has not run before.
+
+**What it cannot see:** whether a model still answers. A retired model stays on
+offer until someone checks; the list is checked again at each release.
+
+### Observed failing
+
+With `gemini-3.7-flash` taken out of the Google list, the test that every
+constant is sorted reports `google: gemini-3.7-flash`. With an embedding model and
+an offered model added to the OpenAI exclusions, the test of the exclusions
+reports `text-embedding-3-small is not a chat constant of it` and `gpt-5.4 is
+offered and left out at once`.
 
 ---
 

@@ -687,7 +687,9 @@ The gate validates against one of two shapes:
 On a malformed reply the gate runs a **repair loop**: it hands the model
 back its own invalid output plus the validation error and asks it to
 correct itself, at a lowered, deterministic-leaning sampling temperature
-(`REPAIR_TEMPERATURE`). The number of attempts is the
+(`REPAIR_TEMPERATURE`) on the device. A cloud model gets no temperature on a
+repair, only its provider's default: Claude 4.7 and later answer any other
+temperature with an error, which would fail the repair itself. The number of attempts is the
 **Settings → max repairs** budget (`structuredOutputMaxRepairs`, default 2,
 range 0–4). The loop ends in `GateResult.Success(value, repairs)` or
 `GateResult.Failed(lastRaw, lastError, repairs)`.
