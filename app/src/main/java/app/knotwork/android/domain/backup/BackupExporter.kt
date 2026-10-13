@@ -64,7 +64,10 @@ enum class BackupExportFailure {
     /** The place the user picked stopped accepting the file. */
     WRITE_FAILED,
 
-    /** The data could not be read — the database snapshot or a file failed. */
+    /** The phone's own storage is too full for the database snapshot the export makes on the way. */
+    PHONE_FULL,
+
+    /** The app's own data could not be read or sealed — the database, a file, a key or the cipher failed. */
     READ_FAILED,
 }
 

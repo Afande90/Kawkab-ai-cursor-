@@ -28,6 +28,25 @@ interface BackedUpSecrets {
      */
     suspend fun secretEntries(): Map<String, String>
 
+    /**
+     * Finishes moving this owner's secrets out of the plain settings, where an older release kept some,
+     * before a backup reads the settings. Does nothing for an owner that never kept a secret there.
+     */
+    suspend fun settle() {
+        // Nothing to move by default.
+    }
+
+    /**
+     * The value a travelling setting this owner keeps goes into a backup with — with any secret an older
+     * release left inside it removed. The settle step moves such secrets out; this is the second line,
+     * for when that move could not be written.
+     *
+     * @param key The setting's name.
+     * @param value Its stored value.
+     * @return The value to back up, or `null` to leave the setting out.
+     */
+    fun scrubbed(key: String, value: Any): Any? = value
+
     /** The names of the stores whose owners implement this. */
     companion object {
         /** The store of cloud API keys and each provider's model and server address. */

@@ -62,6 +62,11 @@ internal class BackupContent(
 /**
  * [BackupContentSource] over the app's database, DataStore, encrypted stores and files.
  *
+ * Every owner of encrypted entries first settles: secrets an older release kept inside a setting move to
+ * their store before the settings are read, and each travelling setting passes through its owner's
+ * scrub on the way into the archive. The counts and settings are read just after the snapshot; a write
+ * in between can make them differ from the copy by that write.
+ *
  * The secret stores' entries are read through their owners ([BackedUpSecrets]); entries of one store
  * that two owners share are merged. The database passphrase's store has no owner here: it never goes
  * into a backup.
@@ -85,6 +90,23 @@ internal class BackupContentCollector @Inject constructor(
         createdAtEpochMillis: Long,
     ): BackupContent {
         val key = ByteArray(BackupFormat.KEY_LENGTH).also { SecureRandom().nextBytes(it) }
+        var collected = false
+        try {
+            return collect(includeSecrets, snapshotFile, createdAtEpochMillis, key).also { collected = true }
+        } finally {
+            // On success the key travels on in the content; on any failure it goes no further.
+            if (!collected) key.fill(0)
+        }
+    }
+
+    private suspend fun collect(
+        includeSecrets: Boolean,
+        snapshotFile: File,
+        createdAtEpochMillis: Long,
+        key: ByteArray,
+    ): BackupContent {
+        // Secrets an older release kept inside a setting leave it before the settings are read.
+        secretOwners.forEach { it.settle() }
         val schemaVersion = snapshotter.snapshot(snapshotFile, key)
         val workspace = files.workspace()
         val attachments = files.attachments()
@@ -113,7 +135,7 @@ internal class BackupContentCollector @Inject constructor(
         return BackupContent(
             snapshotFile = snapshotFile,
             snapshotKey = key,
-            preferences = PreferencesBackupJson.encode(dataStore.data.first()).toByteArray(Charsets.UTF_8),
+            preferences = PreferencesBackupJson.encode(dataStore.data.first(), ::scrubbed).toByteArray(Charsets.UTF_8),
             providers = storesJson(secretOwners.map { it.storeName to it.alwaysEntries() }),
             secrets = if (includeSecrets) storesJson(secretOwners.map { it.storeName to it.secretEntries() }) else null,
             workspace = workspace,
@@ -121,6 +143,9 @@ internal class BackupContentCollector @Inject constructor(
             manifest = manifest,
         )
     }
+
+    private fun scrubbed(key: String, value: Any): Any? =
+        secretOwners.fold<BackedUpSecrets, Any?>(value) { current, owner -> current?.let { owner.scrubbed(key, it) } }
 
     /**
      * The JSON of the provider-settings and secrets entries:

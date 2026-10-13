@@ -1,7 +1,7 @@
 package app.knotwork.android.data.backup
 
 import android.content.Context
-import android.database.SQLException
+import android.database.sqlite.SQLiteFullException
 import android.system.ErrnoException
 import android.system.OsConstants
 import app.knotwork.android.BuildConfig
@@ -90,60 +90,90 @@ internal class BackupExporterImpl(
         password: CharArray,
         includeSecrets: Boolean,
         onProgress: (BackupProgress) -> Unit,
-    ): BackupManifest = withContext(ioDispatcher) {
+    ): BackupManifest {
         val sink = GuardedSink(target)
-        sink.use {
-            onProgress(BackupProgress(BackupStep.KEY, bytesDone = 0, bytesTotal = 0))
-            val salt = ByteArray(BackupFormat.SALT_LENGTH).also { SecureRandom().nextBytes(it) }
-            val snapshot = File(snapshotDirectory().apply { mkdirs() }, "snapshot-${UUID.randomUUID()}.db")
-            var keys: BackupKeys? = null
-            var neededBytes = 0L
-            try {
-                val archiveKeys = keyDerivation.deriveKeys(password, salt, kdfParams).also { keys = it }
-                currentCoroutineContext().ensureActive()
-                onProgress(BackupProgress(BackupStep.DATABASE, bytesDone = 0, bytesTotal = 0))
-                val content = source.collect(includeSecrets, snapshot, now())
-                try {
-                    val manifest = BackupManifestJson.encode(content.manifest).toByteArray(Charsets.UTF_8)
-                    neededBytes = totalBytes(content, manifest)
-                    val header = BackupHeader(
-                        formatVersion = BackupFormat.FORMAT_VERSION,
-                        appVersionName = BuildConfig.VERSION_NAME,
-                        appVersionCode = BuildConfig.VERSION_CODE,
-                        flavor = BuildConfig.FLAVOR,
-                        schemaVersion = content.manifest.schemaVersion,
-                        createdAtEpochMillis = content.manifest.createdAtEpochMillis,
-                        contentBytes = neededBytes,
-                        kdfParams = kdfParams,
-                        salt = salt,
-                        chunkSize = chunkSize,
-                    )
-                    val progress = Progress(neededBytes, onProgress, currentCoroutineContext().job)
-                    BackupArchiveWriter(sink, header, archiveKeys).use { writer ->
-                        writeContent(writer, content, manifest, progress)
-                        writer.finish()
-                    }
-                    content.manifest
-                } finally {
-                    content.snapshotKey.fill(0)
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: SinkFailure) {
-                val failure = if (e.isOutOfSpace()) BackupExportFailure.NO_SPACE else BackupExportFailure.WRITE_FAILED
-                Timber.w("Backup export could not write the archive: %s", e.cause?.javaClass?.simpleName)
-                throw BackupExportException(failure, neededBytes, "the archive could not be written", e.cause)
-            } catch (e: IOException) {
-                Timber.w("Backup export could not read the app's data: %s", e.javaClass.simpleName)
-                throw BackupExportException(BackupExportFailure.READ_FAILED, neededBytes, "data could not be read", e)
-            } catch (e: SQLException) {
-                Timber.w("Backup export could not snapshot the database: %s", e.javaClass.simpleName)
-                throw BackupExportException(BackupExportFailure.READ_FAILED, neededBytes, "database snapshot failed", e)
-            } finally {
-                snapshot.delete()
-                keys?.wipe()
-            }
+        try {
+            return withContext(ioDispatcher) { sink.use { exportInto(sink, password, includeSecrets, onProgress) } }
+        } finally {
+            // Closes the document when the export never started — a caller cancelled before the dispatcher
+            // ran it. After a started export this is a no-op: the sink closes once.
+            sink.closeQuietly()
         }
+    }
+
+    private suspend fun exportInto(
+        sink: GuardedSink,
+        password: CharArray,
+        includeSecrets: Boolean,
+        onProgress: (BackupProgress) -> Unit,
+    ): BackupManifest {
+        onProgress(BackupProgress(BackupStep.KEY, bytesDone = 0, bytesTotal = 0))
+        val salt = ByteArray(BackupFormat.SALT_LENGTH).also { SecureRandom().nextBytes(it) }
+        val snapshot = File(snapshotDirectory().apply { mkdirs() }, "snapshot-${UUID.randomUUID()}.db")
+        var keys: BackupKeys? = null
+        var neededBytes = 0L
+        try {
+            val archiveKeys = keyDerivation.deriveKeys(password, salt, kdfParams).also { keys = it }
+            currentCoroutineContext().ensureActive()
+            onProgress(BackupProgress(BackupStep.DATABASE, bytesDone = 0, bytesTotal = 0))
+            val content = source.collect(includeSecrets, snapshot, now())
+            try {
+                val manifest = BackupManifestJson.encode(content.manifest).toByteArray(Charsets.UTF_8)
+                neededBytes = totalBytes(content, manifest)
+                val progress = Progress(neededBytes, onProgress, currentCoroutineContext().job)
+                BackupArchiveWriter(sink, header(content.manifest, salt, neededBytes), archiveKeys).use { writer ->
+                    writeContent(writer, content, manifest, progress)
+                    writer.finish()
+                }
+                return content.manifest
+            } finally {
+                content.snapshotKey.fill(0)
+                content.providers.fill(0)
+                content.secrets?.fill(0)
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            throw failureOf(e, neededBytes)
+        } finally {
+            deleteSnapshot(snapshot)
+            keys?.wipe()
+        }
+    }
+
+    private fun header(manifest: BackupManifest, salt: ByteArray, contentBytes: Long) = BackupHeader(
+        formatVersion = BackupFormat.FORMAT_VERSION,
+        appVersionName = BuildConfig.VERSION_NAME,
+        appVersionCode = BuildConfig.VERSION_CODE,
+        flavor = BuildConfig.FLAVOR,
+        schemaVersion = manifest.schemaVersion,
+        createdAtEpochMillis = manifest.createdAtEpochMillis,
+        contentBytes = contentBytes,
+        kdfParams = kdfParams,
+        salt = salt,
+        chunkSize = chunkSize,
+    )
+
+    /**
+     * What the user is told about [e]: the document they picked failing is theirs to fix — no space, or
+     * it stopped accepting bytes; the phone's own storage too full for the snapshot is the phone's; any
+     * other failure is the app's own data failing to be read or sealed.
+     */
+    private fun failureOf(e: Exception, neededBytes: Long): BackupExportException {
+        val failure = when {
+            e is SinkFailure && e.isOutOfSpace() -> BackupExportFailure.NO_SPACE
+            e is SinkFailure -> BackupExportFailure.WRITE_FAILED
+            e is SQLiteFullException -> BackupExportFailure.PHONE_FULL
+            else -> BackupExportFailure.READ_FAILED
+        }
+        val cause = if (e is SinkFailure) e.cause else e
+        Timber.w("Backup export failed (%s): %s", failure, cause?.javaClass?.simpleName)
+        return BackupExportException(failure, neededBytes, "backup export failed: $failure", cause)
+    }
+
+    /** Deletes the snapshot and whatever journal SQLite left beside it. */
+    private fun deleteSnapshot(snapshot: File) {
+        SNAPSHOT_SIDECARS.forEach { suffix -> File(snapshot.path + suffix).delete() }
     }
 
     private fun writeContent(
@@ -216,16 +246,31 @@ internal class BackupExporterImpl(
 
     /**
      * The document the user picked. Its failures are marked as [SinkFailure], so they are told apart
-     * from failures reading the app's own data.
+     * from failures reading the app's own data. It closes once; a second close does nothing.
      */
     private class GuardedSink(out: OutputStream) : FilterOutputStream(out) {
+        private var closed = false
+
         override fun write(b: Int) = guard { out.write(b) }
 
         override fun write(b: ByteArray, off: Int, len: Int) = guard { out.write(b, off, len) }
 
         override fun flush() = guard { out.flush() }
 
-        override fun close() = guard { out.close() }
+        override fun close() {
+            if (closed) return
+            closed = true
+            guard { out.close() }
+        }
+
+        /** Closes if not yet closed, keeping a failure to close to the log: nothing was written to lose. */
+        fun closeQuietly() {
+            try {
+                close()
+            } catch (e: SinkFailure) {
+                Timber.w("Backup document could not be closed: %s", e.cause?.javaClass?.simpleName)
+            }
+        }
 
         private inline fun guard(block: () -> Unit) {
             try {
@@ -244,5 +289,8 @@ internal class BackupExporterImpl(
 
     private companion object {
         const val COPY_BUFFER = 64 * 1024
+
+        /** The snapshot file, and the journal files SQLite may leave beside it. */
+        val SNAPSHOT_SIDECARS = listOf("", "-journal", "-wal", "-shm")
     }
 }

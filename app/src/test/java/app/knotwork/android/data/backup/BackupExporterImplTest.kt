@@ -1,5 +1,6 @@
 package app.knotwork.android.data.backup
 
+import android.database.sqlite.SQLiteFullException
 import android.system.ErrnoException
 import android.system.OsConstants
 import app.knotwork.android.domain.backup.BackupCounts
@@ -13,6 +14,7 @@ import app.knotwork.android.domain.backup.BackupManifestJson
 import app.knotwork.android.domain.backup.BackupProgress
 import app.knotwork.android.domain.backup.BackupReadFailure
 import app.knotwork.android.domain.backup.BackupStep
+import app.knotwork.android.domain.models.DbPassphraseUnavailableException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
@@ -34,6 +36,7 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
 import java.io.OutputStream
+import java.security.GeneralSecurityException
 import kotlin.random.Random
 
 /**
@@ -175,6 +178,64 @@ class BackupExporterImplTest {
         assertTrue(out.closed)
     }
 
+    @Test
+    fun `given a caller already cancelled when exported then the document is still closed`() = runTest {
+        // Given
+        val out = FailingStream(null)
+        val job = launch(UnconfinedTestDispatcher(testScheduler)) {
+            cancel()
+            exporter(testScheduler).export(out, password.toCharArray(), false) { }
+        }
+
+        // When
+        job.join()
+
+        // Then
+        assertTrue(out.closed)
+    }
+
+    @Test
+    fun `given failures of the phone itself when exported then each is a failure the user is told, not a crash`() =
+        runTest {
+            // Given — the database key unavailable, the phone's storage full, the cipher refusing.
+            val causes = mapOf<Throwable, BackupExportFailure>(
+                DbPassphraseUnavailableException(DbPassphraseUnavailableException.Reason.DECRYPTION_FAILED) to
+                    BackupExportFailure.READ_FAILED,
+                SQLiteFullException("database or disk is full") to BackupExportFailure.PHONE_FULL,
+                GeneralSecurityException("cipher") to BackupExportFailure.READ_FAILED,
+            )
+
+            // Then
+            causes.forEach { (cause, expected) ->
+                val source = object : BackupContentSource {
+                    override suspend fun collect(
+                        includeSecrets: Boolean,
+                        snapshotFile: File,
+                        createdAtEpochMillis: Long,
+                    ) = throw cause
+                }
+                val failure = exportFailure {
+                    exporter(testScheduler, source).export(FailingStream(null), password.toCharArray(), false) { }
+                }
+                assertEquals(cause.javaClass.simpleName, expected, failure.failure)
+            }
+        }
+
+    @Test
+    fun `given a snapshot that left journal files behind when the export ends then they go with it`() = runTest {
+        // When
+        exporter(testScheduler, ScriptedSource(journal = true))
+            .export(ByteArrayOutputStream(), password.toCharArray(), false) { }
+
+        // Then
+        assertTrue(
+            snapshotDir.listFiles().orEmpty().map {
+                it.name
+            }.toString(),
+            snapshotDir.listFiles().isNullOrEmpty(),
+        )
+    }
+
     private suspend fun exportFailure(export: suspend () -> Unit): BackupExportException = try {
         export()
         throw AssertionError("the export did not fail")
@@ -204,13 +265,14 @@ class BackupExporterImplTest {
     }
 
     /** Content as the collector would gather it, with a snapshot of fixed bytes. */
-    private inner class ScriptedSource : BackupContentSource {
+    private inner class ScriptedSource(private val journal: Boolean = false) : BackupContentSource {
         override suspend fun collect(
             includeSecrets: Boolean,
             snapshotFile: File,
             createdAtEpochMillis: Long,
         ): BackupContent {
             snapshotFile.writeBytes(snapshotBytes)
+            if (journal) File(snapshotFile.path + "-journal").writeBytes(ByteArray(4))
             val workspace = files.workspace()
             val attachments = files.attachments()
             return BackupContent(

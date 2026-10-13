@@ -108,9 +108,24 @@ class GenerationSettingsStore @Inject constructor(
     /** Nothing in the settings-secrets store is anything but a secret. */
     override suspend fun alwaysEntries(): Map<String, String> = emptyMap()
 
-    /** The Hugging Face token, after the one-time move out of plain DataStore. */
-    override suspend fun secretEntries(): Map<String, String> =
-        huggingFaceAuthToken.first()?.let { mapOf(SecretKeys.HUGGING_FACE_TOKEN to it) }.orEmpty()
+    /** Moves a Hugging Face token an older release kept in plain DataStore to the encrypted store. */
+    override suspend fun settle() {
+        migrateLegacyHuggingFaceToken()
+    }
+
+    /**
+     * The Hugging Face token. Read without the recovery policy of the token's own reads: an entry the
+     * Keystore cannot decrypt for now is left out of the backup and left in place.
+     */
+    override suspend fun secretEntries(): Map<String, String> {
+        val token = try {
+            secretsStore.getString(SecretKeys.HUGGING_FACE_TOKEN)
+        } catch (e: SecureValueUnreadableException) {
+            Timber.w(e, "Hugging Face token left out of a backup: unreadable for now")
+            null
+        }
+        return token?.let { mapOf(SecretKeys.HUGGING_FACE_TOKEN to it) }.orEmpty()
+    }
 
     override val huggingFaceAuthToken: Flow<String?> = flow {
         migrateLegacyHuggingFaceToken()

@@ -46,6 +46,7 @@ Only Kotlin files appear inside the generated blocks.
   - `PreferenceStorageSnapshotTest.kt` - Snapshot of what the app keeps in its preferences storage: the name and value type of every DataStore key, and the names of the files the settings live in.
   - `ProductionSources.kt` - The module's production Kotlin sources as text, for the guards that census a name or an idiom rather than a type (`HitlDispatchKonsistTest`, `TranscriptJoinKonsistTest`).
   - `PromptPackNoNetworkKonsistTest.kt` - Konsist guard enforcing the provenance rule of prompt packs: **a pack is imported from a local file the user picked, never fetched.**
+  - `RawExecSqlGuardTest.kt` - No production code runs a statement through SQLCipher's `rawExecSQL`.
   - `RegexConstructionKonsistTest.kt` - Census of how production code builds a regular expression: every pattern must be a **string literal in the source**, and anything spliced into it at runtime must pass through `Regex.escape` (or `Pattern.quote`).
   - `RepositoryPlacementKonsistTest.kt` - Konsist guard enforcing the repository placement convention from the api-conventions rule: the abstraction (`<Noun>Repository` interface) is owned by the `domain` layer, and its implementation (`<Noun>RepositoryImpl`) lives in the `data` layer.
   - `RunTraceExportNoNetworkKonsistTest.kt` - Konsist guard on the run trace export: **a run's trace leaves the device only in the user's own hands.**
@@ -78,6 +79,7 @@ Only Kotlin files appear inside the generated blocks.
     - `BackupTestArchives.kt` - Builders shared by the archive tests: fixed keys and headers, an archive of given content, and the byte ranges of its chunk frames — so a test can cut, swap or alter one frame exactly.
     - `PreferenceBackupPolicyTest.kt` - `PreferenceBackupPolicy` decides every setting the production code declares, and nothing else — so a new setting does not build until someone says whether it travels.
     - `PreferencesBackupJsonTest.kt` - `PreferencesBackupJson`: every type is written with its name, a float reads back as the same float, and only settings the policy lets travel are written.
+    - `SqlCipherDatabaseSnapshotterTest.kt` - What `SqlCipherDatabaseSnapshotter` decides before it opens anything: a key that is not 32 bytes is refused, and a phone without room for the copy is reported full.
   - `engine/` - Tests for the inference engines, client factories and the task queue.
     - `CloudModelListGuardTest.kt` - The cloud model lists against Koog's own catalogue: every model the app offers is one of Koog's chat constants, and every chat constant Koog declares for the four providers it lists is either offered or left out here with a reason.
     - `KoogClientFactoryTest.kt` - Tests for KoogClientFactory.

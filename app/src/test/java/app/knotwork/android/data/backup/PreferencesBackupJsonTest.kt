@@ -51,6 +51,22 @@ class PreferencesBackupJsonTest {
     }
 
     @Test
+    fun `given a float or double that is not a number when encoded then it is left out, not fatal`() {
+        // Given — JSON has no NaN; a broken value must not stop the whole backup.
+        val preferences = mutablePreferencesOf(
+            floatPreferencesKey("temperature") to Float.NaN,
+            doublePreferencesKey("memory_search_threshold") to Double.POSITIVE_INFINITY,
+            intPreferencesKey("top_k") to 40,
+        )
+
+        // When
+        val values = JSONObject(PreferencesBackupJson.encode(preferences)).getJSONObject("values")
+
+        // Then
+        assertEquals(setOf("top_k"), values.keys().asSequence().toSet())
+    }
+
+    @Test
     fun `given settings that stay, reset or are unknown when encoded then they are left out`() {
         // Given
         val preferences = mutablePreferencesOf(

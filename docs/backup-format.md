@@ -143,7 +143,8 @@ An export writes these, in this order:
 | `files/attachments/…` | Every image attachment, by its file name |
 
 The phone's own database key never goes into an archive: the copy is made under a
-key of its own. Model files are not in the archive — the manifest lists them.
+key of its own. Server and model addresses travel as they are written, with the
+secrets left out — so a token written into an address travels with it. Model files are not in the archive — the manifest lists them.
 Tasks the agent scheduled with `schedule_task` live in the background runtime's own
 queue and are not carried; the manifest counts them.
 

@@ -1170,6 +1170,32 @@ class SettingsManagerTest {
     }
 
     @Test
+    fun `given a server list with inline secrets when scrubbed for a backup then only the secrets are gone`() =
+        runTest {
+            val (_, ds, scope) = freshManagerWithExposedDataStore()
+            try {
+                // Given — the JSON as an older release wrote it, and one that does not parse.
+                val tool = ToolSettingsStore(ds, secretStore)
+                val inline = """[{"url":"https://m","name":"S","auth":{"type":"bearer","token":"t"},""" +
+                    """"headers":{"X":"h"}}]"""
+
+                // When
+                val scrubbed = tool.scrubbed("mcp_servers_json", inline) as String
+                val broken = tool.scrubbed("mcp_servers_json", "[{")
+                val other = tool.scrubbed("top_k", 40)
+
+                // Then
+                val server = org.json.JSONArray(scrubbed).getJSONObject(0)
+                assertEquals(setOf("url", "name"), server.keys().asSequence().toSet())
+                assertEquals("https://m", server.getString("url"))
+                assertEquals(null, broken)
+                assertEquals(40, other)
+            } finally {
+                scope.cancel()
+            }
+        }
+
+    @Test
     fun `huggingFace token round-trips through the encrypted store across instances`() = runTest {
         val (manager, ds, scope) = freshManagerWithExposedDataStore()
         try {

@@ -101,6 +101,12 @@ class ToolSettingsStore @Inject constructor(
         val BLOCK_DESTRUCTIVE_TOOLS = booleanPreferencesKey("block_destructive_tools")
     }
 
+    /** Fields of a server in the plain list where an older release kept its secrets. */
+    private object LegacyInline {
+        const val AUTH = "auth"
+        const val HEADERS = "headers"
+    }
+
     /**
      * Entry names inside [secretsStore]. Distinct from [Keys]: these are slots in
      * the Keystore-backed encrypted store, not DataStore preference keys.
@@ -137,6 +143,33 @@ class ToolSettingsStore @Inject constructor(
 
     /** Nothing in the settings-secrets store is anything but a secret. */
     override suspend fun alwaysEntries(): Map<String, String> = emptyMap()
+
+    /** Moves MCP sign-ins and headers an older release kept inline in the server list to the encrypted store. */
+    override suspend fun settle() {
+        migrateLegacyMcpSecrets()
+    }
+
+    /**
+     * The server list without any `auth` or `headers` an older release kept inline — whether or not the
+     * move to the encrypted store could be written. A list that does not parse is left out, rather than
+     * risk a secret inside it.
+     */
+    override fun scrubbed(key: String, value: Any): Any? {
+        if (key != Keys.MCP_SERVERS_JSON.name || value !is String) return value
+        return try {
+            val servers = JSONArray(value)
+            for (index in 0 until servers.length()) {
+                servers.optJSONObject(index)?.apply {
+                    remove(LegacyInline.AUTH)
+                    remove(LegacyInline.HEADERS)
+                }
+            }
+            servers.toString()
+        } catch (e: JSONException) {
+            Timber.w(e, "MCP server list left out of a backup: it does not parse")
+            null
+        }
+    }
 
     /**
      * Every MCP server's sign-in and custom headers, as stored, by entry name. Entries left by a server

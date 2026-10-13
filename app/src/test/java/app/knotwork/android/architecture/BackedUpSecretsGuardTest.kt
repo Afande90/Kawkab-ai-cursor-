@@ -38,7 +38,7 @@ class BackedUpSecretsGuardTest {
             val type = file.removeSuffix(".kt")
             assertTrue(
                 "$type implements BackedUpSecrets",
-                Regex("""class $type\b[\s\S]*?\bBackedUpSecrets\b""").containsMatchIn(code),
+                Regex("""class $type\b[^{]*\bBackedUpSecrets\b""").containsMatchIn(code),
             )
             assertTrue(
                 "$type is bound into the backup's set",
@@ -48,8 +48,8 @@ class BackedUpSecretsGuardTest {
     }
 
     private companion object {
-        /** Building a Keystore-backed store, or taking one as a dependency. */
-        val OWNS_ENTRIES = Regex("""KeystoreBackedPrefsStore\(|:\s*SecretStore\b""")
+        /** Building a Keystore-backed store, or taking one — as a store or as the interface — as a dependency. */
+        val OWNS_ENTRIES = Regex("""KeystoreBackedPrefsStore\(|:\s*(?:SecretStore|KeystoreBackedPrefsStore)\b""")
 
         /** The owners a backup reads. */
         val BACKED_UP = setOf("ApiKeyManager.kt", "GenerationSettingsStore.kt", "ToolSettingsStore.kt")

@@ -28,14 +28,18 @@ internal object PreferencesBackupJson {
      * Encodes the travelling values of [preferences].
      *
      * @param preferences The app's DataStore contents.
-     * @return The entry's JSON text.
+     * @param scrub Given each travelling setting's name and value, returns the value to write, or `null` to
+     *   leave the setting out.
+     * @return The entry's JSON text. A float or double that is not a finite number is left out: JSON cannot
+     *   hold it, and one broken value must not stop the backup.
      */
-    fun encode(preferences: Preferences): String {
+    fun encode(preferences: Preferences, scrub: (String, Any) -> Any? = { _, value -> value }): String {
         val values = JSONObject()
-        preferences.asMap().entries.sortedBy { it.key.name }.forEach { (key, value) ->
+        preferences.asMap().entries.sortedBy { it.key.name }.forEach { (key, stored) ->
             if (PreferenceBackupPolicy.membershipOf(key.name) != PreferenceBackupPolicy.Membership.TRAVELS) {
                 return@forEach
             }
+            val value = scrub(key.name, stored) ?: return@forEach
             val typed = typed(value)
             if (typed == null) {
                 Timber.w("Setting of an unknown type left out of the backup: %s", key.name)
@@ -51,8 +55,8 @@ internal object PreferencesBackupJson {
             is Boolean -> "boolean" to value
             is Int -> "int" to value
             is Long -> "long" to value
-            is Float -> "float" to value.toDouble()
-            is Double -> "double" to value
+            is Float -> if (value.isFinite()) "float" to value.toDouble() else return null
+            is Double -> if (value.isFinite()) "double" to value else return null
             is String -> "string" to value
             is Set<*> -> "stringSet" to JSONArray(value.map { it.toString() }.sorted())
             is ByteArray -> "byteArray" to Base64.getEncoder().encodeToString(value)

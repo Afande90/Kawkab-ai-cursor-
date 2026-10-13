@@ -69,17 +69,28 @@ class ApiKeyManager @Inject constructor(@ApplicationContext private val context:
     override suspend fun alwaysEntries(): Map<String, String> = buildMap {
         CloudProvider.entries.forEach { provider ->
             listOf(modelEntry(provider), baseUrlEntry(provider)).forEach { name ->
-                entry(name).value?.let { put(name, it) }
+                peek(name)?.let { put(name, it) }
             }
         }
-        readOrNull(OLLAMA_CONTEXT_ENTRY)?.let { put(OLLAMA_CONTEXT_ENTRY, it) }
+        peek(OLLAMA_CONTEXT_ENTRY)?.let { put(OLLAMA_CONTEXT_ENTRY, it) }
     }
 
     /** Each provider's API key. */
     override suspend fun secretEntries(): Map<String, String> = buildMap {
         CloudProvider.entries.forEach { provider ->
-            entry(apiKeyEntry(provider)).value?.let { put(apiKeyEntry(provider), it) }
+            peek(apiKeyEntry(provider))?.let { put(apiKeyEntry(provider), it) }
         }
+    }
+
+    /**
+     * Reads an entry for a backup without the recovery policy of [readOrNull]: an entry the Keystore cannot
+     * decrypt for now is left out of the backup and left in place, never dropped because a backup ran.
+     */
+    private fun peek(name: String): String? = entries[name]?.value ?: try {
+        store.getString(name)
+    } catch (e: SecureValueUnreadableException) {
+        Timber.w(e, "Stored API-key entry '%s' left out of a backup: unreadable for now.", name)
+        null
     }
 
     override fun getApiKey(provider: CloudProvider): Flow<String?> = entry(apiKeyEntry(provider)).asStateFlow()

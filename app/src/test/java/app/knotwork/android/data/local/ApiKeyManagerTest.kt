@@ -199,6 +199,24 @@ class ApiKeyManagerTest {
     }
 
     @Test
+    fun `given entries the Keystore cannot decrypt for now when backed up then they are left out and kept`() = runTest {
+        // Given — a transient Keystore failure must not cost the user a key because a backup ran.
+        manager().setApiKey(CloudProvider.OPENAI, "sk-test-123")
+        manager().setModel(CloudProvider.OPENAI, "gpt-5.4")
+        cipher.failDecrypt = true
+
+        // When
+        val subject = manager()
+        val always = subject.alwaysEntries()
+        val secrets = subject.secretEntries()
+
+        // Then
+        assertEquals(emptyMap<String, String>(), always + secrets)
+        assertTrue(prefs.values.containsKey(OPENAI_KEY))
+        assertTrue(prefs.values.containsKey("openai_model"))
+    }
+
+    @Test
     fun `given nothing stored when backed up then both sets are empty`() = runTest {
         assertEquals(emptyMap<String, String>(), manager().alwaysEntries())
         assertEquals(emptyMap<String, String>(), manager().secretEntries())

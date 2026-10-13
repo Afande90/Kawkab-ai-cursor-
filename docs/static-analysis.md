@@ -474,7 +474,8 @@ flag them with spurious, environment-dependent violations.
 | `ImageAttachmentEntryCensusTest`   | Every file that starts runs says whether it can attach an image; one that can must call the multimodal pre-flight (`CheckImageAttachmentUseCase`), and one listed as text-only may not handle an attachment. |
 | `TransientCacheDirectoryGuardTest` | Every directory the app creates under its cache, and every `<cache-path>` the `FileProvider` serves, is an entry of `TransientCacheDirectory` — so the daily sweep removes what its owner misses. |
 | `PathContainmentGuardTest`         | No production file outside `PathContainment` prefix-tests a path string: `absolutePath.startsWith(root)` passes `root/../elsewhere`, so containment is always canonicalise-then-compare. |
-| `PersistentStorageInventoryGuardTest` | Every storage root the production code reaches is inventoried with three decisions — kept out of Android backup and device transfer, erased or kept by the recovery wipe, and written into the app's own encrypted backup or left out with a reason. Backup is off, both extraction sections exclude every domain, the plain-text directories are also excluded by the names production code uses, the wipe calls the owner of every root recorded as erased, every archive entry the format names is claimed by a root, and the backup code writes every entry a root claims. |
+| `RawExecSqlGuardTest`              | No production file runs a statement through SQLCipher's `rawExecSQL`. sqlcipher-android steps it and drops the result code, so a statement that fails when stepped — a full disk, a lock — returns as if it had run. The backup's database snapshot once ran its `ATTACH` and export that way: on a device both failed, and only the next statement's compile error reached the caller — a failure later in the export would have left a partial copy reported as whole. The device test `SqlCipherDatabaseSnapshotterTest` pins the library's behaviour. |
+| `PersistentStorageInventoryGuardTest` | Every storage root the production code reaches is inventoried with three decisions — kept out of Android backup and device transfer, erased or kept by the recovery wipe, and written into the app's own encrypted backup or left out with a reason. Backup is off, both extraction sections exclude every domain, the plain-text directories are also excluded by the names production code uses, the wipe calls the owner of every root recorded as erased, every archive entry the format names is claimed by a root, and the backup code names every entry a root claims (that it is written is the exporter's end-to-end test). |
 | `PreferenceStorageSnapshotTest`   | Every preference key keeps its name and value type, and the settings keep their file names: a renamed or retyped key, or a renamed file, loses the user's value on the next read without failing anything. The key census reads the production sources, so a key moving to another file does not matter; every key must be declared with a literal name, and there is one DataStore file. A new key is added to the snapshot in the same change. |
 | `SettingsCompositeConsumersTest`  | No production file depends on the whole `SettingsRepository` composite unless it is on the list of existing consumers, and a listed file that no longer does fails too — so the list only shrinks. Code depends on the settings section it reads (`MemorySettings`, `ToolSettings`, …); a KDoc mention does not count. |
 | `SettingsSingletonScopeTest`      | Every class that implements a settings section is a class-level `@Singleton`. Each section has its own binding, and a scope on a `@Binds` method caches per binding: with the class unscoped, the generated component built one instance per binding, each with its own in-memory credential cache. The sections are read from `SettingsRepository`'s supertype list. |
@@ -1032,7 +1033,10 @@ anyone deciding. Three guards make the decision a build error:
 - `BackedUpSecretsGuardTest` finds every file that builds a Keystore-backed store
   or takes one as a dependency. Each must implement `BackedUpSecrets` and be bound
   into the backup's set in `BackupModule`, or be named with its reason — the
-  database passphrase never leaves the phone.
+  database passphrase never leaves the phone. It holds owners, not entries: which
+  of its entries an owner reports is the owner's test. Each owner also settles
+  secrets an older release kept inside a setting, and scrubs them from what a
+  backup writes — MCP sign-ins once lived inside the plain server list.
 - `PersistentStorageInventoryGuardTest` (above) gives every storage root its
   archive entries or the reason it has none, both ways.
 
@@ -1041,7 +1045,8 @@ anyone deciding. Three guards make the decision a build error:
 The storage guard's first run failed `ATTACHMENTS is recorded as archived in
 ATTACHMENTS_PREFIX, but the exporter never writes it`: the prefixes are written by
 the file listing, not the exporter, and the check now reads the whole backup
-package.
+package. Review found its first version of the owner check satisfied by any mention
+of `BackedUpSecrets` in the file; it now reads the class header.
 
 ---
 
