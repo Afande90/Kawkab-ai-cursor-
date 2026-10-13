@@ -146,6 +146,7 @@ class ModelDownloadWorker @AssistedInject constructor(
                     fileName = fileName,
                     path = outcome.path,
                     sizeBytes = File(outcome.path).length(),
+                    sourceUrl = url,
                 )
                 Result.success(workDataOf(KEY_OUTPUT_PATH to outcome.path))
             }

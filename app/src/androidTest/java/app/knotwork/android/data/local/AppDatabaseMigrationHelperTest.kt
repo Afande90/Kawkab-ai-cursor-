@@ -31,6 +31,7 @@ import app.knotwork.android.data.local.migrations.MIGRATION_66_67
 import app.knotwork.android.data.local.migrations.MIGRATION_67_68
 import app.knotwork.android.data.local.migrations.MIGRATION_68_69
 import app.knotwork.android.data.local.migrations.MIGRATION_69_70
+import app.knotwork.android.data.local.migrations.MIGRATION_70_71
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -1010,6 +1011,25 @@ class AppDatabaseMigrationHelperTest {
                 assertEquals("Morning brief", c.getString(0))
                 assertTrue("a pre-existing trigger has no recorded activation", c.isNull(1))
                 assertTrue("no overdue notice is recorded as sent", c.isNull(2))
+            }
+        }
+    }
+
+    @Test
+    fun migrate70to71_leavesExistingModelsWithoutASource() {
+        helper.createDatabase(TEST_DB, 70).use { db ->
+            db.execSQL(
+                "INSERT INTO local_models(id, name, path, size, isActive, supportsVision, supportsAudio) " +
+                    "VALUES(1, 'gemma.litertlm', '/data/gemma.litertlm', 2048, 1, 0, 0)",
+            )
+        }
+
+        helper.runMigrationsAndValidate(TEST_DB, 71, true, MIGRATION_70_71).use { db ->
+            db.query("SELECT name, isActive, sourceUrl FROM local_models WHERE id = 1").use { c ->
+                assertTrue("the pre-existing model must survive the migration", c.moveToFirst())
+                assertEquals("gemma.litertlm", c.getString(0))
+                assertEquals(1, c.getInt(1))
+                assertTrue("a model registered before has no recorded source", c.isNull(2))
             }
         }
     }

@@ -94,7 +94,7 @@ import app.knotwork.android.data.local.models.UsagePipelineDayEntity
         OnboardingMilestoneEntity::class,
         BackgroundPromptEntity::class,
     ],
-    version = 70,
+    version = 71,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)

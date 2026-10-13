@@ -58,11 +58,11 @@ class ModelDownloadWorkerTest {
         settingsRepository = mockk()
         every { settingsRepository.huggingFaceAuthToken } returns flowOf("hf_stored")
         registerDownloadedModel = mockk(relaxed = true)
-        coEvery { registerDownloadedModel(any(), any(), any()) } returns 1L
+        coEvery { registerDownloadedModel(any(), any(), any(), any()) } returns 1L
     }
 
     @Test
-    fun `given a completed download when it finishes then the model is registered and the path returned`() = runTest {
+    fun `given a completed download when it finishes then the model is registered with its source`() = runTest {
         val file = java.io.File(context.cacheDir, "m.bin").apply { writeText("payload") }
         coEvery { downloader.download(any(), any(), any(), any()) } returns
             ResumableFileDownloader.Outcome.Success(file.absolutePath)
@@ -76,8 +76,14 @@ class ModelDownloadWorkerTest {
         )
         // Registration lives here because the transfer outlives every screen —
         // a survived download must leave a model the app knows about.
+        // The address goes with it, so a restored phone can fetch the model again.
         coVerify(exactly = 1) {
-            registerDownloadedModel(fileName = "m.bin", path = file.absolutePath, sizeBytes = "payload".length.toLong())
+            registerDownloadedModel(
+                fileName = "m.bin",
+                path = file.absolutePath,
+                sizeBytes = "payload".length.toLong(),
+                sourceUrl = "http://example.com/m.bin",
+            )
         }
     }
 
@@ -211,7 +217,7 @@ class ModelDownloadWorkerTest {
             failure.outputData.getString(ModelDownloadWorker.KEY_ERROR),
         )
         assertTrue(budget.isExhausted())
-        coVerify(exactly = 0) { registerDownloadedModel(any(), any(), any()) }
+        coVerify(exactly = 0) { registerDownloadedModel(any(), any(), any(), any()) }
     }
 
     @Test

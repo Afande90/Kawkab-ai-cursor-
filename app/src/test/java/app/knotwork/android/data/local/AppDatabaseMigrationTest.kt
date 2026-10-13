@@ -37,6 +37,7 @@ import app.knotwork.android.data.local.migrations.MIGRATION_66_67
 import app.knotwork.android.data.local.migrations.MIGRATION_67_68
 import app.knotwork.android.data.local.migrations.MIGRATION_68_69
 import app.knotwork.android.data.local.migrations.MIGRATION_69_70
+import app.knotwork.android.data.local.migrations.MIGRATION_70_71
 import app.knotwork.android.domain.models.NodeContextConfig
 import io.mockk.mockk
 import io.mockk.slot
@@ -1330,5 +1331,25 @@ class AppDatabaseMigrationTest {
             ),
             statements,
         )
+    }
+
+    @Test
+    fun `MIGRATION_70_71 targets versions 70 to 71`() {
+        val migration = MIGRATION_70_71
+
+        assertEquals(70, migration.startVersion)
+        assertEquals(71, migration.endVersion)
+    }
+
+    @Test
+    fun `MIGRATION_70_71 adds the model's source as a nullable column`() {
+        val db = mockk<SupportSQLiteDatabase>(relaxed = true)
+        val statements = mutableListOf<String>()
+
+        MIGRATION_70_71.migrate(db)
+
+        verify { db.execSQL(capture(statements)) }
+        // Empty for every model registered before: its source was never recorded.
+        assertEquals(listOf("ALTER TABLE `local_models` ADD COLUMN `sourceUrl` TEXT"), statements)
     }
 }

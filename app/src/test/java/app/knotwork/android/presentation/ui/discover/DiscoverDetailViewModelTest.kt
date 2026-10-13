@@ -305,7 +305,14 @@ class DiscoverDetailViewModelTest {
         assertEquals(DiscoverInstallEvent.Success("gemma.litertlm"), announced.await())
         // The row the worker wrote is refreshed with the size the Hub reported, as
         // for a download this screen started.
-        coVerify { registerDownloadedModel("gemma.litertlm", "/data/gemma.litertlm", 2_048L) }
+        coVerify {
+            registerDownloadedModel(
+                "gemma.litertlm",
+                "/data/gemma.litertlm",
+                2_048L,
+                "https://huggingface.co/litert-community/gemma/resolve/main/gemma.litertlm",
+            )
+        }
     }
 
     @Test

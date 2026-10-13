@@ -28,6 +28,9 @@ package app.knotwork.android.domain.models
  *   through `LocalModelRepository.currentFileHash`, which also checks the stamp
  *   against the file on disk; the raw value may describe a file that has since
  *   been replaced.
+ * @property sourceUrl The address the file was downloaded from, or `null` when unknown — a model
+ *   registered before the address was recorded, or one found on disk. A restored phone offers a model
+ *   for download again from here.
  */
 data class LocalModel(
     val id: Long = 0,
@@ -38,4 +41,5 @@ data class LocalModel(
     val supportsVision: Boolean = false,
     val supportsAudio: Boolean = false,
     val fileHash: ModelFileHash? = null,
+    val sourceUrl: String? = null,
 )
