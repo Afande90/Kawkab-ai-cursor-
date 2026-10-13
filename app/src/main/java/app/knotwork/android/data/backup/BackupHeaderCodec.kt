@@ -21,8 +21,9 @@ import javax.crypto.spec.SecretKeySpec
  *
  * Layout, big-endian:
  * - **Prefix**, the same in every format version: the [BackupFormat.MAGIC] bytes, `u16` format version,
- *   `u16` length + UTF-8 version name of the writing build, `i32` body length. A reader of an older
- *   format still learns which build wrote a newer file.
+ *   `u16` length + version name of the writing build, `i32` body length. A reader of an older format
+ *   still learns which build wrote a newer file. The name is shown before anything is authenticated, so
+ *   it must look like a version ([isVersionName]); a newer file's name that does not is withheld.
  * - **Body** of format 1: `u8` KDF id, `i32` memory KiB, `i32` passes, `u8` lanes, `u8` salt length +
  *   salt, `i32` chunk size, `i64` content bytes, `i32` schema version, `i64` creation time,
  *   `i32` version code, `u16` length + UTF-8 flavour. Bytes after these are ignored: a later writer of
@@ -35,6 +36,7 @@ internal object BackupHeaderCodec {
     const val MAC_LENGTH: Int = 32
 
     private const val MAX_VERSION_NAME_BYTES = 256
+    private const val MAX_VERSION_NAME_LENGTH = 32
     private const val MAX_FLAVOR_BYTES = 64
     private const val MAX_BODY_LENGTH = 4096
     private const val HMAC = "HmacSHA256"
@@ -50,9 +52,12 @@ internal object BackupHeaderCodec {
     fun encode(header: BackupHeader, headerKey: ByteArray): ByteArray {
         val versionName = header.appVersionName.toByteArray(Charsets.UTF_8)
         val flavor = header.flavor.toByteArray(Charsets.UTF_8)
-        require(versionName.size <= MAX_VERSION_NAME_BYTES) { "version name too long" }
+        require(isVersionName(header.appVersionName)) { "version name must look like a version" }
         require(flavor.size <= MAX_FLAVOR_BYTES) { "flavor too long" }
         require(header.salt.size == BackupFormat.SALT_LENGTH) { "salt must be ${BackupFormat.SALT_LENGTH} bytes" }
+        require(header.kdfParams.isAcceptable()) { "key costs a reader would refuse" }
+        require(header.chunkSize in BackupFormat.MIN_CHUNK_SIZE..BackupFormat.MAX_CHUNK_SIZE) { "chunk size" }
+        require(header.contentBytes >= 0) { "content bytes" }
         val body = ByteArrayOutputStream().also { bytes ->
             DataOutputStream(bytes).run {
                 writeByte(BackupFormat.KDF_ARGON2ID)
@@ -119,10 +124,11 @@ internal object BackupHeaderCodec {
             throw BackupFormatException(
                 BackupReadFailure.UNSUPPORTED_FORMAT_VERSION,
                 "format $formatVersion is newer than ${BackupFormat.FORMAT_VERSION}",
-                writerVersionName = writerVersionName,
+                writerVersionName = writerVersionName.takeIf(::isVersionName),
             )
         }
         if (formatVersion < 1) damaged("format version $formatVersion")
+        if (!isVersionName(writerVersionName)) damaged("writer version name is not a version")
         val bodyLength = input.readInt()
         if (bodyLength !in 1..MAX_BODY_LENGTH) damaged("body length $bodyLength")
         val body = ByteArray(bodyLength).also { input.readFully(it) }
@@ -180,6 +186,16 @@ internal object BackupHeaderCodec {
             chunkSize = chunkSize,
         )
     }
+
+    /**
+     * Whether [name] looks like a version name and may be shown before the header is authenticated:
+     * 1 to [MAX_VERSION_NAME_LENGTH] characters of ASCII letters, digits, `.`, `+` and `-`.
+     *
+     * @param name The candidate.
+     * @return `true` when [name] may be shown.
+     */
+    fun isVersionName(name: String): Boolean = name.length in 1..MAX_VERSION_NAME_LENGTH &&
+        name.all { it in 'a'..'z' || it in 'A'..'Z' || it in '0'..'9' || it == '.' || it == '+' || it == '-' }
 
     private fun DataInputStream.readBytes(length: Int, max: Int): ByteArray {
         if (length > max) damaged("field of $length bytes, at most $max")

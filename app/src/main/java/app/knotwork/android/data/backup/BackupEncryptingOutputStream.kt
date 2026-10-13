@@ -6,6 +6,7 @@ import app.knotwork.android.domain.backup.BackupKeys
 import java.io.DataOutputStream
 import java.io.IOException
 import java.io.OutputStream
+import java.util.Objects
 
 /**
  * Writes an archive: the authenticated header first, then everything written to this stream as
@@ -43,6 +44,7 @@ internal class BackupEncryptingOutputStream(sink: OutputStream, header: BackupHe
     }
 
     override fun write(b: ByteArray, off: Int, len: Int) {
+        Objects.checkFromIndexSize(off, len, b.size)
         check(!finished) { "archive already finished" }
         var offset = off
         var remaining = len

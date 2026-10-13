@@ -23,6 +23,7 @@ Only Kotlin files appear inside the generated blocks.
     - `BackupChunkFrame.kt` - The frame every encrypted chunk of an archive travels in (`docs/backup-format.md` § Chunks).
     - `BackupDecryptingInputStream.kt` - Reads the content of an archive whose header has been read, checking the header's authentication code first and every chunk as it arrives.
     - `BackupEncryptingOutputStream.kt` - Writes an archive: the authenticated header first, then everything written to this stream as AES-256-GCM chunks of `BackupHeader.chunkSize` plaintext bytes in `BackupChunkFrame`s.
+    - `BackupEntryNameSet.kt` - The entry names an archive has used so far, kept by the writer and the reader alike: a name may appear once, and may not be a file and a directory at once — `files/a` and `files/a/b` cannot both be unpacked, whichever comes first.
     - `BackupHeaderCodec.kt` - Writes and reads the open header of a backup archive (`docs/backup-format.md` § Header).
   - `engine/` - Core LLM and inference engines.
     - `AndroidRunEnvironment.kt` - `RunEnvironment` read from the build and the device.

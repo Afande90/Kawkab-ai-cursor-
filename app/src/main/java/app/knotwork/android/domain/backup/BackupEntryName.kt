@@ -5,19 +5,25 @@ package app.knotwork.android.domain.backup
  * and by the reader before it hands one out.
  *
  * A name is a relative path of `/`-separated segments that cannot leave the directory it is unpacked
- * into: no leading `/`, no `\`, no empty, `.` or `..` segment, no control character, at most
- * [MAX_LENGTH] characters. Entries are files only — a directory is implied by the names under it.
- * A reader still resolves every name against its target directory before writing (canonicalise, then
- * compare): the rule keeps a crafted archive out at the first step, not the only one.
+ * into and cannot hide a character: no leading `/`, no `\`, no empty, `.` or `..` segment, no control
+ * character (C0, C1 or DEL), no bidirectional formatting character, at most [MAX_LENGTH] UTF-16 code
+ * units. Entries are files only — a directory is implied by the names under it, so a name may not also
+ * be one of the directories another implies ([directoriesOf]). A reader still resolves every name
+ * against its target directory before writing (canonicalise, then compare): the rule keeps a crafted
+ * archive out at the first step, not the only one.
  */
 object BackupEntryName {
 
-    /** The longest entry name, in characters. */
+    /** The longest entry name, in UTF-16 code units. */
     const val MAX_LENGTH: Int = 1024
 
     private const val SEPARATOR = '/'
-    private const val FIRST_PRINTABLE = ' '
-    private const val DELETE = '\u007f'
+
+    /** Characters that reorder how a name is displayed without showing themselves. */
+    private val BIDI_CONTROLS: Set<Char> = setOf(
+        '\u061C', '\u200E', '\u200F', '\u202A', '\u202B', '\u202C', '\u202D', '\u202E',
+        '\u2066', '\u2067', '\u2068', '\u2069',
+    )
 
     /**
      * Whether [name] may name an entry.
@@ -27,7 +33,18 @@ object BackupEntryName {
      */
     fun isValid(name: String): Boolean {
         if (name.isEmpty() || name.length > MAX_LENGTH) return false
-        if (name.any { it < FIRST_PRINTABLE || it == DELETE || it == '\\' }) return false
+        if (name.any { Character.isISOControl(it) || it in BIDI_CONTROLS || it == '\\' }) return false
         return name.split(SEPARATOR).none { it.isEmpty() || it == "." || it == ".." }
+    }
+
+    /**
+     * The directories [name] implies — every leading run of its segments.
+     *
+     * @param name A valid entry name.
+     * @return `a` and `a/b` for `a/b/c.txt`; nothing for a name without `/`.
+     */
+    fun directoriesOf(name: String): List<String> {
+        val segments = name.split(SEPARATOR)
+        return (1 until segments.size).map { segments.take(it).joinToString(SEPARATOR.toString()) }
     }
 }

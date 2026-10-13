@@ -15,9 +15,10 @@ import java.util.zip.ZipOutputStream
  * Writes the content of an archive: a ZIP stream of named entries, encrypted as it is written by
  * [BackupEncryptingOutputStream] (`docs/backup-format.md` § Content).
  *
- * The first entry is always [BackupFormat.MANIFEST_ENTRY]. Every entry name must obey [BackupEntryName]
- * and appear once. Text is worth compressing; content that is already encrypted or compressed (the
- * database, images) is not, so each entry says which.
+ * The first entry is always [BackupFormat.MANIFEST_ENTRY]. Every entry name must obey [BackupEntryName],
+ * appear once and not be a file and a directory at once ([BackupEntryNameSet]). Text is worth
+ * compressing; content that is already encrypted or compressed (the database, images) is not, so each
+ * entry says which.
  * Call [finish] after the last entry: only then is the chunk flagged as last written. [close] without
  * [finish] leaves a file that every reader reports as truncated.
  *
@@ -29,7 +30,7 @@ internal class BackupArchiveWriter(sink: OutputStream, header: BackupHeader, key
 
     private val encrypting = BackupEncryptingOutputStream(sink, header, keys)
     private val zip = ZipOutputStream(encrypting)
-    private val names = HashSet<String>()
+    private val names = BackupEntryNameSet()
 
     /**
      * Adds one entry.
@@ -39,13 +40,13 @@ internal class BackupArchiveWriter(sink: OutputStream, header: BackupHeader, key
      * @param compress `true` to deflate the content, `false` to store it as it is.
      * @param content Writes the entry's bytes to the stream it is given. Closing that stream does not
      *   close the archive.
-     * @throws IllegalArgumentException When [name] breaks the rule, repeats, or is not the manifest
-     *   while the archive is still empty.
+     * @throws IllegalArgumentException When [name] breaks the rule, repeats, clashes with an earlier name as
+     *   a file and a directory, or is not the manifest while the archive is still empty.
      */
     fun addEntry(name: String, compress: Boolean, content: (OutputStream) -> Unit) {
-        require(names.isNotEmpty() || name == BackupFormat.MANIFEST_ENTRY) { "the first entry must be the manifest" }
+        require(!names.isEmpty || name == BackupFormat.MANIFEST_ENTRY) { "the first entry must be the manifest" }
         require(BackupEntryName.isValid(name)) { "invalid entry name" }
-        require(names.add(name)) { "duplicate entry name" }
+        require(names.add(name)) { "entry name repeats, or is a file and a directory at once" }
         zip.setLevel(if (compress) Deflater.DEFAULT_COMPRESSION else Deflater.NO_COMPRESSION)
         zip.putNextEntry(ZipEntry(name))
         content(object : FilterOutputStream(zip) {

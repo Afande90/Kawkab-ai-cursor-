@@ -7,11 +7,11 @@ import javax.crypto.spec.SecretKeySpec
 /**
  * The frame every encrypted chunk of an archive travels in (`docs/backup-format.md` § Chunks).
  *
- * A frame is `u8` flags, `i32` sealed length, then the sealed chunk in [app.knotwork.android.data.local.crypto.AesGcmCodec]'s
- * layout: a 12-byte IV, the ciphertext and the 16-byte tag. Bit [FLAG_FINAL] marks the last chunk;
- * every other bit is zero. The associated data of chunk `i` is the SHA-256 of the authenticated
- * header bytes, `i` as `i64` and the flags byte — so a chunk moved to another position, copied from
- * another archive or relabelled as the last one fails authentication.
+ * A frame is `u8` flags, `i32` sealed length, then the sealed chunk in the layout of
+ * [app.knotwork.android.data.local.crypto.AesGcmCodec]: a 12-byte IV, the ciphertext and the 16-byte
+ * tag. Bit [FLAG_FINAL] marks the last chunk; every other bit is zero. The associated data of chunk `i`
+ * is the SHA-256 of the authenticated header bytes, `i` as `i64` and the flags byte — so a chunk moved
+ * to another position, copied from another archive or relabelled as the last one fails authentication.
  */
 internal object BackupChunkFrame {
 

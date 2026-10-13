@@ -8,6 +8,7 @@ import java.io.DataInputStream
 import java.io.EOFException
 import java.io.InputStream
 import java.security.GeneralSecurityException
+import java.util.Objects
 
 /**
  * Reads the content of an archive whose header has been read, checking the header's authentication
@@ -15,7 +16,9 @@ import java.security.GeneralSecurityException
  *
  * Content comes out only after its chunk has authenticated. The stream ends after the chunk flagged
  * as last, and only once the file is confirmed to end there too; [readToEnd] forces that check for a
- * reader that stops early (a ZIP reader does not read past its central directory).
+ * reader that stops early (a ZIP reader does not read past its central directory). The first failure
+ * is final: every later read throws it again, so a caller that retries is never handed what follows a
+ * bad chunk.
  *
  * @param source The archive, positioned at its first chunk (just after the header).
  * @param parsed The header read from [source].
@@ -36,6 +39,7 @@ internal class BackupDecryptingInputStream(source: InputStream, parsed: ParsedBa
     private var position = 0
     private var index = 0L
     private var ended = false
+    private var failure: BackupFormatException? = null
 
     init {
         parsed.verify(keys.headerKey)
@@ -47,6 +51,7 @@ internal class BackupDecryptingInputStream(source: InputStream, parsed: ParsedBa
     }
 
     override fun read(b: ByteArray, off: Int, len: Int): Int {
+        Objects.checkFromIndexSize(off, len, b.size)
         if (len == 0) return 0
         if (!ensureAvailable()) return END
         val count = minOf(len, current.size - position)
@@ -75,29 +80,36 @@ internal class BackupDecryptingInputStream(source: InputStream, parsed: ParsedBa
     }
 
     private fun ensureAvailable(): Boolean {
+        failure?.let { throw it }
         while (position == current.size) {
             if (ended) return false
-            readChunk()
+            try {
+                readChunk()
+            } catch (e: BackupFormatException) {
+                failure = e
+                throw e
+            }
         }
         return true
     }
 
     private fun readChunk() {
         val flags = input.read()
-        if (flags == END) throw BackupFormatException(BackupReadFailure.TRUNCATED, "file ends before the last chunk")
+        if (flags == END) truncated("file ends before the last chunk")
         if (flags and BackupChunkFrame.FLAG_FINAL.inv() != 0) damaged("chunk $index has unknown flags")
         val final = flags and BackupChunkFrame.FLAG_FINAL != 0
         val sealed = try {
             val length = input.readInt()
+            if (flags == 0 && length == 0) {
+                // Zeros where a chunk should start: a copy that reserved the file's length and stopped.
+                truncated("file is zero-filled from chunk $index")
+            }
             if (length !in BackupChunkFrame.SEAL_OVERHEAD..chunkSize + BackupChunkFrame.SEAL_OVERHEAD) {
                 damaged("chunk $index has length $length")
             }
             ByteArray(length).also { input.readFully(it) }
         } catch (e: EOFException) {
-            throw BackupFormatException(
-                BackupReadFailure.TRUNCATED,
-                "file ends inside chunk $index: ${e.javaClass.simpleName}",
-            )
+            truncated("file ends inside chunk $index: ${e.javaClass.simpleName}")
         }
         val plain = try {
             AesGcmCodec.decrypt(key, BackupChunkFrame.associatedData(headerDigest, index, flags), sealed)
@@ -113,6 +125,8 @@ internal class BackupDecryptingInputStream(source: InputStream, parsed: ParsedBa
     }
 
     private fun damaged(reason: String): Nothing = throw BackupFormatException(BackupReadFailure.DAMAGED, reason)
+
+    private fun truncated(reason: String): Nothing = throw BackupFormatException(BackupReadFailure.TRUNCATED, reason)
 
     private companion object {
         const val END = -1

@@ -70,4 +70,14 @@ class BackupEncryptingOutputStreamTest {
         assertThrows(IllegalStateException::class.java) { stream.write(1) }
         assertThrows(IllegalStateException::class.java) { stream.finish() }
     }
+
+    @Test
+    fun `given bounds outside the buffer when written then it refuses`() {
+        // Given
+        val stream = BackupEncryptingOutputStream(ByteArrayOutputStream(), header(), keys())
+
+        // Then
+        assertThrows(IndexOutOfBoundsException::class.java) { stream.write(ByteArray(4), 0, -1) }
+        assertThrows(IndexOutOfBoundsException::class.java) { stream.write(ByteArray(4), 3, 2) }
+    }
 }
