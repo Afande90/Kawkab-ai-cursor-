@@ -415,6 +415,21 @@ class WorkManagerTaskSchedulerTest {
     }
 
     @Test
+    fun `given scheduled tasks in every state when counted then only those still to run count`() = runTest {
+        // Given
+        fun info(state: WorkInfo.State) = WorkInfo(UUID.randomUUID(), state, setOf(ScheduledTaskTag.MARKER))
+        every { workManager.getWorkInfosByTagFlow(ScheduledTaskTag.MARKER) } returns flowOf(
+            WorkInfo.State.entries.map(::info),
+        )
+
+        // When
+        val count = scheduler.countScheduled()
+
+        // Then — enqueued, running and blocked are still to run; succeeded, failed and cancelled are not.
+        assertEquals(3, count)
+    }
+
+    @Test
     fun `when every background run is cancelled then all agent work goes and finished rows are pruned`() = runTest {
         every { workManager.cancelAllWorkByTag(any()) } returns doneOperation()
         every { workManager.pruneWork() } returns doneOperation()

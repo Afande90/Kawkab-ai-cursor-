@@ -29,6 +29,8 @@ import androidx.room.PrimaryKey
  * @property sha256FileModifiedAt The file's last-modified time (epoch ms) when
  *   [sha256] was computed — the other half of that stamp. `null` exactly when
  *   [sha256] is.
+ * @property sourceUrl The address the file was downloaded from, or `null` when it was never
+ *   recorded (registered before v71, or found on disk at start-up).
  */
 @Entity(tableName = "local_models")
 data class LocalModelEntity(
@@ -43,4 +45,5 @@ data class LocalModelEntity(
     val sha256: String? = null,
     val sha256FileSize: Long? = null,
     val sha256FileModifiedAt: Long? = null,
+    val sourceUrl: String? = null,
 )

@@ -44,7 +44,7 @@ class InstallDiscoveredModelUseCaseTest {
             DownloadState.Downloading(50),
             DownloadState.Success("/data/gemma.litertlm"),
         )
-        coEvery { registerDownloadedModel(any(), any(), any()) } returns 7L
+        coEvery { registerDownloadedModel(any(), any(), any(), any()) } returns 7L
 
         val states = useCase(file).toList()
 
@@ -56,6 +56,7 @@ class InstallDiscoveredModelUseCaseTest {
                 fileName = file.fileName,
                 path = "/data/gemma.litertlm",
                 sizeBytes = 2_048L,
+                sourceUrl = file.resolveUrl,
             )
         }
     }
@@ -93,7 +94,7 @@ class InstallDiscoveredModelUseCaseTest {
         val states = useCase(file).toList()
 
         assertTrue(states.last() is DownloadState.Error)
-        coVerify(exactly = 0) { registerDownloadedModel(any(), any(), any()) }
+        coVerify(exactly = 0) { registerDownloadedModel(any(), any(), any(), any()) }
     }
 
     @Test
@@ -102,13 +103,15 @@ class InstallDiscoveredModelUseCaseTest {
             DownloadState.Downloading(70),
             DownloadState.Success("/data/models/${file.fileName}"),
         )
-        coEvery { registerDownloadedModel(any(), any(), any()) } returns 1L
+        coEvery { registerDownloadedModel(any(), any(), any(), any()) } returns 1L
 
         val states = useCase.attach(file).toList()
 
         assertEquals(DownloadState.Downloading(70), states.first())
         assertTrue(states.last() is DownloadState.Success)
-        coVerify { registerDownloadedModel(file.fileName, "/data/models/${file.fileName}", file.sizeBytes) }
+        coVerify {
+            registerDownloadedModel(file.fileName, "/data/models/${file.fileName}", file.sizeBytes, file.resolveUrl)
+        }
         coVerify(exactly = 0) { downloadManager.downloadModel(any(), any(), any()) }
     }
 

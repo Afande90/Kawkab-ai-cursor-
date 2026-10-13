@@ -13,6 +13,8 @@ import app.knotwork.android.data.local.crypto.FakeAeadCipher
 import app.knotwork.android.data.local.crypto.InMemorySharedPreferences
 import app.knotwork.android.data.local.crypto.KeystoreBackedPrefsStore
 import app.knotwork.android.data.local.crypto.SecretStore
+import app.knotwork.android.data.local.settings.GenerationSettingsStore
+import app.knotwork.android.data.local.settings.ToolSettingsStore
 import app.knotwork.android.domain.constants.SettingsDefaults
 import app.knotwork.android.domain.models.LocalBackend
 import app.knotwork.android.domain.models.McpAuth
@@ -1130,6 +1132,68 @@ class SettingsManagerTest {
         val ds = PreferenceDataStoreFactory.create(scope = scope, produceFile = { file })
         return Triple(testSettingsManager(ds, secretStore), ds, scope)
     }
+
+    @Test
+    fun `given a token and an MCP sign-in when backed up then the secrets are their stored entries`() = runTest {
+        val (manager, ds, scope) = freshManagerWithExposedDataStore()
+        try {
+            // Given
+            val url = "https://mcp.example"
+            manager.setHuggingFaceAuthToken("hf_secret_token")
+            manager.addMcpServer(
+                McpServerConfig(
+                    url = url,
+                    name = "S",
+                    auth = McpAuth.Bearer(token = "tok"),
+                    headers = mapOf(
+                        "X-Org" to "a",
+                    ),
+                ),
+            )
+            val generation = GenerationSettingsStore(ds, secretStore)
+            val tool = ToolSettingsStore(ds, secretStore)
+
+            // When
+            val token = generation.secretEntries()
+            val mcp = tool.secretEntries()
+
+            // Then — the store's own entry names and stored payloads; nothing here is "always".
+            assertEquals(mapOf("hugging_face_token" to "hf_secret_token"), token)
+            assertEquals(setOf(mcpAuthSecretKey(url), mcpHeadersSecretKey(url)), mcp.keys)
+            assertTrue(mcp.getValue(mcpAuthSecretKey(url)).contains("tok"))
+            assertEquals(emptyMap<String, String>(), generation.alwaysEntries() + tool.alwaysEntries())
+            assertEquals("secure_settings_secrets", tool.storeName)
+            assertEquals("secure_settings_secrets", generation.storeName)
+        } finally {
+            scope.cancel()
+        }
+    }
+
+    @Test
+    fun `given a server list with inline secrets when scrubbed for a backup then only the secrets are gone`() =
+        runTest {
+            val (_, ds, scope) = freshManagerWithExposedDataStore()
+            try {
+                // Given — the JSON as an older release wrote it, and one that does not parse.
+                val tool = ToolSettingsStore(ds, secretStore)
+                val inline = """[{"url":"https://m","name":"S","auth":{"type":"bearer","token":"t"},""" +
+                    """"headers":{"X":"h"}}]"""
+
+                // When
+                val scrubbed = tool.scrubbed("mcp_servers_json", inline) as String
+                val broken = tool.scrubbed("mcp_servers_json", "[{")
+                val other = tool.scrubbed("top_k", 40)
+
+                // Then
+                val server = org.json.JSONArray(scrubbed).getJSONObject(0)
+                assertEquals(setOf("url", "name"), server.keys().asSequence().toSet())
+                assertEquals("https://m", server.getString("url"))
+                assertEquals(null, broken)
+                assertEquals(40, other)
+            } finally {
+                scope.cancel()
+            }
+        }
 
     @Test
     fun `huggingFace token round-trips through the encrypted store across instances`() = runTest {

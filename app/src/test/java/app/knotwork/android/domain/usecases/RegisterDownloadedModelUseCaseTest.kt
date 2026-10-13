@@ -68,6 +68,46 @@ class RegisterDownloadedModelUseCaseTest {
     }
 
     @Test
+    fun `given a download with a source when registered then the source is recorded`() = runTest {
+        // Given
+        coEvery { localModelRepository.findByFileName("gemma.litertlm") } returns null
+        coEvery { localModelRepository.findByPath("/data/gemma.litertlm") } returns null
+        val inserted = slot<LocalModel>()
+        coEvery { localModelRepository.insertModel(capture(inserted)) } returns 7L
+
+        // When
+        useCase("gemma.litertlm", "/data/gemma.litertlm", sizeBytes = 2_048L, sourceUrl = SOURCE)
+
+        // Then
+        assertEquals(SOURCE, inserted.captured.sourceUrl)
+    }
+
+    @Test
+    fun `given a row with a source when re-registered then a missing source keeps it and a new one replaces it`() =
+        runTest {
+            // Given — a file found on disk at start-up re-registers without knowing its source.
+            val existing = LocalModel(
+                id = 9L,
+                name = "gemma.litertlm",
+                path = "/data/gemma.litertlm",
+                size = 2_048L,
+                isActive = false,
+                sourceUrl = SOURCE,
+            )
+            coEvery { localModelRepository.findByFileName("gemma.litertlm") } returns existing
+            val updated = mutableListOf<LocalModel>()
+            coEvery { localModelRepository.updateModel(capture(updated)) } returns Unit
+
+            // When
+            useCase("gemma.litertlm", "/data/gemma.litertlm", sizeBytes = 2_048L)
+            useCase("gemma.litertlm", "/data/gemma.litertlm", sizeBytes = 2_048L, sourceUrl = "https://example.com/m")
+
+            // Then
+            assertEquals(SOURCE, updated[0].sourceUrl)
+            assertEquals("https://example.com/m", updated[1].sourceUrl)
+        }
+
+    @Test
     fun `given a hashed row when re-registered then the stored hash is carried, not erased`() = runTest {
         // The stamp decides whether the hash still holds; the registration only
         // rewrites name, path and size, so a file that did not change keeps its hash.
@@ -135,4 +175,8 @@ class RegisterDownloadedModelUseCaseTest {
             assertEquals("q4/model.litertlm", updated.captured.name)
             assertEquals(2_048L, updated.captured.size)
         }
+
+    private companion object {
+        const val SOURCE = "https://huggingface.co/litert-community/gemma/resolve/main/gemma.litertlm"
+    }
 }

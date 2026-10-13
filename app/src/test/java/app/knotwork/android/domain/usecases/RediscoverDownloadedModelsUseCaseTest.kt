@@ -52,7 +52,7 @@ class RediscoverDownloadedModelsUseCaseTest {
             )
 
             assertEquals(0, useCase())
-            coVerify(exactly = 0) { register(any(), any(), any()) }
+            coVerify(exactly = 0) { register(any(), any(), any(), any()) }
         }
 
     @Test
@@ -63,7 +63,7 @@ class RediscoverDownloadedModelsUseCaseTest {
         coEvery { files.list() } returns listOf(DownloadedModelFile("gemma.litertlm", "/ext/gemma.litertlm", 1L))
 
         assertEquals(0, useCase())
-        coVerify(exactly = 0) { register(any(), any(), any()) }
+        coVerify(exactly = 0) { register(any(), any(), any(), any()) }
     }
 
     @Test
@@ -73,7 +73,7 @@ class RediscoverDownloadedModelsUseCaseTest {
         coEvery { files.list() } returns emptyList()
 
         assertEquals(0, useCase())
-        coVerify(exactly = 0) { register(any(), any(), any()) }
+        coVerify(exactly = 0) { register(any(), any(), any(), any()) }
     }
 
     private fun model(name: String, path: String) =

@@ -3,9 +3,8 @@
 A Knotwork backup is one file, locked with a password the user chooses. This page
 describes the file byte by byte, so that it can be read without the app.
 
-> **Status: format 1 is defined and tested.** Export and restore are being built
-> on it; the entries an export writes are added to [Content](#content) when export
-> ships. From the first release that writes archives, every format version stays
+> **Status: format 1 is defined and tested, and so is the export that writes it.**
+> Restore is being built on it, and neither is in the app's screens yet. From the first release that writes archives, every format version stays
 > readable: a reader that meets a newer version refuses the file instead of
 > guessing.
 
@@ -127,6 +126,73 @@ compressing would not help (the database, images).
   content that is not a well-formed ZIP stream.
 - A reader unpacks into a staging place and replaces nothing until the last
   chunk has authenticated: before that, a later chunk can still turn out damaged.
+
+## Entries
+
+An export writes these, in this order:
+
+| Entry | What it holds |
+|---|---|
+| `manifest.json` | What the archive holds ([Manifest](#manifest)) |
+| `database/key` | 32 random bytes: the key of the database copy below, made for this archive alone |
+| `preferences.json` | The settings that travel, with their types ([Settings](#settings)) |
+| `providers.json` | Each cloud provider's chosen model and server address, and the Ollama context window — not secrets, so always present |
+| `secrets.json` | Cloud API keys, the Hugging Face token, MCP sign-ins and headers — only when the user ticked the box |
+| `database/agent_database.db` | A copy of the app's database: SQLCipher, keyed with the bytes of `database/key` as its passphrase, schema version in `user_version` |
+| `files/agent_workspace/…` | Every file of the agent's workspace, by its path inside it |
+| `files/attachments/…` | Every image attachment, by its file name |
+
+The phone's own database key never goes into an archive: the copy is made under a
+key of its own. Server and model addresses travel as they are written, with the
+secrets left out — so a token written into an address travels with it. Model files are not in the archive — the manifest lists them.
+Tasks the agent scheduled with `schedule_task` live in the background runtime's own
+queue and are not carried; the manifest counts them.
+
+### Manifest
+
+```json
+{
+  "manifestVersion": 1,
+  "createdAt": 1791849600000,
+  "schemaVersion": 71,
+  "secretsIncluded": false,
+  "counts": { "chats": 12, "memories": 340, "pipelines": 9, "workspaceFiles": 4, "attachments": 2 },
+  "scheduledTasks": 1,
+  "skippedFiles": 0,
+  "models": [
+    { "name": "gemma-4-E2B-it.litertlm", "sizeBytes": 2588147712, "sha256": "…", "sourceUrl": "https://…" }
+  ]
+}
+```
+
+- `skippedFiles` counts workspace files and attachments whose path cannot be an
+  entry name; they are not in the archive.
+- A model's `sha256` and `sourceUrl` are left out when unknown.
+- A reader ignores keys it does not know.
+
+### Settings
+
+`preferences.json`:
+
+```json
+{ "preferencesVersion": 1,
+  "values": { "temperature": { "type": "float", "value": 0.7 },
+              "approved_cleartext_origins": { "type": "stringSet", "value": ["http://192.168.1.5:11434"] } } }
+```
+
+The types are `boolean`, `int`, `long`, `float`, `double`, `string`, `stringSet` (a
+sorted array) and `byteArray` (Base64). A setting that describes the phone rather
+than the user's choices — the inference backend, the first-launch and onboarding
+markers, consent to crash reporting — is never written, and the switch that lets
+other apps run a pipeline is left for the new phone to decide.
+
+`providers.json` and `secrets.json` share one shape: entries by
+the name of the encrypted store they come from.
+
+```json
+{ "entriesVersion": 1,
+  "stores": { "secure_api_keys_v2": { "openai_model": "gpt-5.4", "ollama_base_url": "http://192.168.1.5:11434" } } }
+```
 
 ## What the format does not hide
 

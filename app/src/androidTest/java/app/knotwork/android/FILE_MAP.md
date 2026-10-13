@@ -14,6 +14,8 @@ Only Kotlin files appear inside the generated blocks.
 <!-- AUTO-GEN:FILE_MAP -->
 - `AppFunctionsEndToEndTest.kt` - End-to-end coverage of the AppFunctions IPC path through the production Hilt graph.
 - `data/` - Instrumented tests for the data layer.
+  - `backup/` - Backup export on a real device: the SQLCipher database snapshot.
+    - `SqlCipherDatabaseSnapshotterTest.kt` - `SqlCipherDatabaseSnapshotter` against real SQLCipher: the copy opens under the archive's key and no other, holds every row and the schema version, is not a plain SQLite file, and the database it was taken from — held open throughout, as Room holds it — stays in write-ahead logging and writable.
   - `local/` - Instrumented tests for the on-device database.
     - `AppDatabaseMigrationHelperTest.kt` - Frozen-schema migration regression suite built on Room's `MigrationTestHelper`.
     - `AppDatabaseMigrationTest.kt` - Regression suite invoking every `MIGRATION_*` declared on `AppDatabase` against a real on-disk SQLite file (per-step + chained v17→v23 run).

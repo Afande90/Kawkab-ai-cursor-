@@ -159,6 +159,31 @@ class PersistentStorageInventoryGuardTest {
     }
 
     @Test
+    fun `every root declares whether a backup carries it, and every archive entry has its root`() {
+        val format = ProductionSources.code.entries.single { it.key.endsWith(BACKUP_FORMAT) }.value
+        val backup = ProductionSources.code.filterKeys { it.contains(BACKUP_PACKAGE) }.values.joinToString("\n")
+        val entryConstants = ENTRY_CONSTANT.findAll(format).map { it.groupValues[1] }.toSet() - FORMAT_OWN_ENTRIES
+
+        assertEquals(
+            "every root needs exactly one backup decision: archive entries or a reason",
+            emptyList<StorageRoot>(),
+            StorageRoot.entries.filter { it.archive.isEmpty() == (it.notArchived == null) },
+        )
+        StorageRoot.entries.flatMap { root -> root.archive.map { root to it } }.forEach { (root, constant) ->
+            assertTrue("${root.name} names $constant, which BackupFormat does not declare", constant in entryConstants)
+            assertTrue(
+                "${root.name} is recorded as archived in $constant, but no backup code writes it",
+                Regex("""BackupFormat\.$constant\b""").containsMatchIn(backup),
+            )
+        }
+        assertEquals(
+            "an archive entry no storage root claims",
+            emptySet<String>(),
+            entryConstants - StorageRoot.entries.flatMap { it.archive }.toSet(),
+        )
+    }
+
+    @Test
     fun `the census recognises the sites it claims to`() {
         // Keeps the census rules from passing vacuously.
         val sites = ProductionSources.code.values.count { STORAGE_API.containsMatchIn(it) }
@@ -217,15 +242,27 @@ class PersistentStorageInventoryGuardTest {
      * @property erasedBy The type the recovery wipe calls to erase the root, or `null` when
      *   the wipe keeps it — and then [kept] says why.
      * @property kept Why the wipe keeps the root; `null` when it erases it.
+     * @property archive The `BackupFormat` entry constants a backup writes the root into, or empty when it
+     *   is not in the archive — and then [notArchived] says why.
+     * @property notArchived Why a backup leaves the root out; `null` when [archive] names its entries.
      */
     private enum class StorageRoot(
         val domain: String,
         val plaintextPath: String?,
         val erasedBy: String?,
         val kept: String?,
+        val archive: List<String>,
+        val notArchived: String?,
     ) {
         /** Chats, memory, pipelines, run history, triggers, the model registry — SQLCipher. */
-        DATABASE(domain = "database", plaintextPath = null, erasedBy = "DatabaseResetService", kept = null),
+        DATABASE(
+            domain = "database",
+            plaintextPath = null,
+            erasedBy = "DatabaseResetService",
+            kept = null,
+            archive = listOf("DATABASE_ENTRY", "DATABASE_KEY_ENTRY"),
+            notArchived = null,
+        ),
 
         /** Settings, MCP server list, bindings — plain DataStore. */
         DATASTORE(
@@ -233,13 +270,29 @@ class PersistentStorageInventoryGuardTest {
             plaintextPath = "datastore/",
             erasedBy = null,
             kept = "the wipe escapes an unreadable database; settings still work, and the dialog says they are kept",
+            archive = listOf("PREFERENCES_ENTRY"),
+            notArchived = null,
         ),
 
         /** Downscaled copies of every image attached to a chat — plain JPEGs. */
-        ATTACHMENTS(domain = "file", plaintextPath = "attachments/", erasedBy = "AttachmentStore", kept = null),
+        ATTACHMENTS(
+            domain = "file",
+            plaintextPath = "attachments/",
+            erasedBy = "AttachmentStore",
+            kept = null,
+            archive = listOf("ATTACHMENTS_PREFIX"),
+            notArchived = null,
+        ),
 
         /** Files the agent wrote and the user imported — plain files. */
-        WORKSPACE(domain = "file", plaintextPath = "agent_workspace/", erasedBy = "AgentWorkspace", kept = null),
+        WORKSPACE(
+            domain = "file",
+            plaintextPath = "agent_workspace/",
+            erasedBy = "AgentWorkspace",
+            kept = null,
+            archive = listOf("WORKSPACE_PREFIX"),
+            notArchived = null,
+        ),
 
         /**
          * The three Keystore-backed secret stores. The database passphrase is erased with the
@@ -250,6 +303,8 @@ class PersistentStorageInventoryGuardTest {
             plaintextPath = null,
             erasedBy = null,
             kept = "saved keys still work after the database is replaced, and the dialog says they are kept",
+            archive = listOf("PROVIDERS_ENTRY", "SECRETS_ENTRY"),
+            notArchived = null,
         ),
 
         /** Downloaded model files — public content from the model hub. */
@@ -258,10 +313,19 @@ class PersistentStorageInventoryGuardTest {
             plaintextPath = null,
             erasedBy = null,
             kept = "public downloads of gigabytes, not user data; registered again at start after the wipe",
+            archive = emptyList(),
+            notArchived = "gigabytes anyone can download again; the manifest lists each with its source",
         ),
 
         /** Trigger-journal soak dumps of the debug build type only — never in a release. */
-        DEBUG_SOAK_DUMPS(domain = "external", plaintextPath = null, erasedBy = null, kept = "debug builds only"),
+        DEBUG_SOAK_DUMPS(
+            domain = "external",
+            plaintextPath = null,
+            erasedBy = null,
+            kept = "debug builds only",
+            archive = emptyList(),
+            notArchived = "debug builds only",
+        ),
 
         /**
          * The background runtime's own database (WorkManager's `androidx.work.workdb`) —
@@ -269,7 +333,14 @@ class PersistentStorageInventoryGuardTest {
          * the census below never sees it; it is listed by hand. It holds prompt **ids**,
          * never prompts (those are in [DATABASE]), and the wipe cancels and prunes it.
          */
-        WORK_MANAGER_DB(domain = "database", plaintextPath = null, erasedBy = "TaskScheduler", kept = null),
+        WORK_MANAGER_DB(
+            domain = "database",
+            plaintextPath = null,
+            erasedBy = "TaskScheduler",
+            kept = null,
+            archive = emptyList(),
+            notArchived = "the runtime's own queue; the manifest records how many scheduled tasks were left behind",
+        ),
 
         /**
          * The model download's foreground-time count (`DownloadForegroundBudget`) — one
@@ -281,6 +352,8 @@ class PersistentStorageInventoryGuardTest {
             plaintextPath = null,
             erasedBy = null,
             kept = "one duration counter, not user data; the next download the user starts resets it",
+            archive = emptyList(),
+            notArchived = "a duration counter of this phone",
         ),
     }
 
@@ -293,6 +366,18 @@ class PersistentStorageInventoryGuardTest {
             "root", "file", "database", "sharedpref", "external",
             "device_root", "device_file", "device_database", "device_sharedpref",
         )
+
+        /** The archive format's constants, by path suffix. */
+        const val BACKUP_FORMAT = "/domain/backup/BackupFormat.kt"
+
+        /** The package of the code that writes a backup. */
+        const val BACKUP_PACKAGE = "/data/backup/"
+
+        /** An archive entry-name constant of `BackupFormat`: `…_ENTRY` or `…_PREFIX`. */
+        val ENTRY_CONSTANT = Regex("""const val (\w+_(?:ENTRY|PREFIX)): String""")
+
+        /** Entries the format writes about the archive itself rather than any storage root. */
+        val FORMAT_OWN_ENTRIES = setOf("MANIFEST_ENTRY")
 
         /** The recovery-wipe use case, by path suffix. */
         const val WIPE_USE_CASE = "/domain/usecases/ResetLockedDatabaseUseCase.kt"
@@ -326,6 +411,8 @@ class PersistentStorageInventoryGuardTest {
             "/data/engine/MediaPipeTextEmbeddingEngine.kt" to "DOWNLOADED_MODELS (the embedding model)",
             "/debug/TriggerJournalDumpReceiver.kt" to "DEBUG_SOAK_DUMPS",
             "/data/services/DownloadForegroundBudget.kt" to "DOWNLOAD_BUDGET",
+            "/data/backup/SqlCipherDatabaseSnapshotter.kt" to "DATABASE, read for a backup's snapshot",
+            "/data/backup/BackupFileSource.kt" to "WORKSPACE and ATTACHMENTS, read for a backup",
         )
     }
 }

@@ -86,6 +86,7 @@ class InstallDiscoveredModelUseCase @Inject constructor(
                     fileName = file.fileName,
                     path = state.fileUri,
                     sizeBytes = file.sizeBytes,
+                    sourceUrl = file.resolveUrl,
                 )
             }
         }

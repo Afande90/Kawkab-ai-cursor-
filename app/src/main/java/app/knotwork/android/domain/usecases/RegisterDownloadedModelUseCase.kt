@@ -50,20 +50,29 @@ class RegisterDownloadedModelUseCase @Inject constructor(
      * @param path Absolute path of the downloaded file.
      * @param sizeBytes Size to record. Callers that know the authoritative size
      *   (the Hub listing) pass it; otherwise the on-disk length is the truth.
+     * @param sourceUrl The address the file was downloaded from, or `null` when the caller does not know
+     *   it (a file found on disk). A `null` keeps the source an existing row already has.
      * @return The row id of the registered model.
      */
-    suspend operator fun invoke(fileName: String, path: String, sizeBytes: Long): Long {
+    suspend operator fun invoke(fileName: String, path: String, sizeBytes: Long, sourceUrl: String? = null): Long {
         val id = registration.withLock {
             // By name first; then by path, which catches the row the start-up pass
             // registered under the flattened on-disk name of a file this download
             // names by its repository path — the row takes the download's name back.
             val existing = localModelRepository.findByFileName(fileName) ?: localModelRepository.findByPath(path)
             if (existing != null) {
-                localModelRepository.updateModel(existing.copy(name = fileName, path = path, size = sizeBytes))
+                localModelRepository.updateModel(
+                    existing.copy(
+                        name = fileName,
+                        path = path,
+                        size = sizeBytes,
+                        sourceUrl = sourceUrl ?: existing.sourceUrl,
+                    ),
+                )
                 existing.id
             } else {
                 localModelRepository.insertModel(
-                    LocalModel(name = fileName, path = path, size = sizeBytes, isActive = false),
+                    LocalModel(name = fileName, path = path, size = sizeBytes, isActive = false, sourceUrl = sourceUrl),
                 )
             }
         }

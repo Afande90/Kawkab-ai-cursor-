@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
+import app.knotwork.android.data.backup.BackedUpSecrets
 import app.knotwork.android.data.local.McpServerCollisionCheck
 import app.knotwork.android.data.local.crypto.SecretStore
 import app.knotwork.android.data.local.crypto.SecureValueUnreadableException
@@ -60,7 +61,8 @@ import javax.inject.Singleton
 class ToolSettingsStore @Inject constructor(
     private val dataStore: DataStore<Preferences>,
     private val secretsStore: SecretStore,
-) : ToolSettings {
+) : ToolSettings,
+    BackedUpSecrets {
 
     private object Keys {
 
@@ -99,6 +101,12 @@ class ToolSettingsStore @Inject constructor(
         val BLOCK_DESTRUCTIVE_TOOLS = booleanPreferencesKey("block_destructive_tools")
     }
 
+    /** Fields of a server in the plain list where an older release kept its secrets. */
+    private object LegacyInline {
+        const val AUTH = "auth"
+        const val HEADERS = "headers"
+    }
+
     /**
      * Entry names inside [secretsStore]. Distinct from [Keys]: these are slots in
      * the Keystore-backed encrypted store, not DataStore preference keys.
@@ -129,6 +137,50 @@ class ToolSettingsStore @Inject constructor(
         private fun sha256Hex(value: String): String = java.security.MessageDigest.getInstance("SHA-256")
             .digest(value.toByteArray(Charsets.UTF_8))
             .joinToString("") { "%02x".format(it) }
+    }
+
+    override val storeName: String = BackedUpSecrets.SETTINGS_SECRETS_STORE
+
+    /** Nothing in the settings-secrets store is anything but a secret. */
+    override suspend fun alwaysEntries(): Map<String, String> = emptyMap()
+
+    /** Moves MCP sign-ins and headers an older release kept inline in the server list to the encrypted store. */
+    override suspend fun settle() {
+        migrateLegacyMcpSecrets()
+    }
+
+    /**
+     * The server list without any `auth` or `headers` an older release kept inline — whether or not the
+     * move to the encrypted store could be written. A list that does not parse is left out, rather than
+     * risk a secret inside it.
+     */
+    override fun scrubbed(key: String, value: Any): Any? {
+        if (key != Keys.MCP_SERVERS_JSON.name || value !is String) return value
+        return try {
+            val servers = JSONArray(value)
+            for (index in 0 until servers.length()) {
+                servers.optJSONObject(index)?.apply {
+                    remove(LegacyInline.AUTH)
+                    remove(LegacyInline.HEADERS)
+                }
+            }
+            servers.toString()
+        } catch (e: JSONException) {
+            Timber.w(e, "MCP server list left out of a backup: it does not parse")
+            null
+        }
+    }
+
+    /**
+     * Every MCP server's sign-in and custom headers, as stored, by entry name. Entries left by a server
+     * that is no longer in the list are not carried.
+     */
+    override suspend fun secretEntries(): Map<String, String> = buildMap {
+        mcpServers.first().forEach { server ->
+            listOf(SecretKeys.mcpAuthKey(server.url), SecretKeys.mcpHeadersKey(server.url)).forEach { name ->
+                readMcpSecret(name, "entry")?.plaintext?.let { put(name, it) }
+            }
+        }
     }
 
     override val mcpServers: Flow<List<McpServerConfig>> = flow {

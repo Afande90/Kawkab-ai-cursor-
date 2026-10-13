@@ -2025,6 +2025,20 @@ tasks.withType<Test>().configureEach {
     }
 }
 
+// Room's KSP writes the current schema into `app/schemas/` while it compiles, and the
+// debug asset merges read that directory (`MigrationStepGuardTest` reads the merged
+// assets; the instrumented suite packs them). The directory is not a declared output of
+// KSP, so nothing orders the two: on the first build after a schema bump the merge ran
+// first, and the guard reported the new version as having no exported schema (observed,
+// v70 -> v71). Merging after KSP gives every build the schema it just wrote.
+listOf("Full", "Foss").forEach { flavor ->
+    tasks.matching {
+        it.name == "merge${flavor}DebugAssets" || it.name == "merge${flavor}DebugAndroidTestAssets"
+    }.configureEach {
+        mustRunAfter("ksp${flavor}DebugKotlin")
+    }
+}
+
 // Hilt/Dagger reads Kotlin metadata via `kotlin-metadata-jvm`, which is unshaded
 // since Dagger 2.57 and therefore resolved through Gradle. Each Kotlin bump raises
 // the emitted metadata version, so the processor must use a matching reader or it
