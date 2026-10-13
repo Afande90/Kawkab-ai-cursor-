@@ -1,5 +1,6 @@
 package app.knotwork.android.domain.usecases
 
+import app.knotwork.android.domain.backup.BackupRestorer
 import app.knotwork.android.domain.models.DbPassphraseUnavailableException
 import app.knotwork.android.domain.models.InitFailureKind
 import app.knotwork.android.domain.models.InitStage
@@ -10,12 +11,14 @@ import app.knotwork.android.domain.repositories.MemoryRepository
 import app.knotwork.android.domain.repositories.PipelineRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -27,6 +30,7 @@ import org.junit.Test
  */
 class AppInitializationUseCaseTest {
 
+    private lateinit var backupRestorer: BackupRestorer
     private lateinit var initializeAppUseCase: InitializeAppUseCase
     private lateinit var rediscoverDownloadedModels: RediscoverDownloadedModelsUseCase
     private lateinit var pipelineRepository: PipelineRepository
@@ -36,6 +40,7 @@ class AppInitializationUseCaseTest {
 
     @Before
     fun setUp() {
+        backupRestorer = mockk(relaxed = true)
         initializeAppUseCase = mockk(relaxed = true)
         rediscoverDownloadedModels = mockk()
         pipelineRepository = mockk()
@@ -48,12 +53,48 @@ class AppInitializationUseCaseTest {
         coEvery { memoryRepository.getRecentMemorySummaries(any()) } returns emptyList()
 
         useCase = AppInitializationUseCase(
+            backupRestorer = backupRestorer,
             initializeAppUseCase = initializeAppUseCase,
             rediscoverDownloadedModels = rediscoverDownloadedModels,
             pipelineRepository = pipelineRepository,
             chatRepository = chatRepository,
             memoryRepository = memoryRepository,
         )
+    }
+
+    @Test
+    fun `given a confirmed restore when invoked then it is completed before anything else runs`() = runTest {
+        // Given — what had run by the time the restore was completed.
+        var initializedFirst = false
+        coEvery { backupRestorer.finishPending() } answers {
+            initializedFirst = initialized
+        }
+        coEvery { initializeAppUseCase() } answers { initialized = true }
+
+        // When
+        useCase().toList()
+
+        // Then
+        assertFalse("nothing reads the restored data before the restore is complete", initializedFirst)
+        coVerifyOrder {
+            backupRestorer.finishPending()
+            initializeAppUseCase()
+            rediscoverDownloadedModels()
+        }
+    }
+
+    private var initialized = false
+
+    @Test
+    fun `given completing a restore fails when invoked then initialization goes on to Done`() = runTest {
+        // Given
+        coEvery { backupRestorer.finishPending() } throws IllegalStateException("keystore")
+
+        // When
+        val emissions = useCase().toList()
+
+        // Then
+        assertEquals(InitStage.Done, emissions.last().stage)
     }
 
     @Test

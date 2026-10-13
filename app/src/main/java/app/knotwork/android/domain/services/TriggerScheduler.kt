@@ -19,13 +19,15 @@ import app.knotwork.android.domain.models.Trigger
 interface TriggerScheduler {
 
     /**
-     * Reconciles the registered background watches to exactly [activeTriggers].
+     * Registers the background watches of [activeTriggers].
      *
-     * Idempotent and edge-safe: triggers in the set are (re)registered, any
-     * previously-registered trigger absent from the set is cancelled. This is
-     * the single entry point used on app start and after any trigger
-     * create/edit/enable/delete, so the registered set always matches the
-     * persisted active set.
+     * Idempotent and edge-safe: triggers in the set are (re)registered, and the
+     * shared charging watch is cancelled when no trigger in the set needs it. A
+     * watch registered for a trigger **absent** from the set is not cancelled
+     * here — the runtime cannot list them — and ends itself on its next wake,
+     * when its trigger is gone or inactive. To stop watches at once, use
+     * [stopWatching]. Used on app start and after any trigger
+     * create/edit/enable/delete.
      *
      * @param activeTriggers The triggers that should currently be watched —
      *   exactly the [Trigger.isActive] subset (enabled and bound).
@@ -46,4 +48,12 @@ interface TriggerScheduler {
      * @param triggerId The id of the trigger to stop watching.
      */
     fun cancel(triggerId: String)
+
+    /**
+     * Cancels the watches of [triggerIds] and the shared charging watch, and returns once the runtime has
+     * recorded every cancellation — for a caller about to end the process.
+     *
+     * @param triggerIds The ids of the triggers to stop watching.
+     */
+    suspend fun stopWatching(triggerIds: Collection<String>)
 }

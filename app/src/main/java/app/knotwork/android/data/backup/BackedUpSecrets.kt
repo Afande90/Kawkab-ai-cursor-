@@ -47,6 +47,17 @@ interface BackedUpSecrets {
      */
     fun scrubbed(key: String, value: Any): Any? = value
 
+    /**
+     * Writes entries a backup carried into this owner's store, through the owner's own writes, so every
+     * reader sees them. Only names this owner writes are taken — an archive cannot place anything else in
+     * the store — and an entry this phone has that the archive lacks is left alone.
+     *
+     * @param entries The archive's entries of [storeName], by entry name; owners sharing a store each get
+     *   all of them and take their own.
+     * @return How many entries were written.
+     */
+    suspend fun restore(entries: Map<String, String>): Int
+
     /** The names of the stores whose owners implement this. */
     companion object {
         /** The store of cloud API keys and each provider's model and server address. */

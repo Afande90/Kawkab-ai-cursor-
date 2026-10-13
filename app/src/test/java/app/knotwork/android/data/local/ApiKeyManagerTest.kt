@@ -221,4 +221,30 @@ class ApiKeyManagerTest {
         assertEquals(emptyMap<String, String>(), manager().alwaysEntries())
         assertEquals(emptyMap<String, String>(), manager().secretEntries())
     }
+
+    @Test
+    fun `given entries a backup carried when restored then each is written and readers see it`() = runTest {
+        // Given — this phone already has a key for another provider, and an observer of the restored one.
+        val subject = manager()
+        subject.setApiKey(CloudProvider.ANTHROPIC, "sk-ant-kept")
+        val observed = subject.getApiKey(CloudProvider.OPENAI)
+
+        // When
+        val written = subject.restore(
+            mapOf(
+                OPENAI_KEY to "sk-restored",
+                "openai_model" to "gpt-5.4",
+                "ollama_context" to "8192",
+                "not_an_entry_of_this_store" to "x",
+            ),
+        )
+
+        // Then
+        assertEquals(3, written)
+        assertEquals("sk-restored", observed.first())
+        assertEquals("gpt-5.4", manager().getModel(CloudProvider.OPENAI).first())
+        assertEquals(8192, manager().getOllamaContextWindowSize().first())
+        assertEquals("sk-ant-kept", manager().getApiKey(CloudProvider.ANTHROPIC).first())
+        assertFalse(prefs.values.containsKey("not_an_entry_of_this_store"))
+    }
 }

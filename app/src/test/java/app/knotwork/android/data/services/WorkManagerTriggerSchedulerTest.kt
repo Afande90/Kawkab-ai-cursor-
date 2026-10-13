@@ -4,14 +4,17 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequest
+import androidx.work.Operation
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import app.knotwork.android.domain.models.Trigger
 import app.knotwork.android.domain.models.TriggerCondition
+import com.google.common.util.concurrent.ListenableFuture
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -203,5 +206,31 @@ class WorkManagerTriggerSchedulerTest {
                 any<PeriodicWorkRequest>(),
             )
         }
+    }
+
+    @Test
+    fun `given triggers to stop when stopped then each watch and the charging watch are cancelled and awaited`() =
+        runTest {
+            // Given
+            val operations = mutableMapOf<String, Operation>()
+            every { workManager.cancelUniqueWork(any()) } answers {
+                doneOperation().also { operations[firstArg()] = it }
+            }
+
+            // When
+            scheduler.stopWatching(listOf("a", "b"))
+
+            // Then — every cancellation is awaited: the caller ends the process right after.
+            assertEquals(setOf("trigger-watch-a", "trigger-watch-b", "trigger-charging-watch"), operations.keys)
+            operations.values.forEach { operation -> verify { operation.result } }
+        }
+
+    /** An operation that has already succeeded, as `await()` expects. */
+    private fun doneOperation(): Operation {
+        val future = mockk<ListenableFuture<Operation.State.SUCCESS>> {
+            every { isDone } returns true
+            every { get() } returns Operation.SUCCESS
+        }
+        return mockk { every { result } returns future }
     }
 }

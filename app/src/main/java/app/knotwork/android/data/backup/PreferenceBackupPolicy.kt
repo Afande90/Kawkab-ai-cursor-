@@ -23,6 +23,32 @@ internal object PreferenceBackupPolicy {
     }
 
     /**
+     * A setting's value type, named as the settings entry writes it.
+     *
+     * @property wire The type's name in the entry.
+     */
+    enum class ValueType(val wire: String) {
+        BOOLEAN("boolean"),
+        INT("int"),
+        LONG("long"),
+        FLOAT("float"),
+        DOUBLE("double"),
+        STRING("string"),
+        STRING_SET("stringSet"),
+        BYTE_ARRAY("byteArray"),
+        ;
+
+        /** The type by its name in the entry. */
+        companion object {
+            /**
+             * @param wire A type name as the entry writes it.
+             * @return The type, or `null` for a name this build does not know.
+             */
+            fun ofWire(wire: String): ValueType? = entries.firstOrNull { it.wire == wire }
+        }
+    }
+
+    /**
      * Keys that describe this phone or this install rather than the user's choices, and why each stays.
      */
     private val STAYING: Map<String, String> = mapOf(
@@ -42,73 +68,85 @@ internal object PreferenceBackupPolicy {
         "external_automation_enabled" to "which apps may run a pipeline is decided again on the new phone",
     )
 
-    /** Keys that travel: the user's settings, and bindings to rows of the database that travels with them. */
-    private val TRAVELLING: Set<String> = setOf(
-        "active_embedding_provider_id",
-        "allowed_http_domains",
-        "app_function_risk_overrides",
-        "approved_cleartext_origins",
-        "audio_max_duration_sec",
-        "auto_extract_enabled",
-        "background_approval_window_hours",
-        "block_destructive_tools",
-        "block_network_from_local_model",
-        "chat_history_compression_enabled",
-        "chat_history_compression_threshold_tokens",
-        "chat_history_live_window_size",
-        "cloud_retry_base_delay_ms",
-        "cloud_retry_max_attempts",
-        "console_preferred_tab",
-        "current_chat_session_id",
-        "default_pipeline_id",
-        "disabled_app_functions",
-        "disabled_mcp_tools",
-        "external_automation_pipeline_id",
-        "http_tool_max_response_bytes",
-        "last_reembed_provider_id",
-        "max_context_length",
-        "max_memory_chunks",
-        "mcp_server_urls",
-        "mcp_servers_json",
-        "memory_compaction_age_days",
-        "memory_compaction_enabled",
-        "memory_last_compacted_at",
-        "memory_recency_half_life_days",
-        "memory_search_threshold",
-        "memory_search_top_k",
-        "memory_summary_default_limit",
-        "pipeline_max_nesting_depth",
-        "pipeline_max_steps",
-        "pipeline_max_steps_background",
-        "quick_settings_tile_pipeline_id",
-        "requires_user_confirmation",
-        "resume_max_age_hours",
-        "run_max_tokens",
-        "run_max_tokens_background",
-        "scheduled_task_notifications",
-        "share_reuse_session",
-        "share_target_pipeline_id",
-        "structured_output_max_repairs",
-        "system_prompt_prefix",
-        "temperature",
-        "tool_approval_policy",
-        "tool_call_timeout_ms",
-        "top_k",
-        "top_p",
-        "trace_retention_max_age_days",
-        "trace_retention_runs_per_session",
-        "usage_telemetry_enabled",
-        "verbose_memory_logging_enabled",
-        "workspace_max_file_size_bytes",
-        "workspace_max_total_bytes",
-        "workspace_read_token_budget",
+    /**
+     * Keys that travel — the user's settings, and bindings to rows of the database that travels with them — each
+     * with the type the app declares it with. A restore writes a value only when it has that type: a setting read
+     * back as another type would fail every read of it.
+     */
+    private val TRAVELLING: Map<String, ValueType> = mapOf(
+        "active_embedding_provider_id" to ValueType.STRING,
+        "allowed_http_domains" to ValueType.STRING,
+        "app_function_risk_overrides" to ValueType.STRING,
+        "approved_cleartext_origins" to ValueType.STRING_SET,
+        "audio_max_duration_sec" to ValueType.INT,
+        "auto_extract_enabled" to ValueType.BOOLEAN,
+        "background_approval_window_hours" to ValueType.INT,
+        "block_destructive_tools" to ValueType.BOOLEAN,
+        "block_network_from_local_model" to ValueType.BOOLEAN,
+        "chat_history_compression_enabled" to ValueType.BOOLEAN,
+        "chat_history_compression_threshold_tokens" to ValueType.INT,
+        "chat_history_live_window_size" to ValueType.INT,
+        "cloud_retry_base_delay_ms" to ValueType.LONG,
+        "cloud_retry_max_attempts" to ValueType.INT,
+        "console_preferred_tab" to ValueType.STRING,
+        "current_chat_session_id" to ValueType.STRING,
+        "default_pipeline_id" to ValueType.STRING,
+        "disabled_app_functions" to ValueType.STRING_SET,
+        "disabled_mcp_tools" to ValueType.STRING_SET,
+        "external_automation_pipeline_id" to ValueType.STRING,
+        "http_tool_max_response_bytes" to ValueType.LONG,
+        "last_reembed_provider_id" to ValueType.STRING,
+        "max_context_length" to ValueType.INT,
+        "max_memory_chunks" to ValueType.INT,
+        "mcp_server_urls" to ValueType.STRING_SET,
+        "mcp_servers_json" to ValueType.STRING,
+        "memory_compaction_age_days" to ValueType.INT,
+        "memory_compaction_enabled" to ValueType.BOOLEAN,
+        "memory_last_compacted_at" to ValueType.LONG,
+        "memory_recency_half_life_days" to ValueType.INT,
+        "memory_search_threshold" to ValueType.FLOAT,
+        "memory_search_top_k" to ValueType.INT,
+        "memory_summary_default_limit" to ValueType.INT,
+        "pipeline_max_nesting_depth" to ValueType.INT,
+        "pipeline_max_steps" to ValueType.INT,
+        "pipeline_max_steps_background" to ValueType.INT,
+        "quick_settings_tile_pipeline_id" to ValueType.STRING,
+        "requires_user_confirmation" to ValueType.BOOLEAN,
+        "resume_max_age_hours" to ValueType.INT,
+        "run_max_tokens" to ValueType.INT,
+        "run_max_tokens_background" to ValueType.INT,
+        "scheduled_task_notifications" to ValueType.BOOLEAN,
+        "share_reuse_session" to ValueType.BOOLEAN,
+        "share_target_pipeline_id" to ValueType.STRING,
+        "structured_output_max_repairs" to ValueType.INT,
+        "system_prompt_prefix" to ValueType.STRING,
+        "temperature" to ValueType.FLOAT,
+        "tool_approval_policy" to ValueType.STRING,
+        "tool_call_timeout_ms" to ValueType.LONG,
+        "top_k" to ValueType.INT,
+        "top_p" to ValueType.FLOAT,
+        "trace_retention_max_age_days" to ValueType.INT,
+        "trace_retention_runs_per_session" to ValueType.INT,
+        "usage_telemetry_enabled" to ValueType.BOOLEAN,
+        "verbose_memory_logging_enabled" to ValueType.BOOLEAN,
+        "workspace_max_file_size_bytes" to ValueType.LONG,
+        "workspace_max_total_bytes" to ValueType.LONG,
+        "workspace_read_token_budget" to ValueType.INT,
     )
 
     /** Every key the table decides, by name. */
     val decided: Map<String, Membership> =
-        TRAVELLING.associateWith { Membership.TRAVELS } +
+        TRAVELLING.keys.associateWith { Membership.TRAVELS } +
             STAYING.keys.associateWith { Membership.STAYS } +
             RESETTING.keys.associateWith { Membership.RESETS }
+
+    /**
+     * The type a travelling setting is declared with.
+     *
+     * @param key A DataStore key name.
+     * @return Its type, or `null` for a key that does not travel.
+     */
+    fun typeOf(key: String): ValueType? = TRAVELLING[key]
 
     /**
      * What happens to [key] on backup and restore.

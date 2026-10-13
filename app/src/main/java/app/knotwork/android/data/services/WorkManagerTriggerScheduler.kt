@@ -8,6 +8,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequest
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import androidx.work.await
 import app.knotwork.android.domain.models.Trigger
 import app.knotwork.android.domain.models.TriggerCondition
 import app.knotwork.android.domain.services.TriggerScheduler
@@ -89,6 +90,12 @@ class WorkManagerTriggerScheduler @Inject constructor(private val workManager: W
 
     override fun cancel(triggerId: String) {
         workManager.cancelUniqueWork(uniqueName(triggerId))
+    }
+
+    override suspend fun stopWatching(triggerIds: Collection<String>) {
+        val operations = triggerIds.map { workManager.cancelUniqueWork(uniqueName(it)) } +
+            workManager.cancelUniqueWork(CHARGING_WATCH_NAME)
+        operations.forEach { it.await() }
     }
 
     /**

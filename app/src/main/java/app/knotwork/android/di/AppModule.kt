@@ -7,6 +7,8 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.room.Room
 import androidx.work.WorkManager
+import app.knotwork.android.data.backup.RestoreLayout
+import app.knotwork.android.data.backup.RestoredPreferencesMigration
 import app.knotwork.android.data.local.AppDatabase
 import app.knotwork.android.data.local.Converters
 import app.knotwork.android.data.local.DeferredPassphraseOpenHelperFactory
@@ -90,12 +92,14 @@ object AppModule {
     private const val SETTINGS_SECRETS_KEY_ALIAS = "knotwork.settings_secrets"
 
     /**
-     * Provides the singleton instance of the DataStore preferences.
+     * Provides the singleton instance of the DataStore preferences. Its one migration writes a confirmed
+     * restore's settings in on the first open after the restart ([RestoredPreferencesMigration]).
      */
     @Provides
     @Singleton
     fun providePreferencesDataStore(@ApplicationContext appContext: Context): DataStore<Preferences> =
         PreferenceDataStoreFactory.create(
+            migrations = listOf(RestoredPreferencesMigration(RestoreLayout.of(appContext))),
             produceFile = { appContext.preferencesDataStoreFile(USER_PREFERENCES_NAME) },
         )
 

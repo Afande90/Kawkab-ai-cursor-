@@ -1170,6 +1170,43 @@ class SettingsManagerTest {
     }
 
     @Test
+    fun `given entries a backup carried when restored then the token and listed servers' sign-ins come back`() =
+        runTest {
+            val (manager, ds, scope) = freshManagerWithExposedDataStore()
+            try {
+                // Given — the entries as a backup took them, then this phone without them.
+                val url = "https://mcp.example"
+                val server = McpServerConfig(url = url, name = "S", auth = McpAuth.Bearer(token = "tok"))
+                manager.addMcpServer(server.copy(headers = mapOf("X-Org" to "a")))
+                val carried = ToolSettingsStore(ds, secretStore).secretEntries() + mapOf(
+                    mcpAuthSecretKey("https://not-in-the-list") to """{"type":"bearer","token":"other"}""",
+                )
+                manager.updateMcpServer(url, server.copy(auth = McpAuth.None))
+                // This instance has read — and cached — the server without its sign-in.
+                val tool = ToolSettingsStore(ds, secretStore)
+                assertEquals(McpAuth.None, tool.mcpServers.first().single().auth)
+                val generation = GenerationSettingsStore(ds, secretStore)
+
+                // When
+                val mcpWritten = tool.restore(carried + mapOf("hugging_face_token" to "hf_restored"))
+                val tokenWritten = generation.restore(carried + mapOf("hugging_face_token" to "hf_restored"))
+
+                // Then — the same instance and a fresh one both read the restored entries.
+                assertEquals(2, mcpWritten)
+                assertEquals(1, tokenWritten)
+                listOf(tool, ToolSettingsStore(ds, secretStore)).forEach { store ->
+                    val restored = store.mcpServers.first().single()
+                    assertEquals(McpAuth.Bearer(token = "tok"), restored.auth)
+                    assertEquals(mapOf("X-Org" to "a"), restored.headers)
+                }
+                assertNull(secretStore.getString(mcpAuthSecretKey("https://not-in-the-list")))
+                assertEquals("hf_restored", generation.huggingFaceAuthToken.first())
+            } finally {
+                scope.cancel()
+            }
+        }
+
+    @Test
     fun `given a server list with inline secrets when scrubbed for a backup then only the secrets are gone`() =
         runTest {
             val (_, ds, scope) = freshManagerWithExposedDataStore()

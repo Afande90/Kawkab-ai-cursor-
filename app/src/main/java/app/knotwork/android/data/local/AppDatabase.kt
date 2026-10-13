@@ -94,7 +94,7 @@ import app.knotwork.android.data.local.models.UsagePipelineDayEntity
         OnboardingMilestoneEntity::class,
         BackgroundPromptEntity::class,
     ],
-    version = 71,
+    version = AppDatabase.SCHEMA_VERSION,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -257,5 +257,11 @@ abstract class AppDatabase : RoomDatabase() {
          * the explicit wipe path — so the three can never drift apart.
          */
         const val DATABASE_NAME: String = "agent_database.db"
+
+        /**
+         * The schema version this build's database is at. A restore refuses a database of a later version:
+         * Room would recreate it empty rather than downgrade it.
+         */
+        const val SCHEMA_VERSION: Int = 71
     }
 }

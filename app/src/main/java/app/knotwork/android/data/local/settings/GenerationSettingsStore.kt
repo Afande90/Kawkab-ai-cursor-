@@ -127,6 +127,13 @@ class GenerationSettingsStore @Inject constructor(
         return token?.let { mapOf(SecretKeys.HUGGING_FACE_TOKEN to it) }.orEmpty()
     }
 
+    /** The Hugging Face token, written as the settings screen writes it. */
+    override suspend fun restore(entries: Map<String, String>): Int {
+        val token = entries[SecretKeys.HUGGING_FACE_TOKEN] ?: return 0
+        setHuggingFaceAuthToken(token)
+        return 1
+    }
+
     override val huggingFaceAuthToken: Flow<String?> = flow {
         migrateLegacyHuggingFaceToken()
         emitAll(huggingFaceTokenFlow)

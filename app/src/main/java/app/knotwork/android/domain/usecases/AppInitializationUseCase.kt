@@ -1,5 +1,6 @@
 package app.knotwork.android.domain.usecases
 
+import app.knotwork.android.domain.backup.BackupRestorer
 import app.knotwork.android.domain.models.DbPassphraseUnavailableException
 import app.knotwork.android.domain.models.InitFailureKind
 import app.knotwork.android.domain.models.InitProgress
@@ -21,7 +22,8 @@ import javax.inject.Inject
  * to the splash screen via [InitProgress] emissions.
  *
  * Order of work (also reflected in [TOTAL_STEPS]):
- *  1. [InitStage.Initializing] — first-launch defaults via [InitializeAppUseCase].
+ *  1. [InitStage.Initializing] — complete a restore the user confirmed before the restart
+ *     ([BackupRestorer.finishPending]), then first-launch defaults via [InitializeAppUseCase].
  *  2. [InitStage.FindingModels] — register again the downloaded model files the
  *     registry lost (see [RediscoverDownloadedModelsUseCase]).
  *  3. [InitStage.LoadingPipelines] — pre-warm Room cache for pipelines.
@@ -33,6 +35,8 @@ import javax.inject.Inject
  *    Room prefetches) are treated as fatal. If any throws, the use case emits
  *    [InitStage.Failed] with the failed stage and the throwable's message;
  *    the splash screen surfaces the error and offers a retry.
+ *  - Completing a restore is **non-fatal**: each of its parts is attempted on its own and
+ *    logged when it fails, and the restored database and files are already in place.
  *  - [InitStage.FindingModels] is **non-fatal** — a model the pass could not
  *    register is still one download away, and the rest of the app works
  *    without it. Logging the failure is enough for the splash to proceed.
@@ -44,6 +48,7 @@ import javax.inject.Inject
  * the weights in memory until the idle unload whether or not a message was sent.
  */
 class AppInitializationUseCase @Inject constructor(
+    private val backupRestorer: BackupRestorer,
     private val initializeAppUseCase: InitializeAppUseCase,
     private val rediscoverDownloadedModels: RediscoverDownloadedModelsUseCase,
     private val pipelineRepository: PipelineRepository,
@@ -60,6 +65,14 @@ class AppInitializationUseCase @Inject constructor(
      */
     operator fun invoke(): Flow<InitProgress> = flow {
         emit(progress(InitStage.Initializing, "Preparing application…", completed = 0))
+        try {
+            backupRestorer.finishPending()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // Non-fatal: the restored database and files are in place; a part left out is logged.
+            Timber.tag(TAG).w(e, "Completing a restore failed; continuing")
+        }
         try {
             initializeAppUseCase()
         } catch (e: CancellationException) {
