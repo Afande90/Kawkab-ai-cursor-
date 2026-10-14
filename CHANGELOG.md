@@ -273,11 +273,11 @@ details.
   background time limit — after five hours out of sight — went quiet: its
   notification disappeared, and a screen opened afterwards showed nothing. It
   now posts a notification that it paused (if the app may post notifications),
-  and the next screen that shows downloads — the Models screen, setup, or the
-  model's page in Discover — says so once; the Models screen offers
-  **Continue**. A file that did not match its checksum is told the same way.
-  Once a screen has shown it, or the download is started again or cancelled,
-  the notification goes too.
+  and the Models screen says so once the next time you open it, with
+  **Continue** — or setup's Download step, or the model's page in Discover, if
+  you reach one of those first. A file that did not match its checksum is told
+  the same way. Once a screen has shown it, or the download is started again or
+  cancelled, the notification goes too.
 - **Discover says why an install paused.** A download that paused at its
   background time limit showed Discover's *Download failed. Check your
   connection* — wrong, and with no hint that installing again continues it. It

@@ -73,8 +73,8 @@ file you make yourself (section 3.9):
   exact model it used, and — when a download was checked against it — the one
   Hugging Face published for the file.
 - For a model download that paused or did not match its checksum, the file's
-  name, the address it downloads from and the reason, until the app has shown
-  it to you or you start or cancel that download.
+  name, the address it downloads from, the reason and when, until the app has
+  shown it to you or you start or cancel that download.
 - Files in the agent workspace — what the agent wrote and what you imported.
 - Triggers, scheduled tasks, and the trigger journal.
 - The journal of requests other apps sent (section 3.6).

@@ -145,10 +145,11 @@ continues from the same byte.
 
 A pause, and a file that did not match its checksum, usually happen while you
 are elsewhere, so the app tells you twice: a notification (when the app may
-post notifications), and the next screen that shows downloads — the Models
-screen, setup, or the model's page in Discover — once. On the Models screen a
-paused download's message has a **Continue** button; elsewhere, its **Get**,
-**Install** or **Download** button continues it.
+post notifications), and a message, once, on the Models screen the next time
+you open it — or on setup's Download step, or the model's page in Discover, if
+you reach one of those first. On the Models screen a paused download's message
+has a **Continue** button (once no other download is running); elsewhere, its
+**Get**, **Install** or **Download** button continues it.
 
 ### 3. Activate the model
 
