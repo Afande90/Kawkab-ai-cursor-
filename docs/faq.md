@@ -82,6 +82,16 @@ that host carries it as an `Authorization` header; a link to any other host
 downloads without it. There is no OAuth flow, and no other auth scheme. See
 [Download a model](user-guide.md#2-download-a-model).
 
+### Does the app check a downloaded model?
+
+When Hugging Face names the file's SHA-256 in its answer to the download — it
+does for the large files it stores in LFS, as model files usually are — yes: a
+file that does not match is deleted instead of installed. A link to any other
+host names no hash, so its file is installed unchecked. The Models screen marks
+each model **Verified** or **Not verified**. The check proves the file is the one
+Hugging Face publishes, not that its publisher is trustworthy. See
+[Download a model](user-guide.md#2-download-a-model).
+
 ### Can I browse and install models from Hugging Face?
 
 Yes, including gated repositories once you have stored an access token. See

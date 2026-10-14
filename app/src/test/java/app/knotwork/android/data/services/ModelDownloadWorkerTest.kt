@@ -10,6 +10,7 @@ import androidx.work.WorkerParameters
 import androidx.work.testing.TestListenableWorkerBuilder
 import androidx.work.workDataOf
 import app.knotwork.android.R
+import app.knotwork.android.data.local.StreamingModelFileHasher
 import app.knotwork.android.data.network.ResumableFileDownloader
 import app.knotwork.android.domain.repositories.SettingsRepository
 import app.knotwork.android.domain.usecases.RegisterDownloadedModelUseCase
@@ -18,6 +19,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flowOf
@@ -27,12 +29,15 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import java.io.File
+import java.security.MessageDigest
 import java.util.UUID
 import java.util.concurrent.Executor
 import java.util.concurrent.TimeUnit
@@ -42,6 +47,9 @@ import java.util.concurrent.TimeUnit
  * what it does once the bytes are on disk, and — the part that decides whether
  * a flaky network costs the user their progress — when a failure is worth
  * another attempt.
+ *
+ * Also the guard of the download check: a file whose source published a hash is
+ * never registered unless it matches (run through the real installer and hasher).
  */
 @RunWith(RobolectricTestRunner::class)
 class ModelDownloadWorkerTest {
@@ -50,6 +58,7 @@ class ModelDownloadWorkerTest {
     private lateinit var downloader: ResumableFileDownloader
     private lateinit var settingsRepository: SettingsRepository
     private lateinit var registerDownloadedModel: RegisterDownloadedModelUseCase
+    private lateinit var installer: DownloadedModelInstaller
 
     @Before
     fun setUp() {
@@ -58,39 +67,167 @@ class ModelDownloadWorkerTest {
         settingsRepository = mockk()
         every { settingsRepository.huggingFaceAuthToken } returns flowOf("hf_stored")
         registerDownloadedModel = mockk(relaxed = true)
-        coEvery { registerDownloadedModel(any(), any(), any(), any()) } returns 1L
+        coEvery { registerDownloadedModel(any(), any(), any(), any(), any(), any()) } returns 1L
+        installer = mockk()
+        coEvery { installer.install(any(), any(), any()) } returns
+            DownloadedModelInstaller.Result.Installed(path = "/models/m.bin", verified = false)
     }
 
     @Test
-    fun `given a completed download when it finishes then the model is registered with its source`() = runTest {
-        val file = java.io.File(context.cacheDir, "m.bin").apply { writeText("payload") }
-        coEvery { downloader.download(any(), any(), any(), any()) } returns
-            ResumableFileDownloader.Outcome.Success(file.absolutePath)
+    fun `given a completed download when it finishes then the file is installed with its source`() = runTest {
+        val downloaded = downloadedPart(published = null)
+        coEvery { downloader.download(any(), any(), any(), any()) } returns downloaded
 
         val result = worker().doWork()
 
-        assertTrue(result is ListenableWorker.Result.Success)
         assertEquals(
-            file.absolutePath,
+            "/models/m.bin",
             (result as ListenableWorker.Result.Success).outputData.getString(ModelDownloadWorker.KEY_OUTPUT_PATH),
         )
-        // Registration lives here because the transfer outlives every screen —
+        // Installation lives here because the transfer outlives every screen —
         // a survived download must leave a model the app knows about.
         // The address goes with it, so a restored phone can fetch the model again.
         coVerify(exactly = 1) {
-            registerDownloadedModel(
-                fileName = "m.bin",
-                path = file.absolutePath,
-                sizeBytes = "payload".length.toLong(),
-                sourceUrl = "http://example.com/m.bin",
-            )
+            installer.install(downloaded, fileName = "m.bin", sourceUrl = "http://example.com/m.bin")
         }
     }
 
     @Test
-    fun `given no stored-auth flag when downloading then no token is read or sent`() = runTest {
+    fun `given a file whose hash differs from the published one when it finishes then it fails for good`() = runTest {
+        coEvery { downloader.download(any(), any(), any(), any()) } returns downloadedPart(published = PUBLISHED)
+        coEvery { installer.install(any(), any(), any()) } returns
+            DownloadedModelInstaller.Result.Rejected(publishedSha256 = PUBLISHED, actualSha256 = "0".repeat(64))
+
+        val result = worker().doWork()
+
+        // Final, not retried: the file was deleted, and the same source would
+        // hand over the same file again.
+        val failure = result as ListenableWorker.Result.Failure
+        assertEquals(
+            context.getString(R.string.model_download_checksum_mismatch),
+            failure.outputData.getString(ModelDownloadWorker.KEY_ERROR),
+        )
+        assertEquals("CHECKSUM_MISMATCH", failure.outputData.getString(ModelDownloadWorker.KEY_FAILURE))
+        assertEquals(
+            ModelDownloadWorker.NO_HTTP_CODE,
+            failure.outputData.getInt(ModelDownloadWorker.KEY_ERROR_CODE, 0),
+        )
+    }
+
+    @Test
+    fun `given a file that could not be checked when it finishes then another attempt is scheduled`() = runTest {
+        coEvery { downloader.download(any(), any(), any(), any()) } returns downloadedPart(published = PUBLISHED)
+        coEvery { installer.install(any(), any(), any()) } returns
+            DownloadedModelInstaller.Result.NotInstalled(UNREADABLE, DownloadedModelInstaller.Result.Cause.UNREADABLE)
+
+        val result = worker().doWork()
+
+        // The complete part is still on disk; the next attempt finds it whole and
+        // only repeats the check.
+        assertTrue(result is ListenableWorker.Result.Retry)
+    }
+
+    @Test
+    fun `given a check that fails after a transfer that took several runs when it fails then it still retries`() =
+        runTest {
+            // Every lapse of the network constraint is a run of its own, so a long transfer
+            // can reach its first check on the third run. The bytes it fetched earn another try.
+            coEvery { downloader.download(any(), any(), any(), any()) } returns
+                downloadedPart(published = PUBLISHED).copy(bytesTransferred = 4_096L)
+            coEvery { installer.install(any(), any(), any()) } returns
+                DownloadedModelInstaller.Result.NotInstalled(
+                    UNREADABLE,
+                    DownloadedModelInstaller.Result.Cause.UNREADABLE,
+                )
+
+            val result = worker(runAttemptCount = 2).doWork()
+
+            assertTrue(result is ListenableWorker.Result.Retry)
+        }
+
+    @Test
+    fun `given a rename that fails after a transfer when the attempts are spent then it fails for good`() = runTest {
+        // From a host that names no length every attempt downloads the file again; crediting
+        // those bytes would repeat a multi-gigabyte download for as long as the rename fails.
         coEvery { downloader.download(any(), any(), any(), any()) } returns
-            ResumableFileDownloader.Outcome.Success("/models/m.bin")
+            downloadedPart(published = null).copy(bytesTransferred = 4_096L)
+        coEvery { installer.install(any(), any(), any()) } returns
+            DownloadedModelInstaller.Result.NotInstalled("not moved", DownloadedModelInstaller.Result.Cause.NOT_MOVED)
+
+        val result = worker(runAttemptCount = 2).doWork()
+
+        assertTrue(result is ListenableWorker.Result.Failure)
+    }
+
+    @Test
+    fun `given a check that keeps failing on a complete part when the attempts are spent then it fails for good`() =
+        runTest {
+            // A run that found the part complete fetched nothing: a check failing again
+            // there counts against the attempts, so an unreadable file cannot loop forever.
+            coEvery { downloader.download(any(), any(), any(), any()) } returns downloadedPart(published = PUBLISHED)
+            coEvery { installer.install(any(), any(), any()) } returns
+                DownloadedModelInstaller.Result.NotInstalled(
+                    UNREADABLE,
+                    DownloadedModelInstaller.Result.Cause.UNREADABLE,
+                )
+
+            val result = worker(runAttemptCount = 2).doWork()
+
+            assertTrue(result is ListenableWorker.Result.Failure)
+        }
+
+    @Test
+    fun `given a published hash the file does not match when the real installer runs then nothing is registered`() =
+        runTest {
+            // The guard of the download check, end to end through the worker: the real
+            // installer, the real streaming hasher, a file that arrived with other bytes.
+            val part = File(context.cacheDir, "m.bin.cafe.part").apply { writeText("tampered") }
+            val target = File(context.cacheDir, "m.bin").apply { delete() }
+            coEvery { downloader.download(any(), any(), any(), any()) } returns
+                ResumableFileDownloader.Outcome.Downloaded(part.absolutePath, target.absolutePath, sha256Of("weights"))
+            installer =
+                DownloadedModelInstaller(StreamingModelFileHasher(Dispatchers.Unconfined), registerDownloadedModel)
+
+            val result = worker().doWork()
+
+            assertEquals(
+                "CHECKSUM_MISMATCH",
+                (result as ListenableWorker.Result.Failure).outputData.getString(ModelDownloadWorker.KEY_FAILURE),
+            )
+            coVerify(exactly = 0) { registerDownloadedModel(any(), any(), any(), any(), any(), any()) }
+            assertFalse("the file must not reach a model's name", target.exists())
+            assertFalse("the part must not be resumed into the same wrong file", part.exists())
+        }
+
+    @Test
+    fun `given a published hash the file matches when the real installer runs then it is registered as checked`() =
+        runTest {
+            val part = File(context.cacheDir, "m.bin.cafe.part").apply { writeText("weights") }
+            val target = File(context.cacheDir, "m.bin").apply { delete() }
+            coEvery { downloader.download(any(), any(), any(), any()) } returns
+                ResumableFileDownloader.Outcome.Downloaded(part.absolutePath, target.absolutePath, sha256Of("weights"))
+            installer =
+                DownloadedModelInstaller(StreamingModelFileHasher(Dispatchers.Unconfined), registerDownloadedModel)
+
+            val result = worker().doWork()
+
+            assertTrue(result is ListenableWorker.Result.Success)
+            assertEquals("weights", target.readText())
+            coVerify(exactly = 1) {
+                registerDownloadedModel(
+                    fileName = "m.bin",
+                    path = target.absolutePath,
+                    sizeBytes = "weights".length.toLong(),
+                    sourceUrl = "http://example.com/m.bin",
+                    sourceSha256 = sha256Of("weights"),
+                    fileHash = any(),
+                )
+            }
+        }
+
+    @Test
+    fun `given no stored-auth flag when downloading then no token is read or sent`() = runTest {
+        coEvery { downloader.download(any(), any(), any(), any()) } returns downloadedPart(published = null)
 
         worker(useStoredAuth = false).doWork()
 
@@ -99,8 +236,7 @@ class ModelDownloadWorkerTest {
 
     @Test
     fun `given the stored-auth flag when downloading then the token comes from the encrypted store`() = runTest {
-        coEvery { downloader.download(any(), any(), any(), any()) } returns
-            ResumableFileDownloader.Outcome.Success("/models/m.bin")
+        coEvery { downloader.download(any(), any(), any(), any()) } returns downloadedPart(published = null)
 
         worker(useStoredAuth = true).doWork()
 
@@ -194,6 +330,7 @@ class ModelDownloadWorkerTest {
                 context.getString(R.string.model_download_paused_time_limit),
                 failure.outputData.getString(ModelDownloadWorker.KEY_ERROR),
             )
+            assertEquals("PAUSED_TIME_LIMIT", failure.outputData.getString(ModelDownloadWorker.KEY_FAILURE))
             assertEquals(0, foreground.calls)
             coVerify(exactly = 0) { downloader.download(any(), any(), any(), any()) }
         }
@@ -204,7 +341,7 @@ class ModelDownloadWorkerTest {
         spend(budget, DownloadForegroundBudget.BUDGET_MS - TEN_MINUTES_MS)
         coEvery { downloader.download(any(), any(), any(), any()) } coAnswers {
             delay(2 * TEN_MINUTES_MS)
-            ResumableFileDownloader.Outcome.Success("/models/m.bin")
+            downloadedPart(published = null)
         }
 
         val result = worker(budget = budget).doWork()
@@ -217,7 +354,8 @@ class ModelDownloadWorkerTest {
             failure.outputData.getString(ModelDownloadWorker.KEY_ERROR),
         )
         assertTrue(budget.isExhausted())
-        coVerify(exactly = 0) { registerDownloadedModel(any(), any(), any(), any()) }
+        assertEquals("PAUSED_TIME_LIMIT", failure.outputData.getString(ModelDownloadWorker.KEY_FAILURE))
+        coVerify(exactly = 0) { installer.install(any(), any(), any()) }
     }
 
     @Test
@@ -230,7 +368,7 @@ class ModelDownloadWorkerTest {
             onProgress(50)
             leftAtProgress = budget.remainingMs()
             delay(TEN_MINUTES_MS)
-            ResumableFileDownloader.Outcome.Success("/models/m.bin")
+            downloadedPart(published = null)
         }
 
         worker(budget = budget).doWork()
@@ -306,12 +444,24 @@ class ModelDownloadWorkerTest {
                     workerParameters,
                     downloader,
                     settingsRepository,
-                    registerDownloadedModel,
+                    installer,
                     budget,
                 )
             },
         )
         .build()
+
+    /** A complete download of `m.bin`, as the downloader hands it over. */
+    private fun downloadedPart(published: String?) = ResumableFileDownloader.Outcome.Downloaded(
+        partPath = "/models/m.bin.cafe.part",
+        targetPath = "/models/m.bin",
+        publishedSha256 = published,
+    )
+
+    /** Lowercase hex SHA-256 of [text]'s UTF-8 bytes. */
+    private fun sha256Of(text: String): String = MessageDigest.getInstance("SHA-256")
+        .digest(text.toByteArray())
+        .joinToString("") { "%02x".format(it) }
 
     /**
      * A budget measured on the test's virtual clock, so a download's foreground
@@ -362,5 +512,11 @@ class ModelDownloadWorkerTest {
     private companion object {
         /** Ten minutes of virtual time, in milliseconds. */
         const val TEN_MINUTES_MS = 10L * 60L * 1_000L
+
+        /** The message of a file that could not be read for its check. */
+        const val UNREADABLE = "The downloaded file could not be read to check it."
+
+        /** A hash a source published. */
+        const val PUBLISHED = "181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c"
     }
 }

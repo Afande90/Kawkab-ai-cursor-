@@ -46,8 +46,26 @@ sealed interface DiscoverInstallEvent {
     /**
      * Install failed.
      *
-     * @property gated `true` when the failure was an access-gated refusal
-     *   (HTTP 401/403) — the screen nudges the user toward a token.
+     * @property reason Why, as far as the screen words it differently.
      */
-    data class Failed(val gated: Boolean) : DiscoverInstallEvent
+    data class Failed(val reason: FailureReason) : DiscoverInstallEvent
+
+    /** Why an install failed, for the sentence the screen shows. */
+    enum class FailureReason {
+
+        /**
+         * An access-gated refusal (HTTP 401/403) — the screen nudges the user toward
+         * accepting the licence and adding a token.
+         */
+        GATED,
+
+        /** The file did not match the checksum Hugging Face published; it was deleted. */
+        CHECKSUM_MISMATCH,
+
+        /** The download paused at its background time limit; installing again continues it. */
+        PAUSED,
+
+        /** Anything else — the screen suggests checking the connection. */
+        OTHER,
+    }
 }

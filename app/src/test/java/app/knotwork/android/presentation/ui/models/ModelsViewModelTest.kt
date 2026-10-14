@@ -101,6 +101,31 @@ class ModelsViewModelTest {
     }
 
     @Test
+    fun `given models checked at download when observed then only those whose file still matches are verified`() =
+        runTest {
+            val models = listOf(
+                LocalModel(id = 1, name = "a", path = "/a", size = 1, isActive = false, sourceSha256 = "aa"),
+                // Replaced on disk since its download was checked.
+                LocalModel(id = 2, name = "b", path = "/b", size = 1, isActive = false, sourceSha256 = "bb"),
+                // Its current hash is not known yet.
+                LocalModel(id = 3, name = "c", path = "/c", size = 1, isActive = false, sourceSha256 = "cc"),
+                // Never checked: a source that publishes no hash.
+                LocalModel(id = 4, name = "d", path = "/d", size = 1, isActive = false),
+            )
+            every { localModelRepository.getAllModels() } returns flowOf(models)
+            coEvery { localModelRepository.currentFileHash("/a") } returns "aa"
+            coEvery { localModelRepository.currentFileHash("/b") } returns "b2"
+            coEvery { localModelRepository.currentFileHash("/c") } returns null
+            viewModel = createViewModel()
+
+            advanceUntilIdle()
+
+            assertEquals(setOf(1L), viewModel.uiState.value.verifiedModelIds)
+            // A model never checked costs no lookup of its file.
+            coVerify(exactly = 0) { localModelRepository.currentFileHash("/d") }
+        }
+
+    @Test
     fun `onCustomUrlChanged updates state`() {
         val newUrl = "http://example.com/model.bin"
         viewModel.onCustomUrlChanged(newUrl)

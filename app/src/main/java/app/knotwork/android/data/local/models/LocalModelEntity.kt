@@ -31,6 +31,9 @@ import androidx.room.PrimaryKey
  *   [sha256] is.
  * @property sourceUrl The address the file was downloaded from, or `null` when it was never
  *   recorded (registered before v71, or found on disk at start-up).
+ * @property sourceSha256 The SHA-256 the source published for the file, recorded when a download
+ *   matched it; `null` when no download was checked (registered before v72, a source that
+ *   publishes no hash, or a file found on disk at start-up).
  */
 @Entity(tableName = "local_models")
 data class LocalModelEntity(
@@ -46,4 +49,5 @@ data class LocalModelEntity(
     val sha256FileSize: Long? = null,
     val sha256FileModifiedAt: Long? = null,
     val sourceUrl: String? = null,
+    val sourceSha256: String? = null,
 )

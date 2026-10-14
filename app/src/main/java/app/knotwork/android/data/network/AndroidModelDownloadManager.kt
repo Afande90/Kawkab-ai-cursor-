@@ -11,6 +11,7 @@ import app.knotwork.android.data.services.DownloadForegroundBudget
 import app.knotwork.android.data.services.ModelDownloadWorker
 import app.knotwork.android.domain.models.AppError
 import app.knotwork.android.domain.models.DownloadState
+import app.knotwork.android.domain.models.ModelDownloadFailure
 import app.knotwork.android.domain.repositories.ActiveDownload
 import app.knotwork.android.domain.repositories.ModelDownloadManager
 import kotlinx.coroutines.flow.Flow
@@ -168,6 +169,9 @@ class AndroidModelDownloadManager @Inject constructor(
                 code = outputData
                     .getInt(ModelDownloadWorker.KEY_ERROR_CODE, ModelDownloadWorker.NO_HTTP_CODE)
                     .takeIf { it != ModelDownloadWorker.NO_HTTP_CODE },
+                failure = outputData.getString(ModelDownloadWorker.KEY_FAILURE)
+                    .let { name -> ModelDownloadFailure.entries.firstOrNull { it.name == name } }
+                    ?: ModelDownloadFailure.OTHER,
             ),
         )
         WorkInfo.State.CANCELLED -> null
@@ -181,8 +185,15 @@ class AndroidModelDownloadManager @Inject constructor(
      *   response, or `null` for transport/IO failures. Carried as a typed
      *   field so consumers can branch on the status (e.g. an access-gated
      *   401/403) without parsing it back out of [message].
+     * @property failure Why the download ended, where a screen words it on its
+     *   own — a pause or a file that failed its checksum; [ModelDownloadFailure.OTHER]
+     *   for everything [code] and [message] already describe.
      */
-    data class DownloadError(val message: String, val code: Int? = null) : AppError.Network
+    data class DownloadError(
+        val message: String,
+        val code: Int? = null,
+        val failure: ModelDownloadFailure = ModelDownloadFailure.OTHER,
+    ) : AppError.Network
 
     private companion object {
 

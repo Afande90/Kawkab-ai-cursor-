@@ -1601,9 +1601,12 @@ the same buffer and reach storage in the same transaction as the trace rows
 flushed with them (`TraceStepDao.insertBatch`), and the read merges both tables
 back into one ordered trace. The run header (seed, sampler, versions, device)
 sits on the root run's `pipeline_runs` row. The model file's checksum is
-computed once per file in the background and kept in `local_models` with the
-file's size and modification time; a file that changed since reads as not
-hashed.
+computed once per file — by the download's check for a file the app downloads,
+in the background for any other — and kept in `local_models` with the file's
+size and modification time; a file that changed since reads as not hashed.
+`local_models.sourceSha256` (v72) keeps the hash the source published when a
+download matched it; a model is shown as verified only while the file's current
+hash still equals it.
 
 Migration rules:
 
@@ -1870,8 +1873,8 @@ idle. Three components coordinate that lifecycle:
 | `PendingInteractionMaintenanceWorker` | Periodic (6 h) expiry pass: fails runs whose parked approval / clarification outlived the approval window; then `NotifyStaleTriggersUseCase` announces each trigger that has gone overdue, once per silence. |
 | `RunRetentionWorker`       | Daily (charging + idle) retention pass over `pipeline_runs` / `trace_steps` **and** the trigger-evaluation journal (age window + hard cap) — see *Run retention* below. |
 | `MemoryCompactionWorker`   | Daily (charging + idle) long-term-memory compaction (see the memory lifecycle section).        |
-| `ModelFileHashWorker`      | One-off SHA-256 pass over every installed model file without a current hash, scheduled when a model is registered and re-armed at start-up while a file is still unhashed (`ModelFileHashScheduler`; passes chain with `APPEND_OR_REPLACE`). The hash is kept with the model and its file stamp (size + modification time), so a run can name the exact file it used without reading gigabytes per run, and a file replaced on disk is hashed again. |
-| `ModelDownloadWorker`      | Unique-per-file model download promoted to a `dataSync` foreground service, so a multi-gigabyte transfer survives leaving the screen or the app. Resumes a partial file over HTTP `Range` (`ResumableFileDownloader`), retries transport failures, and registers the finished file itself — the observing ViewModel may be long gone by then. Spends at most `DownloadForegroundBudget` (five hours of foreground time, one under Android's daily `dataSync` limit) and then pauses with a failure; starting the download again resets the budget and resumes. |
+| `ModelFileHashWorker`      | One-off SHA-256 pass over every installed model file without a current hash (a download's check records the hash it read, so a checked download leaves it nothing to read), scheduled when a model is registered and re-armed at start-up while a file is still unhashed (`ModelFileHashScheduler`; passes chain with `APPEND_OR_REPLACE`). The hash is kept with the model and its file stamp (size + modification time), so a run can name the exact file it used without reading gigabytes per run, and a file replaced on disk is hashed again. |
+| `ModelDownloadWorker`      | Unique-per-file model download promoted to a `dataSync` foreground service, so a multi-gigabyte transfer survives leaving the screen or the app. Resumes a partial file over HTTP `Range` (`ResumableFileDownloader`), retries transport failures, and installs the finished file itself — the observing ViewModel may be long gone by then. `DownloadedModelInstaller` hashes the complete `.part` file, compares it with the SHA-256 Hugging Face published in its answer to the download (`X-Linked-Etag`, read only from Hugging Face's own hops), and only then renames and registers it; a mismatch deletes the file and fails the work with `CHECKSUM_MISMATCH`. A part already as long as the published file is checked again instead of downloaded again. Spends at most `DownloadForegroundBudget` (five hours of foreground time, one under Android's daily `dataSync` limit) and then pauses with a failure; starting the download again resets the budget and resumes. |
 
 A scheduled task is not a separate execution path: `AgentWorker`
 enqueues the stored prompt through the same `TaskQueueManager` →

@@ -4,6 +4,7 @@ import app.knotwork.android.data.network.AndroidModelDownloadManager.DownloadErr
 import app.knotwork.android.domain.models.DiscoverableModelDetail
 import app.knotwork.android.domain.models.DiscoverableModelFile
 import app.knotwork.android.domain.models.DownloadState
+import app.knotwork.android.domain.models.ModelDownloadFailure
 import app.knotwork.android.domain.repositories.ModelDownloadManager
 import app.knotwork.android.domain.repositories.SettingsRepository
 import app.knotwork.android.domain.usecases.GetDiscoverableModelDetailUseCase
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
@@ -153,7 +155,7 @@ class DiscoverDetailViewModelTest {
         advanceUntilIdle()
 
         val event = eventDeferred.await()
-        assertTrue(event is DiscoverInstallEvent.Failed && event.gated)
+        assertEquals(DiscoverInstallEvent.Failed(DiscoverInstallEvent.FailureReason.GATED), event)
     }
 
     @Test
@@ -174,7 +176,39 @@ class DiscoverDetailViewModelTest {
         advanceUntilIdle()
 
         val event = eventDeferred.await()
-        assertTrue(event is DiscoverInstallEvent.Failed && !event.gated)
+        assertEquals(DiscoverInstallEvent.Failed(DiscoverInstallEvent.FailureReason.OTHER), event)
+    }
+
+    @Test
+    fun `given a file that failed its checksum when install fails then the failure says so`() = runTest {
+        val event = failedInstallEvent(
+            DownloadError("did not match", failure = ModelDownloadFailure.CHECKSUM_MISMATCH),
+        )
+
+        // Not "check your connection": the bytes arrived, and they were the wrong ones.
+        assertEquals(DiscoverInstallEvent.Failed(DiscoverInstallEvent.FailureReason.CHECKSUM_MISMATCH), event)
+    }
+
+    @Test
+    fun `given a download paused at its time limit when install fails then the failure says it paused`() = runTest {
+        val event = failedInstallEvent(DownloadError("paused", failure = ModelDownloadFailure.PAUSED_TIME_LIMIT))
+
+        assertEquals(DiscoverInstallEvent.Failed(DiscoverInstallEvent.FailureReason.PAUSED), event)
+    }
+
+    /** Runs one install of `gemma.litertlm` that ends in [error] and returns the event it emits. */
+    private suspend fun TestScope.failedInstallEvent(error: DownloadError): DiscoverInstallEvent {
+        coEvery { getDetail(any()) } returns Result.success(detail())
+        every { installModel(any()) } returns flowOf(DownloadState.Pending, DownloadState.Error(error))
+        val vm = createBound()
+        advanceUntilIdle()
+        val eventDeferred = async { vm.installEvents.first() }
+        runCurrent()
+
+        vm.onLicenseConfirm("gemma.litertlm")
+        advanceUntilIdle()
+
+        return eventDeferred.await()
     }
 
     @Test

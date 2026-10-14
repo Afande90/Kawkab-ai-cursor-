@@ -14,6 +14,7 @@ import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import okio.BufferedSource
 import okio.buffer
 import okio.sink
@@ -33,14 +34,25 @@ import javax.inject.Inject
  *
  * Two invariants make that safe:
  *
- *  - **Bytes land in a `.part` file, never at the final name.** The finished
- *    file appears only via a rename, so an interrupted transfer can never be
- *    mistaken for an installed model (which is exactly what it used to look
- *    like).
+ *  - **Bytes land in a `.part` file, never at the final name.** A finished
+ *    transfer is handed back as [Outcome.Downloaded] — still the part file — and
+ *    reaches the final name only through the rename the installer makes once the
+ *    file has been checked (`DownloadedModelInstaller`). An interrupted transfer,
+ *    or one that fails its check, can never be mistaken for an installed model.
  *  - **The part file is keyed by the source URL.** Resuming across a *different*
  *    URL that happens to use the same file name would splice two files together
  *    into a bundle that looks complete and is unusable; a URL that does not
- *    match simply starts fresh.
+ *    match simply starts fresh. One URL can still serve two revisions of a file —
+ *    a Hugging Face `resolve/main` link does — which is what the check of the
+ *    published SHA-256 catches.
+ *
+ * **What the source publishes about the file.** Hugging Face answers a download
+ * from its own host with a redirect to its CDN, and that answer carries the file's
+ * SHA-256 (`X-Linked-Etag`, for a file stored in LFS) and length
+ * (`X-Linked-Size`) — measured equal to the `lfs.sha256` its API reports, on a
+ * resume as well. The downloader reads them only from the hops Hugging Face
+ * itself answered, for a request it sent to `https://huggingface.co` (the rule the
+ * token follows), and hands the hash back with the file.
  *
  * @property context Application context, used to resolve the models directory.
  * @property client Shared OkHttp client.
@@ -58,11 +70,27 @@ class ResumableFileDownloader @Inject constructor(
     sealed interface Outcome {
 
         /**
-         * The file was downloaded in full and moved to its final name.
+         * Every byte of the file is on disk, still under its partial name.
          *
-         * @property path Absolute path of the finished file.
+         * Not installed yet: the caller checks the file against [publishedSha256] and
+         * only then moves it to [targetPath], or deletes it.
+         *
+         * @property partPath Absolute path of the complete part file.
+         * @property targetPath Absolute path the file takes once it is installed —
+         *   inside the models directory, whatever the requested name.
+         * @property publishedSha256 The SHA-256 Hugging Face published for the file,
+         *   lowercase hex, or `null` when the source published none (another host, a
+         *   file outside LFS, or a Hub answer without the header).
+         * @property bytesTransferred Bytes this attempt added to the part file — `0`
+         *   when it found the part already complete. Like [Failure.bytesTransferred], it
+         *   tells the caller whether this attempt made progress, should it still fail.
          */
-        data class Success(val path: String) : Outcome
+        data class Downloaded(
+            val partPath: String,
+            val targetPath: String,
+            val publishedSha256: String?,
+            val bytesTransferred: Long = 0L,
+        ) : Outcome
 
         /**
          * The attempt did not finish.
@@ -92,8 +120,9 @@ class ResumableFileDownloader @Inject constructor(
      *   user pasted, a mirror, or the CDN the Hub redirects to.
      * @param onProgress Invoked with 0..100 whenever the whole-percent figure
      *   changes. Not called when the server reports no content length.
-     * @return [Outcome.Success] with the final path, or [Outcome.Failure]. Any
-     *   partial bytes are left on disk for the next attempt.
+     * @return [Outcome.Downloaded] with the complete part file and the hash its
+     *   source published, or [Outcome.Failure]. Any partial bytes are left on disk
+     *   for the next attempt.
      */
     suspend fun download(
         url: String,
@@ -121,8 +150,8 @@ class ResumableFileDownloader @Inject constructor(
      * Performs one request/stream cycle.
      *
      * @param allowResume `false` on the single retry taken when the server
-     *   rejects our range (`416`) — the partial file is then unusable, and
-     *   retrying with resume enabled would loop.
+     *   rejects our range (`416`) for a partial file that is not the whole file —
+     *   it is then unusable, and retrying with resume enabled would loop.
      */
     private suspend fun attempt(
         url: String,
@@ -148,11 +177,19 @@ class ResumableFileDownloader @Inject constructor(
             .build()
 
         networkActivityTracker.recordOutbound()
-        client.newCall(request).execute().use { response ->
+        return client.newCall(request).execute().use { response ->
+            val published = publishedFileOf(response, httpUrl)
             when {
                 response.code == HTTP_RANGE_NOT_SATISFIABLE && allowResume -> {
-                    // The partial file is at least as long as the resource the
-                    // server is offering — it is stale or corrupt, not a prefix.
+                    // A part exactly as long as the published file is the whole file:
+                    // an earlier attempt finished the transfer and stopped before the
+                    // file was checked. It goes to the check, not back to the network.
+                    if (alreadyOnDisk > 0 && published?.sizeBytes == alreadyOnDisk) {
+                        onProgress(PERCENT.toInt())
+                        return downloaded(part, target, published, transferred)
+                    }
+                    // Otherwise the partial file is at least as long as the resource
+                    // the server is offering — it is stale or corrupt, not a prefix.
                     Timber.w("Server rejected the resume range; restarting the download from zero.")
                     return attempt(url, target, part, authToken, onProgress, transferred, allowResume = false)
                 }
@@ -182,13 +219,65 @@ class ResumableFileDownloader @Inject constructor(
                 transferred = transferred,
                 onProgress = onProgress,
             )
+            downloaded(part, target, published, transferred)
         }
-
-        if (!part.renameTo(target)) {
-            return Outcome.Failure("Could not move the downloaded file into place.")
-        }
-        return Outcome.Success(target.absolutePath)
     }
+
+    /** The complete [part], with what its source published about it and what this attempt fetched. */
+    private fun downloaded(
+        part: File,
+        target: File,
+        published: PublishedFile?,
+        transferred: TransferCounter,
+    ): Outcome.Downloaded = Outcome.Downloaded(
+        partPath = part.absolutePath,
+        targetPath = target.absolutePath,
+        publishedSha256 = published?.sha256,
+        bytesTransferred = transferred.bytes,
+    )
+
+    /**
+     * Reads what Hugging Face published about the file from its own answer to the
+     * download request.
+     *
+     * Only for a request to Hugging Face itself ([isHuggingFace], decided from the URL
+     * this downloader requested — the token's rule), and only from the hops Hugging Face
+     * answered: the first one, and any redirect it made within its own origin before
+     * handing over to its CDN. A header on a CDN hop is never read — the CDN is what the
+     * hash vouches against.
+     *
+     * @param response The final response of the call, carrying its redirects as
+     *   [Response.priorResponse].
+     * @param requested The URL this downloader requested.
+     * @return The published hash and length, or `null` when the request was not to
+     *   Hugging Face or no hop of its own carried them.
+     */
+    private fun publishedFileOf(response: Response, requested: HttpUrl): PublishedFile? {
+        if (!isHuggingFace(requested)) return null
+        val hops = generateSequence(response) { it.priorResponse }.toList().asReversed()
+        val origin = hops.first().request.url
+        val hubHop = hops
+            .takeWhile { it.request.url.sameOriginAs(origin) }
+            .lastOrNull { it.header(HEADER_LINKED_ETAG) != null }
+            ?: return null
+        return PublishedFile(
+            sha256 = hubHop.header(HEADER_LINKED_ETAG)?.let(::sha256FromEtag),
+            sizeBytes = hubHop.header(HEADER_LINKED_SIZE)?.toLongOrNull(),
+        )
+    }
+
+    /** Whether this URL has the same scheme, host and port as [other]. */
+    private fun HttpUrl.sameOriginAs(other: HttpUrl): Boolean =
+        scheme == other.scheme && host == other.host && port == other.port
+
+    /**
+     * What the source published about a file.
+     *
+     * @property sha256 The file's SHA-256, lowercase hex, or `null` when the published
+     *   value is not one (a file outside LFS is named by its 40-hex git blob id).
+     * @property sizeBytes The file's length, or `null` when not published.
+     */
+    private data class PublishedFile(val sha256: String?, val sizeBytes: Long?)
 
     /**
      * Copies the response body into [part], emitting whole-percent progress.
@@ -325,7 +414,13 @@ class ResumableFileDownloader @Inject constructor(
      * @param url The request's own URL.
      * @return `true` only for `https://huggingface.co/…`.
      */
-    private fun mayCarryHuggingFaceToken(url: HttpUrl): Boolean = url.isHttps && url.host == HF_TOKEN_HOST
+    private fun mayCarryHuggingFaceToken(url: HttpUrl): Boolean = isHuggingFace(url)
+
+    /**
+     * Whether [url] is Hugging Face itself, over `https` — the one host whose answer is
+     * trusted to name the file's hash, and the one host the token is sent to.
+     */
+    private fun isHuggingFace(url: HttpUrl): Boolean = url.isHttps && url.host == HF_TOKEN_HOST
 
     private companion object {
         /** The one host a saved Hugging Face token is ever sent to. */
@@ -337,6 +432,15 @@ class ResumableFileDownloader @Inject constructor(
         /** Suffix marking an in-progress download. */
         const val PART_SUFFIX = ".part"
 
+        /** Hugging Face's name for the linked file's ETag — its SHA-256 for a file in LFS. */
+        const val HEADER_LINKED_ETAG = "X-Linked-Etag"
+
+        /** Hugging Face's name for the linked file's length. */
+        const val HEADER_LINKED_SIZE = "X-Linked-Size"
+
+        /** Hex digits in a SHA-256. */
+        const val SHA256_HEX_LENGTH = 64
+
         const val HTTP_PARTIAL_CONTENT = 206
         const val HTTP_RANGE_NOT_SATISFIABLE = 416
 
@@ -344,5 +448,21 @@ class ResumableFileDownloader @Inject constructor(
         const val UNKNOWN_LENGTH = -1L
 
         const val PERCENT = 100L
+
+        /**
+         * The SHA-256 an ETag value names, or `null` when it names none.
+         *
+         * Hugging Face quotes the value (`"181938…"`); a weak marker (`W/`) is dropped as
+         * well. Only 64 hex digits are a SHA-256 — a file outside LFS carries its 40-hex
+         * git blob id here, which is not the hash of its bytes.
+         *
+         * @param etag The raw header value.
+         * @return The SHA-256 in lowercase hex, or `null`.
+         */
+        fun sha256FromEtag(etag: String): String? {
+            val value = etag.trim().removePrefix("W/").trim('"').lowercase()
+            val isSha256 = value.length == SHA256_HEX_LENGTH && value.all { it in '0'..'9' || it in 'a'..'f' }
+            return value.takeIf { isSha256 }
+        }
     }
 }

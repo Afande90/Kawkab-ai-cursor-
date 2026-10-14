@@ -53,6 +53,10 @@ fun ModelsScreen(
     val benchmarkFailedText = stringResource(R.string.models_benchmark_failed)
     val benchmarkShareSubject = stringResource(R.string.models_benchmark_share_subject)
     val strings = modelsStrings()
+    val verificationLabels = VerificationLabels(
+        verified = stringResource(R.string.models_meta_verified),
+        notVerified = stringResource(R.string.models_meta_not_verified),
+    )
 
     LaunchedEffect(uiState.downloadError) {
         uiState.downloadError?.let { error ->
@@ -81,7 +85,9 @@ fun ModelsScreen(
         }
     }
 
-    val viewState = remember(uiState) { uiState.toViewState(strings.subtitleFormat) }
+    val viewState = remember(uiState, verificationLabels) {
+        uiState.toViewState(strings.subtitleFormat, verificationLabels)
+    }
 
     ModelsContent(
         state = viewState,
@@ -149,8 +155,13 @@ private fun shareBenchmarkText(context: Context, text: String, subject: String) 
  * unit tests independently of the composable subscription.
  *
  * @param subtitleFormat localised `"%1$d active · %2$d on disk · %3$s"` template.
+ * @param verificationLabels localised words for whether a model's file was checked
+ *   against the hash its source published.
  */
-internal fun ModelsUiState.toViewState(subtitleFormat: String): ModelsViewState {
+internal fun ModelsUiState.toViewState(
+    subtitleFormat: String,
+    verificationLabels: VerificationLabels,
+): ModelsViewState {
     // Sum of `LocalModel.size` is unreliable because the download manager
     // doesn't currently report content-length back to the local store,
     // so freshly-downloaded entries land with `size = 0L`. Render a dash
@@ -168,11 +179,16 @@ internal fun ModelsUiState.toViewState(subtitleFormat: String): ModelsViewState 
         totalSizeLabel,
     )
     val backendLabel = backendDisplayLabel(localBackendKey)
+
+    fun LocalModel.metaLine(): String = toMetaLine(
+        backendLabel = backendLabel,
+        verificationLabel = if (id in verifiedModelIds) verificationLabels.verified else verificationLabels.notVerified,
+    )
     val active = activeModel?.let { model ->
         ActiveModelRow(
             id = model.id,
             displayName = model.name,
-            meta = model.toMetaLine(backendLabel = backendLabel),
+            meta = model.metaLine(),
             visionSupported = model.supportsVision,
             audioSupported = model.supportsAudio,
         )
@@ -187,10 +203,10 @@ internal fun ModelsUiState.toViewState(subtitleFormat: String): ModelsViewState 
                 metaLine = null,
             )
             matchingModel != null && matchingModel.isActive -> PresetStatus.Active(
-                sizeMeta = matchingModel.toMetaLine(backendLabel = backendLabel),
+                sizeMeta = matchingModel.metaLine(),
             )
             matchingModel != null -> PresetStatus.OnDisk(
-                sizeMeta = matchingModel.toMetaLine(backendLabel = backendLabel),
+                sizeMeta = matchingModel.metaLine(),
             )
             else -> PresetStatus.Idle(
                 sizeMeta = presetSize?.takeIf { it > 0L }?.toGigabytesLabel(),
@@ -279,13 +295,23 @@ private fun BenchmarkRunPhase.toCatalogPhase(): BenchmarkPhase = when (this) {
     BenchmarkRunPhase.MEASURING -> BenchmarkPhase.Measuring
 }
 
-private fun LocalModel.toMetaLine(backendLabel: String): String {
+private fun LocalModel.toMetaLine(backendLabel: String, verificationLabel: String): String {
     // Drop the size prefix when the on-disk file is unreadable so we
     // don't render a misleading "0 GB" — the size is enriched from the
     // file system by `LocalModelRepositoryImpl.getAllModels()`.
     val prefix = if (size > 0L) "${size.toGigabytesLabel()} · " else ""
-    return "$prefix$backendLabel · LiteRT"
+    return "$prefix$backendLabel · LiteRT · $verificationLabel"
 }
+
+/**
+ * Localised words for whether a model's file was checked against the SHA-256
+ * its source published.
+ *
+ * @property verified Shown for a model whose file on disk is the checked file.
+ * @property notVerified Shown for every other model — nothing was checked, or the
+ *   file changed since.
+ */
+internal data class VerificationLabels(val verified: String, val notVerified: String)
 
 /**
  * Human-readable label for the [app.knotwork.android.domain.models.LocalBackend]

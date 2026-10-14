@@ -31,6 +31,10 @@ package app.knotwork.android.domain.models
  * @property sourceUrl The address the file was downloaded from, or `null` when unknown — a model
  *   registered before the address was recorded, or one found on disk. A restored phone offers a model
  *   for download again from here.
+ * @property sourceSha256 The SHA-256 the source published for the file, recorded when a download
+ *   matched it; `null` when no download of this model was checked (a source that publishes no
+ *   hash, a model found on disk, one installed before checks existed). It records what was checked
+ *   once, not what is on disk now — [matchesPublishedHash] compares it with the current file.
  */
 data class LocalModel(
     val id: Long = 0,
@@ -42,4 +46,21 @@ data class LocalModel(
     val supportsAudio: Boolean = false,
     val fileHash: ModelFileHash? = null,
     val sourceUrl: String? = null,
-)
+    val sourceSha256: String? = null,
+) {
+
+    /**
+     * Whether the file on disk now is the file its source published: a download of this model was
+     * checked against the source's hash, and the file's current hash is still that hash.
+     *
+     * The current hash comes from the caller because it is only known with the file at hand —
+     * `LocalModelRepository.currentFileHash` answers it only while the stored hash still describes
+     * the file on disk. A file replaced since the check, or one whose hash is not known yet, is
+     * not vouched for.
+     *
+     * @param currentFileSha256 The SHA-256 of the file as it is on disk now, or `null` when unknown.
+     * @return `true` only when both hashes are known and equal.
+     */
+    fun matchesPublishedHash(currentFileSha256: String?): Boolean =
+        sourceSha256 != null && currentFileSha256 != null && sourceSha256.equals(currentFileSha256, ignoreCase = true)
+}

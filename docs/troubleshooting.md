@@ -28,6 +28,7 @@ Three sibling documents, and it is worth knowing which one you want:
 - ["Your data can't be unlocked" appears at startup](#your-data-cant-be-unlocked-appears-at-startup)
 - [Installing over a copy from Google Play fails](#installing-over-a-copy-from-google-play-fails)
 - [A model download paused after five hours](#a-model-download-paused-after-five-hours)
+- [A downloaded model did not match its checksum](#a-downloaded-model-did-not-match-its-checksum)
 
 ---
 
@@ -295,6 +296,21 @@ Android lets an app transfer data in the background for six hours a day, and
 stops the app if a transfer runs longer. A model download therefore pauses on
 its own after five hours of downloading. Nothing is lost: start the same
 download again and it continues from where it stopped.
+
+## A downloaded model did not match its checksum
+
+Hugging Face publishes a SHA-256 for the model files it hosts, and the app
+compares the downloaded file with it before installing the model. When the two
+differ, the file is deleted and no model is installed.
+
+One way this happens: the file changed on Hugging Face while your download was
+interrupted, so the part fetched before and the part fetched after belong to two
+versions of the file. Start the download again — it fetches the current version
+from the beginning.
+
+If a fresh download fails the same way, the file reaching your phone is not the
+one Hugging Face publishes. Try another network, and if it keeps happening,
+open an issue naming the model and the file.
 
 
 ---
