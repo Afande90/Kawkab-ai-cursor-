@@ -1791,6 +1791,33 @@ the moment transcription succeeds (§3.10). They never reach the database and
 never enter the pipeline graph, so they appear in no storage tier above — only
 the resulting transcript text does, as an ordinary chat message.
 
+#### The app's own encrypted backup
+
+The one way these stores leave the device together is a backup the user makes:
+Settings → Privacy → *Backup & restore* → *Back up*. The file's layout is in
+[backup-format.md](backup-format.md); what it protects, in
+[SECURITY.md § Backup and device transfer](../SECURITY.md#backup-and-device-transfer).
+
+- **Presentation.** `BackupViewModel` holds the password for the *Back up*
+  route only, asks the screen to open the system *Create document* picker, and
+  maps progress and the outcome onto the catalog's `BackupContent`.
+- **Domain.** `BackUpToDocumentUseCase` owns the picked document. It opens it
+  through `BackupDocuments`, runs `ExportBackupUseCase` (password of at least
+  12 characters, secrets only when asked) and keeps the file only when the
+  export completed: a failure, a cancellation or an unexpected error deletes it.
+- **Data.** `BackupExporterImpl` derives the keys
+  (`Argon2idBackupKeyDerivation`), lets `BackupContentCollector` gather the
+  content — a database copy from `SqlCipherDatabaseSnapshotter` under a key made
+  for this archive, the settings `PreferenceBackupPolicy` lets travel, the
+  `BackedUpSecrets` owners' values when asked, the workspace and attachment
+  files from `BackupFileSource` — and streams it through `BackupArchiveWriter`
+  into AES-GCM chunks. `SafBackupDocuments` is the Storage Access Framework
+  side: it keeps a persistable grant and records the document as unfinished in
+  `AppStateSettings` from the moment it is opened until it is finished or
+  deleted. So `StartupMaintenance` deletes a file a killed process left behind —
+  but never the one a backup in this process is still writing, since the
+  maintenance also runs when the activity is only recreated.
+
 ### 5.3. JSON parsing
 
 Pipeline import/export and tool-argument parsing use

@@ -4,7 +4,8 @@ A Knotwork backup is one file, locked with a password the user chooses. This pag
 describes the file byte by byte, so that it can be read without the app.
 
 > **Status: format 1 is defined and tested, and so are the export that writes it and the restore that reads it.**
-> Neither is in the app's screens yet. From the first release that writes archives, every format version stays
+> The app's screens make a backup (Settings → Privacy → *Backup & restore*); restoring one is not in them yet.
+> From the first release that writes archives, every format version stays
 > readable: a reader that meets a newer version refuses the file instead of
 > guessing.
 

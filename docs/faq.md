@@ -121,7 +121,8 @@ the tool is read-only, so it does not ask first. Turn it off with its switch on
 the **Tools** screen, or with **Block network from local model**, which
 withholds it along with the cloud paths.
 
-Nothing else has a way out. See [PRIVACY §
+Nothing else has a way out — apart from files you export yourself, such as a
+journal, a run trace or a backup, which go where you send them. See [PRIVACY §
 What can leave your device](../PRIVACY.md#3-what-can-leave-your-device),
 and [SECURITY § Outbound HTTP and the exfiltration
 chain](../SECURITY.md#outbound-http-and-the-exfiltration-chain) for the layered
@@ -130,9 +131,18 @@ restrictions on the tool path.
 ### Where are my API keys stored?
 
 In an encrypted store sealed under a non-exportable Android Keystore key — never
-in plain settings, never in exported pipelines, never in logs. Same for MCP
-credentials and the Hugging Face token. See [SECURITY § API keys for cloud
+in plain settings, never in exported pipelines, never in logs, and in a backup
+only if you tick **Include API keys and sign-ins**. Same for MCP credentials and
+the Hugging Face token. See [SECURITY § API keys for cloud
 providers](../SECURITY.md#api-keys-for-cloud-providers).
+
+### Can I back up everything?
+
+Yes, into one file locked with a password you choose: Settings → Privacy →
+**Backup & restore** → **Back up…**. It holds chats, memory, pipelines, run
+history, triggers, settings and files — not the model files, and not your API
+keys unless you tick the box. The file goes only where you save it. See [Backup
+& restore](user-guide.md#backup--restore).
 
 ### Is there telemetry?
 
