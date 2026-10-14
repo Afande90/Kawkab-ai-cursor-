@@ -246,6 +246,10 @@ object SettingsSearchCatalog {
             R.string.settings_search_name_trace_retention_max_age_days,
             R.string.settings_search_desc_trace_retention_max_age_days,
         ),
+        "LINK_BACKUP_RESTORE" to strings(
+            R.string.settings_search_name_link_backup_restore,
+            R.string.settings_search_desc_link_backup_restore,
+        ),
         // ─── About ───────────────────────────────────────────────────────────
         "IDENTITY" to strings(R.string.settings_search_name_identity, R.string.settings_search_desc_identity),
         "LINK_LICENSES" to strings(

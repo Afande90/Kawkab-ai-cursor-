@@ -95,6 +95,7 @@ import app.knotwork.design.screens.settings.MemoryImportDialog as CatalogMemoryI
  * @property onOpenAllowedDomains Open the allowed-HTTP-domains screen.
  * @property onOpenLicenses Open the About / licenses screen.
  * @property onOpenUsageStatistics Open the on-device Usage statistics screen.
+ * @property onOpenBackup Open the Backup & restore screen.
  * @property onOpenExternalAutomationJournal Open the external-automation request
  *   journal.
  * @property onOpenRunLimits Open the run-limits screen.
@@ -109,6 +110,7 @@ data class SettingsNavActions(
     val onOpenAllowedDomains: () -> Unit,
     val onOpenLicenses: () -> Unit,
     val onOpenUsageStatistics: () -> Unit,
+    val onOpenBackup: () -> Unit,
     val onOpenExternalAutomationJournal: () -> Unit,
     val onOpenRunLimits: () -> Unit,
 )
@@ -506,6 +508,7 @@ private fun rememberSettingsCallbacks(
         onCrashReportingToggle = viewModel::setCrashReportingEnabled,
         onPrivacySliderChange = { id, value -> routePrivacySlider(viewModel, id, value) },
         onOpenUsageStatistics = nav.onOpenUsageStatistics,
+        onOpenBackup = nav.onOpenBackup,
         onResetSettingsClick = viewModel::stageResetSettings,
         onDestructiveTypedConfirmChange = viewModel::updateDestructiveTypedInput,
         onDestructiveConfirm = viewModel::confirmDestructive,

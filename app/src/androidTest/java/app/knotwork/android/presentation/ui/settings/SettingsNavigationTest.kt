@@ -61,6 +61,7 @@ class SettingsNavigationTest {
         onOpenAllowedDomains = {},
         onOpenLicenses = {},
         onOpenUsageStatistics = {},
+        onOpenBackup = {},
         onOpenExternalAutomationJournal = {},
         onOpenRunLimits = {},
     )

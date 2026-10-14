@@ -4,6 +4,7 @@ import app.knotwork.android.data.services.AttachmentOrphanCleanupScheduler
 import app.knotwork.android.data.services.MemoryCompactionScheduler
 import app.knotwork.android.data.services.PendingInteractionMaintenanceScheduler
 import app.knotwork.android.data.services.RunRetentionScheduler
+import app.knotwork.android.domain.backup.BackupDocuments
 import app.knotwork.android.domain.services.MemoryReembedScheduler
 import app.knotwork.android.domain.services.ModelFileHashScheduler
 import app.knotwork.android.domain.usecases.SyncTriggersUseCase
@@ -31,6 +32,7 @@ import javax.inject.Inject
  * @property attachmentOrphanCleanupScheduler Backstop sweep for orphaned attachment files.
  * @property syncTriggersUseCase Registers the watches of every enabled automation trigger.
  * @property appShortcutPublisher Publishes the recent-session launcher shortcuts.
+ * @property backupDocuments Deletes a backup document the process died writing.
  */
 class StartupMaintenance @Inject constructor(
     private val memoryCompactionScheduler: MemoryCompactionScheduler,
@@ -41,6 +43,7 @@ class StartupMaintenance @Inject constructor(
     private val attachmentOrphanCleanupScheduler: AttachmentOrphanCleanupScheduler,
     private val syncTriggersUseCase: SyncTriggersUseCase,
     private val appShortcutPublisher: AppShortcutPublisher,
+    private val backupDocuments: BackupDocuments,
 ) {
 
     /**
@@ -62,6 +65,7 @@ class StartupMaintenance @Inject constructor(
         step("memory re-embed re-arm") { memoryReembedScheduler.rearmIfPending() }
         step("model file hash re-arm") { modelFileHashScheduler.rearmIfPending() }
         step("trigger sync") { syncTriggersUseCase() }
+        step("unfinished backup") { backupDocuments.discardLeftBehind() }
         if (refreshShortcuts) step("launcher shortcuts") { appShortcutPublisher.refresh() }
     }
 

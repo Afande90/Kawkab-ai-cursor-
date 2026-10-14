@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Settings → Privacy → Backup & restore: the snackbars the screen shows. The designer's copy is the authority. -->
+<resources>
+    <string name="backup_snack_cancelled">Backup cancelled. The unfinished file was deleted.</string>
+    <string name="backup_snack_cancelled_left">Backup cancelled. Delete the unfinished file %1$s yourself.</string>
+</resources>

@@ -51,7 +51,7 @@ class PreferenceBackupPolicyTest {
     fun `given the decisions when counted then they are the recorded ones`() {
         // Then — decisions.md §86 Р3: device-bound keys and the legacy plain token stay; one grant resets.
         val byMembership = PreferenceBackupPolicy.decided.values.groupingBy { it }.eachCount()
-        assertEquals(mapOf(Membership.TRAVELS to 58, Membership.STAYS to 9, Membership.RESETS to 1), byMembership)
+        assertEquals(mapOf(Membership.TRAVELS to 58, Membership.STAYS to 10, Membership.RESETS to 1), byMembership)
         assertEquals(Membership.RESETS, PreferenceBackupPolicy.membershipOf("external_automation_enabled"))
         listOf("crash_reporting_enabled", "local_model_backend", "hugging_face_token").forEach {
             assertEquals(it, Membership.STAYS, PreferenceBackupPolicy.membershipOf(it))

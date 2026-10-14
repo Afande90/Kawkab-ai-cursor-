@@ -1,16 +1,21 @@
 package app.knotwork.design.components.controls
 
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import app.knotwork.design.R
 import app.knotwork.design.icons.AppIcons
 
 /**
@@ -38,6 +43,13 @@ import app.knotwork.design.icons.AppIcons
  * @param size Forwarded to [KnotworkTextField] — defaults to
  *  [KnotworkFieldSize.Sm]; bump to [KnotworkFieldSize.Lg] for onboarding hero
  *  fields where the token is the page's primary affordance.
+ * @param imeAction The keyboard's action key: [ImeAction.Next] to move to a
+ *  following field, [ImeAction.Done] to finish.
+ * @param keyboardActions What the action key does; by default [ImeAction.Done]
+ *  hides the keyboard.
+ * @param autofillType [ContentType.NewPassword] where a password is chosen (a
+ *  password manager can offer to make and keep one); `null` keeps what the
+ *  password keyboard already reports, [ContentType.Password].
  */
 @Composable
 fun KnotworkPasswordField(
@@ -49,8 +61,11 @@ fun KnotworkPasswordField(
     isError: Boolean = false,
     initiallyRevealed: Boolean = false,
     size: KnotworkFieldSize = KnotworkFieldSize.Sm,
+    imeAction: ImeAction = ImeAction.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
+    autofillType: ContentType? = null,
 ) {
-    var revealed by remember { mutableStateOf(initiallyRevealed) }
+    var revealed by rememberSaveable { mutableStateOf(initiallyRevealed) }
     val trailing: ImageVector = if (revealed) AppIcons.EyeOff else AppIcons.Eye
     val transformation: VisualTransformation = if (revealed) {
         VisualTransformation.None
@@ -67,7 +82,13 @@ fun KnotworkPasswordField(
         onTrailingClick = { revealed = !revealed },
         enabled = enabled,
         isError = isError,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+        // The password keyboard: no autocorrect, no suggestions.
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = imeAction),
+        keyboardActions = keyboardActions,
+        trailingIconDescription = stringResource(
+            if (revealed) R.string.knotwork_password_hide else R.string.knotwork_password_show,
+        ),
+        autofillType = autofillType,
         visualTransformation = transformation,
         // Mono only when revealed — API keys are wide and read better as Mono13,
         // but the bullet glyph is rendered by the visual transformation and

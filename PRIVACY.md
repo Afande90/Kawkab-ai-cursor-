@@ -20,7 +20,9 @@ request from one of the two built-in tools that reach the network, or (in the
 `full` build only) crash reports you opted in to. All of them are off until you
 configure them except one: the built-in Wikipedia lookup is on from the first
 launch, and section 3.4 says so and says how to turn it off. Each path is
-listed below with what it sends, where, and how to stop it.
+listed below with what it sends, where, and how to stop it. Files you
+export yourself — a journal, a run trace, a backup — go wherever you send them
+(sections 3.7–3.9).
 
 This document is the privacy policy. The engineering-level threat model, the
 attack surfaces the app defends against, and what is explicitly *out* of scope
@@ -52,7 +54,8 @@ only if you switch them on.
 All of the following is created by your use of the app and stays in the app's
 private storage on your device. None of it is included in Android's cloud
 backup or in a transfer to a new device
-([details](SECURITY.md#backup-and-device-transfer)):
+([details](SECURITY.md#backup-and-device-transfer)); it leaves only in a backup
+file you make yourself (section 3.9):
 
 - Chat sessions and messages, including image and audio attachments you add.
 - Long-term memory entries derived from your conversations. When a newer fact
@@ -296,6 +299,27 @@ app you pick.
 Checking a run (**Verify**) and starting it again with its seed do not export
 anything: both run on the device.
 
+### 3.9 Backup file (you choose where it goes)
+
+**Back up** in Settings → Privacy → *Backup & restore* writes one file to a
+place you pick in the system's file picker, by an explicit action. The app
+opens no connection to do it. The file holds your chats and their images,
+memory, pipelines, presets, prompts and skills, run history, triggers, usage
+statistics, settings and the agent workspace's files, and the list of models
+you installed with where each came from — not the model files. Your cloud API
+keys, Hugging Face token and MCP sign-ins go in only if you tick *Include API
+keys and sign-ins*. The addresses of servers you added always go in, so a token
+written into an address travels with it.
+
+The file is encrypted under a password you choose, which the app never stores.
+A few facts stay readable without it — the format version, the app version and
+build flavour that wrote the file, the database schema version, when it was
+written, roughly how large its content is, its chunk size and how its key is
+derived
+([details](docs/backup-format.md#what-the-format-does-not-hide)). Anyone who
+has the file and the password can read everything in it. If you pick a cloud
+drive in the picker, that drive's app uploads the file under its own policy.
+
 ---
 
 ## 4. What never leaves your device
@@ -304,8 +328,9 @@ anything: both run on the device.
   which days you were active, and so on — are computed and stored on the
   device and are never transmitted. This is enforced at build time: an
   architecture test fails the build if any network dependency ever reaches
-  that code. Exporting the statistics as a file is a manual action you take,
-  and the resulting file goes wherever you send it.
+  that code. Exporting the statistics as a file, or making a backup (section
+  3.9), is a manual action you take, and the resulting file goes wherever you
+  send it.
 - **A library's own usage statistics.** The on-device library that builds
   memory embeddings (MediaPipe) comes with a usage logger that would report to
   Google how it is used, together with your phone's model, build, country and
@@ -314,7 +339,8 @@ anything: both run on the device.
   never published — keeps it.
 - **Your keys and credentials.** API keys, the Hugging Face token, and MCP
   credentials are used only to authenticate to the service you entered them
-  for. They are never sent anywhere else, and a saved provider key found in an
+  for. They are never sent anywhere else — a backup file carries them only if
+  you tick the box (section 3.9) — and a saved provider key found in an
   outgoing `http_request` — in a header, the body or the address — causes that
   request to be refused outright.
 - **Attachments.** Images and audio you attach are never sent to a cloud

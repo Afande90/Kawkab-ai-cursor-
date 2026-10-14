@@ -82,6 +82,7 @@ Only Kotlin files appear inside the generated blocks.
     - `PreferenceBackupPolicyTest.kt` - `PreferenceBackupPolicy` decides every setting the production code declares, and nothing else — so a new setting does not build until someone says whether it travels.
     - `PreferencesBackupJsonTest.kt` - `PreferencesBackupJson`: every type is written with its name, a float reads back as the same float, and only settings the policy lets travel are written.
     - `RestoredPreferencesMigrationTest.kt` - `RestoredPreferencesMigration` writes a committed restore's settings over this phone's: travelling settings are replaced, those that stay are kept, those that reset are cleared — and it never fails the DataStore.
+    - `SafBackupDocumentsTest.kt` - `SafBackupDocuments`: a document is remembered as unfinished from the moment it is opened until it is finished or deleted; a provider's refusal is a `false`, never a crash; and the start-up clean-up never deletes the document a backup in this process is still writing.
     - `SqlCipherDatabaseSnapshotterTest.kt` - What `SqlCipherDatabaseSnapshotter` decides before it opens anything: a key that is not 32 bytes is refused, and a phone without room for the copy is reported full.
     - `StagedDatabasePreparerFailureTest.kt` - How `SqlCipherStagedDatabasePreparer` names a failure of the staged database's work: a full disk anywhere in the chain is the phone being full, never a damaged archive; anything else is a database that cannot be used.
   - `engine/` - Tests for the inference engines, client factories and the task queue.
@@ -445,6 +446,7 @@ Only Kotlin files appear inside the generated blocks.
       - `BuildExternalAutomationJournalExportUseCaseTest.kt` - Verifies that `BuildExternalAutomationJournalExportUseCase` renders the request journal into a correct JSON document: the header, every status and refusal reason as the discriminator already published as the callback contract, the two sender columns kept apart, and the caller's order preserved.
       - `HandleExternalAutomationRequestUseCaseTest.kt` - Verifies the security guarantees of the external-automation entry point.
       - `ParseExternalAutomationRequestUseCaseTest.kt` - Unit tests for `ParseExternalAutomationRequestUseCase`.
+    - `BackUpToDocumentUseCaseTest.kt` - `BackUpToDocumentUseCase`: a saved backup is finished and measured; a failed, refused, cancelled or broken one deletes its unfinished document — and only a complete one is ever kept.
     - `BuildDynamicShortcutsUseCaseTest.kt` - Unit tests for `BuildDynamicShortcutsUseCase`: recency ordering, the count cap, label clamping, and the blank-name / non-positive-cap guards.
     - `BuildTriggerJournalExportUseCaseTest.kt` - Verifies that `BuildTriggerJournalExportUseCase` renders the journal snapshot into a correct JSON document: the header (schema, local-only, count), the discriminator strings of every verdict and run outcome, the typed skip reason and failure error, and that the caller's order is preserved verbatim.
     - `BuildUsageTelemetryExportUseCaseTest.kt` - Verifies that `BuildUsageTelemetryExportUseCase` renders the on-device statistics into a correct text + JSON document, resolves pipeline names, and carries the local-only marker.
@@ -674,6 +676,8 @@ Only Kotlin files appear inside the generated blocks.
     - `prompts/` - Tests for the prompt library.
       - `PromptLibraryViewModelTest.kt` - Unit tests for `PromptLibraryViewModel`.
     - `settings/` - Tests for the settings screens and their catalogues.
+      - `backup/` - Tests for the *Backup & restore* screen's ViewModel.
+        - `BackupViewModelTest.kt` - `BackupViewModel`: the password rule as the designer wrote it, the picker, the work and its three endings — saved, failed, cancelled — and Back inside a route.
       - `ExternalAutomationRowSummaryTest.kt` - Unit tests for the pure half of the external-automation Background rows.
       - `MemorySettingsDelegateTest.kt` - Unit tests for `MemorySettingsDelegate` — the memory import's last step, where a failure meets the user.
       - `ModelsSettingsDelegateTest.kt` - The provider rows of Settings → Models, as `ModelsSettingsDelegate` summarises them: one per provider in the order every provider surface uses, and the one state no row had before — a key saved with no model, for a provider that has no default.

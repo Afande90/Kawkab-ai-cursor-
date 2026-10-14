@@ -348,6 +348,11 @@ Paths below are relative to `src/main/java/app/knotwork/design/`.
   - `settings/` - the settings hub plus one content composable per category sub-screen (the flat single-screen `SettingsContent` was split into this stack).
     - `AboutSettingsContent.kt` - identity card, build info, licenses and the reset actions.
     - `BackgroundSettingsContent.kt` - background work, triggers, notifications and entry-surface bindings.
+    - `backup/` - The *Backup & restore* screen: its content, route bodies, parts and view states.
+      - `BackupContent.kt` - Settings → Privacy → *Backup & restore*, and the *Back up* route over it.
+      - `BackupParts.kt` - The pieces the backup screens share: notes, action rows, the checkbox row, the file row, steps, the result head, counts and the bottom action.
+      - `BackupRouteBody.kt` - The scrolling body of the *Backup & restore* screen for what is in front: the screen itself, or a route.
+      - `BackupViewState.kt` - What the Settings → Privacy → *Backup & restore* screen shows: the screen itself, or one of its full-screen routes over it.
     - `GenerationSettingsContent.kt` - system instructions, restrictions and the LLM generation parameters.
     - `KnotworkMonoTextArea.kt` - multi-line monospace textarea (brand outline) for system instructions.
     - `KnotworkParamSlider.kt` - labelled numeric-parameter slider with value label, optional validation error, and (inside a settings screen) its own help glyph and explanation panel under the track.
@@ -459,6 +464,8 @@ matters.
     - `ConsoleSnapTest.kt` - Documents the discrete `ConsoleSnap` heights as preview-only fixtures.
     - `FullHashLayoutTest.kt` - `FullHash` keeps every group of eight whole: when four groups do not fit on a line, fewer go on it, and no group breaks across lines character by character.
     - `RunHeaderAffordanceTest.kt` - What the run strip, the hash chips and the check's sheet do when used: the line toggles, each copy button hands over the whole value, a disabled action does nothing yet stays readable, and a mismatch's button names where it is fixed.
+  - `controls/` - Behaviour tests for the input controls.
+    - `KnotworkPasswordFieldTest.kt` - `KnotworkPasswordField`: TalkBack hears what the eye does, and a password manager hears a password — a new one where the caller says one is being chosen.
   - `dialogs/` - the shared dialog shapes, currently the outcome family.
     - `DialogsSnapshotTest.kt` - Roborazzi baselines for the two field-free dialogs that moved out of the settings screen.
     - `OutcomeDialogSnapshotTest.kt` - Roborazzi baselines for the `OutcomeDialog` family — the four import outcomes and the re-import question, in one shape.
@@ -545,6 +552,9 @@ matters.
     - `SavePromptAsPresetSnapshotTest.kt` - Roborazzi baselines for the save-prompt-as-preset form.
   - `SecretFieldImeTest.kt` - Every field that takes a credential tells the keyboard it is a password.
   - `settings/` - the settings hub and its category sub-screens, including the hint affordance, the search surface, and the provider / run-limits details.
+    - `backup/` - Roborazzi baselines for the *Backup & restore* screen.
+      - `BackupContentSemanticsTest.kt` - What the *Back up* route puts in the semantics tree for TalkBack: the working steps are one polite live region whose text is the current step, so the step's name changes as the work moves on — the content change a live region is announced on.
+      - `BackupSnapshotTest.kt` - Roborazzi baseline for Settings → Privacy → *Backup & restore* and its *Back up* route: the screen, the password form (empty, flagged, ready, 200 %), the work (key derivation, files), the saved result (also at 200 %, where the counts fall into one column) and two failures — light, and dark for every state the user reads a result in.
     - `HeroSnapshotTest.kt` - Roborazzi baseline for the README "Settings" hero shot at the canonical 1080 × 2400 resolution.
     - `ModelPickerSheetTest.kt` - Behaviour of `ModelPickerSheetContent`: what a server's list becomes, and what a pick returns.
     - `ProviderDetailSnapshotTest.kt` - Roborazzi baselines for the provider detail screen.

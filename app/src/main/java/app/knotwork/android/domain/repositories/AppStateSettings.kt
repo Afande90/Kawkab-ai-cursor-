@@ -78,4 +78,18 @@ interface AppStateSettings {
      * @param name Enum name of the chosen tab (`Logs` / `Vars` / `Traces`).
      */
     suspend fun setConsolePreferredConsoleTabName(name: String)
+
+    /**
+     * The document a backup is being written to, from the moment it is opened until the backup is finished or
+     * the document deleted — so a start after the process died mid-backup can delete what it left. `null`
+     * when no backup is being written.
+     */
+    val unfinishedBackupDocument: Flow<String?>
+
+    /**
+     * Records or clears the document a backup is being written to.
+     *
+     * @param document The document's URI, or `null` once the backup is finished or the document deleted.
+     */
+    suspend fun setUnfinishedBackupDocument(document: String?)
 }

@@ -167,6 +167,7 @@ private val PRIVACY_ENTRIES = listOf(
     setting("CRASH_REPORTING_ENABLED", BASIC, TOGGLE, hubBasic = true, syn = listOf("crash", "telemetry")),
     setting("TRACE_RETENTION_RUNS_PER_SESSION", ADVANCED, SLIDER, syn = listOf("trace", "retention")),
     setting("TRACE_RETENTION_MAX_AGE_DAYS", ADVANCED, SLIDER, syn = listOf("trace", "retention", "max")),
+    link(BASIC, "Backup & restore", syn = listOf("backup", "restore", "export", "import", "transfer", "new phone")),
 )
 
 private val ABOUT_ENTRIES = listOf(

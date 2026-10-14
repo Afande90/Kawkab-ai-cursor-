@@ -131,6 +131,10 @@ https://github.com/user-attachments/assets/2ea06de5-6832-4e0c-ad48-430f375d8b72
   [Known limitations](docs/faq.md#known-limitations).
 - Archiving a chat takes it out of the drawer without deleting it. It stays
   readable and exportable on its own screen until you restore it.
+- **Back up** what you made — chats, memory, pipelines, run history, triggers,
+  settings and files — into one file locked with a password you choose, saved
+  wherever you pick. API keys go in only if you tick the box; model files stay
+  out. The [format](docs/backup-format.md) is public.
 - Settings with a number, a borrowed term or a side effect explain themselves in
   one sentence behind the **ⓘ** next to the label. The reference table in the
   user guide is generated from the same strings.

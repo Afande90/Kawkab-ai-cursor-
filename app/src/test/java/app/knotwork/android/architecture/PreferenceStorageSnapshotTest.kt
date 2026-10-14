@@ -155,6 +155,7 @@ class PreferenceStorageSnapshotTest {
             "cloud_retry_base_delay_ms" to "long",
             "cloud_retry_max_attempts" to "int",
             "console_preferred_tab" to "string",
+            "unfinished_backup_document" to "string",
             "crash_reporting_enabled" to "boolean",
             "current_chat_session_id" to "string",
             "default_pipeline_id" to "string",

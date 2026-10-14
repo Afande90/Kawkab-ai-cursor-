@@ -28,6 +28,7 @@ class AppStateSettingsStore @Inject constructor(private val dataStore: DataStore
         val HAS_COMPLETED_ONBOARDING = booleanPreferencesKey("has_completed_onboarding")
         val CURRENT_CHAT_SESSION_ID = stringPreferencesKey("current_chat_session_id")
         val CONSOLE_PREFERRED_TAB = stringPreferencesKey("console_preferred_tab")
+        val UNFINISHED_BACKUP_DOCUMENT = stringPreferencesKey("unfinished_backup_document")
     }
 
     override val isFirstLaunch: Flow<Boolean> = dataStore.preferencesOrEmpty()
@@ -75,6 +76,19 @@ class AppStateSettingsStore @Inject constructor(private val dataStore: DataStore
     override suspend fun setConsolePreferredConsoleTabName(name: String) {
         dataStore.edit { preferences ->
             preferences[Keys.CONSOLE_PREFERRED_TAB] = name
+        }
+    }
+
+    override val unfinishedBackupDocument: Flow<String?> = dataStore.preferencesOrEmpty()
+        .map { preferences -> preferences[Keys.UNFINISHED_BACKUP_DOCUMENT] }
+
+    override suspend fun setUnfinishedBackupDocument(document: String?) {
+        dataStore.edit { preferences ->
+            if (document == null) {
+                preferences.remove(Keys.UNFINISHED_BACKUP_DOCUMENT)
+            } else {
+                preferences[Keys.UNFINISHED_BACKUP_DOCUMENT] = document
+            }
         }
     }
 

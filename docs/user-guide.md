@@ -2559,6 +2559,7 @@ repeated here.
 | **Crash reporting** | Off, nothing leaves the device. On, crashes plus warning and error log lines go out — never your messages, prompts or keys. |
 | **Trace retention · runs** | How many past runs keep their step-by-step trace in a chat. Older traces are dropped; the messages themselves stay. |
 | **Trace retention · age** | How long a trace is kept before it is dropped, whatever the per-chat count. Bounds what accumulates on disk. |
+| **Backup & restore** | *(no explanation — opens a screen that explains itself)* |
 
 #### About
 
@@ -2993,6 +2994,8 @@ Advanced:
   waiting on an approval or clarification are never removed by retention.
 - **Usage statistics** *(link)* — opens a fully on-device usage dashboard (see
   below).
+- **Backup & restore** *(link)* — puts what you made in the app into one file
+  locked with a password (see [Backup & restore](#backup--restore)).
 
 #### Usage statistics
 
@@ -3039,6 +3042,54 @@ Controls:
   a file you pick. Neither happens automatically.
 - **Reset statistics** — permanently clears every recorded count (it does not
   change the recording toggle).
+
+#### Backup & restore
+
+**Back up…** writes one file, locked with a password you choose. It holds your
+chats with their images, long-term memory, pipelines, presets, prompts and
+skills, run history, triggers, usage statistics, settings and the files in the
+agent workspace. The model files stay out — they are large and can be
+downloaded again; the backup keeps the list of models you had and where each
+came from. Search settings for *backup*, *export*, *transfer* or *new phone* to
+find the screen.
+
+1. **Password, twice.** At least 12 characters; a few unrelated words make a
+   strong one. Knotwork never stores it (a password manager may offer to): forget
+   it and nobody can open the backup, the developer included.
+2. **Include API keys and sign-ins** — off unless you tick it. Ticked, the file
+   also carries your cloud API keys, the Hugging Face token and MCP sign-ins,
+   and anyone with the file and the password can use them. Left off, you enter
+   them again on the phone you restore to. Server addresses go in either way, so
+   a token written into a server's address travels with it.
+3. **Choose where to save** opens the system's *Create document* screen with
+   the name `knotwork-backup-<date>.knotwork`. Any place it offers will do — a
+   folder on the phone, a memory card, a cloud drive. Picking an existing file
+   replaces it — if the new backup then does not finish, the old file is gone
+   too. Knotwork itself uploads nothing; a cloud drive you pick uploads the file
+   as it would any other.
+4. **Backing up.** The steps are named as they run: securing the password
+   (about a second on a recent phone), chats, memory and settings, then files
+   and images, with the bytes written so far. Keep Knotwork open until it
+   finishes. **Cancel** — or Back — stops it and deletes the unfinished file.
+5. **Backup saved** shows the file, its size, how many chats, memories,
+   pipelines and files are in it, and whether the keys are. **Done** forgets
+   the password.
+
+When a backup is not saved, the screen says why: the place you chose ran out of
+space (and about how much the file needs), it stopped accepting the file, the
+phone itself has no room for the copy of the database a backup makes on the
+way, or some of the app's data could not be read. **Try again** opens the
+picker again with the password kept.
+
+An unfinished file is deleted when you cancel and when a backup fails. A few
+places do not let apps delete files; then the screen, or the message after a
+cancel, names the file for you to delete. If the app was closed halfway, the
+file is deleted the next time it starts, where the place still allows it —
+nothing is shown then. A workspace file or image whose name a backup cannot
+store is left out, and the result says how many were.
+
+The file's layout and cryptography are described in
+[backup-format.md](backup-format.md).
 
 ### About
 

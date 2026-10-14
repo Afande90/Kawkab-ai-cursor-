@@ -38,6 +38,7 @@ Only Kotlin files appear inside the generated blocks.
     - `RestoreLayout.kt` - Where a restore keeps what it has staged, and where what it replaces lives.
     - `RestoreStagedEntries.kt` - Holds a staged restore's encrypted-store entries — the provider settings, and the secrets when the archive carries them — between the check and the restart, in a Keystore-backed store of their own, so no secret of the archive is ever written to disk as plain text.
     - `RestoreStager.kt` - Reads an archive with the user's password into the staging area (`RestoreLayout.staging`).
+    - `SafBackupDocuments.kt` - `BackupDocuments` over the Storage Access Framework.
     - `SqlCipherDatabaseSnapshotter.kt` - `DatabaseSnapshotter` on SQLCipher's `sqlcipher_export()`.
     - `StagedDatabasePreparer.kt` - Makes a staged database ready to replace the app's own.
   - `engine/` - Core LLM and inference engines.
@@ -360,6 +361,7 @@ Only Kotlin files appear inside the generated blocks.
   - `SettingsModule.kt` - Hilt bindings of the settings sections and of the transitional `SettingsRepository` composite.
 - `domain/` - Domain layer containing core business logic and Use Cases.
   - `backup/` - Backup archive format contract: header, key-derivation bounds, read failures, entry-name rule.
+    - `BackupDocuments.kt` - The documents the user picks for a backup, by URI: opened for writing, named, finished, deleted.
     - `BackupEntryName.kt` - The rule every entry name inside an archive obeys, checked by the writer before it writes an entry and by the reader before it hands one out.
     - `BackupExporter.kt` - Writes the whole app's data into one archive, encrypted with a password (`docs/backup-format.md`).
     - `BackupFormat.kt` - The fixed numbers of the backup archive format — the public contract described in `docs/backup-format.md`.
@@ -723,6 +725,7 @@ Only Kotlin files appear inside the generated blocks.
       - `ExportExternalAutomationJournalUseCase.kt` - Produces the external-automation request journal's export document: reads the whole journal as a snapshot and renders it through `BuildExternalAutomationJournalExportUseCase`.
       - `HandleExternalAutomationRequestUseCase.kt` - The decision path of the external-automation entry point, and the **single write seam** of its journal: parse → the pure authorizer (switch on, surface bound, target allowed) → atomic rate-ceiling admission → `TaskScheduler.scheduleOneTime(origin = EXTERNAL)`. No second execution path exists, which is what makes HITL / risk overrides / the destructive block apply by construction rather than by re-implementation. Every path leaves exactly one journal record. Pins the surface's accumulating chat via `EXTERNAL_AUTOMATION_SESSION_ID`.
       - `ParseExternalAutomationRequestUseCase.kt` - Pure parser/validator from `ExternalAutomationInvocation` to a validated request, returning `ExternalAutomationParseResult` (Parsed / Invalid with a typed reason). Refuses — never repairs — unknown actions, missing/doubled targets, missing/doubled prompts and undecodable base64 (standard alphabet, padding optional). Fixed check order so a multiply-wrong call always reports the same reason.
+    - `BackUpToDocumentUseCase.kt` - Backs the app up into the document the user picked (Settings → Privacy → Backup & restore → Back up).
     - `BuildDynamicShortcutsUseCase.kt` - Pure selection of recent sessions → `DynamicShortcutSpec`s (recency order, count cap, label clamping, blank-name skip).
     - `BuildTriggerJournalExportUseCase.kt` - Pure renderer of a trigger-evaluation journal snapshot into a machine-readable JSON document (schema/local-only header + per-row verdict/skip-reason/run-outcome discriminators and the flat `hitl*` quartet, `schemaVersion = 2`; caller order preserved). Backs the debug soak dump; performs no I/O and no network.
     - `BuildUsageTelemetryExportUseCase.kt` - Pure renderer of the on-device usage statistics into a text + JSON export document (resolves pipeline names supplied by the caller; performs no I/O and no network). The `retention` block ships the window definition and the live pipeline ids alongside the figures so a saved document stays self-explaining and re-derivable.
@@ -1047,6 +1050,9 @@ Only Kotlin files appear inside the generated blocks.
     - `settings/` - Settings surface as a nested navigation graph: a category **hub** (inline Basic controls + eight category rows) routing to eight per-category sub-screens, each with an in-category "Advanced — change deliberately" disclosure. Catalog `SettingsHubContent` + `<Category>SettingsContent` render the slices; re-organisation only — every setting keeps its meaning, range, default, validation and gating 1:1.
       - `AboutSettingsDelegate.kt` - About category: read-only identity card load + the Reset-all-settings action.
       - `BackgroundSettingsDelegate.kt` - Background & triggers category: notification toggles, resume / background-approval windows, the three entry-surface pipeline bindings, and the external-automation consent switch. That switch is the one setting here that does not write through: moving it **on** only stages `pendingExternalAutomationConsent` and `confirmExternalAutomationConsent` persists it, while moving it **off** writes immediately — a confirmation on the way out would falsify the consent copy's "one tap turns it off". Also folds the newest external-request journal row (only the newest: that table's write rate is set by a third-party app) into the Background row subtitle.
+      - `backup/` - Settings → Privacy → *Backup & restore*: the screen and its ViewModel.
+        - `BackupScreen.kt` - Settings → Privacy → *Backup & restore*: the screen and its *Back up* route, over `BackupViewModel`.
+        - `BackupViewModel.kt` - Settings → Privacy → *Backup & restore*, and its *Back up* route.
       - `ExternalAutomationRowSummary.kt` - Composes the Settings row for the external-automation entry point: its binding label, its status word, and the journal one-liner beneath it. Separate from the screen because the "switched on with nothing to run" state has to read as a warning rather than as an untouched default.
       - `GenerationSettingsDelegate.kt` - Generation category: system instructions (+ `$VARIABLE` chip catalog), the four sampling parameters and the voice-input length; resetSamplingDefaults.
       - `MemorySettingsDelegate.kt` - Memory category: live stats, every memory-tuning parameter with range validation, the `$MEMORY_SUMMARY` default limit, embedding-provider selection, verbose memory logging, and the export / import / re-embed / clear data actions.
