@@ -1827,14 +1827,16 @@ Settings → Privacy → *Backup & restore* → *Back up*. The file's layout is 
   `SummarizeRestoreUseCase` weighs the staged manifest against this phone
   through `LocalDataCounter` (`BackupLocalDataCounter`) and the model registry.
   After the typed confirm, `BackupRestorer.commit` writes the commit marker and
-  stops background work, and the screen restarts the process with
-  ProcessPhoenix. The next start swaps the files in before Hilt exists
+  stops background work, and `RestoreViewModel` sets `AppRestartRequest`;
+  `MainActivity`, not the screen, restarts the process with ProcessPhoenix, so
+  leaving the screen while the commit finishes cannot lose the restart. The
+  next start swaps the files in before Hilt exists
   (`PendingRestoreApplier` in `App.onCreate`, main process only), migrates the
   settings when DataStore first opens (`RestoredPreferencesMigration`), and
   `RestoreFinisher` — the first stage of `AppInitializationUseCase` — applies
   the secrets and the models' paths and writes the report.
-  `AfterRestoreViewModel`, shown over the chat's destination, reads that report once:
-  a sheet with what is left to do, whose downloads are the download worker's
+  `AfterRestoreViewModel`, shown over the chat's destination, reads that
+  report once: a sheet with what is left to do, whose downloads are the download worker's
   as on the Models screen, or the snackbar *Restored* through
   `TransientMessageRelay`.
 

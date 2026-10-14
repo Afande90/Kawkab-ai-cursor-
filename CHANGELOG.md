@@ -109,9 +109,10 @@ details.
   backup, one in a newer format or with a newer database, a damaged or
   cut-short file and too little free space are each told in their own words.
   After the restart a sheet over the chat lists the models to download again —
-  straight from where each came from, or through Discover — the keys to enter
-  again when neither the backup nor the phone has any, and the scheduled tasks
-  that were not carried; with nothing left to do, the app says *Restored*.
+  straight from where each came from, or through Discover — a reminder to enter
+  keys again when neither the backup nor the phone holds any key, token or
+  sign-in, and the scheduled tasks that were not carried; with nothing left to
+  do, the app says *Restored*.
   Moving between Google Play and a release build is now a backup and a restore.
 - **Each downloaded model remembers where it came from.** A model downloaded
   from a link or from Discover keeps that address with it. A model found on

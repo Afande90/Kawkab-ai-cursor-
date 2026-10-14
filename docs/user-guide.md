@@ -3059,9 +3059,10 @@ find the screen.
    it and nobody can open the backup, the developer included.
 2. **Include API keys and sign-ins** — off unless you tick it. Ticked, the file
    also carries your cloud API keys, the Hugging Face token and MCP sign-ins,
-   and anyone with the file and the password can use them. Left off, you enter
-   them again on the phone you restore to. Server addresses go in either way, so
-   a token written into a server's address travels with it.
+   and anyone with the file and the password can use them. Left off, a phone
+   you restore to keeps the ones it has, and a new phone needs them entered
+   again. Server addresses go in either way, so a token written into a server's
+   address travels with it.
 3. **Choose where to save** opens the system's *Create document* screen with
    the name `knotwork-backup-<date>.knotwork`. Any place it offers will do — a
    folder on the phone, a memory card, a cloud drive. Picking an existing file
@@ -3113,9 +3114,10 @@ phone's API keys and sign-ins, except those the backup carries.
 
 After the restart the chat shows what is left to do: the models to download
 again — **Download** where the backup recorded where a model came from,
-**Discover** where it did not — the API keys to enter again when neither the
-backup nor this phone has any, and the scheduled tasks that were not carried. Downloads go on after the
-sheet closes. With nothing left to do, the app just says *Restored*. A restored
+**Discover** where it did not — a reminder to enter your keys again when
+neither the backup nor this phone holds any key, token or sign-in, and the
+scheduled tasks that were not carried. Downloads go on after the sheet closes.
+With nothing left to do, the app just says *Restored*. A restored
 phone takes over the backup's settings and usage statistics. Closing the
 summary, or cancelling the check, deletes the copy kept aside.
 
