@@ -11,9 +11,9 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.selection.toggleable
@@ -263,13 +263,13 @@ internal fun BackupStats(cells: List<Pair<String, String>>, modifier: Modifier =
 @Composable
 internal fun BackupBottomAction(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     // Only the sides: the app shell lifts the whole screen over the keyboard and its bottom navigation sits on the
-    // system bar below — padding those again left a gap the height of the bar. A bar on the side (landscape,
-    // three-button navigation) is this screen's to clear.
+    // system bar below — padding those again left a gap the height of the bar. A bar or cutout on the side
+    // (landscape) is this screen's to clear, as the body does.
     Column(
         modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
-            .windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Horizontal)),
+            .windowInsetsPadding(backupSideInsets),
     ) {
         HorizontalDivider(color = KnotworkTheme.extended.divider)
         Box(
@@ -284,6 +284,10 @@ internal fun BackupBottomAction(modifier: Modifier = Modifier, content: @Composa
         }
     }
 }
+
+/** The system bars and cutouts on the screen's sides, which the body and the pinned action both clear. */
+internal val backupSideInsets: WindowInsets
+    @Composable get() = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
 
 /** From this font scale up the counts stack in one column. */
 private const val LARGE_FONT_SCALE = 1.75f

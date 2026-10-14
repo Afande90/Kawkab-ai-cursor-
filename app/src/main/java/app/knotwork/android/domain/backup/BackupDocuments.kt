@@ -32,6 +32,8 @@ interface BackupDocuments {
      * Forgets [document] as unfinished: the backup in it is complete, and the stream is closed.
      *
      * @param document The document's URI.
+     * @throws IOException When the record cannot be cleared — the document is then still marked unfinished, and the
+     *   next start would delete it.
      */
     suspend fun finish(document: String)
 

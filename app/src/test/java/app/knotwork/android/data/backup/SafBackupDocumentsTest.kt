@@ -299,6 +299,52 @@ class SafBackupDocumentsTest {
     }
 
     @Test
+    fun `given a provider that opens no stream when opened then it is an IO failure, no other mode tried`() = runTest {
+        every { resolver.openOutputStream(any(), "wt") } returns null
+
+        val failure = openFailure()
+
+        assertTrue(failure != null)
+        verify(exactly = 0) { resolver.openOutputStream(any(), "rwt") }
+    }
+
+    @Test
+    fun `given a provider that refuses the document in a later mode when opened then it stops there`() = runTest {
+        every { resolver.openOutputStream(any(), "wt") } throws IllegalArgumentException("bad mode")
+        every { resolver.openOutputStream(any(), "rwt") } throws SecurityException("revoked")
+
+        val failure = openFailure()
+
+        assertTrue(failure.causedBy<SecurityException>())
+        verify(exactly = 0) { resolver.openOutputStream(any(), "w") }
+    }
+
+    @Test
+    fun `given a document that is really missing when opened then the failure carries the provider's answer`() =
+        runTest {
+            every { resolver.openOutputStream(any(), any()) } throws FileNotFoundException("no such document")
+
+            val failure = openFailure()
+
+            assertTrue(failure.causedBy<FileNotFoundException>())
+        }
+
+    @Test
+    fun `given a finish whose record cannot be cleared when it fails then the grant is still released`() = runTest {
+        val documents = documents()
+        documents.openForWrite(DOCUMENT)
+        coEvery { appState.setUnfinishedBackupDocument(null) } throws IOException("datastore")
+
+        try {
+            documents.finish(DOCUMENT)
+        } catch (e: IOException) {
+            // Expected: the caller must hear of it.
+        }
+
+        verify { resolver.releasePersistableUriPermission(Uri.parse(DOCUMENT), GRANT) }
+    }
+
+    @Test
     fun `given a provider that fails in its own way when deleting then it says not deleted, not a crash`() = runTest {
         every { DocumentsContract.deleteDocument(any<ContentResolver>(), any()) } throws
             RuntimeException("provider died")
@@ -389,6 +435,17 @@ class SafBackupDocumentsTest {
             verify(exactly = 0) { DocumentsContract.deleteDocument(any<ContentResolver>(), any()) }
             assertNull(unfinished.value)
         }
+
+    private suspend fun TestScope.openFailure(): IOException? = try {
+        documents().openForWrite(DOCUMENT)
+        null
+    } catch (e: IOException) {
+        e
+    }
+
+    /** Whether [T] is anywhere in the cause chain: coroutines recover a copy of an exception that crosses threads. */
+    private inline fun <reified T : Throwable> Throwable?.causedBy(): Boolean =
+        generateSequence(this) { it.cause }.any { it is T }
 
     private fun sizeIs(size: Long?) {
         val cursor = mockk<Cursor>(relaxed = true) {

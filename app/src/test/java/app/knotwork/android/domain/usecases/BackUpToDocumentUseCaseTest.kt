@@ -196,14 +196,39 @@ class BackUpToDocumentUseCaseTest {
             // Given — a complete archive, but the phone cannot write the record that it is complete.
             coEvery { exporter.export(any(), any(), false, any()) } returns MANIFEST
             coEvery { documents.finish(DOCUMENT) } throws IOException("datastore")
+            coEvery { documents.discard(DOCUMENT) } returns false
 
             // When
             val outcome = useCase(DOCUMENT, PASSWORD.toCharArray(), includeSecrets = false) { }
 
-            // Then — the next start would delete it as unfinished; it goes now, and the screen says why.
-            assertEquals(BackupToDocumentOutcome.Failed(BackupExportFailure.PHONE_FULL, 0, true), outcome)
+            // Then — the next start would delete it as unfinished; it goes now, and the screen says why and how.
+            assertEquals(BackupToDocumentOutcome.Failed(BackupExportFailure.PHONE_FULL, 0, false), outcome)
             coVerify(exactly = 1) { documents.discard(DOCUMENT) }
         }
+
+    @Test
+    fun `given a cancel while an unrecorded backup is deleted when it stops then the deletion completes`() = runTest {
+        // Given
+        val deleting = CompletableDeferred<Unit>()
+        var deletedFully = false
+        coEvery { exporter.export(any(), any(), false, any()) } returns MANIFEST
+        coEvery { documents.finish(DOCUMENT) } throws IOException("datastore")
+        coEvery { documents.discard(DOCUMENT) } coAnswers {
+            deleting.complete(Unit)
+            delay(1_000)
+            deletedFully = true
+            true
+        }
+
+        // When
+        val job = launch { useCase(DOCUMENT, PASSWORD.toCharArray(), includeSecrets = false) { } }
+        deleting.await()
+        job.cancel(CancellationException("screen left"))
+        job.join()
+
+        // Then
+        assertTrue(deletedFully)
+    }
 
     private companion object {
         const val DOCUMENT = "content://downloads/document/7"

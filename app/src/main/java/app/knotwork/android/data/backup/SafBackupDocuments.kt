@@ -126,33 +126,32 @@ internal class SafBackupDocuments(
         }
     }
 
-    /** Opens [uri] in the first truncating mode its provider accepts, else plainly. */
-    private fun openTruncating(uri: Uri): OutputStream = TRUNCATING_MODES.firstNotNullOfOrNull { openIn(uri, it) }
-        ?: openIn(uri, WRITE)
-        ?: throw IOException("the provider accepts no write mode for the document")
-
     /**
-     * Opens [uri] for writing in [mode].
+     * Opens [uri] in the first truncating mode its provider accepts, else plainly.
      *
-     * @return The stream, the caller's to close; or `null` when the provider rejects the mode — as a missing file,
-     *   which is what `openOutputStream` documents, or as a bad or unsupported argument. A document that is really
-     *   missing is rejected in every mode.
-     * @throws IOException When the provider refuses the document itself, or opens no stream.
+     * A mode is rejected as a missing file — which is what `openOutputStream` documents — or as a bad or unsupported
+     * argument; a document that is really missing is rejected in every mode, and the last rejection is the cause.
+     *
+     * @throws IOException When the provider refuses the document, opens no stream, or rejects every mode.
      */
     @SuppressLint("Recycle") // Returned to the caller, who closes it.
-    private fun openIn(uri: Uri, mode: String): OutputStream? = try {
-        resolver.openOutputStream(uri, mode) ?: throw IOException("the provider opened no stream")
-    } catch (e: FileNotFoundException) {
-        Timber.i(e, "A backup document's provider rejected a write mode")
-        null
-    } catch (e: IllegalArgumentException) {
-        Timber.i(e, "A backup document's provider rejected a write mode")
-        null
-    } catch (e: UnsupportedOperationException) {
-        Timber.i(e, "A backup document's provider rejected a write mode")
-        null
-    } catch (e: SecurityException) {
-        throw IOException("the provider refused the document", e)
+    private fun openTruncating(uri: Uri): OutputStream {
+        var rejection: Exception? = null
+        for (mode in WRITE_MODES) {
+            try {
+                return resolver.openOutputStream(uri, mode) ?: throw IOException("the provider opened no stream")
+            } catch (e: FileNotFoundException) {
+                rejection = e
+            } catch (e: IllegalArgumentException) {
+                rejection = e
+            } catch (e: UnsupportedOperationException) {
+                rejection = e
+            } catch (e: SecurityException) {
+                throw IOException("the provider refused the document", e)
+            }
+            Timber.i(rejection, "A backup document's provider rejected a write mode")
+        }
+        throw IOException("the provider accepts no write mode for the document", rejection)
     }
 
     /** The document's size, or `null` when the provider does not say. */
@@ -213,23 +212,27 @@ internal class SafBackupDocuments(
      *   unfinished, which the next start would delete: the caller must not report it as saved.
      */
     private suspend fun forget(document: String) {
-        // Only this document's record: deleting a stray document must not clear a running backup's.
-        if (appState.unfinishedBackupDocument.first() == document) appState.setUnfinishedBackupDocument(null)
-        if (writing == document) writing = null
         try {
-            resolver.releasePersistableUriPermission(document.toUri(), GRANT)
-        } catch (e: SecurityException) {
-            Timber.i(e, "A backup document's grant was not held")
+            // Only this document's record: deleting a stray document must not clear a running backup's.
+            if (appState.unfinishedBackupDocument.first() == document) appState.setUnfinishedBackupDocument(null)
+        } finally {
+            // Done with the document either way: the record is the only part that can fail.
+            if (writing == document) writing = null
+            try {
+                resolver.releasePersistableUriPermission(document.toUri(), GRANT)
+            } catch (e: SecurityException) {
+                Timber.i(e, "A backup document's grant was not held")
+            }
         }
     }
 
     private companion object {
         const val GRANT = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
 
-        /** Write modes that truncate whatever the document held before, in the order they are tried. */
-        val TRUNCATING_MODES = listOf("wt", "rwt")
-
-        /** Write, for a provider that knows no truncating mode. */
-        const val WRITE = "w"
+        /**
+         * The write modes, in the order they are tried: the two that truncate whatever the document held before,
+         * then plain `w` for a provider that knows neither.
+         */
+        val WRITE_MODES = listOf("wt", "rwt", "w")
     }
 }

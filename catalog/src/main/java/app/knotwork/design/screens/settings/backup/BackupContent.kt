@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -85,7 +86,8 @@ fun BackupContent(
                 }
             },
             label = "backup-route",
-            modifier = Modifier.padding(padding),
+            // A system bar or cutout on the side (landscape) is this screen's to clear, as the pinned action does.
+            modifier = Modifier.padding(padding).windowInsetsPadding(backupSideInsets),
         ) { shown ->
             Column(
                 modifier = Modifier
