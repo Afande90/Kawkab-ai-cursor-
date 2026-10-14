@@ -875,6 +875,7 @@ Only Kotlin files appear inside the generated blocks.
     - `StartupMaintenance.kt` - The background upkeep a cold start arms, run by `MainActivity` off the main thread while the splash screen initialises the app.
   - `state/` - State management components.
     - `ActiveSessionTracker.kt` - Tracker for active chat session.
+    - `AppRestartRequest.kt` - Process-wide request to restart the app, set once a restore is committed: the next start applies the restore, and until then the running process must not carry on as though nothing had changed.
     - `ChatEntryRequestRelay.kt` - `@Singleton` one-shot bus carrying a `ChatEntryRequest` (`OpenThread{id}` / `NewChat`) from a `knotwork://chat…` / `new-chat` shortcut/share/notification to the single chat home, drained by the `CHAT_TAB` composable into `selectThread` / `createNewSessionWithPipeline`. `Channel.CONFLATED` so a cold-launch request buffers until the collector mounts and is consumed exactly once.
     - `TransientMessageRelay.kt` - `@Singleton` one-shot snackbar bus consumed by the activity-level `SnackbarHost` in `AppShellScaffold`. Used by `OnboardingViewModel.skipOnboarding` to surface the "install a model from Settings → Models" hint *after* navigation pops onboarding off the back-stack.
   - `theme/` - Compose theme definitions.

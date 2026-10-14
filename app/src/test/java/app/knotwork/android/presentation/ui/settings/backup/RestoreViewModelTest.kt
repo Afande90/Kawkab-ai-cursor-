@@ -1,6 +1,7 @@
 package app.knotwork.android.presentation.ui.settings.backup
 
 import android.content.Context
+import androidx.lifecycle.viewModelScope
 import app.knotwork.android.BuildConfig
 import app.knotwork.android.domain.backup.BackupArchiveInfo
 import app.knotwork.android.domain.backup.BackupCounts
@@ -19,6 +20,7 @@ import app.knotwork.android.domain.usecases.PickedBackup
 import app.knotwork.android.domain.usecases.RestoreSummaryData
 import app.knotwork.android.domain.usecases.StageRestoreFromDocumentUseCase
 import app.knotwork.android.domain.usecases.SummarizeRestoreUseCase
+import app.knotwork.android.presentation.state.AppRestartRequest
 import app.knotwork.design.R
 import app.knotwork.design.screens.settings.backup.RestoreCheckStep
 import app.knotwork.design.screens.settings.backup.RestoreChecking
@@ -38,6 +40,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -67,6 +70,7 @@ class RestoreViewModelTest {
     private val inspect = mockk<InspectBackupDocumentUseCase>()
     private val stage = mockk<StageRestoreFromDocumentUseCase>()
     private val summarize = mockk<SummarizeRestoreUseCase>()
+    private val restartRequest = AppRestartRequest()
     private val restorer = mockk<BackupRestorer>(relaxed = true) {
         coEvery { discard() } returns true
     }
@@ -80,7 +84,7 @@ class RestoreViewModelTest {
         Dispatchers.setMain(dispatcher)
         coEvery { inspect(DOCUMENT) } returns PickedBackup.Readable(FILE_NAME, 4_096, INFO)
         coEvery { summarize(MANIFEST) } returns RestoreSummaryData(PHONE_COUNTS, listOf(MODEL))
-        viewModel = RestoreViewModel(inspect, stage, summarize, restorer, context) { "on $it" }
+        viewModel = RestoreViewModel(inspect, stage, summarize, restorer, restartRequest, context) { "on $it" }
     }
 
     @After
@@ -278,7 +282,7 @@ class RestoreViewModelTest {
     @Test
     fun `given the summary when Replace is typed loosely and confirmed then it commits and asks for a restart`() =
         runTest(dispatcher) {
-            // Given — nothing collects: a recreated screen must still find the restart.
+            // Given — the restart is asked of the app, not held by the route: nothing here collects it.
             reachSummary()
             viewModel.onReplace()
             assertEquals("", (viewModel.route.value as RestoreSummary).confirmInput)
@@ -291,9 +295,30 @@ class RestoreViewModelTest {
             assertEquals(Restoring, viewModel.route.value)
             advanceUntilIdle()
             coVerify(exactly = 1) { restorer.commit(applySecrets = true) }
-            assertTrue(viewModel.restartRequested.value)
+            assertTrue(restartRequest.requested.value)
             assertTrue("Back does nothing while restoring", viewModel.onBack())
             assertEquals(Restoring, viewModel.route.value)
+        }
+
+    @Test
+    fun `given a route gone while the commit runs when the commit ends then the restart is still asked`() =
+        runTest(dispatcher) {
+            // Given — a commit still running when the route's scope ends for good.
+            val commitGate = CompletableDeferred<Unit>()
+            coEvery { restorer.commit(any()) } coAnswers { commitGate.await() }
+            reachSummary()
+            viewModel.onReplace()
+            viewModel.onConfirmInputChange("REPLACE")
+            viewModel.onConfirmReplace()
+            advanceUntilIdle()
+
+            // When
+            viewModel.viewModelScope.cancel()
+            commitGate.complete(Unit)
+            advanceUntilIdle()
+
+            // Then — the restore is committed, so the app must restart all the same.
+            assertTrue(restartRequest.requested.value)
         }
 
     @Test
@@ -322,7 +347,7 @@ class RestoreViewModelTest {
 
             assertEquals(RestoreProblem(RestoreProblemKind.NOT_STARTED, FILE), viewModel.route.value)
             coVerify(exactly = 1) { restorer.discard() }
-            assertFalse(viewModel.restartRequested.value)
+            assertFalse(restartRequest.requested.value)
         }
 
     @Test

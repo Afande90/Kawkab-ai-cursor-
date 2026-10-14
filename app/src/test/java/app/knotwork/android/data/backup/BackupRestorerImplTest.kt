@@ -480,7 +480,27 @@ class BackupRestorerImplTest {
         assertEquals(listOf(mapOf("openai_model" to "gpt-5")), apiKeys.restored)
         assertTrue(settingsSecrets.restored.isEmpty())
         assertFalse(restorer.report()!!.secretsApplied)
+        // A phone that held none and got none: the sheet asks for them.
+        assertFalse(restorer.report()!!.secretsOnPhone)
     }
+
+    @Test
+    fun `given secrets were not chosen onto a phone holding its own when the app starts then the report says so`() =
+        runTest {
+            // Given — this phone's own token, which a restore leaves where it is.
+            settingsSecrets.secrets["hugging_face_token"] = "hf_own"
+            val restorer = restorer(testScheduler)
+            restorer.stage(input(archive()), password.toCharArray()) { }
+            restorer.commit(applySecrets = false)
+            PendingRestoreApplier.applyIfCommitted(layout)
+
+            // When
+            restorer.finishPending()
+
+            // Then
+            assertFalse(restorer.report()!!.secretsApplied)
+            assertTrue(restorer.report()!!.secretsOnPhone)
+        }
 
     @Test
     fun `given the process ended before background work was stopped when the app starts then the runs are cancelled`() =
@@ -827,7 +847,7 @@ class BackupRestorerImplTest {
     /** An owner that records what it is asked to restore, and holds the secrets written to it. */
     private class RecordingOwner(override val storeName: String) : BackedUpSecrets {
         val restored = mutableListOf<Map<String, String>>()
-        private val secrets = mutableMapOf<String, String>()
+        val secrets = mutableMapOf<String, String>()
 
         override suspend fun alwaysEntries(): Map<String, String> = emptyMap()
 

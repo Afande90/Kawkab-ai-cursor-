@@ -17,6 +17,7 @@ import app.knotwork.android.domain.usecases.InspectBackupDocumentUseCase
 import app.knotwork.android.domain.usecases.PickedBackup
 import app.knotwork.android.domain.usecases.StageRestoreFromDocumentUseCase
 import app.knotwork.android.domain.usecases.SummarizeRestoreUseCase
+import app.knotwork.android.presentation.state.AppRestartRequest
 import app.knotwork.design.R
 import app.knotwork.design.components.dialogs.typedConfirmMatches
 import app.knotwork.design.screens.settings.backup.RestoreCheckStep
@@ -63,6 +64,7 @@ import javax.inject.Inject
  * @property stage Checks and stages the backup with its password.
  * @property summarize Weighs the staged backup against this phone.
  * @property restorer Commits or discards the staged restore.
+ * @property restartRequest Asked once the restore is committed; the activity restarts the app.
  * @property appContext Reads the confirm keyword in the user's language.
  * @property formatDate Formats when a backup was made; the device's medium date and short time by default.
  */
@@ -72,6 +74,7 @@ class RestoreViewModel internal constructor(
     private val stage: StageRestoreFromDocumentUseCase,
     private val summarize: SummarizeRestoreUseCase,
     private val restorer: BackupRestorer,
+    private val restartRequest: AppRestartRequest,
     private val appContext: Context,
     private val formatDate: (Long) -> String,
 ) : ViewModel() {
@@ -83,8 +86,9 @@ class RestoreViewModel internal constructor(
         stage: StageRestoreFromDocumentUseCase,
         summarize: SummarizeRestoreUseCase,
         restorer: BackupRestorer,
+        restartRequest: AppRestartRequest,
         @ApplicationContext appContext: Context,
-    ) : this(inspect, stage, summarize, restorer, appContext, ::deviceDate)
+    ) : this(inspect, stage, summarize, restorer, restartRequest, appContext, ::deviceDate)
 
     private val _route = MutableStateFlow<RestoreRoute?>(null)
 
@@ -96,14 +100,6 @@ class RestoreViewModel internal constructor(
 
     /** One-shot requests to the screen: open the picker. */
     val events: SharedFlow<RestoreEvent> = _events.asSharedFlow()
-
-    private val _restartRequested = MutableStateFlow(false)
-
-    /**
-     * Whether the restore is committed and the app must restart to apply it. Held as state, not sent as an event:
-     * a rotation while the commit finishes must not leave the screen on *Restoring…* with nothing to restart it.
-     */
-    val restartRequested: StateFlow<Boolean> = _restartRequested.asStateFlow()
 
     private var document: String? = null
     private var file: RestoreFile? = null
@@ -175,7 +171,7 @@ class RestoreViewModel internal constructor(
 
     /**
      * *Replace* in the confirm dialog: commits the staged restore — past this point it always completes — and asks
-     * the screen to restart the app. The typed word is checked again here, by the dialog's own rule.
+     * the app to restart. The typed word is checked again here, by the dialog's own rule.
      */
     fun onConfirmReplace() {
         val summary = _route.value as? RestoreSummary ?: return
@@ -185,8 +181,12 @@ class RestoreViewModel internal constructor(
         _route.value = Restoring
         job = viewModelScope.launch {
             try {
-                withContext(NonCancellable) { restorer.commit(applySecrets = toCommit.manifest.secretsIncluded) }
-                _restartRequested.value = true
+                // In the same block, with no suspension between them: the commit has changed the app, so the
+                // restart follows it even when the route's scope ends meanwhile.
+                withContext(NonCancellable) {
+                    restorer.commit(applySecrets = toCommit.manifest.secretsIncluded)
+                    restartRequest.request()
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

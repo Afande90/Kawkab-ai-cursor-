@@ -7,16 +7,19 @@ import app.knotwork.android.domain.backup.BackupReadFailure
 import app.knotwork.android.domain.backup.BackupRestorer
 import io.mockk.coEvery
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.ByteArrayInputStream
 import java.io.IOException
+import java.io.InputStream
 
 /**
  * [InspectBackupDocumentUseCase]: a readable backup comes back with its name, size and header; one this build
- * cannot read comes back with its name and why, not as a failure; a file that cannot be read at all fails.
+ * cannot read comes back with its name and why, not as a failure; a file that cannot be read at all fails. The
+ * stream is closed either way.
  */
 class InspectBackupDocumentUseCaseTest {
 
@@ -41,6 +44,22 @@ class InspectBackupDocumentUseCaseTest {
         coEvery { restorer.inspect(any()) } throws failure
 
         assertEquals(PickedBackup.Unreadable("backup.knotwork", failure), useCase(DOCUMENT))
+    }
+
+    @Test
+    fun `given a picked file when inspected, readable or not, then its stream is closed`() = runTest {
+        // Given
+        val stream = mockk<InputStream>(relaxed = true)
+        coEvery { documents.openForRead(DOCUMENT) } returns stream
+        coEvery { restorer.inspect(stream) } returns INFO andThenThrows
+            BackupFormatException(BackupReadFailure.NOT_A_BACKUP, "magic")
+
+        // When
+        useCase(DOCUMENT)
+        useCase(DOCUMENT)
+
+        // Then
+        verify(exactly = 2) { stream.close() }
     }
 
     @Test

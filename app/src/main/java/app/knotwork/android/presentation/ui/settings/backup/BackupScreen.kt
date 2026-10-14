@@ -8,7 +8,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -18,15 +17,15 @@ import app.knotwork.design.components.misc.KnotworkSnackbarHost
 import app.knotwork.design.screens.settings.backup.BackupCallbacks
 import app.knotwork.design.screens.settings.backup.BackupContent
 import app.knotwork.design.screens.settings.backup.RestoreCallbacks
-import com.jakewharton.processphoenix.ProcessPhoenix
 
 /**
  * Settings → Privacy → *Backup & restore*: the screen, its *Back up* route over [BackupViewModel] and its *Restore*
  * route over [RestoreViewModel]. Only one route is open at a time; the restore's is the one in front when open.
  *
  * Owns the system pickers — *Create document* (`application/octet-stream`, under the name the backup suggests)
- * and *Open document* (any type: the file's header decides) — the snackbar a cancelled backup leaves, and the
- * restart once a restore is committed. Back inside a route closes it — or cancels the work.
+ * and *Open document* (any type: the file's header decides) — and the snackbar a cancelled backup leaves. The
+ * restart after a committed restore is the activity's, not this screen's: the screen may be left while the commit
+ * finishes. Back inside a route closes it — or cancels the work.
  *
  * @param onBack Leaves the screen.
  * @param viewModel The *Back up* route.
@@ -40,10 +39,8 @@ fun BackupScreen(
 ) {
     val backupState by viewModel.state.collectAsStateWithLifecycle()
     val restoreRoute by restoreViewModel.route.collectAsStateWithLifecycle()
-    val restartRequested by restoreViewModel.restartRequested.collectAsStateWithLifecycle()
     val cancelNotice by viewModel.cancelNotice.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    val context = LocalContext.current
     val createPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument(BackupFormat.MIME_TYPE),
     ) { viewModel.onDocumentPicked(it?.toString()) }
@@ -64,11 +61,6 @@ fun BackupScreen(
                 RestoreEvent.PickDocument -> openPicker.launch(arrayOf(ANY_TYPE))
             }
         }
-    }
-    // The next start applies the committed restore; ProcessPhoenix starts it in a fresh process. State, not an
-    // event: the screen recreated while the commit finishes restarts all the same.
-    LaunchedEffect(restartRequested) {
-        if (restartRequested) ProcessPhoenix.triggerRebirth(context.applicationContext)
     }
     // Resolved in composition: the snackbar names the file the user has to delete when the provider refused. The
     // notice is cleared only once shown, so a rotation in between shows it again rather than never.
