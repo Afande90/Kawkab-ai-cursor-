@@ -118,7 +118,7 @@ class ModelDownloadWorkerTest {
     fun `given a file that could not be checked when it finishes then another attempt is scheduled`() = runTest {
         coEvery { downloader.download(any(), any(), any(), any()) } returns downloadedPart(published = PUBLISHED)
         coEvery { installer.install(any(), any(), any()) } returns
-            DownloadedModelInstaller.Result.NotInstalled("The downloaded file could not be read to check it.")
+            DownloadedModelInstaller.Result.NotInstalled(UNREADABLE, DownloadedModelInstaller.Result.Cause.UNREADABLE)
 
         val result = worker().doWork()
 
@@ -135,12 +135,29 @@ class ModelDownloadWorkerTest {
             coEvery { downloader.download(any(), any(), any(), any()) } returns
                 downloadedPart(published = PUBLISHED).copy(bytesTransferred = 4_096L)
             coEvery { installer.install(any(), any(), any()) } returns
-                DownloadedModelInstaller.Result.NotInstalled("The downloaded file could not be read to check it.")
+                DownloadedModelInstaller.Result.NotInstalled(
+                    UNREADABLE,
+                    DownloadedModelInstaller.Result.Cause.UNREADABLE,
+                )
 
             val result = worker(runAttemptCount = 2).doWork()
 
             assertTrue(result is ListenableWorker.Result.Retry)
         }
+
+    @Test
+    fun `given a rename that fails after a transfer when the attempts are spent then it fails for good`() = runTest {
+        // From a host that names no length every attempt downloads the file again; crediting
+        // those bytes would repeat a multi-gigabyte download for as long as the rename fails.
+        coEvery { downloader.download(any(), any(), any(), any()) } returns
+            downloadedPart(published = null).copy(bytesTransferred = 4_096L)
+        coEvery { installer.install(any(), any(), any()) } returns
+            DownloadedModelInstaller.Result.NotInstalled("not moved", DownloadedModelInstaller.Result.Cause.NOT_MOVED)
+
+        val result = worker(runAttemptCount = 2).doWork()
+
+        assertTrue(result is ListenableWorker.Result.Failure)
+    }
 
     @Test
     fun `given a check that keeps failing on a complete part when the attempts are spent then it fails for good`() =
@@ -149,7 +166,10 @@ class ModelDownloadWorkerTest {
             // there counts against the attempts, so an unreadable file cannot loop forever.
             coEvery { downloader.download(any(), any(), any(), any()) } returns downloadedPart(published = PUBLISHED)
             coEvery { installer.install(any(), any(), any()) } returns
-                DownloadedModelInstaller.Result.NotInstalled("The downloaded file could not be read to check it.")
+                DownloadedModelInstaller.Result.NotInstalled(
+                    UNREADABLE,
+                    DownloadedModelInstaller.Result.Cause.UNREADABLE,
+                )
 
             val result = worker(runAttemptCount = 2).doWork()
 
@@ -492,6 +512,9 @@ class ModelDownloadWorkerTest {
     private companion object {
         /** Ten minutes of virtual time, in milliseconds. */
         const val TEN_MINUTES_MS = 10L * 60L * 1_000L
+
+        /** The message of a file that could not be read for its check. */
+        const val UNREADABLE = "The downloaded file could not be read to check it."
 
         /** A hash a source published. */
         const val PUBLISHED = "181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c"

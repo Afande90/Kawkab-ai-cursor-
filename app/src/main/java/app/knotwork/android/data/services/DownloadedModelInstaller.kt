@@ -65,8 +65,26 @@ class DownloadedModelInstaller @Inject constructor(
          * names no length, it downloads the file again.
          *
          * @property message What went wrong, for the download's failure output.
+         * @property cause Which step stopped it.
          */
-        data class NotInstalled(val message: String) : Result
+        data class NotInstalled(val message: String, val cause: Cause) : Result
+
+        /** The step that kept a file from being installed. */
+        enum class Cause {
+
+            /**
+             * The source published a hash and the file could not be read to compare with it. Only a
+             * Hugging Face download has a published hash, and its next attempt finds the part
+             * complete — so it reads the file again rather than downloading it again.
+             */
+            UNREADABLE,
+
+            /**
+             * The file passed (or had nothing to pass) its check and could not be renamed to its
+             * final name. From a host that names no length, the next attempt downloads it again.
+             */
+            NOT_MOVED,
+        }
     }
 
     /**
@@ -95,7 +113,7 @@ class DownloadedModelInstaller @Inject constructor(
                 Timber.w("Downloaded model file does not match the SHA-256 its source published; deleted")
                 Result.Rejected(publishedSha256 = check.publishedSha256, actualSha256 = check.actualSha256)
             }
-            DownloadedModelCheck.Unreadable -> Result.NotInstalled(UNREADABLE_MESSAGE)
+            DownloadedModelCheck.Unreadable -> Result.NotInstalled(UNREADABLE_MESSAGE, Result.Cause.UNREADABLE)
             is DownloadedModelCheck.Verified ->
                 place(part, File(downloaded.targetPath), fileName, sourceUrl, check.hash, verified = true)
             is DownloadedModelCheck.Unverified ->
@@ -122,7 +140,7 @@ class DownloadedModelInstaller @Inject constructor(
         hash: ModelFileHash?,
         verified: Boolean,
     ): Result {
-        if (!part.renameTo(target)) return Result.NotInstalled(MOVE_FAILED_MESSAGE)
+        if (!part.renameTo(target)) return Result.NotInstalled(MOVE_FAILED_MESSAGE, Result.Cause.NOT_MOVED)
         registerDownloadedModel(
             fileName = fileName,
             path = target.absolutePath,

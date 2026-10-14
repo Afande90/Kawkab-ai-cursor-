@@ -136,7 +136,10 @@ class DownloadedModelInstallerTest {
 
         // Installing it unread would skip the check the source made possible; deleting it
         // would throw away a download the next attempt can still check.
-        assertTrue(result is DownloadedModelInstaller.Result.NotInstalled)
+        assertEquals(
+            DownloadedModelInstaller.Result.Cause.UNREADABLE,
+            (result as DownloadedModelInstaller.Result.NotInstalled).cause,
+        )
         coVerify(exactly = 0) { registerDownloadedModel(any(), any(), any(), any(), any(), any()) }
         assertFalse(target.exists())
         assertTrue(File(downloaded.partPath).exists())
@@ -164,7 +167,10 @@ class DownloadedModelInstallerTest {
 
             val result = installer.install(downloaded, fileName = "m.litertlm", sourceUrl = SOURCE)
 
-            assertTrue(result is DownloadedModelInstaller.Result.NotInstalled)
+            assertEquals(
+                DownloadedModelInstaller.Result.Cause.NOT_MOVED,
+                (result as DownloadedModelInstaller.Result.NotInstalled).cause,
+            )
             coVerify(exactly = 0) { registerDownloadedModel(any(), any(), any(), any(), any(), any()) }
             assertTrue(File(downloaded.partPath).exists())
         }

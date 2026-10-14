@@ -637,8 +637,8 @@ A model file downloaded from Hugging Face is checked before it becomes a model.
   of a file, ends here.
 - **The Models screen says which files were checked.** A model reads
   **Verified** only while its file's current SHA-256 equals the one Hugging Face
-  published at a download that matched; the app reads a file's hash once and
-  again whenever its size or modification time changes. Anything else reads
+  published at a download that matched; the app knows a file's hash only while
+  the file keeps the size and modification time it was read at. Anything else reads
   **Not verified** — a file from a source that names no hash (another host, a
   file outside LFS), a model installed before this check existed, a file the app
   found on its storage with no download behind it, or a file whose content
