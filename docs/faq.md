@@ -141,7 +141,8 @@ providers](../SECURITY.md#api-keys-for-cloud-providers).
 Yes, into one file locked with a password you choose: Settings → Privacy →
 **Backup & restore** → **Back up…**. It holds chats, memory, pipelines, run
 history, triggers, settings and files — not the model files, and not your API
-keys unless you tick the box. The file goes only where you save it. See [Backup
+keys unless you tick the box (a token written into a server's address travels
+with the address). The file goes only where you save it. See [Backup
 & restore](user-guide.md#backup--restore).
 
 ### Is there telemetry?

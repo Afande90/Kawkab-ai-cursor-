@@ -92,16 +92,15 @@ details.
   prompts and skills, run history, triggers, usage statistics, settings and the
   workspace's files into one file locked with a password you choose — at least
   12 characters, never stored — to the place you pick. API keys, the Hugging Face
-  token and MCP sign-ins go in only if you tick the box; model files stay out and
-  are listed instead. The screen names each step as it runs and, when it is done,
-  what the file holds. A cancelled or failed backup deletes its unfinished file,
-  and so does the next start after the app was closed halfway; where the place
-  you chose does not allow that, the file is named for you to delete. Search
+  token and MCP sign-ins go in only if you tick the box; server addresses always
+  go in, so a token written into an address travels with it. Model files stay out
+  and are listed instead. The screen names each step as it runs and, when it is
+  done, what the file holds. A cancelled or failed backup deletes its unfinished
+  file, and names it for you to delete where the place you chose does not allow
+  that; a file left by the app being closed halfway is deleted at the next start
+  if the place allows it. Search
   settings for *backup*, *export*, *transfer* or *new phone* to find it. The
   [format](docs/backup-format.md) is public.
-- **Password fields say what their eye does.** TalkBack reads *Show password* or
-  *Hide password* on the button of every password and key field, and whether a
-  field is revealed now survives turning the phone.
 - **Each downloaded model remembers where it came from.** A model downloaded
   from a link or from Discover keeps that address with it. A model found on
   disk at start-up — after *Erase data*, or a file copied into the app's folder

@@ -154,9 +154,8 @@ cloud drive you pick uploads the file as it would any other.
 - **Locked with your password.** Argon2id (64 MiB, 3 passes) derives the keys
   from it, and AES-256-GCM seals the content in authenticated chunks — the
   [format](docs/backup-format.md) is public. The password must be at least 12
-  characters. It stays in the app's memory only while the *Back up* screen is
-  open, the app never writes it to storage or a log, and it cannot be
-  recovered. The fields are marked as a new password, so a password manager
+  characters. The app keeps it only while the *Back up* screen is open, never
+  writes it to storage or a log, and it cannot be recovered. The fields are marked as a new password, so a password manager
   may offer to keep it.
 - **The database travels under a key of its own.** The archive carries a copy
   of the database encrypted with 32 random bytes made for that archive alone,
@@ -165,16 +164,19 @@ cloud drive you pick uploads the file as it would any other.
 - **Secrets only when you ask.** Cloud API keys, the Hugging Face token and MCP
   sign-ins and headers go in only when *Include API keys and sign-ins* is
   ticked; it starts unticked every time. Anyone holding the file and the
-  password can then use them, and the result screen says so.
+  password can then use them, and the result screen says so. Server addresses —
+  cloud providers' and MCP servers' — always travel, so a token written into an
+  address goes with it whether the box is ticked or not.
 - **What the format does not hide.** The open header names the app version
   that wrote the file, its flavour, the database schema version, when it was
   written, the estimated content size and the key costs, and the file's length
   gives away the size of the content
   ([details](docs/backup-format.md#what-the-format-does-not-hide)).
-- **No unfinished file is kept.** A cancelled or failed backup deletes its file,
-  and one cut short by the app being closed is deleted at the next start. A
-  place that does not let apps delete files gets its name shown, for you to
-  delete it.
+- **Unfinished files are deleted where the place allows it.** A cancelled or
+  failed backup deletes its file; where the place you picked refuses, the screen
+  names the file for you to delete. A file cut short by the app being closed is
+  deleted at the next start — silently, and only if the place still lets the
+  app delete it.
 
 ### Agent file workspace (at-rest)
 

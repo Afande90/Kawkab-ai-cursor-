@@ -308,11 +308,13 @@ memory, pipelines, presets, prompts and skills, run history, triggers, usage
 statistics, settings and the agent workspace's files, and the list of models
 you installed with where each came from — not the model files. Your cloud API
 keys, Hugging Face token and MCP sign-ins go in only if you tick *Include API
-keys and sign-ins*.
+keys and sign-ins*. The addresses of servers you added always go in, so a token
+written into an address travels with it.
 
 The file is encrypted under a password you choose, which the app never stores.
-A few facts stay readable without it — the app version that wrote the file,
-when, and roughly how large its content is
+A few facts stay readable without it — the app version and build flavour that
+wrote the file, the database schema version, when it was written, roughly how
+large its content is, and how its key is derived
 ([details](docs/backup-format.md#what-the-format-does-not-hide)). Anyone who
 has the file and the password can read everything in it. If you pick a cloud
 drive in the picker, that drive's app uploads the file under its own policy.
@@ -325,8 +327,9 @@ drive in the picker, that drive's app uploads the file under its own policy.
   which days you were active, and so on — are computed and stored on the
   device and are never transmitted. This is enforced at build time: an
   architecture test fails the build if any network dependency ever reaches
-  that code. Exporting the statistics as a file is a manual action you take,
-  and the resulting file goes wherever you send it.
+  that code. Exporting the statistics as a file, or making a backup (section
+  3.9), is a manual action you take, and the resulting file goes wherever you
+  send it.
 - **A library's own usage statistics.** The on-device library that builds
   memory embeddings (MediaPipe) comes with a usage logger that would report to
   Google how it is used, together with your phone's model, build, country and
