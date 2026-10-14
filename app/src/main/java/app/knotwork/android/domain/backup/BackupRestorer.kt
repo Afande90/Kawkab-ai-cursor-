@@ -144,8 +144,11 @@ enum class RestoreFailure {
  * Thrown by [BackupRestorer.stage] when the archive was read but cannot be restored here.
  *
  * @property failure Why.
- * @property neededBytes With [RestoreFailure.NO_SPACE], about how many bytes staging needs; 0 otherwise.
+ * @property neededBytes With [RestoreFailure.NO_SPACE], about how many bytes staging needs; 0 when the phone ran
+ *   out of space part-way, where the need is not known, and with every other failure.
  * @property writerVersionName With [RestoreFailure.NEWER_VERSION], the version that wrote the archive.
+ * @property freeBytes With [RestoreFailure.NO_SPACE] and a known [neededBytes], the bytes free when it was
+ *   measured; 0 otherwise.
  * @param message A diagnostic for logs; it carries no content of the archive.
  * @param cause The underlying failure.
  */
@@ -155,6 +158,7 @@ class BackupRestoreException(
     cause: Throwable? = null,
     val neededBytes: Long = 0,
     val writerVersionName: String? = null,
+    val freeBytes: Long = 0,
 ) : Exception(message, cause)
 
 /**
@@ -164,9 +168,11 @@ class BackupRestoreException(
  * @property scheduledTasksLeftBehind How many tasks the agent had scheduled on the phone the backup came
  *   from; they are not carried over.
  * @property secretsApplied Whether secrets from the archive replaced this phone's.
+ * @property backupCreatedAtEpochMillis When the restored backup was made; `null` in a report an earlier build wrote.
  */
 data class RestoreReport(
     val modelsToDownload: List<BackupModelEntry>,
     val scheduledTasksLeftBehind: Int,
     val secretsApplied: Boolean,
+    val backupCreatedAtEpochMillis: Long? = null,
 )

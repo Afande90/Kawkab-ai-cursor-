@@ -220,6 +220,8 @@ class BackupRestorerImplTest {
             // Then
             assertEquals(RestoreFailure.NO_SPACE, failure.failure)
             assertTrue(failure.neededBytes > 1_000)
+            // The screen says how much is free beside how much is needed.
+            assertEquals(1_000L, failure.freeBytes)
             assertNothingStaged()
         }
 
@@ -310,6 +312,7 @@ class BackupRestorerImplTest {
         // Then
         assertEquals(RestoreFailure.NO_SPACE, failure.failure)
         assertTrue(failure.neededBytes > DATABASE_BYTES.size)
+        assertEquals(DATABASE_BYTES.size.toLong(), failure.freeBytes)
         assertTrue("the database is not touched", preparer.calls.isEmpty())
         assertNothingStaged()
     }
@@ -449,6 +452,8 @@ class BackupRestorerImplTest {
                     modelsToDownload = listOf(BackupModelEntry("qwen.litertlm", 2_000, null, "https://q")),
                     scheduledTasksLeftBehind = 2,
                     secretsApplied = true,
+                    // When the backup was made, for the sheet's *From the backup made on …*.
+                    backupCreatedAtEpochMillis = CREATED_AT,
                 ),
                 restorer.report(),
             )
@@ -519,6 +524,19 @@ class BackupRestorerImplTest {
 
         // Then
         assertNothingStaged()
+    }
+
+    @Test
+    fun `given a report an earlier build wrote when read then it has no backup date`() = runTest {
+        // Given — no date field: written before reports carried one.
+        layout.report.parentFile?.mkdirs()
+        layout.report.writeText("""{"modelsToDownload":[],"scheduledTasksLeftBehind":1,"secretsApplied":true}""")
+
+        // When
+        val report = restorer(testScheduler).report()
+
+        // Then
+        assertEquals(RestoreReport(emptyList(), scheduledTasksLeftBehind = 1, secretsApplied = true), report)
     }
 
     @Test

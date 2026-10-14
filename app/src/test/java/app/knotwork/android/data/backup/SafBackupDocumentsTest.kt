@@ -24,11 +24,13 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.FileNotFoundException
 import java.io.IOException
@@ -342,6 +344,40 @@ class SafBackupDocumentsTest {
         }
 
         verify { resolver.releasePersistableUriPermission(Uri.parse(DOCUMENT), GRANT) }
+    }
+
+    @Test
+    fun `given a backup to restore when opened for reading then its stream comes back, nothing remembered`() = runTest {
+        val stream = ByteArrayInputStream(byteArrayOf(1, 2))
+        every { resolver.openInputStream(Uri.parse(DOCUMENT)) } returns stream
+
+        assertSame(stream, documents().openForRead(DOCUMENT))
+        assertNull(unfinished.value)
+    }
+
+    @Test
+    fun `given a provider that refuses or opens nothing when read then it is an IO failure`() = runTest {
+        every { resolver.openInputStream(any()) } throws SecurityException("revoked") andThen null
+        val documents = documents()
+
+        listOf(1, 2).forEach { attempt ->
+            val failure = try {
+                documents.openForRead(DOCUMENT)
+                null
+            } catch (e: IOException) {
+                e
+            }
+            assertTrue("attempt $attempt", failure != null)
+        }
+    }
+
+    @Test
+    fun `given a provider that tells the size when asked then it comes back, and null when it does not`() = runTest {
+        sizeIs(4_096L)
+        assertEquals(4_096L, documents().sizeOf(DOCUMENT))
+
+        sizeIs(null)
+        assertNull(documents().sizeOf(DOCUMENT))
     }
 
     @Test

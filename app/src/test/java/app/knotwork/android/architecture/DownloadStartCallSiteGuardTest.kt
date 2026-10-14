@@ -80,6 +80,8 @@ class DownloadStartCallSiteGuardTest {
             "ModelsViewModel.kt",
             // The model step of first-run setup.
             "OnboardingViewModel.kt",
+            // The Download button of the sheet over the chat after a restore.
+            "AfterRestoreViewModel.kt",
             // The Discover install flow; its own users are pinned below.
             INSTALL_USE_CASE_FILE,
         )

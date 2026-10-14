@@ -89,6 +89,9 @@ class ContentUriReadInventoryTest {
             "${BASE}data/local/AttachmentStoreImpl.kt" to Source.AnyApp,
             // An audio document picker result today; guarded anyway, as a sink.
             "${BASE}data/local/AudioCaptureStoreImpl.kt" to Source.AnyApp,
+            // Only the restore route's picker result reaches openForRead (BackupScreen → RestoreViewModel).
+            "${BASE}data/backup/SafBackupDocuments.kt" to
+                Source.SystemPicker("OpenDocument — a backup to restore, on Backup & restore"),
             "${BASE}presentation/ui/chat/home/ChatHomeScreen.kt" to
                 Source.SystemPicker("OpenDocument — the chat-history import file"),
             "${BASE}presentation/ui/files/FilesScreen.kt" to

@@ -191,6 +191,7 @@ fun AppNavGraph(
                 onOpenArchive = { navController.navigate(NavRoutes.CHAT_ARCHIVE) },
                 onOpenRunLimits = { navController.navigate(NavRoutes.SETTINGS_PIPELINES_RUN_LIMITS) },
                 onOpenGenerationSettings = { navController.navigate(NavRoutes.SETTINGS_GENERATION) },
+                onOpenDiscover = { navController.navigate(NavRoutes.DISCOVER) },
             )
         }
 

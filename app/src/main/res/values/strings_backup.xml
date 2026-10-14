@@ -3,4 +3,5 @@
 <resources>
     <string name="backup_snack_cancelled">Backup cancelled. The unfinished file was deleted.</string>
     <string name="backup_snack_cancelled_left">Backup cancelled. Delete the unfinished file %1$s yourself.</string>
+    <string name="backup_snack_restored">Restored</string>
 </resources>

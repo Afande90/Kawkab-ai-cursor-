@@ -85,7 +85,7 @@ internal class RestoreFinisher(
             val manifest = BackupManifestJson.decode(layout.stagedManifest.readText())
             RestoreReportJson.write(
                 layout.report,
-                RestoreReport(modelsToDownload, manifest.scheduledTasks, secretsApplied),
+                RestoreReport(modelsToDownload, manifest.scheduledTasks, secretsApplied, manifest.createdAtEpochMillis),
             )
         }
         clear()
@@ -181,6 +181,7 @@ internal object RestoreReportJson {
                 .put(KEY_MODELS, models)
                 .put(KEY_SCHEDULED, report.scheduledTasksLeftBehind)
                 .put(KEY_SECRETS, report.secretsApplied)
+                .apply { report.backupCreatedAtEpochMillis?.let { put(KEY_CREATED, it) } }
                 .toString(),
         )
     }
@@ -208,6 +209,7 @@ internal object RestoreReportJson {
                 },
                 scheduledTasksLeftBehind = json.getInt(KEY_SCHEDULED),
                 secretsApplied = json.getBoolean(KEY_SECRETS),
+                backupCreatedAtEpochMillis = json.optLong(KEY_CREATED).takeIf { json.has(KEY_CREATED) },
             )
         } catch (e: JSONException) {
             Timber.w(e, "The restore report does not parse")
@@ -221,4 +223,5 @@ internal object RestoreReportJson {
     private const val KEY_SOURCE = "sourceUrl"
     private const val KEY_SCHEDULED = "scheduledTasksLeftBehind"
     private const val KEY_SECRETS = "secretsApplied"
+    private const val KEY_CREATED = "backupCreatedAt"
 }

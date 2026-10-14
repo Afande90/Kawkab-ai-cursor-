@@ -70,6 +70,7 @@ import app.knotwork.android.presentation.ui.common.RunTerminationAction
 import app.knotwork.android.presentation.ui.common.RunTerminationCopyMapper
 import app.knotwork.android.presentation.ui.common.rememberJournalExportHandlers
 import app.knotwork.android.presentation.ui.common.resolve
+import app.knotwork.android.presentation.ui.settings.backup.AfterRestoreHost
 import app.knotwork.design.components.buttons.KnotworkPrimaryButton
 import app.knotwork.design.components.buttons.KnotworkTextButton
 import app.knotwork.design.components.chat.AudioSourceChooserSheet
@@ -121,6 +122,8 @@ import kotlinx.coroutines.withTimeoutOrNull
  *   outcome, where retrying the same turn cannot.
  * @param onOpenGenerationSettings opens Settings → Generation, where the run strip
  *   sends a context-window mismatch.
+ * @param onOpenDiscover opens Discover — from the after-restore sheet, for a model whose
+ *  source the backup did not record.
  * @param modifier optional layout modifier applied to the screen root.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -133,6 +136,7 @@ fun ChatHomeScreen(
     onOpenArchive: () -> Unit = {},
     onOpenRunLimits: () -> Unit = {},
     onOpenGenerationSettings: () -> Unit = {},
+    onOpenDiscover: () -> Unit = {},
 ) {
     // Single subscription to the consolidated screen state — the immutable
     // sub-structures (composer, console, pending, thread, model, tokens)
@@ -802,6 +806,8 @@ fun ChatHomeScreen(
                 )
             }
         }
+        // The first time the chat opens after a restore: what is left to do, or the snackbar *Restored*.
+        AfterRestoreHost(onOpenDiscover = onOpenDiscover)
         if (screenState.sourceChooserVisible) {
             SourceChooserSheet(
                 onDismiss = viewModel.attachments::dismissSourceChooser,

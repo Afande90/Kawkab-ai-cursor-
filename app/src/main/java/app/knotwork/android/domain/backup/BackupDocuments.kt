@@ -1,10 +1,12 @@
 package app.knotwork.android.domain.backup
 
 import java.io.IOException
+import java.io.InputStream
 import java.io.OutputStream
 
 /**
- * The documents the user picks for a backup, by URI: opened for writing, named, finished, deleted.
+ * The documents the user picks for a backup or a restore, by URI: opened for writing or reading, named,
+ * measured, finished, deleted.
  *
  * A document opened here is remembered as unfinished until [finish] or [discard], so a start after the process
  * died mid-backup deletes what it left ([discardLeftBehind]).
@@ -19,6 +21,23 @@ interface BackupDocuments {
      * @throws IOException When the document cannot be opened for writing.
      */
     suspend fun openForWrite(document: String): OutputStream
+
+    /**
+     * Opens [document] for reading — a backup the user picked to restore from. Nothing is remembered about it.
+     *
+     * @param document The document's URI, as the system picker returned it.
+     * @return The stream; the caller closes it.
+     * @throws IOException When the document cannot be read.
+     */
+    suspend fun openForRead(document: String): InputStream
+
+    /**
+     * The document's size, as its provider tells it.
+     *
+     * @param document The document's URI.
+     * @return The size in bytes, or `null` when the provider does not say.
+     */
+    suspend fun sizeOf(document: String): Long?
 
     /**
      * The document's name, as its provider shows it.
