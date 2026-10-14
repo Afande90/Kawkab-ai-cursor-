@@ -10,6 +10,7 @@ import app.knotwork.android.domain.models.AppError
 import app.knotwork.android.domain.models.DownloadState
 import app.knotwork.android.domain.models.ModelDownloadFailure
 import app.knotwork.android.domain.repositories.GenerationSettings
+import app.knotwork.android.domain.repositories.InterruptedDownload
 import app.knotwork.android.domain.repositories.LocalModelRepository
 import app.knotwork.android.domain.repositories.ModelDownloadManager
 import app.knotwork.android.presentation.state.TransientMessageRelay
@@ -25,6 +26,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -50,8 +52,10 @@ class AfterRestoreViewModelTest {
     private val dispatcher = StandardTestDispatcher()
     private val restorer = mockk<BackupRestorer>(relaxed = true)
     private val download = MutableSharedFlow<DownloadState>(extraBufferCapacity = 8)
+    private val recordedStops = MutableStateFlow<List<InterruptedDownload>>(emptyList())
     private val downloads = mockk<ModelDownloadManager>(relaxed = true) {
         every { downloadModel(KNOWN.sourceUrl!!, KNOWN.name, any()) } returns download
+        every { observeInterruptedDownloads() } returns recordedStops
     }
     private val generationSettings = mockk<GenerationSettings> {
         every { huggingFaceAuthToken } returns flowOf(null)
@@ -453,17 +457,19 @@ class AfterRestoreViewModelTest {
         }
 
     @Test
-    fun `given no Hugging Face token when Download is tapped then the download goes without one`() =
+    fun `given no Hugging Face token or a blank one when Download is tapped then the download goes without one`() =
         runTest(dispatcher) {
-            every { generationSettings.huggingFaceAuthToken } returns flowOf("  ")
             coEvery { restorer.report() } returns REPORT
-            val viewModel = viewModel()
-            advanceUntilIdle()
+            listOf(null, "  ").forEach { token ->
+                every { generationSettings.huggingFaceAuthToken } returns flowOf(token)
+                val viewModel = viewModel()
+                advanceUntilIdle()
 
-            viewModel.onDownload(KNOWN.name)
-            advanceUntilIdle()
+                viewModel.onDownload(KNOWN.name)
+                advanceUntilIdle()
+            }
 
-            verify(exactly = 1) { downloads.downloadModel(KNOWN.sourceUrl!!, KNOWN.name, false) }
+            verify(exactly = 2) { downloads.downloadModel(KNOWN.sourceUrl!!, KNOWN.name, false) }
         }
 
     @Test
@@ -482,20 +488,57 @@ class AfterRestoreViewModelTest {
         }
 
     @Test
-    fun `given a download refused with 401 or 403 when it ends then the row asks for the licence and a token`() =
+    fun `given the token still being read when the download is cancelled then no download starts`() =
         runTest(dispatcher) {
-            // A download's flow completes once it fails, so each tap starts a download of its own.
-            every { downloads.downloadModel(KNOWN.sourceUrl!!, KNOWN.name, any()) } returnsMany
-                listOf(401, 403).map { flowOf(DownloadState.Error(DownloadError("HTTP $it", code = it))) }
+            // The download is enqueued only once the token is read: a cancel in between must leave nothing behind.
+            val read = CompletableDeferred<String?>()
+            every { generationSettings.huggingFaceAuthToken } returns flow { emit(read.await()) }
+            coEvery { restorer.report() } returns REPORT
+            val viewModel = viewModel()
+            advanceUntilIdle()
+            viewModel.onDownload(KNOWN.name)
+            advanceUntilIdle()
+
+            viewModel.onCancelDownload(KNOWN.name)
+            read.complete("hf_saved")
+            advanceUntilIdle()
+
+            verify(exactly = 0) { downloads.downloadModel(any(), any(), any()) }
+            assertNull(viewModel.state.value!!.models.first { it.name == KNOWN.name }.progress)
+        }
+
+    @Test
+    fun `given the token still being read when Download is tapped again then one download starts`() =
+        runTest(dispatcher) {
+            val read = CompletableDeferred<String?>()
+            every { generationSettings.huggingFaceAuthToken } returns flow { emit(read.await()) }
             coEvery { restorer.report() } returns REPORT
             val viewModel = viewModel()
             advanceUntilIdle()
 
+            viewModel.onDownload(KNOWN.name)
+            viewModel.onDownload(KNOWN.name)
+            read.complete(null)
+            advanceUntilIdle()
+
+            verify(exactly = 1) { downloads.downloadModel(any(), any(), any()) }
+        }
+
+    @Test
+    fun `given Hugging Face refusing with 401 or 403 when the download ends then the row asks for a token`() =
+        runTest(dispatcher) {
+            // A download's flow completes once it fails, so each tap starts a download of its own.
+            every { downloads.downloadModel(GATED.sourceUrl!!, GATED.name, any()) } returnsMany
+                listOf(401, 403).map { flowOf(DownloadState.Error(DownloadError("HTTP $it", code = it))) }
+            coEvery { restorer.report() } returns REPORT.copy(modelsToDownload = listOf(GATED))
+            val viewModel = viewModel()
+            advanceUntilIdle()
+
             listOf(401, 403).forEach { status ->
-                viewModel.onDownload(KNOWN.name)
+                viewModel.onDownload(GATED.name)
                 advanceUntilIdle()
 
-                val row = viewModel.state.value!!.models.first { it.name == KNOWN.name }
+                val row = viewModel.state.value!!.models.single()
                 assertEquals("HTTP $status", AfterRestoreDownloadFailure.NeedsAccess, row.failure)
                 assertEquals(true, row.canDownload)
             }
@@ -503,9 +546,58 @@ class AfterRestoreViewModelTest {
         }
 
     @Test
-    fun `given a download that paused or failed its checksum when it ends then the row adds nothing`() =
+    fun `given another address refusing with 403 when the download ends then the row says the server refused it`() =
         runTest(dispatcher) {
-            // The download recorded these two before failing; its notice and the Models screen report them once.
+            // No token is ever sent there — a signed CDN link, say — so asking for one would send the user in circles.
+            every { downloads.downloadModel(KNOWN.sourceUrl!!, KNOWN.name, any()) } returns
+                flowOf(DownloadState.Error(DownloadError("HTTP 403", code = 403)))
+            coEvery { restorer.report() } returns REPORT
+            val viewModel = viewModel()
+            advanceUntilIdle()
+
+            viewModel.onDownload(KNOWN.name)
+            advanceUntilIdle()
+
+            assertEquals(
+                AfterRestoreDownloadFailure.Refused,
+                viewModel.state.value!!.models.first { it.name == KNOWN.name }.failure,
+            )
+        }
+
+    @Test
+    fun `given Hugging Face answering 404 when the download ends then the row says the server refused it`() =
+        runTest(dispatcher) {
+            every { downloads.downloadModel(GATED.sourceUrl!!, GATED.name, any()) } returns
+                flowOf(DownloadState.Error(DownloadError("HTTP 404", code = 404)))
+            coEvery { restorer.report() } returns REPORT.copy(modelsToDownload = listOf(GATED))
+            val viewModel = viewModel()
+            advanceUntilIdle()
+
+            viewModel.onDownload(GATED.name)
+            advanceUntilIdle()
+
+            assertEquals(AfterRestoreDownloadFailure.Refused, viewModel.state.value!!.models.single().failure)
+        }
+
+    @Test
+    fun `given a download that ends with no answer when it fails then the row says the download failed`() =
+        runTest(dispatcher) {
+            every { downloads.downloadModel(GATED.sourceUrl!!, GATED.name, any()) } returns
+                flowOf(DownloadState.Error(DownloadError("timeout", code = null)))
+            coEvery { restorer.report() } returns REPORT.copy(modelsToDownload = listOf(GATED))
+            val viewModel = viewModel()
+            advanceUntilIdle()
+
+            viewModel.onDownload(GATED.name)
+            advanceUntilIdle()
+
+            assertEquals(AfterRestoreDownloadFailure.Failed, viewModel.state.value!!.models.single().failure)
+        }
+
+    @Test
+    fun `given a paused or mismatched download when its stream ends then the stream alone adds nothing`() =
+        runTest(dispatcher) {
+            // The download recorded these two before failing; the row takes them from that record, not twice.
             val stops = listOf(ModelDownloadFailure.PAUSED_TIME_LIMIT, ModelDownloadFailure.CHECKSUM_MISMATCH)
             every { downloads.downloadModel(KNOWN.sourceUrl!!, KNOWN.name, any()) } returnsMany
                 stops.map { flowOf(DownloadState.Error(DownloadError("stopped", code = 403, failure = it))) }
@@ -525,25 +617,103 @@ class AfterRestoreViewModelTest {
         }
 
     @Test
+    fun `given a recorded stop of a listed model when the sheet shows then its row says so, marked shown`() =
+        runTest(dispatcher) {
+            coEvery { restorer.report() } returns REPORT.copy(modelsToDownload = listOf(KNOWN, GATED))
+            val viewModel = viewModel()
+            advanceUntilIdle()
+
+            recordedStops.value = listOf(
+                stop(KNOWN, ModelDownloadFailure.PAUSED_TIME_LIMIT),
+                stop(GATED, ModelDownloadFailure.CHECKSUM_MISMATCH),
+            )
+            advanceUntilIdle()
+
+            assertEquals(
+                listOf(AfterRestoreDownloadFailure.Paused, AfterRestoreDownloadFailure.ChecksumMismatch),
+                viewModel.state.value!!.models.map { it.failure },
+            )
+            verify(exactly = 1) { downloads.acknowledgeInterruption(KNOWN.name) }
+            verify(exactly = 1) { downloads.acknowledgeInterruption(GATED.name) }
+        }
+
+    @Test
+    fun `given a stop recorded while the sheet is hidden when the chat resumes then the row says so only then`() =
+        runTest(dispatcher) {
+            coEvery { restorer.report() } returns REPORT
+            val viewModel = viewModel()
+            advanceUntilIdle()
+            viewModel.onPaused()
+
+            recordedStops.value = listOf(stop(KNOWN, ModelDownloadFailure.PAUSED_TIME_LIMIT))
+            advanceUntilIdle()
+            verify(exactly = 0) { downloads.acknowledgeInterruption(any()) }
+
+            viewModel.onResumed()
+            advanceUntilIdle()
+
+            assertEquals(
+                AfterRestoreDownloadFailure.Paused,
+                viewModel.state.value!!.models.first { it.name == KNOWN.name }.failure,
+            )
+            verify(exactly = 1) { downloads.acknowledgeInterruption(KNOWN.name) }
+        }
+
+    @Test
+    fun `given a stop recorded for a model not listed when the sheet shows then other screens keep it`() =
+        runTest(dispatcher) {
+            coEvery { restorer.report() } returns REPORT
+            val viewModel = viewModel()
+            advanceUntilIdle()
+
+            recordedStops.value = listOf(stop(GATED, ModelDownloadFailure.PAUSED_TIME_LIMIT))
+            advanceUntilIdle()
+
+            verify(exactly = 0) { downloads.acknowledgeInterruption(any()) }
+            assertEquals(listOf(null, null), viewModel.state.value!!.models.map { it.failure })
+        }
+
+    @Test
     fun `given a failed download when Download is tapped again then the reason leaves while it runs`() =
         runTest(dispatcher) {
-            every { downloads.downloadModel(KNOWN.sourceUrl!!, KNOWN.name, any()) } returnsMany
+            every { downloads.downloadModel(GATED.sourceUrl!!, GATED.name, any()) } returnsMany
                 listOf(flowOf(DownloadState.Error(DownloadError("HTTP 401", code = 401))), download)
+            coEvery { restorer.report() } returns REPORT.copy(modelsToDownload = listOf(GATED))
+            val viewModel = viewModel()
+            advanceUntilIdle()
+            viewModel.onDownload(GATED.name)
+            advanceUntilIdle()
+            assertEquals(AfterRestoreDownloadFailure.NeedsAccess, viewModel.state.value!!.models.single().failure)
+
+            viewModel.onDownload(GATED.name)
+
+            val row = viewModel.state.value!!.models.single()
+            assertNull(row.failure)
+            assertEquals(0, row.progress)
+        }
+
+    @Test
+    fun `given a failed model installed elsewhere and deleted when the chat resumes then its row is clean`() =
+        runTest(dispatcher) {
+            every { downloads.downloadModel(KNOWN.sourceUrl!!, KNOWN.name, any()) } returns
+                flowOf(DownloadState.Error(DownloadError("timeout")))
             coEvery { restorer.report() } returns REPORT
             val viewModel = viewModel()
             advanceUntilIdle()
             viewModel.onDownload(KNOWN.name)
             advanceUntilIdle()
-            assertEquals(
-                AfterRestoreDownloadFailure.NeedsAccess,
-                viewModel.state.value!!.models.first { it.name == KNOWN.name }.failure,
-            )
 
-            viewModel.onDownload(KNOWN.name)
+            // Installed from Discover, then deleted on the Models screen, while the chat was away.
+            viewModel.onPaused()
+            coEvery { localModels.isInstalled(KNOWN.name) } returns true
+            viewModel.onResumed()
+            advanceUntilIdle()
+            viewModel.onPaused()
+            coEvery { localModels.isInstalled(KNOWN.name) } returns false
+            viewModel.onResumed()
+            advanceUntilIdle()
 
-            val row = viewModel.state.value!!.models.first { it.name == KNOWN.name }
-            assertNull(row.failure)
-            assertEquals(0, row.progress)
+            assertNull(viewModel.state.value!!.models.first { it.name == KNOWN.name }.failure)
         }
 
     @Test
@@ -584,6 +754,10 @@ class AfterRestoreViewModelTest {
         coVerify { restorer.dismissReport() }
     }
 
+    /** A stop the download recorded for [model], as the download manager lists it. */
+    private fun stop(model: BackupModelEntry, failure: ModelDownloadFailure) =
+        InterruptedDownload(model.name, model.sourceUrl!!, failure, message = "stopped")
+
     /** The view model with the chat on screen, as the host reports it once the destination is resumed. */
     private fun viewModel() = hiddenViewModel().also { it.onResumed() }
 
@@ -593,6 +767,12 @@ class AfterRestoreViewModelTest {
     private companion object {
         val KNOWN = BackupModelEntry("gemma.litertlm", 600, null, "https://example/gemma")
         val UNKNOWN = BackupModelEntry("custom.litertlm", 900, null, null)
+        val GATED = BackupModelEntry(
+            "gated.litertlm",
+            700,
+            null,
+            "https://huggingface.co/org/gated/resolve/main/gated.litertlm",
+        )
         val REPORT = RestoreReport(
             modelsToDownload = listOf(KNOWN, UNKNOWN),
             scheduledTasksLeftBehind = 2,

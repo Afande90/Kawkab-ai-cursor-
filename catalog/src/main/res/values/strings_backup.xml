@@ -132,8 +132,13 @@
     <string name="knotwork_backup_download">Download</string>
     <string name="knotwork_backup_discover">Discover</string>
     <string name="knotwork_backup_model_unknown">Source unknown. Find it in Discover.</string>
+    <!-- The app's own: why a model's download stopped, under its name. The copy has no download failure. -->
     <string name="knotwork_backup_download_needs_access">Hugging Face refused it. Accept the model’s licence there and add your token in Models, then try again.</string>
+    <string name="knotwork_backup_download_refused">The server refused it. The link may no longer work.</string>
     <string name="knotwork_backup_download_failed">The download failed. Try again.</string>
+    <string name="knotwork_backup_download_paused">Paused: Android limits how long a download can run in the background. Download continues it from where it stopped.</string>
+    <string name="knotwork_backup_download_mismatch">The file did not match the checksum Hugging Face published for it, so it was deleted. Download it again.</string>
+    <!-- The app's own: the copy sent all three to Settings; the token is entered in Models, sign-ins in Tools. -->
     <string name="knotwork_backup_after_keys">Enter your API keys again in Settings, your Hugging Face token in Models and MCP sign-ins in Tools.</string>
     <string name="knotwork_backup_after_tasks">Tasks the agent scheduled weren’t carried over. Ask it to set them up again.</string>
     <!-- The app's own: the model row's cancel while it downloads. -->

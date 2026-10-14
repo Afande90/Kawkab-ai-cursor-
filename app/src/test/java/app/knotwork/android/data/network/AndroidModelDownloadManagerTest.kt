@@ -393,8 +393,9 @@ class AndroidModelDownloadManagerTest {
     fun `given why a download stopped when read then only a pause and a checksum mismatch were recorded`() {
         val recorded = ModelDownloadFailure.entries
             .filter { AndroidModelDownloadManager.DownloadError("x", failure = it).recordedInterruption }
+            .toSet()
 
-        assertEquals(listOf(ModelDownloadFailure.CHECKSUM_MISMATCH, ModelDownloadFailure.PAUSED_TIME_LIMIT), recorded)
+        assertEquals(setOf(ModelDownloadFailure.CHECKSUM_MISMATCH, ModelDownloadFailure.PAUSED_TIME_LIMIT), recorded)
     }
 
     private fun stubWorkInfos(vararg infos: WorkInfo) {

@@ -27,7 +27,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -66,8 +68,7 @@ data class AfterRestoreState(
  * @property sourceKnown Whether the backup recorded where it came from: *Download* when it did, *Discover* when not.
  * @property progress Its download's progress in percent while it runs; `null` when it does not.
  * @property canDownload Whether *Download* is enabled — one download runs at a time.
- * @property failure Why its last download from this sheet did not install it; `null` when none failed, or once
- *   another starts.
+ * @property failure Why its last download did not install it; `null` when none stopped, or once another starts.
  */
 @Immutable
 data class AfterRestoreModel(
@@ -79,16 +80,25 @@ data class AfterRestoreModel(
     val failure: AfterRestoreDownloadFailure? = null,
 )
 
-/** Why a model's download from the after-restore sheet did not install it, in the words its row shows. */
+/** Why a model's download did not install it, in the words its row on the after-restore sheet shows. */
 enum class AfterRestoreDownloadFailure {
     /**
-     * The source refused it for access: an access-gated Hugging Face repository, with no token on this phone or
-     * one whose account has not accepted the model's licence.
+     * Hugging Face refused it for access: an access-gated repository, with no token on this phone or one whose
+     * account has not accepted the model's licence.
      */
     NeedsAccess,
 
-    /** Anything else: the connection, the server, or a file that could not be stored. */
+    /** The server answered with an error no token answers — a link that no longer works, on any host. */
+    Refused,
+
+    /** No answer: the connection, or a file that could not be stored. */
     Failed,
+
+    /** It paused at the time a download may run in the background; starting it again continues it. */
+    Paused,
+
+    /** The file did not match the checksum Hugging Face published for it, and was deleted. */
+    ChecksumMismatch,
 }
 
 /**
@@ -248,11 +258,16 @@ private fun AfterRestoreModelRow(model: AfterRestoreModel, callbacks: AfterResto
                     text = stringResource(
                         when (failure) {
                             AfterRestoreDownloadFailure.NeedsAccess -> R.string.knotwork_backup_download_needs_access
+                            AfterRestoreDownloadFailure.Refused -> R.string.knotwork_backup_download_refused
                             AfterRestoreDownloadFailure.Failed -> R.string.knotwork_backup_download_failed
+                            AfterRestoreDownloadFailure.Paused -> R.string.knotwork_backup_download_paused
+                            AfterRestoreDownloadFailure.ChecksumMismatch -> R.string.knotwork_backup_download_mismatch
                         },
                     ),
                     style = KnotworkTextStyles.BodySm,
                     color = KnotworkTheme.extended.signalError,
+                    // The row only frees its Download button when a download stops: the reason is read out.
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                 )
             }
             model.progress?.let { progress ->

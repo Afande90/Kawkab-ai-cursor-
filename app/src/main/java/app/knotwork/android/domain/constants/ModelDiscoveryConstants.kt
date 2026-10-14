@@ -1,5 +1,8 @@
 package app.knotwork.android.domain.constants
 
+import java.net.URI
+import java.net.URISyntaxException
+
 /**
  * Cross-layer constants for the model-discovery feature (browsing the
  * `litert-community` organisation on Hugging Face and installing a model's
@@ -50,4 +53,28 @@ object ModelDiscoveryConstants {
      * @param repoId fully-qualified repository id (`"author/name"`).
      */
     fun modelCardUrl(repoId: String): String = "$HF_BASE_URL/$repoId"
+
+    /**
+     * Whether [url] is Hugging Face itself over `https` — the one address a saved Hugging Face
+     * token is sent to (the downloader applies the same rule to every request). A screen uses it
+     * to tell "accept the licence and add your token" from a refusal no token can answer: a link
+     * on another host, a signed CDN link included, never carries the token.
+     *
+     * @param url An address as stored or entered; one that does not parse is not Hugging Face.
+     * @return `true` only for `https://huggingface.co/…`, in any letter case.
+     */
+    fun isHuggingFaceUrl(url: String): Boolean {
+        val uri = try {
+            URI(url)
+        } catch (_: URISyntaxException) {
+            return false
+        }
+        return uri.scheme.equals(HF_SCHEME, ignoreCase = true) && uri.host.equals(HF_HOST, ignoreCase = true)
+    }
+
+    /** Scheme of [HF_BASE_URL]. */
+    private const val HF_SCHEME = "https"
+
+    /** Host of [HF_BASE_URL]. */
+    private const val HF_HOST = "huggingface.co"
 }

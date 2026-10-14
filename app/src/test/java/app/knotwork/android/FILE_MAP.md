@@ -269,6 +269,7 @@ Only Kotlin files appear inside the generated blocks.
   - `constants/` - Tests for the domain-level constants.
     - `DefaultPromptsTest.kt` - Smoke + contract coverage for `DefaultPrompts`.
     - `DocumentationLinksTest.kt` - Drift guard for the generated `DocumentationLinks` registry as the app reads it.
+    - `ModelDiscoveryConstantsTest.kt` - `ModelDiscoveryConstants.isHuggingFaceUrl`: Hugging Face itself over `https`, the one address the downloader sends a saved token to — never a look-alike host, a CDN link or cleartext.
     - `NotificationIdsTest.kt` - Pins the property `NotificationIds` exists for: no two notification families, and no family and fixed id, can ever produce the same notification id.
     - `OnboardingModelCatalogTest.kt` - Unit tests for `OnboardingModelCatalog`.
     - `OnboardingScenarioCatalogTest.kt` - Pins the onboarding scenario wiring: the set of scenarios, their preset / model / surface mapping, gallery order, and the `OnboardingScenarioCatalog.byId` lookup.
