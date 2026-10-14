@@ -624,20 +624,25 @@ only for gated repositories) is handled exactly like a cloud-provider key:
 A model file downloaded from Hugging Face is checked before it becomes a model.
 
 - **The hash comes from Hugging Face's own answer.** Its reply to the download
-  names the file's SHA-256 (for a file stored in LFS, as model files are). The
+  names the file's SHA-256 (for a file stored in LFS, as model files usually
+  are). The
   app reads it only from a request to `https://huggingface.co` and only from the
   hops Hugging Face itself answered — never from the CDN the download is
   redirected to, which is what the hash is checked against, and never from
   another host.
 - **The file is hashed before it reaches its final name.** A file whose hash
-  differs is deleted, never added to the model list, and the download says the
-  file did not match. A transfer corrupted on the way, or a resume that joined
-  two versions of a file, ends here.
-- **Unchecked files are named as such.** A file from a source that names no hash
-  — a link to another host, a file outside LFS — is installed and marked **Not
-  verified** on the Models screen. So is a model installed before this check
-  existed, a file the app found on its storage with no download behind it, and
-  a model whose file changed after its check.
+  differs is deleted and never added to the model list, and the Models screen,
+  Discover or setup — whichever follows the download — says the file did not
+  match. A transfer corrupted on the way, or a resume that joined two versions
+  of a file, ends here.
+- **The Models screen says which files were checked.** A model reads
+  **Verified** only while its file's current SHA-256 equals the one Hugging Face
+  published at a download that matched; the app reads a file's hash once and
+  again whenever its size or modification time changes. Anything else reads
+  **Not verified** — a file from a source that names no hash (another host, a
+  file outside LFS), a model installed before this check existed, a file the app
+  found on its storage with no download behind it, or a file whose content
+  changed after its check.
 - **What it does not cover.** The check proves the file is the one Hugging Face
   publishes under that name, not that the publisher can be trusted: a repository
   that publishes a harmful file publishes its hash too.

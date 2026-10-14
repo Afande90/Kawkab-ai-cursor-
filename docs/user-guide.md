@@ -129,11 +129,13 @@ the download **resumes from where it stopped** rather than starting over.
 Until it completes, the bytes live in a temporary `.part` file, so an
 unfinished download never masquerades as an installed model.
 
-A file from Hugging Face is **checked before it becomes a model**. Hugging
-Face names the file's SHA-256 in its answer to the download, and the bytes
-that arrived must have the same hash. A file that does not match is deleted
-and the download says so; start it again. A link to another host names no
-hash, so its file is installed without a check and marked **Not verified**
+A file from Hugging Face is **checked before it becomes a model** when
+Hugging Face names its SHA-256 in the answer to the download — it does for
+the large files it stores in LFS. The bytes that arrived must have that hash.
+A file that does not match is deleted, and the Models screen, Discover or
+setup — whichever is following the download — says so; start it again. A file
+with no hash named, from another host for instance, is installed without a
+check and marked **Not verified**
 (see [Managing local models](#managing-local-models)).
 
 A long download **pauses after five hours**. Android lets an app transfer
@@ -3215,12 +3217,12 @@ LLMs.
   inference memory. Its mono subtitle shows size, accelerator
   backend, execution backend, and whether the file was checked.
 - Every model's subtitle ends in **Verified** or **Not verified**.
-  **Verified** means the file matched the SHA-256 Hugging Face published
-  for it when it was downloaded, and has not changed since. Every other
-  model reads **Not verified**: one downloaded from another host, a file
-  the app found on its storage with no download behind it, a model
-  installed before this check existed, or one whose file changed after
-  the check. Download it again from Hugging Face to have it checked.
+  **Verified** means a download of this model matched the SHA-256 Hugging
+  Face published, and the file on the phone still has that hash. Otherwise
+  it reads **Not verified** — for instance a model only ever downloaded from
+  another host, a file the app found on its storage with no download behind
+  it, a model installed before this check existed, or one whose file has
+  changed since. Download it again from Hugging Face to have it checked.
 - The **HuggingFace** section lets you paste a personal access token
   (stored encrypted, in the same Keystore-backed store as cloud API
   keys) so gated repositories can be downloaded. The `+ Paste` button

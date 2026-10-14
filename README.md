@@ -320,9 +320,10 @@ to log into, and nothing is uploaded for the app to work.
   memory, run traces — is SQLCipher-encrypted, and API keys, the Hugging Face
   token, and MCP credentials are sealed with AES-GCM under a dedicated Android
   Keystore key.
-- **Downloaded models are checked.** A model file from Hugging Face must match
-  the SHA-256 Hugging Face publishes for it, or it is deleted; a file from
-  another host is installed but marked *Not verified*.
+- **Downloaded models are checked.** When Hugging Face names a model file's
+  SHA-256 in its answer to the download, the file must match it or it is
+  deleted. A file with no hash named — from another host, for instance — is
+  installed but marked *Not verified*.
 - **The agent asks before it acts.** By default, destructive and sensitive tool
   calls stop at a confirmation, including when a pipeline runs in the background
   from a trigger. A destructive call asks under every setting.

@@ -400,14 +400,14 @@ details.
   reads it from Hugging Face's own answer only — never from the CDN it redirects
   to, never from another host — and hashes the file before it takes a model's
   name. A file that does not match is deleted, no model is added, and Models,
-  Discover or setup, whichever is open, says the file did not match. This also
-  catches a resumed download that joined two versions of a file changed on
-  Hugging Face in between. A file from another host, or one Hugging Face keeps
-  outside LFS, has no hash to check; on the Models screen every model now reads
-  **Verified** or **Not verified**, and models installed before this release read
-  **Not verified** until downloaded again. A Hugging Face download that stopped
-  after its last byte is checked on the next start instead of being downloaded
-  again.
+  Discover or setup, whichever follows the download, says the file did not
+  match. This also catches a resumed download that joined two versions of a
+  file changed on Hugging Face in between. A file from another host, or one
+  Hugging Face keeps outside LFS, has no hash to check; on the Models screen
+  every model now reads **Verified** or **Not verified**, and models installed
+  before this release read **Not verified** until downloaded again. A Hugging
+  Face download that stopped after its last byte is checked on the next start
+  instead of being downloaded again.
 - **A model server's redirect is checked hop by hop.** The address of a server
   you run — Ollama — was checked once, before the first request; a server could
   then answer with a redirect, and nothing inside the model client looked where
