@@ -66,6 +66,8 @@ data class AfterRestoreState(
  * @property sourceKnown Whether the backup recorded where it came from: *Download* when it did, *Discover* when not.
  * @property progress Its download's progress in percent while it runs; `null` when it does not.
  * @property canDownload Whether *Download* is enabled — one download runs at a time.
+ * @property failure Why its last download from this sheet did not install it; `null` when none failed, or once
+ *   another starts.
  */
 @Immutable
 data class AfterRestoreModel(
@@ -74,7 +76,20 @@ data class AfterRestoreModel(
     val sourceKnown: Boolean,
     val progress: Int? = null,
     val canDownload: Boolean = true,
+    val failure: AfterRestoreDownloadFailure? = null,
 )
+
+/** Why a model's download from the after-restore sheet did not install it, in the words its row shows. */
+enum class AfterRestoreDownloadFailure {
+    /**
+     * The source refused it for access: an access-gated Hugging Face repository, with no token on this phone or
+     * one whose account has not accepted the model's licence.
+     */
+    NeedsAccess,
+
+    /** Anything else: the connection, the server, or a file that could not be stored. */
+    Failed,
+}
 
 /**
  * What the after-restore sheet asks the app to do.
@@ -185,7 +200,10 @@ fun AfterRestoreSheetContent(
     }
 }
 
-/** A model to download again: its tile, name and size, then *Download*, *Discover* or the running download. */
+/**
+ * A model to download again: its tile, name and size — and why its last download failed — then *Download*, *Discover*
+ * or the running download.
+ */
 @Composable
 private fun AfterRestoreModelRow(model: AfterRestoreModel, callbacks: AfterRestoreCallbacks) {
     val context = LocalContext.current
@@ -223,6 +241,18 @@ private fun AfterRestoreModelRow(model: AfterRestoreModel, callbacks: AfterResto
                     text = stringResource(R.string.knotwork_backup_model_unknown),
                     style = KnotworkTextStyles.BodySm,
                     color = KnotworkTheme.extended.onSurface2,
+                )
+            }
+            model.failure?.let { failure ->
+                Text(
+                    text = stringResource(
+                        when (failure) {
+                            AfterRestoreDownloadFailure.NeedsAccess -> R.string.knotwork_backup_download_needs_access
+                            AfterRestoreDownloadFailure.Failed -> R.string.knotwork_backup_download_failed
+                        },
+                    ),
+                    style = KnotworkTextStyles.BodySm,
+                    color = KnotworkTheme.extended.signalError,
                 )
             }
             model.progress?.let { progress ->

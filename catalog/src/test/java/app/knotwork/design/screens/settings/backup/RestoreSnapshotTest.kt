@@ -1,5 +1,7 @@
 package app.knotwork.design.screens.settings.backup
 
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
@@ -168,12 +170,26 @@ class RestoreSnapshotTest {
             SheetScreen(AFTER)
         }
 
+    @Test
+    fun restore_after_sheet_failed_light() = snapshot("after_sheet_failed", dark = false) { SheetScreen(AFTER_FAILED) }
+
+    @Test
+    fun restore_after_sheet_failed_dark() = snapshot("after_sheet_failed", dark = true) { SheetScreen(AFTER_FAILED) }
+
+    @Test
+    fun restore_after_sheet_failed_font_scale_2x_light() =
+        snapshot("after_sheet_failed_font_scale_2x", dark = false, fontScale = 2f) {
+            SheetScreen(AFTER_FAILED)
+        }
+
     @Composable
     private fun RouteScreen(route: BackupRoute) =
         BackupContent(BackupViewState(route = route, restoreAvailable = true), BackupCallbacks())
 
+    /** The sheet's content on the surface the sheet gives it — without one, the dark captures had no background. */
     @Composable
-    private fun SheetScreen(state: AfterRestoreState) = AfterRestoreSheetContent(state, AfterRestoreCallbacks())
+    private fun SheetScreen(state: AfterRestoreState) =
+        Surface(color = MaterialTheme.colorScheme.surface) { AfterRestoreSheetContent(state, AfterRestoreCallbacks()) }
 
     private fun snapshot(name: String, dark: Boolean, fontScale: Float = 1f, content: @Composable () -> Unit) {
         composeTestRule.setContent {
@@ -219,6 +235,25 @@ class RestoreSnapshotTest {
             ),
             enterKeysAgain = true,
             tasksLeftBehind = true,
+        )
+
+        /** A gated repository refused its download — no token came with the backup — and another one failed. */
+        val AFTER_FAILED = AFTER.copy(
+            models = listOf(
+                AfterRestoreModel(
+                    "gemma-3n-E4B-it-int4.litertlm",
+                    4_405_000_000,
+                    sourceKnown = true,
+                    failure = AfterRestoreDownloadFailure.NeedsAccess,
+                ),
+                AfterRestoreModel(
+                    "gemma-4-E2B-it.litertlm",
+                    2_588_147_712,
+                    sourceKnown = true,
+                    failure = AfterRestoreDownloadFailure.Failed,
+                ),
+                AfterRestoreModel("custom-finetune.litertlm", 612_000_000, sourceKnown = false),
+            ),
         )
     }
 }

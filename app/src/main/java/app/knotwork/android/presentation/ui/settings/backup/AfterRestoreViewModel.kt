@@ -4,12 +4,15 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.knotwork.android.R
+import app.knotwork.android.data.network.AndroidModelDownloadManager.DownloadError
 import app.knotwork.android.domain.backup.BackupRestorer
 import app.knotwork.android.domain.backup.RestoreReport
 import app.knotwork.android.domain.models.DownloadState
+import app.knotwork.android.domain.repositories.GenerationSettings
 import app.knotwork.android.domain.repositories.LocalModelRepository
 import app.knotwork.android.domain.repositories.ModelDownloadManager
 import app.knotwork.android.presentation.state.TransientMessageRelay
+import app.knotwork.design.screens.settings.backup.AfterRestoreDownloadFailure
 import app.knotwork.design.screens.settings.backup.AfterRestoreModel
 import app.knotwork.design.screens.settings.backup.AfterRestoreState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,7 +22,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -39,10 +43,13 @@ import javax.inject.Inject
  * resuming it, so no sheet appears under the gesture to take it over. Each time the chat is resumed, the models
  * now on the phone — installed meanwhile from Discover or the Models screen — leave the list. A download started
  * here is the download worker's, as on the Models screen: it goes on after the sheet closes, and the worker
- * registers the file. One runs at a time.
+ * registers the file. One runs at a time. It sends the Hugging Face token when one is saved on this phone, as
+ * Discover does, so a model from an access-gated repository downloads again; a download that fails says why on its
+ * row — a pause or a checksum mismatch excepted, which the download's own notice reports.
  *
  * @property restorer Reads and dismisses the report of the restore applied last.
  * @property downloads Starts, follows and cancels a model's download.
+ * @property generationSettings Tells whether a Hugging Face token is saved on this phone.
  * @property localModels Tells which of the report's models are on the phone now.
  * @property relay Shows *Restored* in the app's snackbar.
  * @property appContext Reads the snackbar's text.
@@ -52,6 +59,7 @@ import javax.inject.Inject
 class AfterRestoreViewModel internal constructor(
     private val restorer: BackupRestorer,
     private val downloads: ModelDownloadManager,
+    private val generationSettings: GenerationSettings,
     private val localModels: LocalModelRepository,
     private val relay: TransientMessageRelay,
     private val appContext: Context,
@@ -63,10 +71,11 @@ class AfterRestoreViewModel internal constructor(
     constructor(
         restorer: BackupRestorer,
         downloads: ModelDownloadManager,
+        generationSettings: GenerationSettings,
         localModels: LocalModelRepository,
         relay: TransientMessageRelay,
         @ApplicationContext appContext: Context,
-    ) : this(restorer, downloads, localModels, relay, appContext, ::deviceDate)
+    ) : this(restorer, downloads, generationSettings, localModels, relay, appContext, ::deviceDate)
 
     private val _state = MutableStateFlow<AfterRestoreState?>(null)
 
@@ -90,12 +99,16 @@ class AfterRestoreViewModel internal constructor(
     private var running: Pair<String, Int>? = null
     private var downloadJob: Job? = null
 
+    /** Why the last download of each model started here failed; a model leaves it when its next one starts. */
+    private var failures = emptyMap<String, AfterRestoreDownloadFailure>()
+
     init {
         viewModelScope.launch { load() }
     }
 
     /**
-     * *Download* on a model whose source the backup recorded.
+     * *Download* on a model whose source the backup recorded. The Hugging Face token goes with it when one is saved
+     * on this phone — the downloader sends it only to `huggingface.co`.
      *
      * @param name The model's file name.
      */
@@ -104,28 +117,34 @@ class AfterRestoreViewModel internal constructor(
         val url = entry.sourceUrl ?: return
         if (downloadJob?.isActive == true) return
         running = name to 0
+        failures = failures - name
         render()
-        downloadJob = downloads.downloadModel(url, name)
-            .onEach { state ->
-                when (state) {
-                    DownloadState.Pending -> running = name to 0
-                    is DownloadState.Downloading -> running = name to state.progress
-                    is DownloadState.Success -> {
-                        running = null
-                        downloadedHere = downloadedHere + name
+        downloadJob = viewModelScope.launch {
+            downloads.downloadModel(url, name, useStoredAuth = tokenSaved())
+                .onEach { state ->
+                    when (state) {
+                        DownloadState.Pending -> running = name to 0
+                        is DownloadState.Downloading -> running = name to state.progress
+                        is DownloadState.Success -> {
+                            running = null
+                            downloadedHere = downloadedHere + name
+                        }
+                        is DownloadState.Error -> {
+                            running = null
+                            failureOf(state)?.let { failures = failures + (name to it) }
+                        }
                     }
-                    is DownloadState.Error -> running = null
-                }
-                render()
-            }
-            // A download cancelled from its notification ends with no last state: the row is free again.
-            .onCompletion {
-                if (running?.first == name) {
-                    running = null
                     render()
                 }
-            }
-            .launchIn(viewModelScope)
+                // A download cancelled from its notification ends with no last state: the row is free again.
+                .onCompletion {
+                    if (running?.first == name) {
+                        running = null
+                        render()
+                    }
+                }
+                .collect()
+        }
     }
 
     /**
@@ -206,6 +225,19 @@ class AfterRestoreViewModel internal constructor(
             .toSet()
     }
 
+    /**
+     * Whether a Hugging Face token is saved on this phone — only whether: the downloader reads the token itself, so
+     * its value never travels through the download's input. A token that cannot be read counts as none.
+     */
+    private suspend fun tokenSaved(): Boolean = try {
+        !generationSettings.huggingFaceAuthToken.first().isNullOrBlank()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Timber.w(e, "Whether a Hugging Face token is saved could not be read")
+        false
+    }
+
     private suspend fun isOnPhone(name: String): Boolean = try {
         localModels.isInstalled(name)
     } catch (e: CancellationException) {
@@ -233,6 +265,7 @@ class AfterRestoreViewModel internal constructor(
                         sourceKnown = model.sourceUrl != null,
                         progress = running?.takeIf { it.first == model.name }?.second,
                         canDownload = running == null,
+                        failure = failures[model.name],
                     )
                 },
             enterKeysAgain = keysToEnter(current),
@@ -241,6 +274,19 @@ class AfterRestoreViewModel internal constructor(
     }
 
     private companion object {
+        /**
+         * What a failed download's row says: a refusal for access, or a failure. A pause or a checksum mismatch says
+         * nothing here — the download recorded it, and its notice and the Models screen report it once.
+         */
+        fun failureOf(state: DownloadState.Error): AfterRestoreDownloadFailure? {
+            val error = state.error as? DownloadError
+            return when {
+                error?.recordedInterruption == true -> null
+                error?.accessRefused == true -> AfterRestoreDownloadFailure.NeedsAccess
+                else -> AfterRestoreDownloadFailure.Failed
+            }
+        }
+
         /** Keys are left to enter when the report has neither of its two secrets flags. */
         fun keysToEnter(report: RestoreReport): Boolean = !report.secretsApplied && !report.secretsOnPhone
 

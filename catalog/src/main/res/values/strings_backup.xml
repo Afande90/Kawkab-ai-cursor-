@@ -132,7 +132,9 @@
     <string name="knotwork_backup_download">Download</string>
     <string name="knotwork_backup_discover">Discover</string>
     <string name="knotwork_backup_model_unknown">Source unknown. Find it in Discover.</string>
-    <string name="knotwork_backup_after_keys">Enter your API keys, Hugging Face token and MCP sign-ins again in Settings.</string>
+    <string name="knotwork_backup_download_needs_access">Hugging Face refused it. Accept the model’s licence there and add your token in Models, then try again.</string>
+    <string name="knotwork_backup_download_failed">The download failed. Try again.</string>
+    <string name="knotwork_backup_after_keys">Enter your API keys again in Settings, your Hugging Face token in Models and MCP sign-ins in Tools.</string>
     <string name="knotwork_backup_after_tasks">Tasks the agent scheduled weren’t carried over. Ask it to set them up again.</string>
     <!-- The app's own: the model row's cancel while it downloads. -->
     <string name="knotwork_backup_cancel_download">Cancel download</string>
