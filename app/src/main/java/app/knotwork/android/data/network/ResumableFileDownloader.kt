@@ -81,8 +81,16 @@ class ResumableFileDownloader @Inject constructor(
          * @property publishedSha256 The SHA-256 Hugging Face published for the file,
          *   lowercase hex, or `null` when the source published none (another host, a
          *   file outside LFS, or a Hub answer without the header).
+         * @property bytesTransferred Bytes this attempt added to the part file — `0`
+         *   when it found the part already complete. Like [Failure.bytesTransferred], it
+         *   tells the caller whether this attempt made progress, should it still fail.
          */
-        data class Downloaded(val partPath: String, val targetPath: String, val publishedSha256: String?) : Outcome
+        data class Downloaded(
+            val partPath: String,
+            val targetPath: String,
+            val publishedSha256: String?,
+            val bytesTransferred: Long = 0L,
+        ) : Outcome
 
         /**
          * The attempt did not finish.
@@ -178,7 +186,7 @@ class ResumableFileDownloader @Inject constructor(
                     // file was checked. It goes to the check, not back to the network.
                     if (alreadyOnDisk > 0 && published?.sizeBytes == alreadyOnDisk) {
                         onProgress(PERCENT.toInt())
-                        return downloaded(part, target, published)
+                        return downloaded(part, target, published, transferred)
                     }
                     // Otherwise the partial file is at least as long as the resource
                     // the server is offering — it is stale or corrupt, not a prefix.
@@ -211,17 +219,22 @@ class ResumableFileDownloader @Inject constructor(
                 transferred = transferred,
                 onProgress = onProgress,
             )
-            downloaded(part, target, published)
+            downloaded(part, target, published, transferred)
         }
     }
 
-    /** The complete [part], with what its source published about it. */
-    private fun downloaded(part: File, target: File, published: PublishedFile?): Outcome.Downloaded =
-        Outcome.Downloaded(
-            partPath = part.absolutePath,
-            targetPath = target.absolutePath,
-            publishedSha256 = published?.sha256,
-        )
+    /** The complete [part], with what its source published about it and what this attempt fetched. */
+    private fun downloaded(
+        part: File,
+        target: File,
+        published: PublishedFile?,
+        transferred: TransferCounter,
+    ): Outcome.Downloaded = Outcome.Downloaded(
+        partPath = part.absolutePath,
+        targetPath = target.absolutePath,
+        publishedSha256 = published?.sha256,
+        bytesTransferred = transferred.bytes,
+    )
 
     /**
      * Reads what Hugging Face published about the file from its own answer to the

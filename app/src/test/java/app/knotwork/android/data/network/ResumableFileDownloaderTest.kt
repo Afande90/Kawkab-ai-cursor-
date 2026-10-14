@@ -314,10 +314,33 @@ class ResumableFileDownloaderTest {
 
                 val outcome = wired.download(HF_URL, "model.bin", authToken = null) {}
 
-                assertEquals(SHA256, (outcome as ResumableFileDownloader.Outcome.Downloaded).publishedSha256)
+                val downloaded = outcome as ResumableFileDownloader.Outcome.Downloaded
+                assertEquals(SHA256, downloaded.publishedSha256)
+                assertEquals("weights".length.toLong(), downloaded.bytesTransferred)
             }
         }
     }
+
+    @Test
+    fun `given the CDN sends the download back to Hugging Face when it names a hash then it is not trusted`() =
+        runTest {
+            // Once a hop has left the Hub, nothing after it speaks for the Hub — even an
+            // answer from the Hub's own address: the CDN chose where that request went.
+            startedServer().use { hub ->
+                startedServer().use { cdn ->
+                    hub.enqueue(MockResponse.Builder().code(302).addHeader("Location", cdn.url("/signed/m")).build())
+                    cdn.enqueue(MockResponse.Builder().code(302).addHeader("Location", hub.url("/back/m")).build())
+                    hub.enqueue(
+                        MockResponse.Builder().code(200).addHeader("X-Linked-Etag", "\"$SHA256\"").body("w").build(),
+                    )
+                    val wired = wiredDownloader(mapOf(HF_HOST to hub))
+
+                    val outcome = wired.download(HF_URL, "model.bin", authToken = null) {}
+
+                    assertNull((outcome as ResumableFileDownloader.Outcome.Downloaded).publishedSha256)
+                }
+            }
+        }
 
     @Test
     fun `given a weak or upper-case hash value when Hugging Face sends it then it is read as the same hash`() =
@@ -439,6 +462,7 @@ class ResumableFileDownloaderTest {
                     assertEquals(part.absolutePath, downloaded.partPath)
                     assertEquals("weights", part.readText())
                     assertEquals(SHA256, downloaded.publishedSha256)
+                    assertEquals("this attempt fetched nothing", 0L, downloaded.bytesTransferred)
                     assertEquals(listOf(100), progress)
                     // One request to each host: nothing was downloaded again.
                     assertEquals(1, hub.requestCount)

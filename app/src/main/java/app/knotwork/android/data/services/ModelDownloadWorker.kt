@@ -160,7 +160,10 @@ class ModelDownloadWorker @AssistedInject constructor(
      * it again from the same source is the user's call. A file that could not be
      * read or moved is still on disk and gets another attempt: from Hugging Face
      * that attempt finds it complete and only repeats the check; from a host that
-     * names no length it downloads the file again.
+     * names no length it downloads the file again. That attempt is decided by the
+     * same rule as a transport failure, with the bytes this attempt fetched — so
+     * a transfer that just finished is never given up on its first failed check,
+     * however many runs the transfer took.
      */
     private suspend fun install(
         downloaded: ResumableFileDownloader.Outcome.Downloaded,
@@ -176,7 +179,12 @@ class ModelDownloadWorker @AssistedInject constructor(
             ),
         )
         is DownloadedModelInstaller.Result.NotInstalled ->
-            failOrRetry(ResumableFileDownloader.Outcome.Failure(installed.message))
+            failOrRetry(
+                ResumableFileDownloader.Outcome.Failure(
+                    message = installed.message,
+                    bytesTransferred = downloaded.bytesTransferred,
+                ),
+            )
     }
 
     /**

@@ -16,7 +16,9 @@ import javax.inject.Inject
  * hash with the one the source published ([DownloadedModelCheck.of]), and only then moves the file
  * to its final name and registers it. A file whose hash differs is deleted and never registered;
  * that is the whole point of reading the published hash. A file the source published no hash for
- * is installed as unchecked, and the registry records that nothing was checked.
+ * is installed without a source hash of its own; whether the model reads as checked is then decided
+ * by comparing the hash a checked download recorded earlier, if any, with the file now on disk
+ * (`LocalModel.matchesPublishedHash`).
  *
  * The file is hashed **before** the rename, so a file that fails its check never appears under a
  * model's name — not even for the moment between the rename and the check, where a dying process

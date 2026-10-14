@@ -128,6 +128,35 @@ class ModelDownloadWorkerTest {
     }
 
     @Test
+    fun `given a check that fails after a transfer that took several runs when it fails then it still retries`() =
+        runTest {
+            // Every lapse of the network constraint is a run of its own, so a long transfer
+            // can reach its first check on the third run. The bytes it fetched earn another try.
+            coEvery { downloader.download(any(), any(), any(), any()) } returns
+                downloadedPart(published = PUBLISHED).copy(bytesTransferred = 4_096L)
+            coEvery { installer.install(any(), any(), any()) } returns
+                DownloadedModelInstaller.Result.NotInstalled("The downloaded file could not be read to check it.")
+
+            val result = worker(runAttemptCount = 2).doWork()
+
+            assertTrue(result is ListenableWorker.Result.Retry)
+        }
+
+    @Test
+    fun `given a check that keeps failing on a complete part when the attempts are spent then it fails for good`() =
+        runTest {
+            // A run that found the part complete fetched nothing: a check failing again
+            // there counts against the attempts, so an unreadable file cannot loop forever.
+            coEvery { downloader.download(any(), any(), any(), any()) } returns downloadedPart(published = PUBLISHED)
+            coEvery { installer.install(any(), any(), any()) } returns
+                DownloadedModelInstaller.Result.NotInstalled("The downloaded file could not be read to check it.")
+
+            val result = worker(runAttemptCount = 2).doWork()
+
+            assertTrue(result is ListenableWorker.Result.Failure)
+        }
+
+    @Test
     fun `given a published hash the file does not match when the real installer runs then nothing is registered`() =
         runTest {
             // The guard of the download check, end to end through the worker: the real
