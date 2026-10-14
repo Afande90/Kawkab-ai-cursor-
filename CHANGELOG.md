@@ -116,11 +116,11 @@ details.
   is set on the phone, and the scheduled tasks that were not carried; with nothing
   left to do, the app says *Restored*. A download from the sheet sends your
   Hugging Face token when one is saved. One that stops without a model says why
-  under it: a gated model on Hugging Face asks for its licence and your token in
-  Models, a link that no longer works says the server refused it, and a pause or
-  a file that failed its checksum is told there too. The reminder names where
-  each secret goes: API keys in Settings, the token in Models, MCP sign-ins in
-  Tools.
+  under it: a refusal from Hugging Face points to the model's licence and your
+  token in Models, anything else says the download didn't finish, and a pause or
+  a file that failed its checksum shows there as well as on the Models screen.
+  The reminder names where each secret goes: API keys in Settings, the token in
+  Models, MCP sign-ins in Tools.
   Moving between Google Play and a release build is now a backup and a restore.
 - **Each downloaded model remembers where it came from.** A model downloaded
   from a link or from Discover keeps that address with it. A model found on

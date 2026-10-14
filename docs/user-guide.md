@@ -149,7 +149,9 @@ post notifications), and a message, once, on the Models screen the next time
 you open it while no other download is running — or on setup's Download step,
 or the model's page in Discover, if you reach one of those first. On the Models
 screen a paused download's message has a **Continue** button; elsewhere, its
-**Get**, **Install** or **Download** button continues it.
+**Get**, **Install** or **Download** button continues it. After a restore, the
+sheet over the chat also says it under the model, for as long as the stop is
+not shown on one of those screens or the download started again.
 
 ### 3. Activate the model
 
@@ -3135,13 +3137,13 @@ again — **Download** where the backup recorded where a model came from,
 sign-ins again when the backup was made without them and none is set on this
 phone, and the scheduled tasks that were not carried. Downloads go on after
 the sheet closes. A download sends your Hugging Face token when one is saved
-on this phone. One that stops without a model says why under it — a model
-gated on Hugging Face needs its licence accepted there and your token in
-**Models**; a link that no longer works shows the server's refusal; a pause or
-a file that failed its checksum is told there as well, and **Download** goes
-on from the pause. A backup made without keys brings no token: unless this
-phone has one of its own, add it before downloading a gated model. With
-nothing left to do, the app just says *Restored*. A
+on this phone. One that stops without a model says why under it: when Hugging
+Face refuses it, a gated model needs its licence accepted there and your token
+in **Models**; anything else says the download didn't finish. A pause or a file
+that failed its checksum shows under its model too, until the download starts
+again. A backup made without keys brings no token: unless this phone has one of
+its own, add it before downloading a gated model. With nothing left to do, the
+app just says *Restored*. A
 restored phone takes over the backup's settings and usage statistics. Closing the
 summary, or cancelling the check, deletes the copy kept aside.
 
