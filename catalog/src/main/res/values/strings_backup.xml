@@ -26,7 +26,8 @@
     <string name="knotwork_backup_pw2_label">Password again</string>
     <string name="knotwork_backup_pw2_mismatch">Doesn’t match the password above.</string>
     <string name="knotwork_backup_secrets_label">Include API keys and sign-ins</string>
-    <string name="knotwork_backup_secrets_sub">Cloud API keys, the Hugging Face token and MCP sign-ins. Left off, you enter them again after a restore.</string>
+    <!-- The designer's first sentence; the second is the app's own: a phone restored to keeps its own keys. -->
+    <string name="knotwork_backup_secrets_sub">Cloud API keys, the Hugging Face token and MCP sign-ins. Left off, a new phone needs them entered again.</string>
     <string name="knotwork_backup_choose_where">Choose where to save</string>
 
     <!-- Back up · working -->

@@ -3092,9 +3092,9 @@ store is left out, and the result says how many were.
 **Restore from file…** puts a backup back — on this phone or a new one. It
 replaces the app's data here — chats, memory, pipelines, run history, triggers,
 settings and files — with the backup's. The model files stay, and so do this
-phone's API keys and Hugging Face token, except those the backup carries. MCP
-servers come from the backup, so a sign-in this phone holds for a server the
-backup does not list is kept but not used.
+phone's API keys, Hugging Face token and MCP sign-ins, except those the backup
+carries. MCP servers come from the backup, so a sign-in for a server the backup
+does not list is kept but not used.
 
 1. **Pick the file** in the system's *Open document* screen. Any file can be
    picked; the backup's own header decides. A file that is not a backup is
@@ -3116,10 +3116,10 @@ backup does not list is kept but not used.
 After the restart the chat shows what is left to do: the models to download
 again — **Download** where the backup recorded where a model came from,
 **Discover** where it did not — a reminder to enter your keys, token and
-sign-ins again when the backup did not bring them and none is set on this
-phone, and the scheduled tasks that were not carried. Downloads go on after the sheet closes.
-With nothing left to do, the app just says *Restored*. A restored
-phone takes over the backup's settings and usage statistics. Closing the
+sign-ins again when the backup was made without them and none is set on this
+phone, and the scheduled tasks that were not carried. Downloads go on after
+the sheet closes. With nothing left to do, the app just says *Restored*. A
+restored phone takes over the backup's settings and usage statistics. Closing the
 summary, or cancelling the check, deletes the copy kept aside.
 
 The file's layout and cryptography are described in
