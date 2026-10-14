@@ -70,7 +70,11 @@ file you make yourself (section 3.9):
   ran on, so the run can be checked later. It is deleted with the run, under
   the same retention setting.
 - A checksum (SHA-256) of each downloaded model file, so a run can name the
-  exact model it used.
+  exact model it used, and — when a download was checked against it — the one
+  Hugging Face published for the file.
+- For a model download that paused or did not match its checksum, the file's
+  name, the address it downloads from and the reason, until the app has shown
+  it to you or you start or cancel that download.
 - Files in the agent workspace — what the agent wrote and what you imported.
 - Triggers, scheduled tasks, and the trigger journal.
 - The journal of requests other apps sent (section 3.6).
@@ -176,7 +180,9 @@ Downloading an on-device model contacts the host serving it: Hugging Face for
 the models offered in the app, or any URL you paste yourself. These are
 ordinary file downloads. If you saved a Hugging Face access token, it goes only
 to Hugging Face (`huggingface.co`), with its model downloads — never to a link
-you paste for another host. Browsing the catalogue is anonymous.
+you paste for another host. Checking a file sends nothing extra: the checksum
+comes in Hugging Face's answer to the download itself. Browsing the catalogue
+is anonymous.
 
 ### 3.4 Outbound requests from tools
 
@@ -372,7 +378,7 @@ it does not list is kept but goes unused. The app opens no connection to do it.
 | Permission | Why | When |
 |---|---|---|
 | Internet, network state | Model downloads, and the opt-in cloud/MCP/tool paths above | Always declared; used only for the paths you configure |
-| Notifications | Run progress, background-run results, confirmation prompts | Asked on first run |
+| Notifications | Run progress, background-run results, confirmation prompts, model downloads and why one stopped | Asked on first run |
 | Microphone | Voice input you record for a message; processed on-device | Asked when you first record audio |
 | Approximate and precise location | Only to match a Wi-Fi trigger against specific network names — Android ties Wi-Fi identity to location | Asked only if you scope a Wi-Fi trigger to named networks |
 | Foreground service, wake lock | Keeping a model download or a running pipeline alive while the screen is off | Used only while such work is running |

@@ -132,17 +132,23 @@ unfinished download never masquerades as an installed model.
 A file from Hugging Face is **checked before it becomes a model** when
 Hugging Face names its SHA-256 in the answer to the download — it does for
 the large files it stores in LFS. The bytes that arrived must have that hash.
-A file that does not match is deleted, and the Models screen, Discover or
-setup — whichever is following the download — says so; start it again. A file
+A file that does not match is deleted and the app says so (see below); start
+it again. A file
 with no hash named, from another host for instance, is installed without a
 check and marked **Not verified**
 (see [Managing local models](#managing-local-models)).
 
 A long download **pauses after five hours**. Android lets an app transfer
 data out of sight for six hours a day and stops the app if a transfer runs
-longer, so the download stops itself first. The screen you started it from says
-why; if you left it, the model just shows as not downloaded yet. Start the
-download again and it continues from the same byte.
+longer, so the download stops itself first. Start the download again and it
+continues from the same byte.
+
+A pause, and a file that did not match its checksum, usually happen while you
+are elsewhere, so the app tells you twice: a notification (when the app may
+post notifications), and the next screen that shows downloads — the Models
+screen, setup, or the model's page in Discover — once. On the Models screen a
+paused download's message has a **Continue** button; elsewhere, its **Get**,
+**Install** or **Download** button continues it.
 
 ### 3. Activate the model
 
