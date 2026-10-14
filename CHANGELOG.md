@@ -111,10 +111,13 @@ details.
   not a backup, one in a newer format or with a newer database, a damaged or
   cut-short file and too little free space are each told in their own words.
   After the restart a sheet over the chat lists the models to download again —
-  straight from where each came from, or through Discover — a reminder to enter
+  straight from where each came from, with your Hugging Face token when one is
+  saved, or through Discover; a download that fails says why under the model,
+  and a gated one asks for its licence and your token — a reminder to enter
   keys, token and sign-ins again when the backup was made without them and none
-  is set on the phone, and the scheduled tasks that were not carried; with nothing
-  left to do, the app says *Restored*.
+  is set on the phone (API keys in Settings, the token in Models, sign-ins in
+  Tools), and the scheduled tasks that were not carried; with nothing left to
+  do, the app says *Restored*.
   Moving between Google Play and a release build is now a backup and a restore.
 - **Each downloaded model remembers where it came from.** A model downloaded
   from a link or from Discover keeps that address with it. A model found on

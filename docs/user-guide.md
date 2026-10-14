@@ -3134,7 +3134,11 @@ again — **Download** where the backup recorded where a model came from,
 **Discover** where it did not — a reminder to enter your keys, token and
 sign-ins again when the backup was made without them and none is set on this
 phone, and the scheduled tasks that were not carried. Downloads go on after
-the sheet closes. With nothing left to do, the app just says *Restored*. A
+the sheet closes. A download sends your Hugging Face token when one is saved
+on this phone, and one that fails says why under the model: a model gated on
+Hugging Face needs its licence accepted there and your token in **Models**. A
+backup made without keys brings no token, so that is where a gated model
+stops. With nothing left to do, the app just says *Restored*. A
 restored phone takes over the backup's settings and usage statistics. Closing the
 summary, or cancelling the check, deletes the copy kept aside.
 
