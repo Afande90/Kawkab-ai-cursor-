@@ -92,8 +92,9 @@ internal class SafBackupDocuments(
         @SuppressLint("Recycle") // Returned to the caller, who closes it.
         val stream = try {
             resolver.openInputStream(document.toUri())
-        } catch (e: SecurityException) {
-            throw IOException("the provider refused the document", e)
+        } catch (e: RuntimeException) {
+            // A refusal, or a provider's own failure crossing the binder: the file cannot be read either way.
+            throw IOException("the provider could not open the document", e)
         }
         stream ?: throw IOException("the provider opened no stream")
     }

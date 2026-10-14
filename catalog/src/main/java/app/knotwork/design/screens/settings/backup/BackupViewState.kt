@@ -218,6 +218,9 @@ enum class RestoreProblemKind {
 
     /** This phone's own database key cannot be read, so nothing can be restored here. */
     PHONE_KEY_UNAVAILABLE,
+
+    /** The checked backup could not be set to apply; nothing changed, and the check would have to start over. */
+    NOT_STARTED,
 }
 
 /**

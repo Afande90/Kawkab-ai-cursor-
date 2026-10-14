@@ -13,21 +13,24 @@ import app.knotwork.design.screens.settings.backup.AfterRestoreModel
 import app.knotwork.design.screens.settings.backup.AfterRestoreState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import java.text.DateFormat
 import java.util.Date
 import javax.inject.Inject
 
 /**
  * What the app tells the user the first time it opens after a restore: a sheet over the chat with the models to
- * download again, the keys to enter again and the tasks that were not carried — or, when nothing is left to do,
- * the snackbar *Restored*.
+ * download again, the keys to enter again — when neither the backup nor this phone has any — and the tasks that were
+ * not carried; or, when nothing is left to do, the snackbar *Restored*.
  *
  * The report is read once and dismissed on *Done*; until then the sheet shows each time the chat does. A download
  * started here is the download worker's, as on the Models screen: it goes on after the sheet closes, and the
@@ -95,6 +98,13 @@ class AfterRestoreViewModel internal constructor(
                 }
                 render()
             }
+            // A download cancelled from its notification ends with no last state: the row is free again.
+            .onCompletion {
+                if (running?.first == name) {
+                    running = null
+                    render()
+                }
+            }
             .launchIn(viewModelScope)
     }
 
@@ -120,9 +130,17 @@ class AfterRestoreViewModel internal constructor(
     }
 
     private suspend fun load() {
-        val loaded = restorer.report() ?: return
+        val loaded = try {
+            restorer.report()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // An unreadable report is not worth the chat: nothing is shown.
+            Timber.w(e, "The restore report could not be read")
+            null
+        } ?: return
         val leftToDo = loaded.modelsToDownload.isNotEmpty() ||
-            !loaded.secretsApplied ||
+            keysToEnter(loaded) ||
             loaded.scheduledTasksLeftBehind > 0
         if (!leftToDo) {
             relay.post(appContext.getString(R.string.backup_snack_restored))
@@ -148,12 +166,15 @@ class AfterRestoreViewModel internal constructor(
                         canDownload = running == null,
                     )
                 },
-            enterKeysAgain = !current.secretsApplied,
+            enterKeysAgain = keysToEnter(current),
             tasksLeftBehind = current.scheduledTasksLeftBehind > 0,
         )
     }
 
     private companion object {
+        /** Keys are left to enter only when the backup carried none and this phone has none of its own. */
+        fun keysToEnter(report: RestoreReport): Boolean = !report.secretsApplied && !report.secretsOnPhone
+
         fun deviceDate(epochMillis: Long): String =
             DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(epochMillis))
     }

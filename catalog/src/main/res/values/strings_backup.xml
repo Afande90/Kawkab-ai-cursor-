@@ -95,6 +95,9 @@
     <string name="knotwork_backup_read_failed_body">The file stopped being readable, or this phone’s storage failed, while it was checked.</string>
     <!-- The app's own: the copy has no line for this phone's own database key being unreadable. -->
     <string name="knotwork_backup_phone_key_title">Can’t restore on this phone</string>
+    <!-- The app's own: the checked backup could not be set to apply. -->
+    <string name="knotwork_backup_not_started_title">Restore not started</string>
+    <string name="knotwork_backup_not_started_body">Knotwork couldn’t set the backup to apply. Try again from the start.</string>
     <string name="knotwork_backup_phone_key_body">Knotwork can’t read this phone’s own database key, so it can’t set the backup up here.</string>
 
     <!-- Restore · summary, confirm -->

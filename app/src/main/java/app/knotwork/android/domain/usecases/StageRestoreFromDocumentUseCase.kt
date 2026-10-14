@@ -35,5 +35,8 @@ class StageRestoreFromDocumentUseCase @Inject constructor(
         document: String,
         password: CharArray,
         onProgress: (RestoreProgress) -> Unit,
-    ): StagedRestore = restorer.stage(documents.openForRead(document), password, onProgress)
+    ): StagedRestore =
+        // The restorer closes the stream; `use` closes it too when the restorer fails or is cancelled before it
+        // takes it — waiting for its lock, or refusing because a committed restore waits for the restart.
+        documents.openForRead(document).use { restorer.stage(it, password, onProgress) }
 }

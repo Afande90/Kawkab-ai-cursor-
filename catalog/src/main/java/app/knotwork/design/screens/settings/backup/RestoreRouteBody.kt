@@ -27,6 +27,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -84,6 +87,11 @@ private fun RestoreProblemBody(problem: RestoreProblem) {
         )
         RestoreProblemKind.PHONE_KEY_UNAVAILABLE ->
             Triple(AppIcons.AlertCircle, error, R.string.knotwork_backup_phone_key_title)
+        RestoreProblemKind.NOT_STARTED -> Triple(
+            AppIcons.AlertCircle,
+            error,
+            R.string.knotwork_backup_not_started_title,
+        )
     }
     BackupResultHead(icon = icon, tone = tone, title = stringResource(title))
     val strong = KnotworkTextStyles.BodyBase.copy(fontWeight = FontWeight.Medium)
@@ -136,6 +144,7 @@ private fun problemBody(problem: RestoreProblem): String {
         }
         RestoreProblemKind.READ_FAILED -> stringResource(R.string.knotwork_backup_read_failed_body)
         RestoreProblemKind.PHONE_KEY_UNAVAILABLE -> stringResource(R.string.knotwork_backup_phone_key_body)
+        RestoreProblemKind.NOT_STARTED -> stringResource(R.string.knotwork_backup_not_started_body)
         RestoreProblemKind.NOT_A_BACKUP -> ""
     }
 }
@@ -149,10 +158,19 @@ private fun RestorePasswordBody(form: RestorePassword, callbacks: RestoreCallbac
         style = KnotworkTextStyles.BodyBase,
         color = KnotworkTheme.extended.onSurface2,
     )
+    val wrong = stringResource(R.string.knotwork_backup_wrong_password)
+    // A refused password is read out with the field. Focus is not forced back into it: the field holds a plain
+    // string, so a programmatic focus puts the caret before the kept text, where a retyped password would land.
     KnotworkField(
         label = stringResource(R.string.knotwork_backup_pw_label),
         isError = form.wrongPassword,
-        errorText = stringResource(R.string.knotwork_backup_wrong_password),
+        errorText = wrong,
+        modifier = Modifier.semantics {
+            if (form.wrongPassword) {
+                liveRegion = LiveRegionMode.Polite
+                error(wrong)
+            }
+        },
     ) {
         KnotworkPasswordField(
             value = form.password,
@@ -375,24 +393,30 @@ private fun statCells(counts: RestoreCounts): List<Pair<String, String>> {
  */
 @Composable
 internal fun RestoringScreen(modifier: Modifier = Modifier) {
+    val title = stringResource(R.string.knotwork_backup_restoring)
+    val line = stringResource(R.string.knotwork_backup_restoring_sub)
     Column(
         modifier = modifier
             .background(MaterialTheme.colorScheme.surface)
             .windowInsetsPadding(WindowInsets.safeDrawing)
             .padding(32.dp)
-            .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
+            // Read once, as the two lines; the loader's own label is decoration here.
+            .clearAndSetSemantics {
+                liveRegion = LiveRegionMode.Polite
+                contentDescription = "$title $line"
+            },
         verticalArrangement = Arrangement.spacedBy(18.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         KnotworkLoader()
         Text(
-            text = stringResource(R.string.knotwork_backup_restoring),
+            text = title,
             style = KnotworkTextStyles.TitleLg,
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
         )
         Text(
-            text = stringResource(R.string.knotwork_backup_restoring_sub),
+            text = line,
             style = KnotworkTextStyles.BodyBase,
             color = KnotworkTheme.extended.onSurface2,
             textAlign = TextAlign.Center,

@@ -224,6 +224,8 @@ class RestoreViewModelTest {
                 BackupRestoreException(RestoreFailure.READ_FAILED, "io") to
                     RestoreProblem(RestoreProblemKind.READ_FAILED, FILE),
                 IOException("provider") to RestoreProblem(RestoreProblemKind.READ_FAILED, FILE),
+                IllegalStateException("a committed restore waits") to
+                    RestoreProblem(RestoreProblemKind.READ_FAILED, FILE),
             )
             cases.forEach { (failure, expected) ->
                 coEvery { stage(DOCUMENT, any(), any()) } throws failure
@@ -276,8 +278,7 @@ class RestoreViewModelTest {
     @Test
     fun `given the summary when Replace is typed loosely and confirmed then it commits and asks for a restart`() =
         runTest(dispatcher) {
-            // Given
-            val events = events()
+            // Given — nothing collects: a recreated screen must still find the restart.
             reachSummary()
             viewModel.onReplace()
             assertEquals("", (viewModel.route.value as RestoreSummary).confirmInput)
@@ -290,7 +291,7 @@ class RestoreViewModelTest {
             assertEquals(Restoring, viewModel.route.value)
             advanceUntilIdle()
             coVerify(exactly = 1) { restorer.commit(applySecrets = true) }
-            assertEquals(listOf<RestoreEvent>(RestoreEvent.Restart), events)
+            assertTrue(viewModel.restartRequested.value)
             assertTrue("Back does nothing while restoring", viewModel.onBack())
             assertEquals(Restoring, viewModel.route.value)
         }
@@ -319,8 +320,48 @@ class RestoreViewModelTest {
             viewModel.onConfirmReplace()
             advanceUntilIdle()
 
+            assertEquals(RestoreProblem(RestoreProblemKind.NOT_STARTED, FILE), viewModel.route.value)
+            coVerify(exactly = 1) { restorer.discard() }
+            assertFalse(viewModel.restartRequested.value)
+        }
+
+    @Test
+    fun `given this phone's data that cannot be counted when the check ends then the staged copy goes`() =
+        runTest(dispatcher) {
+            coEvery { stage(DOCUMENT, any(), any()) } returns STAGED
+            coEvery { summarize(MANIFEST) } throws IllegalStateException("database")
+            typePassword()
+
+            viewModel.onCheck()
+            advanceUntilIdle()
+
             assertEquals(RestoreProblem(RestoreProblemKind.READ_FAILED, FILE), viewModel.route.value)
             coVerify(exactly = 1) { restorer.discard() }
+        }
+
+    @Test
+    fun `given a check running when another file comes back from a picker then it is ignored`() = runTest(dispatcher) {
+        coEvery { stage(DOCUMENT, any(), any()) } coAnswers { awaitCancellation() }
+        typePassword()
+        viewModel.onCheck()
+        advanceUntilIdle()
+
+        viewModel.onDocumentPicked("content://downloads/document/10")
+        advanceUntilIdle()
+
+        assertTrue(viewModel.route.value is RestoreChecking)
+        coVerify(exactly = 1) { inspect(any()) }
+    }
+
+    @Test
+    fun `given a provider that fails in its own way when the file is opened then it cannot be read, no crash`() =
+        runTest(dispatcher) {
+            coEvery { inspect(DOCUMENT) } throws IllegalArgumentException("provider")
+
+            viewModel.onDocumentPicked(DOCUMENT)
+            advanceUntilIdle()
+
+            assertEquals(RestoreProblem(RestoreProblemKind.READ_FAILED), viewModel.route.value)
         }
 
     @Test

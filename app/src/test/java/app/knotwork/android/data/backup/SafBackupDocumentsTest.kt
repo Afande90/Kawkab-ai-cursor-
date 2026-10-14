@@ -357,10 +357,11 @@ class SafBackupDocumentsTest {
 
     @Test
     fun `given a provider that refuses or opens nothing when read then it is an IO failure`() = runTest {
-        every { resolver.openInputStream(any()) } throws SecurityException("revoked") andThen null
+        every { resolver.openInputStream(any()) } throws SecurityException("revoked") andThen null andThenThrows
+            IllegalArgumentException("provider died")
         val documents = documents()
 
-        listOf(1, 2).forEach { attempt ->
+        listOf(1, 2, 3).forEach { attempt ->
             val failure = try {
                 documents.openForRead(DOCUMENT)
                 null

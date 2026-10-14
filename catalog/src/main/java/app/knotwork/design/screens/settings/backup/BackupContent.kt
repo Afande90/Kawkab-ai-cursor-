@@ -169,7 +169,8 @@ private fun RestoreRouteAction(route: RestoreRoute, callbacks: BackupCallbacks) 
         is RestoreProblem -> {
             val (label, action) = when (route.kind) {
                 RestoreProblemKind.NO_SPACE -> R.string.knotwork_backup_try_again to restore.onTryAgain
-                RestoreProblemKind.PHONE_KEY_UNAVAILABLE -> R.string.knotwork_backup_close to callbacks.onCloseRoute
+                RestoreProblemKind.PHONE_KEY_UNAVAILABLE, RestoreProblemKind.NOT_STARTED ->
+                    R.string.knotwork_backup_close to callbacks.onCloseRoute
                 else -> R.string.knotwork_backup_choose_another to restore.onChooseAnother
             }
             KnotworkPrimaryButton(text = stringResource(label), onClick = action, modifier = Modifier.fillMaxWidth())

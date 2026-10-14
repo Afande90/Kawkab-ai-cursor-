@@ -119,6 +119,11 @@ class RestoreSnapshotTest {
     }
 
     @Test
+    fun restore_problem_not_started_light() = snapshot("problem_not_started", dark = false) {
+        RouteScreen(RestoreProblem(RestoreProblemKind.NOT_STARTED, FILE))
+    }
+
+    @Test
     fun restore_summary_light() = snapshot("summary", dark = false) { RouteScreen(SUMMARY) }
 
     @Test

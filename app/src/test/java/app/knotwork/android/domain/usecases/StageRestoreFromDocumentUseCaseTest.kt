@@ -8,13 +8,18 @@ import app.knotwork.android.domain.backup.BackupRestorer
 import app.knotwork.android.domain.backup.StagedRestore
 import io.mockk.coEvery
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Test
 import java.io.ByteArrayInputStream
+import java.io.InputStream
 
-/** [StageRestoreFromDocumentUseCase]: the picked document's stream and the password go to the restorer as given. */
+/**
+ * [StageRestoreFromDocumentUseCase]: the picked document's stream and the password go to the restorer as given, and
+ * the stream is closed even when the restorer refuses before taking it.
+ */
 class StageRestoreFromDocumentUseCaseTest {
 
     @Test
@@ -31,6 +36,26 @@ class StageRestoreFromDocumentUseCaseTest {
         // Then
         assertSame(STAGED, staged)
         assertEquals("brass lantern otter quiet", String(password))
+    }
+
+    @Test
+    fun `given a restorer that refuses before it takes the stream when staged then the stream is closed`() = runTest {
+        // Given — a committed restore waits for the restart, so the restorer refuses at once.
+        val stream = mockk<InputStream>(relaxed = true)
+        val documents = mockk<BackupDocuments> { coEvery { openForRead(DOCUMENT) } returns stream }
+        val restorer = mockk<BackupRestorer> {
+            coEvery { stage(any(), any(), any()) } throws IllegalStateException("a committed restore waits")
+        }
+
+        // When
+        try {
+            StageRestoreFromDocumentUseCase(documents, restorer)(DOCUMENT, "pw".toCharArray()) { }
+        } catch (e: IllegalStateException) {
+            // Expected: the caller hears of it.
+        }
+
+        // Then
+        verify { stream.close() }
     }
 
     private companion object {

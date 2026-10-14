@@ -454,6 +454,8 @@ class BackupRestorerImplTest {
                     secretsApplied = true,
                     // When the backup was made, for the sheet's *From the backup made on …*.
                     backupCreatedAtEpochMillis = CREATED_AT,
+                    // The secrets just written are on the phone: nothing to enter again.
+                    secretsOnPhone = true,
                 ),
                 restorer.report(),
             )
@@ -822,16 +824,18 @@ class BackupRestorerImplTest {
             throw IllegalStateException("keystore")
     }
 
-    /** An owner that records what it is asked to restore. */
+    /** An owner that records what it is asked to restore, and holds the secrets written to it. */
     private class RecordingOwner(override val storeName: String) : BackedUpSecrets {
         val restored = mutableListOf<Map<String, String>>()
+        private val secrets = mutableMapOf<String, String>()
 
         override suspend fun alwaysEntries(): Map<String, String> = emptyMap()
 
-        override suspend fun secretEntries(): Map<String, String> = emptyMap()
+        override suspend fun secretEntries(): Map<String, String> = secrets.toMap()
 
         override suspend fun restore(entries: Map<String, String>, secrets: Boolean): Int {
             restored += entries
+            if (secrets) this.secrets += entries
             return entries.size
         }
     }

@@ -19,6 +19,7 @@ import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -29,6 +30,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
+import java.io.IOException
 
 /**
  * [AfterRestoreViewModel]: the sheet from the report, the snackbar when nothing is left to do, the downloads it
@@ -99,7 +101,7 @@ class AfterRestoreViewModelTest {
         runTest(dispatcher) {
             // A backup without keys, onto a phone with nothing else left: the keys are still the user's to enter.
             coEvery { restorer.report() } returns
-                RestoreReport(emptyList(), scheduledTasksLeftBehind = 0, secretsApplied = false)
+                RestoreReport(emptyList(), scheduledTasksLeftBehind = 0, secretsApplied = false, secretsOnPhone = false)
 
             val viewModel = viewModel()
             advanceUntilIdle()
@@ -107,6 +109,65 @@ class AfterRestoreViewModelTest {
             assertEquals(true, viewModel.state.value?.enterKeysAgain)
             verify(exactly = 0) { relay.post(any()) }
         }
+
+    @Test
+    fun `given a backup without keys onto a phone that keeps its own when the chat opens then nothing is asked`() =
+        runTest(dispatcher) {
+            // The phone's own keys stay through a restore: telling the user to enter them again would be false.
+            coEvery { restorer.report() } returns
+                RestoreReport(emptyList(), scheduledTasksLeftBehind = 0, secretsApplied = false, secretsOnPhone = true)
+
+            val viewModel = viewModel()
+            advanceUntilIdle()
+
+            assertNull(viewModel.state.value)
+            verify { relay.post("Restored") }
+        }
+
+    @Test
+    fun `given a report that cannot be read when the chat opens then nothing shows and nothing breaks`() =
+        runTest(dispatcher) {
+            coEvery { restorer.report() } throws IOException("disk")
+
+            val viewModel = viewModel()
+            advanceUntilIdle()
+
+            assertNull(viewModel.state.value)
+        }
+
+    @Test
+    fun `given a download cancelled from its notification when its flow ends then the row is free again`() =
+        runTest(dispatcher) {
+            // The download's flow ends with no last state when its notification's Cancel stops it.
+            every { downloads.downloadModel(KNOWN.sourceUrl!!, KNOWN.name, any()) } returns
+                flowOf(DownloadState.Downloading(30))
+            coEvery { restorer.report() } returns REPORT
+            val viewModel = viewModel()
+            advanceUntilIdle()
+
+            viewModel.onDownload(KNOWN.name)
+            advanceUntilIdle()
+
+            val rows = viewModel.state.value!!.models
+            assertNull(rows.first { it.name == KNOWN.name }.progress)
+            assertEquals(listOf(true, true), rows.map { it.canDownload })
+        }
+
+    @Test
+    fun `given a running download when Done is tapped then the download goes on`() = runTest(dispatcher) {
+        coEvery { restorer.report() } returns REPORT
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        viewModel.onDownload(KNOWN.name)
+        advanceUntilIdle()
+
+        viewModel.onDone()
+        download.emit(DownloadState.Downloading(60))
+        advanceUntilIdle()
+
+        verify(exactly = 0) { downloads.cancelDownload(any()) }
+        assertNull(viewModel.state.value)
+    }
 
     @Test
     fun `given no report when the chat opens then nothing shows`() = runTest(dispatcher) {
@@ -208,6 +269,7 @@ class AfterRestoreViewModelTest {
             scheduledTasksLeftBehind = 2,
             secretsApplied = false,
             backupCreatedAtEpochMillis = 5_000,
+            secretsOnPhone = false,
         )
     }
 }

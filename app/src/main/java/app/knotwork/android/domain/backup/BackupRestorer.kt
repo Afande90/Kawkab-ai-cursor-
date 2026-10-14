@@ -167,12 +167,16 @@ class BackupRestoreException(
  * @property modelsToDownload The models the restored registry lists whose file is not on this phone.
  * @property scheduledTasksLeftBehind How many tasks the agent had scheduled on the phone the backup came
  *   from; they are not carried over.
- * @property secretsApplied Whether secrets from the archive replaced this phone's.
+ * @property secretsApplied Whether secrets from the archive were written to this phone. Those of this phone the
+ *   archive did not carry stay either way.
  * @property backupCreatedAtEpochMillis When the restored backup was made; `null` in a report an earlier build wrote.
+ * @property secretsOnPhone Whether this phone holds any API key, token or sign-in after the restore — when it
+ *   holds none and the archive carried none, the user has them to enter again.
  */
 data class RestoreReport(
     val modelsToDownload: List<BackupModelEntry>,
     val scheduledTasksLeftBehind: Int,
     val secretsApplied: Boolean,
     val backupCreatedAtEpochMillis: Long? = null,
+    val secretsOnPhone: Boolean = true,
 )

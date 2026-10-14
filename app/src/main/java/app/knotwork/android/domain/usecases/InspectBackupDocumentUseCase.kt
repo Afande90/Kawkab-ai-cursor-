@@ -31,7 +31,8 @@ class InspectBackupDocumentUseCase @Inject constructor(
         val name = documents.displayName(document)
         val size = documents.sizeOf(document)
         return try {
-            PickedBackup.Readable(name, size, restorer.inspect(documents.openForRead(document)))
+            // The restorer closes the stream; `use` closes it too when the restorer fails before it takes it.
+            PickedBackup.Readable(name, size, documents.openForRead(document).use { restorer.inspect(it) })
         } catch (e: BackupFormatException) {
             PickedBackup.Unreadable(name, e)
         }

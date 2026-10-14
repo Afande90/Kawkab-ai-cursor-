@@ -46,7 +46,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.io.IOException
 import java.text.DateFormat
 import java.util.Date
 import javax.inject.Inject
@@ -56,8 +55,9 @@ import javax.inject.Inject
  * summary, the typed confirm, and the commit after which the app restarts.
  *
  * Nothing on the phone changes before the confirm: the check stages a copy, and *Close* or *Cancel* discards it; a
- * copy left by leaving the screen is removed at the next start, as any uncommitted restore is. The password lives here for the route only — kept for *Try again* after there was not
- * enough space, dropped when the route closes, never saved; the copy handed to the check is wiped after it.
+ * copy left by leaving the screen is removed at the next start, as any uncommitted restore is. The password lives
+ * here for the route only — kept for *Try again* after there was not enough space, dropped when the route closes,
+ * never saved; the copy handed to the check is wiped after it.
  *
  * @property inspect Reads a picked file's open header, name and size.
  * @property stage Checks and stages the backup with its password.
@@ -94,8 +94,16 @@ class RestoreViewModel internal constructor(
     private val _events =
         MutableSharedFlow<RestoreEvent>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
-    /** One-shot requests to the screen: open the picker, restart the app. */
+    /** One-shot requests to the screen: open the picker. */
     val events: SharedFlow<RestoreEvent> = _events.asSharedFlow()
+
+    private val _restartRequested = MutableStateFlow(false)
+
+    /**
+     * Whether the restore is committed and the app must restart to apply it. Held as state, not sent as an event:
+     * a rotation while the commit finishes must not leave the screen on *Restoring…* with nothing to restart it.
+     */
+    val restartRequested: StateFlow<Boolean> = _restartRequested.asStateFlow()
 
     private var document: String? = null
     private var file: RestoreFile? = null
@@ -178,15 +186,15 @@ class RestoreViewModel internal constructor(
         job = viewModelScope.launch {
             try {
                 withContext(NonCancellable) { restorer.commit(applySecrets = toCommit.manifest.secretsIncluded) }
-                _events.tryEmit(RestoreEvent.Restart)
+                _restartRequested.value = true
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                // Before the commit marker nothing changed; the staged copy goes, and the user is told.
+                // The commit throws only before its marker is written: nothing changed. The staged copy goes.
                 Timber.w(e, "A restore could not be committed")
                 withContext(NonCancellable) { restorer.discard() }
                 staged = null
-                _route.value = RestoreProblem(RestoreProblemKind.READ_FAILED, file)
+                _route.value = RestoreProblem(RestoreProblemKind.NOT_STARTED, file)
             }
         }
     }
@@ -250,7 +258,8 @@ class RestoreViewModel internal constructor(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: IOException) {
+        } catch (e: Exception) {
+            // The picked file, or its provider, failed: it cannot be read, whatever the reason.
             Timber.w(e, "A picked backup could not be opened")
             _route.value = RestoreProblem(RestoreProblemKind.READ_FAILED)
         }
@@ -266,7 +275,16 @@ class RestoreViewModel internal constructor(
             try {
                 val result = stage(target, chars) { progress -> show(progress) }
                 staged = result
-                val summary = summarize(result.manifest)
+                val summary = try {
+                    summarize(result.manifest)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    // Checked but not weighed: the staged copy goes rather than outlive the route unseen.
+                    withContext(NonCancellable) { restorer.discard() }
+                    staged = null
+                    throw e
+                }
                 _route.value = RestoreSummary(
                     fromBackup = countsOf(result.manifest.counts),
                     keysIncluded = result.manifest.secretsIncluded,
@@ -284,11 +302,9 @@ class RestoreViewModel internal constructor(
                 }
             } catch (e: BackupRestoreException) {
                 _route.value = problemOf(e, shown)
-            } catch (e: IOException) {
-                Timber.w(e, "A backup could not be read while it was checked")
-                _route.value = RestoreProblem(RestoreProblemKind.READ_FAILED, shown)
-            } catch (e: IllegalStateException) {
-                Timber.w(e, "A backup could not be staged")
+            } catch (e: Exception) {
+                // The file or its provider failed mid-check, or this phone's own data could not be counted.
+                Timber.w(e, "A backup could not be checked")
                 _route.value = RestoreProblem(RestoreProblemKind.READ_FAILED, shown)
             } finally {
                 chars.fill(' ')
@@ -359,7 +375,4 @@ class RestoreViewModel internal constructor(
 sealed interface RestoreEvent {
     /** Open the system picker to choose a backup. */
     data object PickDocument : RestoreEvent
-
-    /** The restore is committed: restart the app, which applies it. */
-    data object Restart : RestoreEvent
 }

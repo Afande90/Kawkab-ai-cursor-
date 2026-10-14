@@ -40,6 +40,7 @@ fun BackupScreen(
 ) {
     val backupState by viewModel.state.collectAsStateWithLifecycle()
     val restoreRoute by restoreViewModel.route.collectAsStateWithLifecycle()
+    val restartRequested by restoreViewModel.restartRequested.collectAsStateWithLifecycle()
     val cancelNotice by viewModel.cancelNotice.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
@@ -61,10 +62,13 @@ fun BackupScreen(
         restoreViewModel.events.collect { event ->
             when (event) {
                 RestoreEvent.PickDocument -> openPicker.launch(arrayOf(ANY_TYPE))
-                // The next start applies the committed restore; ProcessPhoenix starts it in a fresh process.
-                RestoreEvent.Restart -> ProcessPhoenix.triggerRebirth(context.applicationContext)
             }
         }
+    }
+    // The next start applies the committed restore; ProcessPhoenix starts it in a fresh process. State, not an
+    // event: the screen recreated while the commit finishes restarts all the same.
+    LaunchedEffect(restartRequested) {
+        if (restartRequested) ProcessPhoenix.triggerRebirth(context.applicationContext)
     }
     // Resolved in composition: the snackbar names the file the user has to delete when the provider refused. The
     // notice is cleared only once shown, so a rotation in between shows it again rather than never.

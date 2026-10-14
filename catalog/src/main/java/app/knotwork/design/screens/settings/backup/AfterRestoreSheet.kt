@@ -45,7 +45,8 @@ import app.knotwork.design.tokens.KnotworkTextStyles
  *
  * @property madeOnLabel When the restored backup was made, formatted for the user; `null` when not known.
  * @property models The backup's models whose file this phone does not have.
- * @property enterKeysAgain Whether the API keys and sign-ins have to be entered again — the backup had none.
+ * @property enterKeysAgain Whether the API keys and sign-ins have to be entered again — the backup had none, and
+ *   neither does this phone.
  * @property tasksLeftBehind Whether the phone the backup came from had tasks the agent scheduled; they are never
  *   carried.
  */
