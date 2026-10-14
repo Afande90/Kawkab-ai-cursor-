@@ -50,7 +50,8 @@ import javax.inject.Inject
  * Discover does, so a model from an access-gated repository downloads again. A download that stops without a model
  * says why on its row: a failure from the stream of a download started here, and a pause or a checksum mismatch from
  * the record the download keeps of it — read, never marked shown, so its notice and the Models screen still tell it,
- * and the row's reason leaves with the record when the download starts again anywhere.
+ * and the row's reason leaves with the record: when the download starts again anywhere, or another screen has shown
+ * it.
  *
  * @property restorer Reads and dismisses the report of the restore applied last.
  * @property downloads Starts, follows and cancels a model's download.
@@ -106,7 +107,7 @@ class AfterRestoreViewModel internal constructor(
 
     /**
      * Why the last download of each model started here failed, from its stream; a model leaves it when its next
-     * download starts here, or when it is found on the phone.
+     * download starts here, when a record of a later stop arrives, or when it is found on the phone.
      */
     private var failures = emptyMap<String, AfterRestoreDownloadFailure>()
 
@@ -243,6 +244,8 @@ class AfterRestoreViewModel internal constructor(
                         ModelDownloadFailure.OTHER -> null
                     }
                 }.toMap()
+                // A record is newer than any failure this sheet's stream reported for the same model.
+                failures = failures - recordedStops.keys
                 render()
             }
             .launchIn(viewModelScope)

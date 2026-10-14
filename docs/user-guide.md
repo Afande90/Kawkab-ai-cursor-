@@ -150,8 +150,8 @@ you open it while no other download is running — or on setup's Download step,
 or the model's page in Discover, if you reach one of those first. On the Models
 screen a paused download's message has a **Continue** button; elsewhere, its
 **Get**, **Install** or **Download** button continues it. After a restore, the
-sheet over the chat also says it under the model, for as long as the stop is
-not shown on one of those screens or the download started again.
+sheet over the chat also says it under the model, until one of those screens
+shows it or the download starts again.
 
 ### 3. Activate the model
 
@@ -3141,7 +3141,7 @@ on this phone. One that stops without a model says why under it: when Hugging
 Face refuses it, a gated model needs its licence accepted there and your token
 in **Models**; anything else says the download didn't finish. A pause or a file
 that failed its checksum shows under its model too, until the download starts
-again. A backup made without keys brings no token: unless this phone has one of
+again or another screen has shown it. A backup made without keys brings no token: unless this phone has one of
 its own, add it before downloading a gated model. With nothing left to do, the
 app just says *Restored*. A
 restored phone takes over the backup's settings and usage statistics. Closing the

@@ -675,12 +675,40 @@ class AfterRestoreViewModelTest {
         advanceUntilIdle()
         recordedStops.value = listOf(stop(KNOWN, ModelDownloadFailure.CHECKSUM_MISMATCH))
         advanceUntilIdle()
+        assertEquals(
+            AfterRestoreDownloadFailure.ChecksumMismatch,
+            viewModel.state.value!!.models.first { it.name == KNOWN.name }.failure,
+        )
 
         recordedStops.value = emptyList()
         advanceUntilIdle()
 
         assertNull(viewModel.state.value!!.models.first { it.name == KNOWN.name }.failure)
     }
+
+    @Test
+    fun `given a stream failure, then a record of a later stop, when the record goes then the failure stays gone`() =
+        runTest(dispatcher) {
+            // Failed here, then started again from the Models screen, where it paused and was shown.
+            every { downloads.downloadModel(KNOWN.sourceUrl!!, KNOWN.name, any()) } returns
+                flowOf(DownloadState.Error(DownloadError("timeout")))
+            coEvery { restorer.report() } returns REPORT
+            val viewModel = viewModel()
+            advanceUntilIdle()
+            viewModel.onDownload(KNOWN.name)
+            advanceUntilIdle()
+            recordedStops.value = listOf(stop(KNOWN, ModelDownloadFailure.PAUSED_TIME_LIMIT))
+            advanceUntilIdle()
+            assertEquals(
+                AfterRestoreDownloadFailure.Paused,
+                viewModel.state.value!!.models.first { it.name == KNOWN.name }.failure,
+            )
+
+            recordedStops.value = emptyList()
+            advanceUntilIdle()
+
+            assertNull(viewModel.state.value!!.models.first { it.name == KNOWN.name }.failure)
+        }
 
     @Test
     fun `given a stop recorded while its download runs here when the download ends then the reason shows only then`() =
