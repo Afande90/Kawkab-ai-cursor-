@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.toggleable
@@ -256,14 +254,12 @@ internal fun BackupStats(cells: List<Pair<String, String>>, modifier: Modifier =
     }
 }
 
-/** The action pinned under the scroll: a divider above, riding above the keyboard. */
+/** The action pinned under the scroll, with a divider above; the app shell keeps it above the keyboard. */
 @Composable
 internal fun BackupBottomAction(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
-    Column(
-        modifier = modifier.fillMaxWidth().background(
-            MaterialTheme.colorScheme.surface,
-        ).navigationBarsPadding().imePadding(),
-    ) {
+    // No inset padding here: the app shell lifts the whole screen over the keyboard, and its bottom navigation
+    // already sits on the system navigation bar — padding again left a gap the height of that bar.
+    Column(modifier = modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface)) {
         HorizontalDivider(color = KnotworkTheme.extended.divider)
         Box(
             modifier = Modifier.fillMaxWidth().padding(
