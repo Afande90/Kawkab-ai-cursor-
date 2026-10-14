@@ -9,6 +9,7 @@ import androidx.work.workDataOf
 import app.knotwork.android.data.services.DownloadForegroundBudget
 import app.knotwork.android.data.services.ModelDownloadWorker
 import app.knotwork.android.domain.models.DownloadState
+import app.knotwork.android.domain.models.ModelDownloadFailure
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -175,6 +176,45 @@ class AndroidModelDownloadManagerTest {
 
         val error = (states.single() as DownloadState.Error).error as AndroidModelDownloadManager.DownloadError
         assertEquals(null, error.code)
+        assertEquals(ModelDownloadFailure.OTHER, error.failure)
+    }
+
+    @Test
+    fun `given a file that failed its checksum when observed then the failure is named`() = runTest {
+        stubWorkInfos(
+            workInfo(
+                WorkInfo.State.FAILED,
+                output = workDataOf(
+                    ModelDownloadWorker.KEY_ERROR to "did not match",
+                    ModelDownloadWorker.KEY_ERROR_CODE to ModelDownloadWorker.NO_HTTP_CODE,
+                    ModelDownloadWorker.KEY_FAILURE to "CHECKSUM_MISMATCH",
+                ),
+            ),
+        )
+
+        val states = manager.downloadModel("http://example.com/m.bin", "m.bin").toList()
+
+        // A screen words this itself — free text is not something to branch on.
+        val error = (states.single() as DownloadState.Error).error as AndroidModelDownloadManager.DownloadError
+        assertEquals(ModelDownloadFailure.CHECKSUM_MISMATCH, error.failure)
+    }
+
+    @Test
+    fun `given a failure name this build does not know when observed then it reads as any other failure`() = runTest {
+        stubWorkInfos(
+            workInfo(
+                WorkInfo.State.FAILED,
+                output = workDataOf(
+                    ModelDownloadWorker.KEY_ERROR to "x",
+                    ModelDownloadWorker.KEY_FAILURE to "FROM_A_LATER_BUILD",
+                ),
+            ),
+        )
+
+        val states = manager.downloadModel("http://example.com/m.bin", "m.bin").toList()
+
+        val error = (states.single() as DownloadState.Error).error as AndroidModelDownloadManager.DownloadError
+        assertEquals(ModelDownloadFailure.OTHER, error.failure)
     }
 
     @Test

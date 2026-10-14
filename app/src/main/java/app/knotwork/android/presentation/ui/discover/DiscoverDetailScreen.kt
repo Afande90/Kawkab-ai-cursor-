@@ -53,13 +53,20 @@ fun DiscoverDetailScreen(
     val installedTemplate = stringResource(R.string.discover_install_success)
     val gatedError = stringResource(R.string.discover_install_gated)
     val genericError = stringResource(R.string.discover_install_failed)
+    val checksumError = stringResource(R.string.discover_install_checksum_mismatch)
+    val pausedError = stringResource(R.string.model_download_paused_time_limit)
     val detailLoadError = stringResource(R.string.discover_detail_load_error)
 
     LaunchedEffect(Unit) {
         viewModel.installEvents.collect { event ->
             val message = when (event) {
                 is DiscoverInstallEvent.Success -> installedTemplate.format(event.fileName)
-                is DiscoverInstallEvent.Failed -> if (event.gated) gatedError else genericError
+                is DiscoverInstallEvent.Failed -> when (event.reason) {
+                    DiscoverInstallEvent.FailureReason.GATED -> gatedError
+                    DiscoverInstallEvent.FailureReason.CHECKSUM_MISMATCH -> checksumError
+                    DiscoverInstallEvent.FailureReason.PAUSED -> pausedError
+                    DiscoverInstallEvent.FailureReason.OTHER -> genericError
+                }
             }
             snackbarHostState.showSnackbar(message)
         }

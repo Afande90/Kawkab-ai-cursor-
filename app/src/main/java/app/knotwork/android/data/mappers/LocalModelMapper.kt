@@ -19,6 +19,7 @@ fun LocalModelEntity.toDomain(): LocalModel = LocalModel(
     supportsAudio = this.supportsAudio,
     fileHash = fileHashOrNull(),
     sourceUrl = this.sourceUrl,
+    sourceSha256 = this.sourceSha256,
 )
 
 /**
@@ -49,4 +50,5 @@ fun LocalModel.toEntity(): LocalModelEntity = LocalModelEntity(
     sha256FileSize = this.fileHash?.fileSizeBytes,
     sha256FileModifiedAt = this.fileHash?.fileModifiedAtMs,
     sourceUrl = this.sourceUrl,
+    sourceSha256 = this.sourceSha256,
 )

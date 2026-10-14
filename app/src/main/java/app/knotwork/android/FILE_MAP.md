@@ -173,6 +173,7 @@ Only Kotlin files appear inside the generated blocks.
       - `Migration68To69.kt` - v68 → v69: lets a newer statement of a memory fact replace the stored one without losing it.
       - `Migration69To70.kt` - v69 → v70: lets a trigger's health be measured from when it was switched on, and remembers which silence the user was told about.
       - `Migration70To71.kt` - v70 → v71: remembers where each downloaded model came from.
+      - `Migration71To72.kt` - v71 → v72: remembers that a model's file was checked against its source.
       - `Migration9To10.kt` - Migration from version 9 to 10.
     - `models/` - Local DB entity models.
       - `BackgroundPromptEntity.kt` - The prompt of one queued background run, kept in the encrypted database so the background runtime's own store — unencrypted — never holds it.
@@ -302,6 +303,7 @@ Only Kotlin files appear inside the generated blocks.
     - `AttachmentOrphanCleanupScheduler.kt` - Owns the WorkManager scheduling of `AttachmentOrphanCleanupWorker`: a daily charging + device-idle job (unique-name + KEEP), same window as run retention. Wired from `MainActivity.onCreate`.
     - `AttachmentOrphanCleanupWorker.kt` - `@HiltWorker` running the daily file-maintenance pass: `CleanupOrphanAttachmentsUseCase` (backstop for attachments left behind by a failed eager delete), then `TransientCacheSweeper` over the cache's handoff directories.
     - `ChargingTriggerSweepWorker.kt` - One-shot `@HiltWorker` registered by `WorkManagerTriggerScheduler` as a `setRequiresCharging(true)` request, so `JobScheduler` wakes even a closed app within seconds of charging starting; loads the active **charging** triggers and hands each to `FireTriggerUseCase`. No firing logic of its own — the decision stays single-sourced with the periodic poll, which re-arms on unplug and re-enqueues this one-shot for the next charge edge.
+    - `DownloadedModelInstaller.kt` - Turns a finished download into an installed model — or refuses to.
     - `DownloadForegroundBudget.kt` - Keeps model downloads under Android's daily limit for `dataSync` foreground services.
     - `embedding/` - `EmbeddingProvider` implementations and the Koog client seam.
       - `CloudEmbeddingProvider.kt` - OpenAI `text-embedding-3-small` provider (1536-d) via Koog; on-device fallback when no key.
@@ -493,6 +495,7 @@ Only Kotlin files appear inside the generated blocks.
     - `CustomModelLink.kt` - A pasted model link checked before anything downloads: `Accepted` (link + file name = path's last segment without query/fragment), `Blank`, or `NotLitertlm`; shared by the Models screen and onboarding.
     - `DbPassphraseUnavailableException.kt` - Typed exception raised when the SQLCipher passphrase cannot be read (or does not match) while an encrypted DB file exists (`Reason`: PREFS_OPEN_FAILED / PASSPHRASE_MISSING / PASSPHRASE_MALFORMED / KEY_MISMATCH); routes to the splash data-locked recovery screen.
     - `DiscoverableModel.kt` - Domain models for Hugging Face discovery: `DiscoverableModelSummary` (list card — repoId/name/downloads/likes/licence/gated/file-count), `DiscoverableModelDetail` (+ model-card URL and the per-file breakdown) and `DiscoverableModelFile` (`.litertlm` file: name/size/resolve URL/installed).
+    - `DownloadedModelCheck.kt` - What the check of a freshly downloaded model file concluded, before the file is installed.
     - `DownloadState.kt` - Download state model.
     - `DynamicShortcutSpec.kt` - Framework-free description of one dynamic launcher shortcut (id / sessionId / clamped labels / rank), built by `BuildDynamicShortcutsUseCase`.
     - `EngineImageInput.kt` - A run's single image resolved for the engine: absolute JPEG path (for LiteRT-LM `Content.ImageFile`) plus pixel `width`/`height` and on-disk `sizeBytes` (for the `Image input: W×H, N KB` console line). Built by `TaskQueueManagerImpl` from the saved `MessageAttachment` and threaded into `GraphExecutionEngine`.
@@ -525,6 +528,7 @@ Only Kotlin files appear inside the generated blocks.
     - `MemorySummary.kt` - Lightweight memory projection (id/text/timestamp) used by `$MEMORY_SUMMARY`.
     - `MemoryVersion.kt` - One earlier version of a long-term memory chunk: a text the chunk held before a newer statement of the same fact replaced it in place.
     - `MessageAttachment.kt` - Image attached to a user `ChatMessage`: store-relative `path`, `mimeType` (always `image/jpeg` this phase), and downscaled pixel `width`/`height`. Pure-Kotlin value class carried on `ChatMessage` and `AgentTask`.
+    - `ModelDownloadFailure.kt` - Why a model download ended without installing a model, where a screen has to say more than "it failed".
     - `ModelFileHash.kt` - The SHA-256 of an installed model file, with the stamp of the file it was computed from.
     - `ModelFileStatus.kt` - Where an installed model file stands with its checksum, as a check of a past run needs to tell: a run can be repeated only on the file it ran on, and the checksum is how that is known.
     - `ModelPerformanceSample.kt` - One persisted inference measurement (TTFT / decode tok-s / total / peak native heap / `isBenchmark`), keyed by model path; `fromTimings(...)` derives the figures from raw timings (shared by executor + benchmark). Also hosts `ModelPerformanceSummary` (rolling-average fold; excludes degenerate 0-ttft / 0-decode samples from the means, keeps the window count, or `null` when empty).

@@ -29,9 +29,10 @@ import java.io.IOException
 /**
  * Covers the streaming downloader, with the weight on the paths that only
  * matter once a transfer can be interrupted: resuming a partial file, refusing
- * to resume when that would corrupt the result, and never letting an unfinished
- * transfer sit at the final file name where it would pass for an installed
- * model.
+ * to resume when that would corrupt the result, and never letting a file sit at
+ * the final file name before it was checked — where it would pass for an
+ * installed model. Also covers what the downloader reads about the file from
+ * Hugging Face's answer, and from whom it accepts it.
  */
 class ResumableFileDownloaderTest {
 
@@ -63,19 +64,21 @@ class ResumableFileDownloaderTest {
     }
 
     @Test
-    fun `given a fresh download when it completes then the file lands at its final name`() = runTest {
+    fun `given a fresh download when it completes then the whole file waits under its partial name`() = runTest {
         respondWith(response(code = 200, body = "mock_model_data"))
         val progress = mutableListOf<Int>()
 
         val outcome = downloader.download(url, "model.bin", authToken = null) { progress += it }
 
-        val success = outcome as ResumableFileDownloader.Outcome.Success
-        val file = File(tempDir, "model.bin")
-        assertEquals(file.absolutePath, success.path)
-        assertEquals("mock_model_data", file.readText())
+        val downloaded = outcome as ResumableFileDownloader.Outcome.Downloaded
+        assertEquals(File(tempDir, "model.bin").absolutePath, downloaded.targetPath)
+        assertEquals(partFileFor("model.bin").absolutePath, downloaded.partPath)
+        assertEquals("mock_model_data", File(downloaded.partPath).readText())
         assertEquals(listOf(100), progress)
-        // Nothing partial is left behind once the rename happened.
-        assertTrue(tempDir.listFiles()!!.none { it.name.endsWith(".part") })
+        // The final name appears only once the file passed its check — not here.
+        assertFalse(File(tempDir, "model.bin").exists())
+        // A host other than Hugging Face publishes no hash this downloader trusts.
+        assertNull(downloaded.publishedSha256)
     }
 
     @Test
@@ -99,10 +102,10 @@ class ResumableFileDownloaderTest {
         val outcome = downloader.download(url, "model.bin", authToken = null) {}
 
         assertEquals("bytes=3-", sentRequest.captured.header("Range"))
-        val success = outcome as ResumableFileDownloader.Outcome.Success
+        val downloaded = outcome as ResumableFileDownloader.Outcome.Downloaded
         // The prefix already on disk plus the newly fetched suffix — the
         // whole point of resuming.
-        assertEquals("abcdef", File(success.path).readText())
+        assertEquals("abcdef", File(downloaded.partPath).readText())
     }
 
     @Test
@@ -114,7 +117,7 @@ class ResumableFileDownloaderTest {
 
         val outcome = downloader.download(url, "model.bin", authToken = null) {}
 
-        assertEquals("whole-file", File((outcome as ResumableFileDownloader.Outcome.Success).path).readText())
+        assertEquals("whole-file", File((outcome as ResumableFileDownloader.Outcome.Downloaded).partPath).readText())
     }
 
     @Test
@@ -128,7 +131,7 @@ class ResumableFileDownloaderTest {
 
         val outcome = downloader.download(url, "model.bin", authToken = null) {}
 
-        assertEquals("fresh", File((outcome as ResumableFileDownloader.Outcome.Success).path).readText())
+        assertEquals("fresh", File((outcome as ResumableFileDownloader.Outcome.Downloaded).partPath).readText())
     }
 
     @Test
@@ -142,7 +145,7 @@ class ResumableFileDownloaderTest {
         // Splicing two different files together would yield a bundle that looks
         // complete and is unusable — so the mismatched part goes.
         assertFalse(stale.exists())
-        assertEquals("correct", File((outcome as ResumableFileDownloader.Outcome.Success).path).readText())
+        assertEquals("correct", File((outcome as ResumableFileDownloader.Outcome.Downloaded).partPath).readText())
     }
 
     @Test
@@ -189,9 +192,10 @@ class ResumableFileDownloaderTest {
 
         val outcome = downloader.download(url, "../../evil.bin", authToken = null) {}
 
-        val success = outcome as ResumableFileDownloader.Outcome.Success
-        assertEquals(File(tempDir, ".._.._evil.bin").absolutePath, success.path)
-        assertEquals("payload", File(success.path).readText())
+        val downloaded = outcome as ResumableFileDownloader.Outcome.Downloaded
+        assertEquals(File(tempDir, ".._.._evil.bin").absolutePath, downloaded.targetPath)
+        assertEquals(tempDir.absolutePath, File(downloaded.partPath).parentFile!!.absolutePath)
+        assertEquals("payload", File(downloaded.partPath).readText())
     }
 
     @Test
@@ -205,11 +209,12 @@ class ResumableFileDownloaderTest {
         val first = downloader.download(url, "q4/model.litertlm", authToken = null) {}
         val second = downloader.download(url, "q8/model.litertlm", authToken = null) {}
 
-        val pathA = (first as ResumableFileDownloader.Outcome.Success).path
-        val pathB = (second as ResumableFileDownloader.Outcome.Success).path
-        assertNotEquals(pathA, pathB)
-        assertEquals("four", File(pathA).readText())
-        assertEquals("eight", File(pathB).readText())
+        val a = first as ResumableFileDownloader.Outcome.Downloaded
+        val b = second as ResumableFileDownloader.Outcome.Downloaded
+        assertNotEquals(a.targetPath, b.targetPath)
+        assertNotEquals(a.partPath, b.partPath)
+        assertEquals("four", File(a.partPath).readText())
+        assertEquals("eight", File(b.partPath).readText())
     }
 
     @Test
@@ -252,7 +257,7 @@ class ResumableFileDownloaderTest {
 
             val outcome = wired.download("https://mirror.example/model.bin", "model.bin", authToken = "hf_secret") {}
 
-            assertTrue(outcome is ResumableFileDownloader.Outcome.Success)
+            assertTrue(outcome is ResumableFileDownloader.Outcome.Downloaded)
             assertNull(mirror.takeRequest().headers["Authorization"])
         }
     }
@@ -286,12 +291,215 @@ class ResumableFileDownloaderTest {
 
                 val outcome = wired.download(HF_URL, "model.bin", authToken = "hf_secret") {}
 
-                assertEquals("weights", File((outcome as ResumableFileDownloader.Outcome.Success).path).readText())
+                assertEquals(
+                    "weights",
+                    File((outcome as ResumableFileDownloader.Outcome.Downloaded).partPath).readText(),
+                )
                 assertEquals("Bearer hf_secret", hub.takeRequest().headers["Authorization"])
                 assertNull(cdn.takeRequest().headers["Authorization"])
             }
         }
     }
+
+    @Test
+    fun `given Hugging Face names the file's hash when it redirects to its CDN then the hash comes back`() = runTest {
+        // Measured on the real Hub: the 302 to the CDN carries `x-linked-etag` (the
+        // file's SHA-256, quoted) and `x-linked-size` — equal to the `lfs.sha256` and
+        // size its API reports for the file.
+        startedServer().use { hub ->
+            startedServer().use { cdn ->
+                hub.enqueue(hubRedirectTo(cdn, etag = "\"$SHA256\"", size = "7"))
+                cdn.enqueue(MockResponse.Builder().code(200).body("weights").build())
+                val wired = wiredDownloader(mapOf(HF_HOST to hub))
+
+                val outcome = wired.download(HF_URL, "model.bin", authToken = null) {}
+
+                assertEquals(SHA256, (outcome as ResumableFileDownloader.Outcome.Downloaded).publishedSha256)
+            }
+        }
+    }
+
+    @Test
+    fun `given a weak or upper-case hash value when Hugging Face sends it then it is read as the same hash`() =
+        runTest {
+            startedServer().use { hub ->
+                startedServer().use { cdn ->
+                    hub.enqueue(hubRedirectTo(cdn, etag = "W/\"${SHA256.uppercase()}\"", size = "7"))
+                    cdn.enqueue(MockResponse.Builder().code(200).body("weights").build())
+                    val wired = wiredDownloader(mapOf(HF_HOST to hub))
+
+                    val outcome = wired.download(HF_URL, "model.bin", authToken = null) {}
+
+                    assertEquals(SHA256, (outcome as ResumableFileDownloader.Outcome.Downloaded).publishedSha256)
+                }
+            }
+        }
+
+    @Test
+    fun `given a file outside LFS when Hugging Face names its git id then no hash is published`() = runTest {
+        // Measured: a file stored in git (README.md) carries its 40-hex blob id in the
+        // same header. That names the git object, not the SHA-256 of the bytes.
+        startedServer().use { hub ->
+            startedServer().use { cdn ->
+                hub.enqueue(hubRedirectTo(cdn, etag = "\"48dc8745dffbe13ff64b40eab86a0c10bb8f1e57\"", size = null))
+                cdn.enqueue(MockResponse.Builder().code(200).body("readme").build())
+                val wired = wiredDownloader(mapOf(HF_HOST to hub))
+
+                val outcome = wired.download(HF_URL, "model.bin", authToken = null) {}
+
+                assertNull((outcome as ResumableFileDownloader.Outcome.Downloaded).publishedSha256)
+            }
+        }
+    }
+
+    @Test
+    fun `given only the CDN names a hash when downloading from Hugging Face then it is not trusted`() = runTest {
+        // The hash is what the CDN's bytes are checked against; the CDN cannot vouch
+        // for itself.
+        startedServer().use { hub ->
+            startedServer().use { cdn ->
+                hub.enqueue(
+                    MockResponse.Builder().code(302).addHeader("Location", cdn.url("/signed/model.bin")).build(),
+                )
+                cdn.enqueue(
+                    MockResponse.Builder().code(200).addHeader("X-Linked-Etag", "\"$SHA256\"").body("weights").build(),
+                )
+                val wired = wiredDownloader(mapOf(HF_HOST to hub))
+
+                val outcome = wired.download(HF_URL, "model.bin", authToken = null) {}
+
+                assertNull((outcome as ResumableFileDownloader.Outcome.Downloaded).publishedSha256)
+            }
+        }
+    }
+
+    @Test
+    fun `given another host names a hash when downloading then it is not trusted`() = runTest {
+        startedServer().use { mirror ->
+            mirror.enqueue(
+                MockResponse.Builder().code(200).addHeader("X-Linked-Etag", "\"$SHA256\"").body("mirrored").build(),
+            )
+            val wired = wiredDownloader(mapOf("mirror.example" to mirror))
+
+            val outcome = wired.download("https://mirror.example/model.bin", "model.bin", authToken = null) {}
+
+            assertNull((outcome as ResumableFileDownloader.Outcome.Downloaded).publishedSha256)
+        }
+    }
+
+    @Test
+    fun `given a cleartext link to Hugging Face when it names a hash then it is not trusted`() = runTest {
+        // The token's rule: only `https://huggingface.co` speaks for the Hub.
+        startedServer().use { hub ->
+            hub.enqueue(MockResponse.Builder().code(200).addHeader("X-Linked-Etag", "\"$SHA256\"").body("w").build())
+            val wired = wiredDownloader(mapOf(HF_HOST to hub))
+
+            val outcome = wired.download("http://$HF_HOST/org/repo/resolve/main/model.bin", "model.bin", null) {}
+
+            assertNull((outcome as ResumableFileDownloader.Outcome.Downloaded).publishedSha256)
+        }
+    }
+
+    @Test
+    fun `given Hugging Face redirects within its own host first when downloading then its later hop is read`() =
+        runTest {
+            // A relative redirect stays on the Hub (measured for a file served from its
+            // resolve cache); the hop that hands over to the CDN is the one naming the file.
+            startedServer().use { hub ->
+                startedServer().use { cdn ->
+                    hub.enqueue(MockResponse.Builder().code(307).addHeader("Location", "/api/resolve-cache/m").build())
+                    hub.enqueue(hubRedirectTo(cdn, etag = "\"$SHA256\"", size = "7"))
+                    cdn.enqueue(MockResponse.Builder().code(200).body("weights").build())
+                    val wired = wiredDownloader(mapOf(HF_HOST to hub))
+
+                    val outcome = wired.download(HF_URL, "model.bin", authToken = null) {}
+
+                    assertEquals(SHA256, (outcome as ResumableFileDownloader.Outcome.Downloaded).publishedSha256)
+                }
+            }
+        }
+
+    @Test
+    fun `given a part as long as the published file when the CDN rejects the range then it is not fetched again`() =
+        runTest {
+            // Measured: resuming a complete file gets the Hub's 302 (with its length)
+            // and then a 416 from the CDN with no Content-Range. An attempt that finished
+            // the transfer but stopped before the check leaves exactly this part behind.
+            startedServer().use { hub ->
+                startedServer().use { cdn ->
+                    val part = partFileFor("model.bin", forUrl = HF_URL).apply { writeText("weights") }
+                    hub.enqueue(hubRedirectTo(cdn, etag = "\"$SHA256\"", size = "7"))
+                    cdn.enqueue(MockResponse.Builder().code(416).build())
+                    val wired = wiredDownloader(mapOf(HF_HOST to hub))
+                    val progress = mutableListOf<Int>()
+
+                    val outcome = wired.download(HF_URL, "model.bin", authToken = null) { progress += it }
+
+                    val downloaded = outcome as ResumableFileDownloader.Outcome.Downloaded
+                    assertEquals(part.absolutePath, downloaded.partPath)
+                    assertEquals("weights", part.readText())
+                    assertEquals(SHA256, downloaded.publishedSha256)
+                    assertEquals(listOf(100), progress)
+                    // One request to each host: nothing was downloaded again.
+                    assertEquals(1, hub.requestCount)
+                    assertEquals(1, cdn.requestCount)
+                }
+            }
+        }
+
+    @Test
+    fun `given a part of another length when the CDN rejects the range then the download restarts from zero`() =
+        runTest {
+            startedServer().use { hub ->
+                startedServer().use { cdn ->
+                    partFileFor("model.bin", forUrl = HF_URL).writeText("stale-and-too-long")
+                    hub.enqueue(hubRedirectTo(cdn, etag = "\"$SHA256\"", size = "7"))
+                    cdn.enqueue(MockResponse.Builder().code(416).build())
+                    hub.enqueue(hubRedirectTo(cdn, etag = "\"$SHA256\"", size = "7"))
+                    cdn.enqueue(MockResponse.Builder().code(200).body("weights").build())
+                    val wired = wiredDownloader(mapOf(HF_HOST to hub))
+
+                    val outcome = wired.download(HF_URL, "model.bin", authToken = null) {}
+
+                    assertEquals(
+                        "weights",
+                        File((outcome as ResumableFileDownloader.Outcome.Downloaded).partPath).readText(),
+                    )
+                    // The first request resumed from the stale part; the second starts over.
+                    assertEquals("bytes=18-", cdn.takeRequest().headers["Range"])
+                    assertNull(cdn.takeRequest().headers["Range"])
+                }
+            }
+        }
+
+    @Test
+    fun `given no part on disk when the Hub names a zero length and the CDN answers 416 then nothing is taken`() =
+        runTest {
+            // An empty part is no file: only a part with bytes can be the whole of one.
+            startedServer().use { hub ->
+                startedServer().use { cdn ->
+                    // The first answer, then the one to the single restart without a range.
+                    repeat(2) {
+                        hub.enqueue(hubRedirectTo(cdn, etag = "\"$SHA256\"", size = "0"))
+                        cdn.enqueue(MockResponse.Builder().code(416).build())
+                    }
+                    val wired = wiredDownloader(mapOf(HF_HOST to hub))
+
+                    val outcome = wired.download(HF_URL, "model.bin", authToken = null) {}
+
+                    val failure = outcome as ResumableFileDownloader.Outcome.Failure
+                    assertEquals(416, failure.httpCode)
+                }
+            }
+        }
+
+    /** The Hub's answer to a `resolve` download: a redirect to [cdn] naming the file. */
+    private fun hubRedirectTo(cdn: MockWebServer, etag: String, size: String?): MockResponse = MockResponse.Builder()
+        .code(302)
+        .addHeader("Location", cdn.url("/signed/model.bin"))
+        .addHeader("X-Linked-Etag", etag)
+        .apply { if (size != null) addHeader("X-Linked-Size", size) }
+        .build()
 
     /**
      * A downloader over a real [OkHttpClient] whose requests reach [routes] instead of
@@ -313,8 +521,8 @@ class ResumableFileDownloaderTest {
     }
 
     /** Mirrors the downloader's own part-file naming so tests can seed one. */
-    private fun partFileFor(fileName: String): File =
-        File(tempDir, "$fileName.${Integer.toHexString(url.hashCode())}.part")
+    private fun partFileFor(fileName: String, forUrl: String = url): File =
+        File(tempDir, "$fileName.${Integer.toHexString(forUrl.hashCode())}.part")
 
     private fun response(code: Int, body: String): Response = Response.Builder()
         .request(Request.Builder().url(url).build())
@@ -336,5 +544,8 @@ class ResumableFileDownloaderTest {
     private companion object {
         const val HF_HOST = "huggingface.co"
         const val HF_URL = "https://huggingface.co/org/repo/resolve/main/model.bin"
+
+        /** A SHA-256 in the form the Hub names it, lowercase hex. */
+        const val SHA256 = "181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c"
     }
 }

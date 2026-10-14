@@ -215,6 +215,7 @@ Only Kotlin files appear inside the generated blocks.
     - `AgentWorkerTest.kt` - Tests for AgentWorker.
     - `AttachmentOrphanCleanupWorkerTest.kt` - Robolectric coverage for the daily file-maintenance `AttachmentOrphanCleanupWorker`: both passes run, and a failure asks WorkManager to retry.
     - `ChargingTriggerSweepWorkerTest.kt` - Robolectric coverage for `ChargingTriggerSweepWorker` — the one-shot worker `PowerConnectionReceiver` enqueues on a power edge to fire charging triggers immediately.
+    - `DownloadedModelInstallerTest.kt` - Covers the one place a downloaded file becomes a model: the file is checked against the hash its source published before it reaches its final name, a file that fails is deleted and never registered, and a file with nothing to check against is installed as unchecked.
     - `DownloadForegroundBudgetTest.kt` - Covers the foreground-time budget that keeps a model download under Android's daily `dataSync` limit: what it books, when it runs out, and that the count outlives the process that measured it.
     - `embedding/` - Tests for the embedding service layer.
       - `CloudEmbeddingProviderTest.kt` - Unit tests for `CloudEmbeddingProvider`.
@@ -350,6 +351,7 @@ Only Kotlin files appear inside the generated blocks.
     - `AppErrorTest.kt` - Tests for AppError.
     - `CloudProviderTest.kt` - Unit tests for `CloudProvider` — the canonical typed identifier for cloud LLM providers.
     - `CustomModelLinkTest.kt` - Unit tests for `CustomModelLink.parse` — the one check a pasted model link passes before anything downloads, and the one place its file name comes from.
+    - `DownloadedModelCheckTest.kt` - The rule that decides whether a downloaded model file may be installed, and the comparison that later tells a checked model from an unchecked one.
     - `ExternalAutomationOutcomeMapperTest.kt` - Verifies `externalAutomationStatusForTerminal` — the deliberately coarse mapping from the app's four terminal statuses onto the two settled statuses the third-party contract publishes.
     - `LocalBackendTest.kt` - Unit tests for `LocalBackend` — the typed identifier for the on-device LiteRT backend.
     - `ModelPerformanceSampleTest.kt` - Unit tests for `ModelPerformanceSample`.

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import app.knotwork.android.data.network.AndroidModelDownloadManager.DownloadError
 import app.knotwork.android.domain.models.DiscoverableModelFile
 import app.knotwork.android.domain.models.DownloadState
+import app.knotwork.android.domain.models.ModelDownloadFailure
 import app.knotwork.android.domain.repositories.GenerationSettings
 import app.knotwork.android.domain.repositories.ModelDownloadManager
 import app.knotwork.android.domain.usecases.GetDiscoverableModelDetailUseCase
@@ -159,7 +160,7 @@ class DiscoverDetailViewModel @Inject constructor(
             is DownloadState.Error -> {
                 clearProgress(fileName)
                 installJobs.remove(fileName)
-                _installEvents.tryEmit(DiscoverInstallEvent.Failed(gated = state.isGatedRefusal()))
+                _installEvents.tryEmit(DiscoverInstallEvent.Failed(state.failureReason()))
             }
         }
     }
@@ -213,15 +214,24 @@ class DiscoverDetailViewModel @Inject constructor(
     }
 
     /**
-     * Treats a 401/403 download refusal as an access-gated failure so the
-     * screen can nudge the user toward accepting the licence and supplying a
-     * token. Reads the typed HTTP status carried on [DownloadError.code]
-     * rather than parsing the free-text message (which also covers arbitrary
-     * transport-error strings).
+     * Names why the install failed, from the typed fields of [DownloadError] rather
+     * than its free-text message (which also covers arbitrary transport-error strings).
+     *
+     * A 401/403 refusal is an access-gated failure, so the screen can nudge the user
+     * toward accepting the licence and supplying a token; a checksum mismatch and a
+     * pause each have their own sentence. Anything else reads as a connection problem.
      */
-    private fun DownloadState.Error.isGatedRefusal(): Boolean {
-        val code = (error as? DownloadError)?.code
-        return code == HTTP_UNAUTHORIZED || code == HTTP_FORBIDDEN
+    private fun DownloadState.Error.failureReason(): DiscoverInstallEvent.FailureReason {
+        val downloadError = error as? DownloadError
+        val code = downloadError?.code
+        return when {
+            code == HTTP_UNAUTHORIZED || code == HTTP_FORBIDDEN -> DiscoverInstallEvent.FailureReason.GATED
+            downloadError?.failure == ModelDownloadFailure.CHECKSUM_MISMATCH ->
+                DiscoverInstallEvent.FailureReason.CHECKSUM_MISMATCH
+            downloadError?.failure == ModelDownloadFailure.PAUSED_TIME_LIMIT ->
+                DiscoverInstallEvent.FailureReason.PAUSED
+            else -> DiscoverInstallEvent.FailureReason.OTHER
+        }
     }
 
     private companion object {

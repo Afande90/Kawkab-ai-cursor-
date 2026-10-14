@@ -262,6 +262,6 @@ abstract class AppDatabase : RoomDatabase() {
          * The schema version this build's database is at. A restore refuses a database of a later version:
          * Room would recreate it empty rather than downgrade it.
          */
-        const val SCHEMA_VERSION: Int = 71
+        const val SCHEMA_VERSION: Int = 72
     }
 }

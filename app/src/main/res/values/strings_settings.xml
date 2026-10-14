@@ -237,6 +237,7 @@
     <string name="notifications_model_download_channel_name">Model downloads</string>
     <string name="notifications_model_download_title">Downloading model</string>
     <string name="notifications_model_download_cancel">Cancel</string>
+    <string name="model_download_checksum_mismatch">The downloaded file did not match the checksum Hugging Face published for it, so it was deleted. Download it again.</string>
     <string name="model_download_paused_time_limit">Download paused: Android limits how long a download can run in the background. Start it again to continue from where it stopped.</string>
     <string name="notifications_task_results_channel_name">Scheduled task results</string>
     <string name="notifications_task_results_channel_description">Outcome of scheduled background tasks.</string>

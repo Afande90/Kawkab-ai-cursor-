@@ -125,6 +125,56 @@ class RegisterDownloadedModelUseCaseTest {
     }
 
     @Test
+    fun `given a checked download when registered as new then its source hash and file hash are recorded`() = runTest {
+        coEvery { localModelRepository.findByFileName("gemma.litertlm") } returns null
+        coEvery { localModelRepository.findByPath("/data/gemma.litertlm") } returns null
+        val inserted = slot<LocalModel>()
+        coEvery { localModelRepository.insertModel(capture(inserted)) } returns 7L
+        val hash = ModelFileHash(sha256 = "ab12", fileSizeBytes = 2_048L, fileModifiedAtMs = 99L)
+
+        useCase(
+            "gemma.litertlm",
+            "/data/gemma.litertlm",
+            sizeBytes = 2_048L,
+            sourceUrl = SOURCE,
+            sourceSha256 = "ab12",
+            fileHash = hash,
+        )
+
+        assertEquals("ab12", inserted.captured.sourceSha256)
+        assertEquals(hash, inserted.captured.fileHash)
+    }
+
+    @Test
+    fun `given a checked row when re-registered then a missing source hash keeps it and a new one replaces it`() =
+        runTest {
+            // Whether the kept value still describes the file is decided against the file's
+            // current hash (`LocalModel.matchesPublishedHash`), not here.
+            val oldHash = ModelFileHash(sha256 = "ab12", fileSizeBytes = 2_048L, fileModifiedAtMs = 99L)
+            val newHash = ModelFileHash(sha256 = "cd34", fileSizeBytes = 2_048L, fileModifiedAtMs = 120L)
+            val existing = LocalModel(
+                id = 9L,
+                name = "gemma.litertlm",
+                path = "/data/gemma.litertlm",
+                size = 2_048L,
+                isActive = false,
+                fileHash = oldHash,
+                sourceSha256 = "ab12",
+            )
+            coEvery { localModelRepository.findByFileName("gemma.litertlm") } returns existing
+            val updated = mutableListOf<LocalModel>()
+            coEvery { localModelRepository.updateModel(capture(updated)) } returns Unit
+
+            useCase("gemma.litertlm", "/data/gemma.litertlm", sizeBytes = 2_048L)
+            useCase("gemma.litertlm", "/data/gemma.litertlm", 2_048L, SOURCE, sourceSha256 = "cd34", fileHash = newHash)
+
+            assertEquals("ab12", updated[0].sourceSha256)
+            assertEquals(oldHash, updated[0].fileHash)
+            assertEquals("cd34", updated[1].sourceSha256)
+            assertEquals(newHash, updated[1].fileHash)
+        }
+
+    @Test
     fun `given two registrations of one file at once when both run then one row is inserted`() = runTest {
         // A download finishing while the start-up rediscovery registers the same
         // file: each looked up, found nothing, and inserted.

@@ -70,6 +70,12 @@ data class ModelsUiState(
      * Observed live from the task queue's global state.
      */
     val engineBusy: Boolean = false,
+    /**
+     * Ids of the installed models whose file on disk is the file their source
+     * published — a download of it matched the published SHA-256 and the file
+     * has not changed since. Every other model reads "Not verified".
+     */
+    val verifiedModelIds: Set<Long> = emptySet(),
 )
 
 /**
