@@ -282,6 +282,11 @@ only with a copy from the same signer. To switch channels:
    file…**, pick the backup, enter its password and confirm. After the app
    restarts, download the models again from the sheet it shows.
 
+The version you install must be able to read the backup: when the backup came
+from a newer release than the other channel has yet — Google Play can trail the
+Releases page while an update is in review — the restore asks you to update
+first. Wait for that release before you uninstall.
+
 ## A model download paused after five hours
 
 Android lets an app transfer data in the background for six hours a day, and

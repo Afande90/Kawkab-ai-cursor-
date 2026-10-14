@@ -143,7 +143,8 @@ Yes, into one file locked with a password you choose: Settings → Privacy →
 history, triggers, settings and files — not the model files, and not your API
 keys unless you tick the box (a token written into a server's address travels
 with the address). The file goes only where you save it. **Restore from file…**
-puts it back — on this phone or a new one — and replaces everything there. See
+puts it back — on this phone or a new one — and replaces the app's data there;
+the model files and the phone's own keys stay. See
 [Backup & restore](user-guide.md#backup--restore).
 
 ### Is there telemetry?

@@ -188,7 +188,9 @@ cloud drive you pick uploads the file as it would any other.
   loses, and only typing the confirm word replaces anything; the app restarts to
   finish. A check you cancel or a summary you close deletes the staged copy, and
   one left by leaving the screen is deleted at the next start. Once applied, the
-  restored secrets replace this phone's and the staging store is destroyed.
+  backup's secrets replace this phone's entries of the same name — the phone's
+  other keys and sign-ins stay, so a restore does not clear them — and the
+  staging store is destroyed.
 
 ### Agent file workspace (at-rest)
 

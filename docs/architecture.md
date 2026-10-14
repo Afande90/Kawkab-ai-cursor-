@@ -1833,7 +1833,7 @@ Settings → Privacy → *Backup & restore* → *Back up*. The file's layout is 
   settings when DataStore first opens (`RestoredPreferencesMigration`), and
   `RestoreFinisher` — the first stage of `AppInitializationUseCase` — applies
   the secrets and the models' paths and writes the report.
-  `AfterRestoreViewModel`, hosted by the chat screen, reads that report once:
+  `AfterRestoreViewModel`, shown over the chat's destination, reads that report once:
   a sheet with what is left to do, whose downloads are the download worker's
   as on the Models screen, or the snackbar *Restored* through
   `TransientMessageRelay`.

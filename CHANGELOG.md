@@ -104,13 +104,15 @@ details.
   in Settings → Privacy → *Backup & restore* reads a backup you pick, checks its
   password and every part of it while nothing on the phone changes, and shows
   what comes in and what this phone loses before you type **REPLACE**; the app
-  then restarts and applies it. A file that is not a backup, one made by a
-  newer Knotwork, a damaged or cut-short file and too little free space are each
-  told in their own words. After the restart a sheet over the chat lists the
-  models to download again — straight from where each came from, or through
-  Discover — the keys to enter again and the scheduled tasks that were not
-  carried; with nothing left to do, the app says *Restored*. Moving between
-  Google Play and a release build is now a backup and a restore.
+  then restarts and applies it. The model files stay, and so do the phone's own
+  keys and sign-ins, except those the backup carries. A file that is not a
+  backup, one in a newer format or with a newer database, a damaged or
+  cut-short file and too little free space are each told in their own words.
+  After the restart a sheet over the chat lists the models to download again —
+  straight from where each came from, or through Discover — the keys to enter
+  again when neither the backup nor the phone has any, and the scheduled tasks
+  that were not carried; with nothing left to do, the app says *Restored*.
+  Moving between Google Play and a release build is now a backup and a restore.
 - **Each downloaded model remembers where it came from.** A model downloaded
   from a link or from Discover keeps that address with it. A model found on
   disk at start-up — after *Erase data*, or a file copied into the app's folder

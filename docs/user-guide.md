@@ -3089,12 +3089,15 @@ file is deleted the next time it starts, where the place still allows it —
 nothing is shown then. A workspace file or image whose name a backup cannot
 store is left out, and the result says how many were.
 
-**Restore from file…** puts a backup back — on this phone or a new one — and
-replaces everything the app keeps here.
+**Restore from file…** puts a backup back — on this phone or a new one. It
+replaces the app's data here — chats, memory, pipelines, run history, triggers,
+settings and files — with the backup's. The model files stay, and so do this
+phone's API keys and sign-ins, except those the backup carries.
 
 1. **Pick the file** in the system's *Open document* screen. Any file can be
    picked; the backup's own header decides. A file that is not a backup is
-   named and refused, and so is one made by a newer Knotwork than this phone's.
+   named and refused, and so is one written in a newer format, or with a newer
+   database, than this phone's Knotwork reads — update the app first.
 2. **Enter its password** and tap **Check**, or *Done* on the keyboard. A wrong
    password is said in place; nothing counts the tries.
 3. **Checking the backup** reads every part of the file into a copy the app
@@ -3110,8 +3113,8 @@ replaces everything the app keeps here.
 
 After the restart the chat shows what is left to do: the models to download
 again — **Download** where the backup recorded where a model came from,
-**Discover** where it did not — the API keys to enter again when the backup had
-none, and the scheduled tasks that were not carried. Downloads go on after the
+**Discover** where it did not — the API keys to enter again when neither the
+backup nor this phone has any, and the scheduled tasks that were not carried. Downloads go on after the
 sheet closes. With nothing left to do, the app just says *Restored*. A restored
 phone takes over the backup's settings and usage statistics. Closing the
 summary, or cancelling the check, deletes the copy kept aside.
