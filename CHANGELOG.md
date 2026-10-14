@@ -82,11 +82,12 @@ details.
   own sheet, node by node, and says which node diverged first. Each node in
   **Traces** and **Vars** shows its input and output hash; a tap copies it. The
   header says the actions work while the run is kept, and where run history is set.
-- **Each installed model file has a SHA-256.** The app reads a model file once,
-  in the background, after it is downloaded — and once for every model installed
-  before this release — and keeps the checksum with the model. A file replaced on
-  disk afterwards is read again. Groundwork for runs that can be checked later:
-  the checksum names exactly which model file a run used.
+- **Each installed model file has a SHA-256.** The app reads a model file once —
+  while checking it, when the app downloads it; in the background for any other
+  file and for every model installed before this release — and keeps the
+  checksum with the model. A file replaced on disk afterwards is read again.
+  Groundwork for runs that can be checked later: the checksum names exactly which
+  model file a run used.
 - **Back up to one encrypted file.** Settings → Privacy → *Backup & restore* →
   **Back up…** writes chats with their images, memory, pipelines, presets,
   prompts and skills, run history, triggers, usage statistics, settings and the
@@ -268,6 +269,10 @@ details.
 
 ### Fixed
 
+- **Discover says why an install paused.** A download that paused at its
+  background time limit showed Discover's *Download failed. Check your
+  connection* — wrong, and with no hint that installing again continues it. It
+  now shows the pause message the Models screen shows.
 - **Discover offers a model again when its file is gone.** It marked a file
   **Installed** whenever the app had the model registered, even after the file
   was deleted outside the app — and, after a restore, every model the backup
@@ -390,6 +395,19 @@ details.
 
 ### Security
 
+- **A downloaded model is checked against the hash Hugging Face publishes.**
+  Hugging Face names a file's SHA-256 in its answer to the download; the app
+  reads it from Hugging Face's own answer only — never from the CDN it redirects
+  to, never from another host — and hashes the file before it takes a model's
+  name. A file that does not match is deleted, no model is added, and Models,
+  Discover or setup, whichever is open, says the file did not match. This also
+  catches a resumed download that joined two versions of a file changed on
+  Hugging Face in between. A file from another host, or one Hugging Face keeps
+  outside LFS, has no hash to check; on the Models screen every model now reads
+  **Verified** or **Not verified**, and models installed before this release read
+  **Not verified** until downloaded again. A Hugging Face download that stopped
+  after its last byte is checked on the next start instead of being downloaded
+  again.
 - **A model server's redirect is checked hop by hop.** The address of a server
   you run — Ollama — was checked once, before the first request; a server could
   then answer with a redirect, and nothing inside the model client looked where
