@@ -33,9 +33,9 @@ import javax.inject.Singleton
  * made persistable, a `deleteDocument` it does not support, a failure of its own — is answered with `false`,
  * never a crash.
  *
- * The document is opened truncating: the user may have picked an existing file to overwrite, and a plain `w` may
- * or may not truncate depending on the provider — a longer old file would leave bytes after the archive's end,
- * which every reader rejects.
+ * The document is opened truncating (`wt`, then `rwt`): the user may have picked an existing file to overwrite,
+ * and a plain `w` may or may not truncate depending on the provider — a longer old file would leave bytes after
+ * the archive's end, which every reader rejects. Only a provider that accepts neither gets `w`.
  *
  * [discardLeftBehind] never deletes the document a backup in this process is writing or has just finished: the
  * start-up maintenance that calls it also runs when the activity is only recreated. One lock orders its reading
@@ -126,30 +126,31 @@ internal class SafBackupDocuments(
         }
     }
 
-    @SuppressLint("Recycle") // Returned to the caller, who closes it.
-    private fun openTruncating(uri: Uri): OutputStream {
-        val stream = try {
-            resolver.openOutputStream(uri, WRITE_TRUNCATE)
-        } catch (e: FileNotFoundException) {
-            // What `openOutputStream` documents for a mode the provider rejects; a document that is really
-            // missing fails again on the plain mode.
-            Timber.i(e, "A backup document's provider refused to truncate; writing without")
-            openPlain(uri)
-        } catch (e: IllegalArgumentException) {
-            Timber.i(e, "A backup document's provider does not truncate; writing without")
-            openPlain(uri)
-        } catch (e: UnsupportedOperationException) {
-            Timber.i(e, "A backup document's provider does not truncate; writing without")
-            openPlain(uri)
-        } catch (e: SecurityException) {
-            throw IOException("the provider refused the document", e)
-        }
-        return stream ?: throw IOException("the provider opened no stream")
-    }
+    /** Opens [uri] in the first truncating mode its provider accepts, else plainly. */
+    private fun openTruncating(uri: Uri): OutputStream = TRUNCATING_MODES.firstNotNullOfOrNull { openIn(uri, it) }
+        ?: openIn(uri, WRITE)
+        ?: throw IOException("the provider accepts no write mode for the document")
 
+    /**
+     * Opens [uri] for writing in [mode].
+     *
+     * @return The stream, the caller's to close; or `null` when the provider rejects the mode — as a missing file,
+     *   which is what `openOutputStream` documents, or as a bad or unsupported argument. A document that is really
+     *   missing is rejected in every mode.
+     * @throws IOException When the provider refuses the document itself, or opens no stream.
+     */
     @SuppressLint("Recycle") // Returned to the caller, who closes it.
-    private fun openPlain(uri: Uri): OutputStream? = try {
-        resolver.openOutputStream(uri, WRITE)
+    private fun openIn(uri: Uri, mode: String): OutputStream? = try {
+        resolver.openOutputStream(uri, mode) ?: throw IOException("the provider opened no stream")
+    } catch (e: FileNotFoundException) {
+        Timber.i(e, "A backup document's provider rejected a write mode")
+        null
+    } catch (e: IllegalArgumentException) {
+        Timber.i(e, "A backup document's provider rejected a write mode")
+        null
+    } catch (e: UnsupportedOperationException) {
+        Timber.i(e, "A backup document's provider rejected a write mode")
+        null
     } catch (e: SecurityException) {
         throw IOException("the provider refused the document", e)
     }
@@ -225,8 +226,8 @@ internal class SafBackupDocuments(
     private companion object {
         const val GRANT = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
 
-        /** Write, truncating whatever the document held before. */
-        const val WRITE_TRUNCATE = "wt"
+        /** Write modes that truncate whatever the document held before, in the order they are tried. */
+        val TRUNCATING_MODES = listOf("wt", "rwt")
 
         /** Write, for a provider that knows no truncating mode. */
         const val WRITE = "w"

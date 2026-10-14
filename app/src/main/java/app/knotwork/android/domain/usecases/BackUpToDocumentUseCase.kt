@@ -20,7 +20,8 @@ import javax.inject.Inject
  * too, whatever cancelled it — on the way into the document as well — and tells `onUnfinishedDeleted` whether
  * that worked, since a cancelled call returns nothing. Once the outcome is settled, neither recording a complete
  * backup nor deleting a failed one can be cancelled: a complete backup is never left marked unfinished, and a
- * failed one never left behind half-deleted.
+ * failed one never left behind half-deleted. A complete backup this phone cannot record as complete is deleted and
+ * reported as [BackupExportFailure.PHONE_FULL], since the next start would delete it as unfinished.
  *
  * @property exportBackup Writes the archive.
  * @property documents The picked document.
@@ -61,7 +62,14 @@ class BackUpToDocumentUseCase @Inject constructor(
             // From here the file is a complete backup: nothing below may delete it, and a cancel cannot stop the
             // record that it is complete.
             settled = true
-            withContext(NonCancellable) { documents.finish(document) }
+            try {
+                withContext(NonCancellable) { documents.finish(document) }
+            } catch (e: IOException) {
+                // Complete, but this phone could not record it: the next start would take it for unfinished and
+                // delete it. It goes now, told as the phone's own failure — a write this small fails on a full disk.
+                val deleted = withContext(NonCancellable) { documents.discard(document) }
+                return BackupToDocumentOutcome.Failed(BackupExportFailure.PHONE_FULL, 0, deleted)
+            }
             return BackupToDocumentOutcome.Saved(manifest, counting.written)
         } catch (e: BackupExportException) {
             settled = true

@@ -7,10 +7,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Checkbox
@@ -257,9 +262,15 @@ internal fun BackupStats(cells: List<Pair<String, String>>, modifier: Modifier =
 /** The action pinned under the scroll, with a divider above; the app shell keeps it above the keyboard. */
 @Composable
 internal fun BackupBottomAction(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
-    // No inset padding here: the app shell lifts the whole screen over the keyboard, and its bottom navigation
-    // already sits on the system navigation bar — padding again left a gap the height of that bar.
-    Column(modifier = modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface)) {
+    // Only the sides: the app shell lifts the whole screen over the keyboard and its bottom navigation sits on the
+    // system bar below — padding those again left a gap the height of the bar. A bar on the side (landscape,
+    // three-button navigation) is this screen's to clear.
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface)
+            .windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Horizontal)),
+    ) {
         HorizontalDivider(color = KnotworkTheme.extended.divider)
         Box(
             modifier = Modifier.fillMaxWidth().padding(

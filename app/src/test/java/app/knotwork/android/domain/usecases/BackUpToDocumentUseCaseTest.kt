@@ -11,12 +11,10 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.withContext
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -83,18 +81,8 @@ class BackUpToDocumentUseCaseTest {
 
     @Test
     fun `given a cancel while the document is being opened when it stops then the document still goes`() = runTest {
-        // Given — the provider opens the document only after the cancel has arrived.
-        val opening = CompletableDeferred<Unit>()
-        val release = CompletableDeferred<Unit>()
-        coEvery { documents.openForWrite(DOCUMENT) } coAnswers {
-            withContext(NonCancellable) {
-                opening.complete(Unit)
-                release.await()
-            }
-            written
-        }
-        // The export's first suspension sees the cancel, as the real one's first switch to the IO thread does.
-        coEvery { exporter.export(any(), any(), false, any()) } coAnswers { awaitCancellation() }
+        // Given — the provider is slow to open the document: the cancel lands inside the open itself.
+        coEvery { documents.openForWrite(DOCUMENT) } coAnswers { awaitCancellation() }
         var reported: Boolean? = null
 
         // When
@@ -103,12 +91,11 @@ class BackUpToDocumentUseCaseTest {
                 reported = it
             }) { }
         }
-        opening.await()
+        testScheduler.advanceUntilIdle()
         job.cancel(CancellationException("user"))
-        release.complete(Unit)
         job.join()
 
-        // Then — deleted once (which also closes the stream it never used), and the caller told.
+        // Then — deleted once (closing any stream the open made), and the caller told.
         coVerify(exactly = 1) { documents.discard(DOCUMENT) }
         assertEquals(true, reported)
     }
@@ -204,18 +191,18 @@ class BackUpToDocumentUseCaseTest {
         }
 
     @Test
-    fun `given recording that the backup is finished fails when backed up then the complete file is not deleted`() =
+    fun `given recording that the backup is finished fails when backed up then it goes, told as the phone's failure`() =
         runTest {
+            // Given — a complete archive, but the phone cannot write the record that it is complete.
             coEvery { exporter.export(any(), any(), false, any()) } returns MANIFEST
             coEvery { documents.finish(DOCUMENT) } throws IOException("datastore")
 
-            try {
-                useCase(DOCUMENT, PASSWORD.toCharArray(), includeSecrets = false) { }
-            } catch (e: IOException) {
-                // The caller hears of it; the backup itself is complete.
-            }
+            // When
+            val outcome = useCase(DOCUMENT, PASSWORD.toCharArray(), includeSecrets = false) { }
 
-            coVerify(exactly = 0) { documents.discard(any()) }
+            // Then — the next start would delete it as unfinished; it goes now, and the screen says why.
+            assertEquals(BackupToDocumentOutcome.Failed(BackupExportFailure.PHONE_FULL, 0, true), outcome)
+            coVerify(exactly = 1) { documents.discard(DOCUMENT) }
         }
 
     private companion object {

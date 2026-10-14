@@ -207,8 +207,20 @@ class SafBackupDocumentsTest {
     }
 
     @Test
-    fun `given a provider without a truncating mode when opened then it is opened for plain writing`() = runTest {
+    fun `given a provider that rejects wt when opened then it tries the other truncating mode first`() = runTest {
         every { resolver.openOutputStream(any(), "wt") } throws IllegalArgumentException("bad mode")
+        every { resolver.openOutputStream(any(), "rwt") } returns ByteArrayOutputStream()
+
+        documents().openForWrite(DOCUMENT)
+
+        verify { resolver.openOutputStream(Uri.parse(DOCUMENT), "rwt") }
+        verify(exactly = 0) { resolver.openOutputStream(any(), "w") }
+    }
+
+    @Test
+    fun `given a provider without any truncating mode when opened then it is opened for plain writing`() = runTest {
+        every { resolver.openOutputStream(any(), "wt") } throws IllegalArgumentException("bad mode")
+        every { resolver.openOutputStream(any(), "rwt") } throws IllegalArgumentException("bad mode")
         every { resolver.openOutputStream(any(), "w") } returns ByteArrayOutputStream()
 
         documents().openForWrite(DOCUMENT)
@@ -217,10 +229,26 @@ class SafBackupDocumentsTest {
     }
 
     @Test
+    fun `given a provider that rejects every mode when opened then it is an IO failure, not a crash`() = runTest {
+        // The plain mode rejected as a bad argument too: the place refused the file, not the app's data.
+        every { resolver.openOutputStream(any(), any()) } throws IllegalArgumentException("read-only")
+
+        val failure = try {
+            documents().openForWrite(DOCUMENT)
+            null
+        } catch (e: IOException) {
+            e
+        }
+
+        assertTrue(failure != null)
+    }
+
+    @Test
     fun `given a provider that rejects the truncating mode as a missing file when opened then it writes plainly`() =
         runTest {
             // What `openOutputStream` documents for a mode the provider does not accept.
             every { resolver.openOutputStream(any(), "wt") } throws FileNotFoundException("mode")
+            every { resolver.openOutputStream(any(), "rwt") } throws FileNotFoundException("mode")
             every { resolver.openOutputStream(any(), "w") } returns ByteArrayOutputStream()
 
             documents().openForWrite(DOCUMENT)
@@ -231,6 +259,7 @@ class SafBackupDocumentsTest {
     @Test
     fun `given a provider that cannot truncate at all when opened then it writes plainly`() = runTest {
         every { resolver.openOutputStream(any(), "wt") } throws UnsupportedOperationException("no truncate")
+        every { resolver.openOutputStream(any(), "rwt") } throws UnsupportedOperationException("no truncate")
         every { resolver.openOutputStream(any(), "w") } returns ByteArrayOutputStream()
 
         documents().openForWrite(DOCUMENT)
@@ -241,6 +270,7 @@ class SafBackupDocumentsTest {
     @Test
     fun `given a provider that refuses the plain mode too when opened then it is an IO failure`() = runTest {
         every { resolver.openOutputStream(any(), "wt") } throws IllegalArgumentException("bad mode")
+        every { resolver.openOutputStream(any(), "rwt") } throws IllegalArgumentException("bad mode")
         every { resolver.openOutputStream(any(), "w") } throws SecurityException("revoked")
 
         val failure = try {
