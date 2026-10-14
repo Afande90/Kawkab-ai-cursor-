@@ -312,9 +312,10 @@ keys and sign-ins*. The addresses of servers you added always go in, so a token
 written into an address travels with it.
 
 The file is encrypted under a password you choose, which the app never stores.
-A few facts stay readable without it — the app version and build flavour that
-wrote the file, the database schema version, when it was written, roughly how
-large its content is, and how its key is derived
+A few facts stay readable without it — the format version, the app version and
+build flavour that wrote the file, the database schema version, when it was
+written, roughly how large its content is, its chunk size and how its key is
+derived
 ([details](docs/backup-format.md#what-the-format-does-not-hide)). Anyone who
 has the file and the password can read everything in it. If you pick a cloud
 drive in the picker, that drive's app uploads the file under its own policy.

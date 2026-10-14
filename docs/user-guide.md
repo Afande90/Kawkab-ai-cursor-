@@ -3048,10 +3048,10 @@ Controls:
 **Back up…** writes one file, locked with a password you choose. It holds your
 chats with their images, long-term memory, pipelines, presets, prompts and
 skills, run history, triggers, usage statistics, settings and the files in the
-agent workspace.
-The model files stay out — they are large and can be downloaded again; the
-backup keeps the list of models you had and where each came from. Search
-settings for *backup*, *export*, *transfer* or *new phone* to find the screen.
+agent workspace. The model files stay out — they are large and can be
+downloaded again; the backup keeps the list of models you had and where each
+came from. Search settings for *backup*, *export*, *transfer* or *new phone* to
+find the screen.
 
 1. **Password, twice.** At least 12 characters; a few unrelated words make a
    strong one. Knotwork never stores it (a password manager may offer to): forget
@@ -3063,13 +3063,14 @@ settings for *backup*, *export*, *transfer* or *new phone* to find the screen.
    a token written into a server's address travels with it.
 3. **Choose where to save** opens the system's *Create document* screen with
    the name `knotwork-backup-<date>.knotwork`. Any place it offers will do — a
-   folder on the phone, a memory card, a cloud drive. Knotwork itself uploads
-   nothing; a cloud drive you pick uploads the file as it would any other.
+   folder on the phone, a memory card, a cloud drive. Picking an existing file
+   replaces it — if the new backup then does not finish, the old file is gone
+   too. Knotwork itself uploads nothing; a cloud drive you pick uploads the file
+   as it would any other.
 4. **Backing up.** The steps are named as they run: securing the password
-   (about a second on a recent phone), chats, memory and settings, then files and
-   images, with the
-   bytes written so far. Keep Knotwork open until it finishes. **Cancel** — or
-   Back — stops it and deletes the unfinished file.
+   (about a second on a recent phone), chats, memory and settings, then files
+   and images, with the bytes written so far. Keep Knotwork open until it
+   finishes. **Cancel** — or Back — stops it and deletes the unfinished file.
 5. **Backup saved** shows the file, its size, how many chats, memories,
    pipelines and files are in it, and whether the keys are. **Done** forgets
    the password.
@@ -3084,8 +3085,8 @@ An unfinished file is deleted when you cancel and when a backup fails. A few
 places do not let apps delete files; then the screen, or the message after a
 cancel, names the file for you to delete. If the app was closed halfway, the
 file is deleted the next time it starts, where the place still allows it —
-nothing is shown then. A workspace file or image whose name a
-backup cannot store is left out, and the result says how many were.
+nothing is shown then. A workspace file or image whose name a backup cannot
+store is left out, and the result says how many were.
 
 The file's layout and cryptography are described in
 [backup-format.md](backup-format.md).
