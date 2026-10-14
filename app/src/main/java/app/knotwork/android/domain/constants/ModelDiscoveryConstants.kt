@@ -1,8 +1,5 @@
 package app.knotwork.android.domain.constants
 
-import java.net.URI
-import java.net.URISyntaxException
-
 /**
  * Cross-layer constants for the model-discovery feature (browsing the
  * `litert-community` organisation on Hugging Face and installing a model's
@@ -11,7 +8,8 @@ import java.net.URISyntaxException
  * Kept in the `domain` layer (pure Kotlin) so the repository, the mapper and
  * the use cases share one source of truth for the Hub host, the curated
  * organisation, the compatible-file extension and the URL shapes. The data
- * layer composes the actual HTTP calls; this object only owns the literals.
+ * layer composes the actual HTTP calls; this object owns the literals and the
+ * string rules built on them.
  */
 object ModelDiscoveryConstants {
 
@@ -55,26 +53,15 @@ object ModelDiscoveryConstants {
     fun modelCardUrl(repoId: String): String = "$HF_BASE_URL/$repoId"
 
     /**
-     * Whether [url] is Hugging Face itself over `https` — the one address a saved Hugging Face
-     * token is sent to (the downloader applies the same rule to every request). A screen uses it
-     * to tell "accept the licence and add your token" from a refusal no token can answer: a link
-     * on another host, a signed CDN link included, never carries the token.
+     * Whether [url] is an address on the Hub itself: it starts with [HF_BASE_URL] and a `/`, as
+     * every Discover and preset download does. A screen uses it to tell a refusal a Hugging Face
+     * token may answer from one it cannot — a link on another host, a signed CDN link included,
+     * never carries the token. A prefix, not a parse: an address the Hub builds from a file name
+     * may hold characters a strict URI parser rejects, and the decision is about where the request
+     * starts, not what the address means.
      *
-     * @param url An address as stored or entered; one that does not parse is not Hugging Face.
-     * @return `true` only for `https://huggingface.co/…`, in any letter case.
+     * @param url An address as stored or entered.
+     * @return `true` for `https://huggingface.co/…`, in any letter case.
      */
-    fun isHuggingFaceUrl(url: String): Boolean {
-        val uri = try {
-            URI(url)
-        } catch (_: URISyntaxException) {
-            return false
-        }
-        return uri.scheme.equals(HF_SCHEME, ignoreCase = true) && uri.host.equals(HF_HOST, ignoreCase = true)
-    }
-
-    /** Scheme of [HF_BASE_URL]. */
-    private const val HF_SCHEME = "https"
-
-    /** Host of [HF_BASE_URL]. */
-    private const val HF_HOST = "huggingface.co"
+    fun isHuggingFaceUrl(url: String): Boolean = url.startsWith("$HF_BASE_URL/", ignoreCase = true)
 }

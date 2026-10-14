@@ -24,8 +24,8 @@ import org.robolectric.annotation.GraphicsMode
  * Roborazzi baseline for the *Restore* route of Settings → Privacy → *Backup & restore* and the sheet over the chat
  * after a restore: the password (also refused, and at 200 %), the check (both steps), every problem the user is
  * told, the summary (also with nothing on the phone, and at 200 %), *Restoring…*, and the sheet (also with a
- * download running, at 200 %, and with every reason a model's download stopped — also at 200 %) — light, and dark
- * for the states read most.
+ * download running, at 200 %, with the failures a download's stream reports — also at 200 % — and with the stops
+ * a download records) — light, and dark for the states read most.
  *
  * The typed confirm over the summary is not captured: the shared `TypedConfirmDialog` never lets Compose go idle
  * under Robolectric (its field inside an `AlertDialog`), which is why no screen has a baseline of it.
@@ -244,8 +244,8 @@ class RestoreSnapshotTest {
         )
 
         /**
-         * The failures a download's own stream reports: a gated repository refused it — no token came with the
-         * backup — a link on another host no longer works, and one got no answer.
+         * The failures a download's own stream reports: Hugging Face refused one — no token came with the backup —
+         * and another did not finish.
          */
         val AFTER_FAILED = AFTER.copy(
             models = listOf(
@@ -256,21 +256,19 @@ class RestoreSnapshotTest {
                     failure = AfterRestoreDownloadFailure.NeedsAccess,
                 ),
                 AfterRestoreModel(
-                    "custom-finetune.litertlm",
-                    612_000_000,
-                    sourceKnown = true,
-                    failure = AfterRestoreDownloadFailure.Refused,
-                ),
-                AfterRestoreModel(
                     "gemma-4-E2B-it.litertlm",
                     2_588_147_712,
                     sourceKnown = true,
                     failure = AfterRestoreDownloadFailure.Failed,
                 ),
+                AfterRestoreModel("custom-finetune.litertlm", 612_000_000, sourceKnown = false),
             ),
         )
 
-        /** The stops a download records: a pause at the background time limit, and a file that failed its checksum. */
+        /**
+         * The stops a download records: a pause at the background time limit, and — on a model whose source is
+         * unknown, downloaded through Discover — a file that failed its checksum.
+         */
         val AFTER_STOPPED = AFTER.copy(
             models = listOf(
                 AfterRestoreModel(
@@ -280,9 +278,9 @@ class RestoreSnapshotTest {
                     failure = AfterRestoreDownloadFailure.Paused,
                 ),
                 AfterRestoreModel(
-                    "gemma-4-E2B-it.litertlm",
-                    2_588_147_712,
-                    sourceKnown = true,
+                    "custom-finetune.litertlm",
+                    612_000_000,
+                    sourceKnown = false,
                     failure = AfterRestoreDownloadFailure.ChecksumMismatch,
                 ),
             ),

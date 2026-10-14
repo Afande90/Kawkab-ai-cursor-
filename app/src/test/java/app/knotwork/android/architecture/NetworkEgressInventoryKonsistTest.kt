@@ -512,11 +512,6 @@ class NetworkEgressInventoryKonsistTest {
                 Egress.None("maps provider model ids to Koog model descriptors; no client, no call"),
             "$MAIN/data/engine/KoogCloudLlmModelResolver.kt" to
                 Egress.None("resolves a model descriptor per provider; the call is made by the factory"),
-            "$MAIN/domain/constants/ModelDiscoveryConstants.kt" to
-                Egress.None(
-                    "parses an address with java.net.URI to tell whether it is Hugging Face itself; " +
-                        "builds the Hub's URL strings, which the download and discovery clients fetch",
-                ),
             "$MAIN/presentation/ui/chat/home/ContentReportIssueUrl.kt" to
                 Egress.None(
                     "builds the prefilled GitHub issue URL with java.net.URLEncoder. The report — the " +

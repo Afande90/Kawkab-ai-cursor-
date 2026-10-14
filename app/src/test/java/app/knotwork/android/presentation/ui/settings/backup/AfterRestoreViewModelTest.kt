@@ -546,7 +546,7 @@ class AfterRestoreViewModelTest {
         }
 
     @Test
-    fun `given another address refusing with 403 when the download ends then the row says the server refused it`() =
+    fun `given another address refusing with 403 when the download ends then the row does not ask for a token`() =
         runTest(dispatcher) {
             // No token is ever sent there — a signed CDN link, say — so asking for one would send the user in circles.
             every { downloads.downloadModel(KNOWN.sourceUrl!!, KNOWN.name, any()) } returns
@@ -559,24 +559,33 @@ class AfterRestoreViewModelTest {
             advanceUntilIdle()
 
             assertEquals(
-                AfterRestoreDownloadFailure.Refused,
+                AfterRestoreDownloadFailure.Failed,
                 viewModel.state.value!!.models.first { it.name == KNOWN.name }.failure,
             )
         }
 
     @Test
-    fun `given Hugging Face answering 404 when the download ends then the row says the server refused it`() =
+    fun `given Hugging Face answering another HTTP error when the download ends then the row says it did not finish`() =
         runTest(dispatcher) {
-            every { downloads.downloadModel(GATED.sourceUrl!!, GATED.name, any()) } returns
-                flowOf(DownloadState.Error(DownloadError("HTTP 404", code = 404)))
+            // A missing file, a rate limit, a server error: no token answers them, and some a later try does.
+            val statuses = listOf(404, 429, 503)
+            every { downloads.downloadModel(GATED.sourceUrl!!, GATED.name, any()) } returnsMany
+                statuses.map { flowOf(DownloadState.Error(DownloadError("HTTP $it", code = it))) }
             coEvery { restorer.report() } returns REPORT.copy(modelsToDownload = listOf(GATED))
             val viewModel = viewModel()
             advanceUntilIdle()
 
-            viewModel.onDownload(GATED.name)
-            advanceUntilIdle()
+            statuses.forEach { status ->
+                viewModel.onDownload(GATED.name)
+                advanceUntilIdle()
 
-            assertEquals(AfterRestoreDownloadFailure.Refused, viewModel.state.value!!.models.single().failure)
+                assertEquals(
+                    "HTTP $status",
+                    AfterRestoreDownloadFailure.Failed,
+                    viewModel.state.value!!.models.single().failure,
+                )
+            }
+            verify(exactly = 3) { downloads.downloadModel(any(), any(), any()) }
         }
 
     @Test
@@ -617,7 +626,7 @@ class AfterRestoreViewModelTest {
         }
 
     @Test
-    fun `given a recorded stop of a listed model when the sheet shows then its row says so, marked shown`() =
+    fun `given a recorded stop of a listed model when the sheet shows then its row says so and the record stays`() =
         runTest(dispatcher) {
             coEvery { restorer.report() } returns REPORT.copy(modelsToDownload = listOf(KNOWN, GATED))
             val viewModel = viewModel()
@@ -633,12 +642,12 @@ class AfterRestoreViewModelTest {
                 listOf(AfterRestoreDownloadFailure.Paused, AfterRestoreDownloadFailure.ChecksumMismatch),
                 viewModel.state.value!!.models.map { it.failure },
             )
-            verify(exactly = 1) { downloads.acknowledgeInterruption(KNOWN.name) }
-            verify(exactly = 1) { downloads.acknowledgeInterruption(GATED.name) }
+            // Read only: the notice and the Models screen still tell it, once.
+            verify(exactly = 0) { downloads.acknowledgeInterruption(any()) }
         }
 
     @Test
-    fun `given a stop recorded while the sheet is hidden when the chat resumes then the row says so only then`() =
+    fun `given a stop recorded while the sheet is hidden when the chat resumes then the row says so`() =
         runTest(dispatcher) {
             coEvery { restorer.report() } returns REPORT
             val viewModel = viewModel()
@@ -647,7 +656,7 @@ class AfterRestoreViewModelTest {
 
             recordedStops.value = listOf(stop(KNOWN, ModelDownloadFailure.PAUSED_TIME_LIMIT))
             advanceUntilIdle()
-            verify(exactly = 0) { downloads.acknowledgeInterruption(any()) }
+            assertNull(viewModel.state.value)
 
             viewModel.onResumed()
             advanceUntilIdle()
@@ -656,11 +665,52 @@ class AfterRestoreViewModelTest {
                 AfterRestoreDownloadFailure.Paused,
                 viewModel.state.value!!.models.first { it.name == KNOWN.name }.failure,
             )
-            verify(exactly = 1) { downloads.acknowledgeInterruption(KNOWN.name) }
         }
 
     @Test
-    fun `given a stop recorded for a model not listed when the sheet shows then other screens keep it`() =
+    fun `given a recorded stop when its record goes then the row's reason goes with it`() = runTest(dispatcher) {
+        // The download started again from another screen, or another screen showed the stop.
+        coEvery { restorer.report() } returns REPORT
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        recordedStops.value = listOf(stop(KNOWN, ModelDownloadFailure.CHECKSUM_MISMATCH))
+        advanceUntilIdle()
+
+        recordedStops.value = emptyList()
+        advanceUntilIdle()
+
+        assertNull(viewModel.state.value!!.models.first { it.name == KNOWN.name }.failure)
+    }
+
+    @Test
+    fun `given a stop recorded while its download runs here when the download ends then the reason shows only then`() =
+        runTest(dispatcher) {
+            coEvery { restorer.report() } returns REPORT
+            val viewModel = viewModel()
+            advanceUntilIdle()
+            viewModel.onDownload(KNOWN.name)
+            advanceUntilIdle()
+
+            // The worker records the pause just before the download reports its failure.
+            recordedStops.value = listOf(stop(KNOWN, ModelDownloadFailure.PAUSED_TIME_LIMIT))
+            advanceUntilIdle()
+            val running = viewModel.state.value!!.models.first { it.name == KNOWN.name }
+            assertEquals(0, running.progress)
+            assertNull(running.failure)
+
+            download.emit(
+                DownloadState.Error(DownloadError("paused", failure = ModelDownloadFailure.PAUSED_TIME_LIMIT)),
+            )
+            advanceUntilIdle()
+
+            assertEquals(
+                AfterRestoreDownloadFailure.Paused,
+                viewModel.state.value!!.models.first { it.name == KNOWN.name }.failure,
+            )
+        }
+
+    @Test
+    fun `given a stop recorded for a model not listed when the sheet shows then no row says anything`() =
         runTest(dispatcher) {
             coEvery { restorer.report() } returns REPORT
             val viewModel = viewModel()
@@ -669,9 +719,31 @@ class AfterRestoreViewModelTest {
             recordedStops.value = listOf(stop(GATED, ModelDownloadFailure.PAUSED_TIME_LIMIT))
             advanceUntilIdle()
 
-            verify(exactly = 0) { downloads.acknowledgeInterruption(any()) }
             assertEquals(listOf(null, null), viewModel.state.value!!.models.map { it.failure })
         }
+
+    @Test
+    fun `given no report when the chat opens then the downloads' records are never read`() = runTest(dispatcher) {
+        coEvery { restorer.report() } returns null
+
+        viewModel()
+        advanceUntilIdle()
+
+        verify(exactly = 0) { downloads.observeInterruptedDownloads() }
+    }
+
+    @Test
+    fun `given the sheet when Done is tapped then the downloads' records are no longer read`() = runTest(dispatcher) {
+        coEvery { restorer.report() } returns REPORT
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        assertEquals(1, recordedStops.subscriptionCount.value)
+
+        viewModel.onDone()
+        advanceUntilIdle()
+
+        assertEquals(0, recordedStops.subscriptionCount.value)
+    }
 
     @Test
     fun `given a failed download when Download is tapped again then the reason leaves while it runs`() =
