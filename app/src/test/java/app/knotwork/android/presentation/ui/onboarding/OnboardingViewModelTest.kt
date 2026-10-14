@@ -27,6 +27,8 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -525,21 +527,44 @@ class OnboardingViewModelTest {
     }
 
     @Test
-    fun `given a preset's download paused while setup was closed when setup opens then it says so on that preset`() =
+    fun `given a stop recorded while setup is on its first step when it arrives then it waits to be shown`() = runTest {
+        // Setup draws a download's message on its Download step only. Acknowledged on arrival,
+        // the stop would be dropped (and its notification taken down) with nothing on screen.
+        val e2b = OnboardingModelCatalog.entryById(OnboardingModelCatalog.ID_GEMMA_4_E2B)!!
+        every { downloadManager.observeInterruptedDownloads() } returns flowOf(
+            listOf(
+                InterruptedDownload(e2b.fileName, e2b.downloadUrl, ModelDownloadFailure.PAUSED_TIME_LIMIT, "paused"),
+            ),
+        )
+
+        val viewModel = newViewModel()
+        advanceUntilIdle()
+
+        assertEquals(OnboardingStep.Welcome, viewModel.state.value.step)
+        assertNull(viewModel.state.value.downloadError)
+        verify(exactly = 0) { downloadManager.acknowledgeInterruption(any()) }
+    }
+
+    @Test
+    fun `given a preset's download paused while setup was closed when its Download step shows then it says so`() =
         runTest {
             val e2b = OnboardingModelCatalog.entryById(OnboardingModelCatalog.ID_GEMMA_4_E2B)!!
-            every { downloadManager.observeInterruptedDownloads() } returns flowOf(
-                listOf(
-                    InterruptedDownload(
-                        e2b.fileName,
-                        e2b.downloadUrl,
-                        ModelDownloadFailure.PAUSED_TIME_LIMIT,
-                        "paused",
+            every { downloadManager.observeInterruptedDownloads() } returns
+                flowOf(
+                    listOf(
+                        InterruptedDownload(
+                            e2b.fileName,
+                            e2b.downloadUrl,
+                            ModelDownloadFailure.PAUSED_TIME_LIMIT,
+                            "paused",
+                        ),
                     ),
-                ),
-            )
-
+                )
             val viewModel = newViewModel()
+            advanceUntilIdle()
+            viewModel.toDownloadStep()
+
+            viewModel.showPendingInterruption()
             advanceUntilIdle()
 
             // The step returns to the preset that paused, so Download continues it from its bytes.
@@ -547,17 +572,21 @@ class OnboardingViewModelTest {
             assertEquals(OnboardingModelCatalog.ID_GEMMA_4_E2B, state.liteRtModel.id)
             assertEquals("paused", state.downloadError)
             assertNull(state.downloadProgress)
+            assertNull(viewModel.pendingInterruption.value)
             verify(exactly = 1) { downloadManager.acknowledgeInterruption(e2b.fileName) }
         }
 
     @Test
-    fun `given a custom link's download stopped when setup opens then its link is back in the field`() = runTest {
+    fun `given a custom link's download stopped when the Download step shows it then its link is back`() = runTest {
         val url = "https://example.com/models/mine.litertlm"
         every { downloadManager.observeInterruptedDownloads() } returns flowOf(
             listOf(InterruptedDownload("mine.litertlm", url, ModelDownloadFailure.CHECKSUM_MISMATCH, "did not match")),
         )
-
         val viewModel = newViewModel()
+        advanceUntilIdle()
+        viewModel.toDownloadStep()
+
+        viewModel.showPendingInterruption()
         advanceUntilIdle()
 
         val state = viewModel.state.value
@@ -567,23 +596,73 @@ class OnboardingViewModelTest {
     }
 
     @Test
-    fun `given a pause when the watched download fails then its sentence is not written over`() = runTest {
-        // The record arrives first and sets the sentence; the failure that follows must not
-        // replace it with the generic one, or blank it.
+    fun `given a stop when setup is not on its Download step then showing it waits`() = runTest {
+        val e2b = OnboardingModelCatalog.entryById(OnboardingModelCatalog.ID_GEMMA_4_E2B)!!
+        val stopped =
+            InterruptedDownload(e2b.fileName, e2b.downloadUrl, ModelDownloadFailure.PAUSED_TIME_LIMIT, "paused")
+        every { downloadManager.observeInterruptedDownloads() } returns flowOf(listOf(stopped))
         val viewModel = newViewModel()
         advanceUntilIdle()
-        every { downloadManager.downloadModel(any(), any(), any()) } returns flowOf(
-            DownloadState.Pending,
-            DownloadState.Error(
-                AndroidModelDownloadManager.DownloadError("ignored", failure = ModelDownloadFailure.PAUSED_TIME_LIMIT),
-            ),
-        )
 
-        viewModel.startDownload()
+        viewModel.showPendingInterruption()
         advanceUntilIdle()
 
+        assertEquals(stopped, viewModel.pendingInterruption.value)
         assertNull(viewModel.state.value.downloadError)
-        assertNull(viewModel.state.value.downloadProgress)
+        verify(exactly = 0) { downloadManager.acknowledgeInterruption(any()) }
+    }
+
+    @Test
+    fun `given the followed download pauses when it fails then the recorded sentence is shown, not the live one`() =
+        runTest {
+            // The record arrives while the download is still followed: showing it waits for the
+            // download to end, so the selection never changes under it, and the live failure does
+            // not word the stop a second time.
+            val e2b = OnboardingModelCatalog.entryById(OnboardingModelCatalog.ID_GEMMA_4_E2B)!!
+            val records = MutableStateFlow<List<InterruptedDownload>>(emptyList())
+            every { downloadManager.observeInterruptedDownloads() } returns records
+            val download = MutableSharedFlow<DownloadState>()
+            every { downloadManager.downloadModel(any(), any(), any()) } returns download
+            val viewModel = newViewModel()
+            advanceUntilIdle()
+            viewModel.toDownloadStep()
+            viewModel.startDownload()
+            advanceUntilIdle()
+            download.emit(DownloadState.Downloading(40))
+
+            records.value =
+                listOf(
+                    InterruptedDownload(
+                        e2b.fileName,
+                        e2b.downloadUrl,
+                        ModelDownloadFailure.PAUSED_TIME_LIMIT,
+                        "paused",
+                    ),
+                )
+            advanceUntilIdle()
+            viewModel.showPendingInterruption()
+            verify(exactly = 0) { downloadManager.acknowledgeInterruption(any()) }
+
+            download.emit(
+                DownloadState.Error(
+                    AndroidModelDownloadManager.DownloadError(
+                        "live text",
+                        failure = ModelDownloadFailure.PAUSED_TIME_LIMIT,
+                    ),
+                ),
+            )
+            advanceUntilIdle()
+            assertNull("the live failure words nothing itself", viewModel.state.value.downloadError)
+            viewModel.showPendingInterruption()
+
+            assertEquals("paused", viewModel.state.value.downloadError)
+            verify(exactly = 1) { downloadManager.acknowledgeInterruption(e2b.fileName) }
+        }
+
+    /** Walks setup from its first step to its Download step. */
+    private fun OnboardingViewModel.toDownloadStep() {
+        repeat(OnboardingStep.Download.pageIndex) { next() }
+        assertEquals(OnboardingStep.Download, state.value.step)
     }
 
     @Test

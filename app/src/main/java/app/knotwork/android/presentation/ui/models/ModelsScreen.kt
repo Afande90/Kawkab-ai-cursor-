@@ -74,8 +74,8 @@ fun ModelsScreen(
 
     val interruptedFormat = stringResource(R.string.model_download_interrupted_format)
     val continueLabel = stringResource(R.string.models_interrupted_continue)
-    LaunchedEffect(uiState.interruption) {
-        uiState.interruption?.let { interruption ->
+    LaunchedEffect(uiState.interruptionToShow) {
+        uiState.interruptionToShow?.let { interruption ->
             val paused = interruption.failure == ModelDownloadFailure.PAUSED_TIME_LIMIT
             val result = snackbarHostState.showSnackbar(
                 message = interruptedFormat.format(interruption.fileName, interruption.message),

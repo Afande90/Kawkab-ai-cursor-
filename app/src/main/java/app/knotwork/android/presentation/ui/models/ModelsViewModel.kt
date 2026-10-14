@@ -138,6 +138,9 @@ class ModelsViewModel @Inject constructor(
      *   then continues from the bytes it kept.
      */
     fun onInterruptionShown(interruption: InterruptedDownload, continueDownload: Boolean) {
+        // Starting a second download while one runs does nothing here; acknowledging anyway would
+        // lose the pause and its notice. Kept, it is shown again once the running download ends.
+        if (continueDownload && _uiState.value.isDownloading) return
         downloadManager.acknowledgeInterruption(interruption.fileName)
         if (continueDownload) startDownload(interruption.url, interruption.fileName)
     }

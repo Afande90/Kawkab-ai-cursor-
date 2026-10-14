@@ -96,6 +96,14 @@ class OnboardingViewModel @Inject constructor(
     /** Externally-observable view state passed to `OnboardingContent`. */
     val state: StateFlow<OnboardingViewState> = _state.asStateFlow()
 
+    private val _pendingInterruption = MutableStateFlow<InterruptedDownload?>(null)
+
+    /**
+     * The oldest download that stopped for a reason no screen has shown yet, or `null`. The screen
+     * asks for it to be shown ([showPendingInterruption]) once its Download step is in front.
+     */
+    val pendingInterruption: StateFlow<InterruptedDownload?> = _pendingInterruption.asStateFlow()
+
     /** Active download collection — cancelled when a new pick re-arms the flow. */
     private var downloadJob: Job? = null
 
@@ -327,32 +335,44 @@ class OnboardingViewModel @Inject constructor(
     }
 
     /**
-     * Shows why a download stopped — a pause at the background time limit, or a file that
-     * failed its checksum — when no screen has shown it yet: usually the user left setup while
-     * it ran, and setup is where they come back to until they finish it.
+     * Follows the downloads that stopped for a reason not shown yet — a pause at the background
+     * time limit, or a file that failed its checksum — keeping the oldest in [pendingInterruption].
      *
-     * The step returns to the model that stopped, so its Download button starts that same
-     * download again: a paused one continues from the bytes it kept. Shown once — reported
-     * shown at once, since this screen is the one in front while setup runs.
+     * Nothing is shown or acknowledged here: setup draws a download's message on its Download
+     * step only, and this view model lives on while the app is in the background. Acknowledging
+     * on arrival would take the notification down at once and drop the stop with nothing on
+     * screen. The screen calls [showPendingInterruption] when the Download step is in front.
      */
     private fun observeInterruptions() {
         downloadManager.observeInterruptedDownloads()
-            .onEach { stopped -> stopped.firstOrNull()?.let(::showInterruption) }
+            .onEach { stopped -> _pendingInterruption.value = stopped.firstOrNull() }
             .launchIn(viewModelScope)
     }
 
-    private fun showInterruption(interruption: InterruptedDownload) {
+    /**
+     * Shows the oldest stop no screen has shown yet, when the Download step can draw it: that step
+     * is in front, and no download is being followed — a stop that arrives while one is, waits for
+     * it to end, so the selection never changes under a running download.
+     *
+     * The step returns to the model that stopped, so its Download button starts that same download
+     * again — a paused one continues from the bytes it kept — and the stop is acknowledged, which
+     * takes its notification down. The screen calls this only while it is resumed.
+     */
+    fun showPendingInterruption() {
+        val interruption = _pendingInterruption.value ?: return
+        val current = _state.value
+        if (current.step != OnboardingStep.Download || current.downloadProgress != null) return
         val preset = OnboardingModelCatalog.PRESETS.firstOrNull { it.fileName == interruption.fileName }
         val picked = OnboardingLiteRtModel.entries.firstOrNull { it.id == preset?.id }
             ?: OnboardingLiteRtModel.CustomUrl
+        if (picked != current.liteRtModel) pickLiteRtModel(picked)
         _state.update {
             it.copy(
-                liteRtModel = picked,
                 customDownloadUrl = if (preset == null) interruption.url else it.customDownloadUrl,
-                downloadProgress = null,
                 downloadError = interruption.message,
             )
         }
+        _pendingInterruption.value = null
         downloadManager.acknowledgeInterruption(interruption.fileName)
     }
 
@@ -433,8 +453,8 @@ class OnboardingViewModel @Inject constructor(
             is DownloadState.Error -> _state.update {
                 it.copy(
                     downloadProgress = null,
-                    // A pause or a checksum mismatch was recorded before the download failed and
-                    // is shown from there, once — so its text is not written over here.
+                    // A pause or a checksum mismatch was recorded before the download failed and is
+                    // shown from that record, once — this path does not word it a second time.
                     downloadError = if (downloadState.error.isRecordedInterruption()) {
                         it.downloadError
                     } else {

@@ -2,6 +2,7 @@ package app.knotwork.android.data.services
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import app.knotwork.android.domain.models.ModelDownloadFailure
 import app.knotwork.android.domain.repositories.InterruptedDownload
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -9,8 +10,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import org.json.JSONException
 import org.json.JSONObject
 import timber.log.Timber
@@ -28,9 +31,10 @@ import javax.inject.Singleton
  * it is cancelled.
  *
  * One record per file name, in a plain preferences file of its own: the file name, the address
- * it downloads from (what starting it again needs), why it stopped and the sentence that says so.
- * The address is already in WorkManager's own record of the download, in the clear, while that
- * record lives.
+ * it downloads from (what starting it again needs, query string included), why it stopped, the
+ * sentence that says so and when. WorkManager keeps the same address in the clear in its own
+ * record of the download; this copy lasts longer — until a screen shows it, or the download is
+ * started again or cancelled.
  *
  * @param preferences Opens the preferences file; a parameter only so a test can supply its own.
  * @param clock Wall-clock time in epoch milliseconds, which orders the records; a parameter only
@@ -71,7 +75,9 @@ class DownloadInterruptionStore internal constructor(
             .put(FIELD_MESSAGE, message)
             .put(FIELD_AT, clock())
             .toString()
-        preferences().edit().putString(fileName, value).apply()
+        // Written at once, not later: the caller is the download worker, off the main thread, and
+        // the failure it returns next may be followed by the process ending before a later write.
+        preferences().edit(commit = true) { putString(fileName, value) }
     }
 
     /**
@@ -80,7 +86,7 @@ class DownloadInterruptionStore internal constructor(
      * @param fileName Local file name the download was started with.
      */
     fun clear(fileName: String) {
-        preferences().edit().remove(fileName).apply()
+        preferences().edit { remove(fileName) }
     }
 
     /**
@@ -91,11 +97,15 @@ class DownloadInterruptionStore internal constructor(
     fun observe(): Flow<List<InterruptedDownload>> = callbackFlow {
         val prefs = preferences()
         // Held here: SharedPreferences keeps its listeners weakly, and only this flow refers to it.
-        val listener = SharedPreferences.OnSharedPreferenceChangeListener { changed, _ -> trySend(read(changed)) }
+        // It sends a signal, not a list: every list is read in turn below, so a change landing
+        // between the first read and the first send cannot be overtaken by the older list.
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> trySend(Unit) }
         prefs.registerOnSharedPreferenceChangeListener(listener)
-        send(read(prefs))
+        send(Unit)
         awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
     }
+        .conflate()
+        .map { read(preferences()) }
         .distinctUntilChanged()
         .flowOn(Dispatchers.IO)
 

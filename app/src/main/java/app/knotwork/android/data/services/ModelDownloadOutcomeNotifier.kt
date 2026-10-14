@@ -26,9 +26,10 @@ import javax.inject.Singleton
  * with its worker either way; without this one the shade would simply go quiet.
  *
  * One notification per file ([NotificationIds.Family.MODEL_DOWNLOAD_OUTCOME], keyed by the file
- * name), on the model-download channel. Tapping it opens the app, where the screen that shows
- * downloads says the same thing once more and offers to continue. It is removed when the
- * download starts again, is cancelled, or a screen has shown why it stopped. Without the
+ * name), on the model-download channel. Tapping it opens the app as its launcher icon does; the
+ * Models screen says the same thing the next time it is opened (and offers Continue for a pause),
+ * unless setup's Download step or the model's page in Discover said it first. It is removed when
+ * the download starts again, is cancelled, or a screen has shown why it stopped. Without the
  * notification permission nothing is posted; the screens still say it.
  *
  * @property context Application context the notification is posted from.

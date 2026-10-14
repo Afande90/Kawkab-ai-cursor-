@@ -83,7 +83,15 @@ data class ModelsUiState(
      * was closed. The screen shows it once and reports it shown; `null` when there is none.
      */
     val interruption: InterruptedDownload? = null,
-)
+) {
+
+    /**
+     * The [interruption] to show now: none while a download is running. This screen follows one
+     * download at a time, so a paused one could not be continued from here until it ends — and a
+     * stop of the followed download itself is recorded before its failure arrives.
+     */
+    val interruptionToShow: InterruptedDownload? get() = interruption.takeUnless { isDownloading }
+}
 
 /**
  * Presentation state of the model benchmark, layered over the rolling-average

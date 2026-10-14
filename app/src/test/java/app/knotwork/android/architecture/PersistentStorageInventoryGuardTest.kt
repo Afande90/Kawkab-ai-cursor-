@@ -388,9 +388,10 @@ class PersistentStorageInventoryGuardTest {
 
         /**
          * Why a model download stopped (`DownloadInterruptionStore`) — per file, its name, the
-         * address it downloads from and the reason, in a plain preferences file until a screen
-         * has shown it. The address is already in WorkManager's own record of the download, in
-         * the clear; the domain-wide `sharedpref` rule keeps it out of backups.
+         * address it downloads from, the reason and when, in a plain preferences file until a
+         * screen has shown it or the download is started again or cancelled. WorkManager keeps
+         * the same address in the clear in its own record, for less long; the domain-wide
+         * `sharedpref` rule keeps both out of backups.
          */
         DOWNLOAD_INTERRUPTIONS(
             domain = "sharedpref",

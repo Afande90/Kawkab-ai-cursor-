@@ -23,7 +23,9 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -271,14 +273,20 @@ class ModelsViewModelTest {
         // error as well would show the same stop twice.
         for (failure in listOf(ModelDownloadFailure.PAUSED_TIME_LIMIT, ModelDownloadFailure.CHECKSUM_MISMATCH)) {
             val error = AndroidModelDownloadManager.DownloadError("stopped", failure = failure)
+            // The stream stays open after the failure, so only the Error frame can have cleared
+            // the in-flight flag — proof the frame was handled, not merely never collected.
             every { downloadManager.downloadModel("http://x/m.bin", "m.bin", any()) } returns
-                flowOf(DownloadState.Error(error))
+                flow {
+                    emit(DownloadState.Error(error))
+                    awaitCancellation()
+                }
 
             viewModel.startDownload("http://x/m.bin", "m.bin")
             advanceUntilIdle()
 
             assertEquals("$failure", null, viewModel.uiState.value.downloadError)
             assertEquals(false, viewModel.uiState.value.isDownloading)
+            viewModel.cancelDownload()
         }
     }
 
@@ -306,6 +314,22 @@ class ModelsViewModelTest {
     }
 
     @Test
+    fun `given another download running when the user continues a pause then the pause is kept`() = runTest {
+        // Only one download is followed at a time, so starting it would do nothing. Dropping
+        // the record anyway would lose the pause and its notice for good.
+        every { downloadManager.downloadModel("http://x/running.bin", "running.bin", any()) } returns
+            flow { awaitCancellation() }
+        viewModel.startDownload("http://x/running.bin", "running.bin")
+        advanceUntilIdle()
+        val paused = stopped("a.litertlm", ModelDownloadFailure.PAUSED_TIME_LIMIT)
+
+        viewModel.onInterruptionShown(paused, continueDownload = true)
+        advanceUntilIdle()
+
+        verify(exactly = 0) { downloadManager.acknowledgeInterruption("a.litertlm") }
+    }
+
+    @Test
     fun `given a shown pause when the user continues then the same download starts again`() = runTest {
         val paused = stopped("a.litertlm", ModelDownloadFailure.PAUSED_TIME_LIMIT)
         every { downloadManager.downloadModel(any(), any(), any()) } returns flowOf()
@@ -316,6 +340,14 @@ class ModelsViewModelTest {
         // Same address and name: the part file is keyed by both, so the bytes kept are used.
         verify(exactly = 1) { downloadManager.acknowledgeInterruption("a.litertlm") }
         verify(exactly = 1) { downloadManager.downloadModel(paused.url, "a.litertlm", false) }
+    }
+
+    @Test
+    fun `given a download running when a stop is recorded then it is not shown until the download ends`() {
+        val paused = stopped("a.litertlm", ModelDownloadFailure.PAUSED_TIME_LIMIT)
+
+        assertEquals(null, ModelsUiState(interruption = paused, isDownloading = true).interruptionToShow)
+        assertEquals(paused, ModelsUiState(interruption = paused, isDownloading = false).interruptionToShow)
     }
 
     /** A stop of [fileName] as the download manager reports it. */
