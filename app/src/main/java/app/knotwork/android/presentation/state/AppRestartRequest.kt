@@ -14,9 +14,9 @@ import javax.inject.Singleton
  * finishes therefore cannot lose it — the screen that asked need not be on screen when it is answered. A new
  * process starts without a request.
  *
- * Only that activity reads it. The entry points that run without it — the share target, the quick-settings tile,
- * the AppFunctions service, the approval and automation receivers — do not: with the app sent to the background
- * during the commit, work they start before the app is next opened is neither blocked nor stopped by the restore.
+ * Only that activity reads it. The other entry points — the share target, the quick-settings tile, the
+ * AppFunctions service, the approval and automation receivers — do not, so the restore does not block work they
+ * start while the restart is pending.
  */
 @Singleton
 class AppRestartRequest @Inject constructor() {

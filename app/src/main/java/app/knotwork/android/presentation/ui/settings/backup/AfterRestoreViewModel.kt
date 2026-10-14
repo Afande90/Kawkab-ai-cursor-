@@ -29,8 +29,9 @@ import javax.inject.Inject
 
 /**
  * What the app tells the user the first time it opens after a restore: a sheet over the chat with the models to
- * download again, the keys to enter again — when the backup was made without them and none is set on this
- * phone — and the tasks that were not carried; or, when nothing is left to do, the snackbar *Restored*.
+ * download again, the keys to enter again — when the report has neither [RestoreReport.secretsApplied] nor
+ * [RestoreReport.secretsOnPhone] — and the tasks that were not carried; or, when nothing is left to do, the snackbar
+ * *Restored*.
  *
  * The report is read once and dismissed on *Done*; until then the sheet shows each time the chat does. A download
  * started here is the download worker's, as on the Models screen: it goes on after the sheet closes, and the
@@ -172,7 +173,7 @@ class AfterRestoreViewModel internal constructor(
     }
 
     private companion object {
-        /** Keys are left to enter only when the backup carried none and this phone has none of its own. */
+        /** Keys are left to enter when the report has neither of its two secrets flags. */
         fun keysToEnter(report: RestoreReport): Boolean = !report.secretsApplied && !report.secretsOnPhone
 
         fun deviceDate(epochMillis: Long): String =
