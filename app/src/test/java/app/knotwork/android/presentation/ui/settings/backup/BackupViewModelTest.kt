@@ -14,6 +14,7 @@ import app.knotwork.design.screens.settings.backup.BackupForm
 import app.knotwork.design.screens.settings.backup.BackupSaved
 import app.knotwork.design.screens.settings.backup.BackupWorkStep
 import app.knotwork.design.screens.settings.backup.BackupWorking
+import io.mockk.MockKAnswerScope
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -53,6 +54,7 @@ class BackupViewModelTest {
         coEvery { displayName(DOCUMENT) } returns FILE_NAME
         coEvery { discard(DOCUMENT) } returns true
         coEvery { discard(OTHER_DOCUMENT) } returns true
+        coEvery { discardIfEmpty(any()) } returns true
     }
     private lateinit var viewModel: BackupViewModel
 
@@ -183,8 +185,8 @@ class BackupViewModelTest {
     fun `given a document when the backup runs then progress shows its steps and bytes`() = runTest(dispatcher) {
         // Given
         val release = CompletableDeferred<Unit>()
-        coEvery { backUp(DOCUMENT, any(), false, any()) } coAnswers {
-            arg<(BackupProgress) -> Unit>(3)(BackupProgress(BackupStep.FILES, bytesDone = 40, bytesTotal = 100))
+        coEvery { backUp(DOCUMENT, any(), false, any(), any()) } coAnswers {
+            arg<(BackupProgress) -> Unit>(4)(BackupProgress(BackupStep.FILES, bytesDone = 40, bytesTotal = 100))
             release.await()
             saved()
         }
@@ -205,7 +207,7 @@ class BackupViewModelTest {
     fun `given a saved backup when it ends then the result shows what is in it and the password is dropped`() =
         runTest(dispatcher) {
             // Given
-            coEvery { backUp(DOCUMENT, any(), true, any()) } returns saved(skipped = 2)
+            coEvery { backUp(DOCUMENT, any(), true, any(), any()) } returns saved(skipped = 2)
             fill(secrets = true)
 
             // When
@@ -229,15 +231,15 @@ class BackupViewModelTest {
             // A stale picker result finds no password to lock a second backup with: its empty file goes.
             viewModel.onDocumentPicked(OTHER_DOCUMENT)
             advanceUntilIdle()
-            coVerify(exactly = 1) { backUp(any(), any(), any(), any()) }
-            coVerify { documents.discard(OTHER_DOCUMENT) }
+            coVerify(exactly = 1) { backUp(any(), any(), any(), any(), any()) }
+            coVerify { documents.discardIfEmpty(OTHER_DOCUMENT) }
         }
 
     @Test
     fun `given a failed backup when it ends then the reason shows and try again keeps the password`() =
         runTest(dispatcher) {
             val events = events()
-            coEvery { backUp(DOCUMENT, any(), false, any()) } returns
+            coEvery { backUp(DOCUMENT, any(), false, any(), any()) } returns
                 BackupToDocumentOutcome.Failed(
                     BackupExportFailure.NO_SPACE,
                     neededBytes = 9_000,
@@ -261,9 +263,8 @@ class BackupViewModelTest {
     @Test
     fun `given the backup running when cancelled then the screen returns and says whether the file was deleted`() =
         runTest(dispatcher) {
-            // Given
-            coEvery { backUp(DOCUMENT, any(), false, any()) } coAnswers { awaitCancellation() }
-            coEvery { documents.discard(DOCUMENT) } returns false
+            // Given — the backup deletes its document on the way out and reports that the provider refused.
+            coEvery { backUp(DOCUMENT, any(), false, any(), any()) } coAnswers { reportingOnTheWayOut(deleted = false) }
             fill()
             viewModel.onDocumentPicked(DOCUMENT)
             advanceUntilIdle()
@@ -275,7 +276,7 @@ class BackupViewModelTest {
             // Then
             assertNull(viewModel.state.value.route)
             assertEquals(BackupCancelNotice(fileDeleted = false, fileName = FILE_NAME), viewModel.cancelNotice.value)
-            coVerify(exactly = 1) { documents.discard(DOCUMENT) }
+            coVerify(exactly = 0) { documents.discard(any()) }
             viewModel.onCancelNoticeShown()
             assertNull(viewModel.cancelNotice.value)
         }
@@ -283,7 +284,11 @@ class BackupViewModelTest {
     @Test
     fun `given a cancel already on its way when cancel and Back come again then it is done once`() =
         runTest(dispatcher) {
-            coEvery { backUp(DOCUMENT, any(), false, any()) } coAnswers { awaitCancellation() }
+            var reports = 0
+            coEvery { backUp(DOCUMENT, any(), false, any(), any()) } coAnswers {
+                reports++
+                reportingOnTheWayOut(deleted = true)
+            }
             fill()
             viewModel.onDocumentPicked(DOCUMENT)
             advanceUntilIdle()
@@ -293,14 +298,15 @@ class BackupViewModelTest {
             assertTrue("Back is still the route's while the cancel finishes", viewModel.onBack())
             advanceUntilIdle()
 
-            coVerify(exactly = 1) { documents.discard(DOCUMENT) }
+            assertEquals(1, reports)
+            coVerify(exactly = 0) { documents.discard(any()) }
             assertEquals(BackupCancelNotice(fileDeleted = true, fileName = FILE_NAME), viewModel.cancelNotice.value)
         }
 
     @Test
     fun `given a backup that already finished when a late cancel arrives then the complete file is kept`() =
         runTest(dispatcher) {
-            coEvery { backUp(DOCUMENT, any(), false, any()) } returns saved()
+            coEvery { backUp(DOCUMENT, any(), false, any(), any()) } returns saved()
             fill()
             viewModel.onDocumentPicked(DOCUMENT)
             advanceUntilIdle()
@@ -319,7 +325,7 @@ class BackupViewModelTest {
             // Given — the use case records a complete backup where a cancel cannot stop it.
             val recording = CompletableDeferred<Unit>()
             val release = CompletableDeferred<Unit>()
-            coEvery { backUp(DOCUMENT, any(), false, any()) } coAnswers {
+            coEvery { backUp(DOCUMENT, any(), false, any(), any()) } coAnswers {
                 withContext(NonCancellable) {
                     recording.complete(Unit)
                     release.await()
@@ -363,13 +369,13 @@ class BackupViewModelTest {
             assertTrue(viewModel.onBack())
             advanceUntilIdle()
             assertNull(viewModel.state.value.route)
-            coVerify(exactly = 0) { backUp(any(), any(), any(), any()) }
+            coVerify(exactly = 0) { backUp(any(), any(), any(), any(), any()) }
             coVerify(exactly = 1) { documents.discard(DOCUMENT) }
             assertEquals(BackupCancelNotice(fileDeleted = true, fileName = suggested), viewModel.cancelNotice.value)
         }
 
     @Test
-    fun `given a picker result with no password behind it when it returns then its empty file is deleted`() =
+    fun `given a picker result with no password behind it when it returns then it goes only if empty`() =
         runTest(dispatcher) {
             // Given — the process was recreated while the picker was open: a new view model, nothing typed.
 
@@ -379,15 +385,16 @@ class BackupViewModelTest {
 
             // Then
             assertNull(viewModel.state.value.route)
-            coVerify(exactly = 0) { backUp(any(), any(), any(), any()) }
-            coVerify(exactly = 1) { documents.discard(DOCUMENT) }
+            coVerify(exactly = 0) { backUp(any(), any(), any(), any(), any()) }
+            coVerify(exactly = 1) { documents.discardIfEmpty(DOCUMENT) }
+            coVerify(exactly = 0) { documents.discard(any()) }
         }
 
     @Test
-    fun `given a second document while a backup runs when it returns then it is deleted and the backup goes on`() =
+    fun `given a second document while a backup runs when it returns then it goes if empty, the backup goes on`() =
         runTest(dispatcher) {
             val release = CompletableDeferred<Unit>()
-            coEvery { backUp(DOCUMENT, any(), false, any()) } coAnswers {
+            coEvery { backUp(DOCUMENT, any(), false, any(), any()) } coAnswers {
                 release.await()
                 saved()
             }
@@ -400,9 +407,96 @@ class BackupViewModelTest {
             release.complete(Unit)
             advanceUntilIdle()
 
-            coVerify(exactly = 1) { documents.discard(OTHER_DOCUMENT) }
-            coVerify(exactly = 0) { documents.discard(DOCUMENT) }
+            coVerify(exactly = 1) { documents.discardIfEmpty(OTHER_DOCUMENT) }
+            coVerify(exactly = 0) { documents.discard(any()) }
             assertEquals(FILE_NAME, (viewModel.state.value.route as BackupSaved).fileName)
+        }
+
+    @Test
+    fun `given the running document picked again when it returns then it is left to the backup writing it`() =
+        runTest(dispatcher) {
+            val release = CompletableDeferred<Unit>()
+            coEvery { backUp(DOCUMENT, any(), false, any(), any()) } coAnswers {
+                release.await()
+                saved()
+            }
+            fill()
+            viewModel.onDocumentPicked(DOCUMENT)
+            advanceUntilIdle()
+
+            // When — a second picker, opened by a double tap, returns the very file being written.
+            viewModel.onDocumentPicked(DOCUMENT)
+            advanceUntilIdle()
+            release.complete(Unit)
+            advanceUntilIdle()
+
+            // Then
+            coVerify(exactly = 0) { documents.discardIfEmpty(any()) }
+            coVerify(exactly = 0) { documents.discard(any()) }
+            assertTrue(viewModel.state.value.route is BackupSaved)
+        }
+
+    @Test
+    fun `given a cancel finishing when a document is picked then no second backup starts`() = runTest(dispatcher) {
+        coEvery { backUp(DOCUMENT, any(), false, any(), any()) } coAnswers { reportingOnTheWayOut(deleted = true) }
+        fill()
+        viewModel.onDocumentPicked(DOCUMENT)
+        advanceUntilIdle()
+
+        // When — a pick lands after Cancel, before the cancel has closed the route.
+        viewModel.onCancel()
+        viewModel.onDocumentPicked(OTHER_DOCUMENT)
+        advanceUntilIdle()
+
+        // Then
+        coVerify(exactly = 1) { backUp(any(), any(), any(), any(), any()) }
+        coVerify(exactly = 1) { documents.discardIfEmpty(OTHER_DOCUMENT) }
+        assertNull(viewModel.state.value.route)
+    }
+
+    @Test
+    fun `given a second picker backed out of while a backup runs when it returns then the work stays on screen`() =
+        runTest(dispatcher) {
+            val release = CompletableDeferred<Unit>()
+            coEvery { backUp(DOCUMENT, any(), false, any(), any()) } coAnswers {
+                arg<(BackupProgress) -> Unit>(4)(BackupProgress(BackupStep.FILES, bytesDone = 40, bytesTotal = 100))
+                release.await()
+                saved()
+            }
+            fill()
+            viewModel.onDocumentPicked(DOCUMENT)
+            advanceUntilIdle()
+
+            // When — the user backs out of the other picker a double tap opened.
+            viewModel.onDocumentPicked(null)
+
+            // Then — still the work, and Back is still Cancel.
+            assertEquals(BackupWorking(FILE_NAME, BackupWorkStep.FILES, 40, 100), viewModel.state.value.route)
+            release.complete(Unit)
+            advanceUntilIdle()
+            assertTrue(viewModel.state.value.route is BackupSaved)
+        }
+
+    @Test
+    fun `given a backup that deleted its file and then broke when it ends then the screen says what it did`() =
+        runTest(dispatcher) {
+            // Given — the use case deleted the document on its way out, the provider refusing, then threw.
+            coEvery { backUp(DOCUMENT, any(), false, any(), any()) } coAnswers {
+                arg<(Boolean) -> Unit>(3)(false)
+                throw IllegalStateException("provider")
+            }
+            fill()
+
+            // When
+            viewModel.onDocumentPicked(DOCUMENT)
+            advanceUntilIdle()
+
+            // Then — its answer stands; nothing is deleted twice.
+            assertEquals(
+                BackupFailed(BackupFailReason.READ_FAILED, fileDeleted = false, fileName = FILE_NAME),
+                viewModel.state.value.route,
+            )
+            coVerify(exactly = 0) { documents.discard(any()) }
         }
 
     @Test
@@ -410,7 +504,7 @@ class BackupViewModelTest {
         runTest(dispatcher) {
             val events = events()
             coEvery { documents.displayName(DOCUMENT) } returns null
-            coEvery { backUp(DOCUMENT, any(), false, any()) } returns saved()
+            coEvery { backUp(DOCUMENT, any(), false, any(), any()) } returns saved()
             fill()
             viewModel.onChooseWhere()
             advanceUntilIdle()
@@ -434,7 +528,7 @@ class BackupViewModelTest {
     @Test
     fun `given the backup throws unexpectedly when it ends then it is a failure the user is told`() =
         runTest(dispatcher) {
-            coEvery { backUp(DOCUMENT, any(), false, any()) } throws IllegalStateException("provider")
+            coEvery { backUp(DOCUMENT, any(), false, any(), any()) } throws IllegalStateException("provider")
             fill()
 
             viewModel.onDocumentPicked(DOCUMENT)
@@ -451,6 +545,15 @@ class BackupViewModelTest {
         val events = mutableListOf<BackupEvent>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.events.collect { events += it } }
         return events
+    }
+
+    /** A use case cancelled while it writes, deleting its document on the way out and reporting how that went. */
+    private suspend fun MockKAnswerScope<BackupToDocumentOutcome, BackupToDocumentOutcome>.reportingOnTheWayOut(
+        deleted: Boolean,
+    ): BackupToDocumentOutcome = try {
+        awaitCancellation()
+    } finally {
+        arg<(Boolean) -> Unit>(3)(deleted)
     }
 
     private fun fill(secrets: Boolean = false) {

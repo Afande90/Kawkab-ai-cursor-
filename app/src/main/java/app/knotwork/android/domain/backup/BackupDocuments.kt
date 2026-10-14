@@ -39,12 +39,20 @@ interface BackupDocuments {
      * Deletes [document] and forgets it, closing first any stream [openForWrite] opened to it that its caller never
      * got — a caller cancelled on the way back.
      *
-     * Asked again about a document it already deleted, it reports what the first time answered.
-     *
      * @param document The document's URI.
-     * @return `true` when the document is gone; `false` when its provider refused to delete it.
+     * @return `true` when the document is gone; `false` when its provider refused to delete it, or failed.
      */
     suspend fun discard(document: String): Boolean
+
+    /**
+     * Deletes [document] only when it holds nothing — an untouched document the picker created for a backup that
+     * never started. A document holding bytes is an existing file the user chose to overwrite, and stays; so does
+     * one whose size the provider does not tell.
+     *
+     * @param document The document's URI.
+     * @return `true` when it was empty and is now gone.
+     */
+    suspend fun discardIfEmpty(document: String): Boolean
 
     /**
      * Deletes the document an earlier backup left unfinished, if any.

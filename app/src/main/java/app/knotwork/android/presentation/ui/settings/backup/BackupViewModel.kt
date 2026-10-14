@@ -47,9 +47,10 @@ import javax.inject.Inject
  * characters, then live until it reaches 12; *Doesn't match* once the second field has lost focus, or as soon as
  * it is as long as the first and differs, clearing live. An empty field shows no error.
  *
- * A document the picker returns when no backup can start with it — a second one while a backup runs, or one that
- * comes back after the process was recreated and the password went with it — was created empty by the picker,
- * and is deleted.
+ * A document the picker returns when no backup can start with it — a second one while a backup runs or is being
+ * cancelled, or one that comes back after the process was recreated and the password went with it — is deleted
+ * only if it is empty, as the picker creates a new one. One holding bytes is an existing file the user chose to
+ * overwrite, and stays; the document the running backup writes is never touched.
  *
  * @property backUpToDocument Writes the backup into the picked document.
  * @property documents Names and deletes the picked document.
@@ -84,6 +85,9 @@ class BackupViewModel @Inject constructor(
     private var document: String? = null
     private var documentName: String? = null
     private var suggestedName: String = suggestedFileName()
+
+    /** Whether the backup, cancelled or broken, deleted its document on the way out; `null` before it says. */
+    private var deletedOnTheWayOut: Boolean? = null
 
     /** Opens *Back up* with empty fields. */
     fun startBackup() {
@@ -133,19 +137,23 @@ class BackupViewModel @Inject constructor(
     /**
      * The picker returned.
      *
-     * @param document The picked document's URI, or `null` when the user backed out — the form stays as it was.
+     * @param document The picked document's URI, or `null` when the user backed out — the form stays as it was, and
+     *   a backup already running keeps its screen.
      */
     fun onDocumentPicked(document: String?) {
+        // A backup running or being cancelled keeps its screen, whatever a second picker returns.
+        val busy = job?.isActive == true || _state.value.route is BackupWorking
         if (document == null) {
-            showForm()
+            if (!busy) showForm()
             return
         }
-        if (job?.isActive == true || !formOf(fields).canContinue) {
-            viewModelScope.launch { documents.discard(document) }
+        if (busy || !formOf(fields).canContinue) {
+            if (document != this.document) viewModelScope.launch { documents.discardIfEmpty(document) }
             return
         }
         this.document = document
         documentName = null
+        deletedOnTheWayOut = null
         val password = fields.password.toCharArray()
         val includeSecrets = fields.includeSecrets
         // The form goes at once: from here Back and Close mean Cancel.
@@ -165,8 +173,9 @@ class BackupViewModel @Inject constructor(
             running.cancelAndJoin()
             // The result reached the screen first: the backup is not unfinished, and stays.
             if (_state.value.route !is BackupWorking) return@launch
-            // The backup deleted it on its way out; asking again reports how that went.
-            val deleted = documents.discard(target)
+            // The backup deleted it on its way out and said how that went; one cancelled before it reached the
+            // document left that to us.
+            val deleted = deletedOnTheWayOut ?: documents.discard(target)
             val name = documentName ?: suggestedName
             closeRoute()
             _cancelNotice.value = BackupCancelNotice(fileDeleted = deleted, fileName = name)
@@ -223,7 +232,12 @@ class BackupViewModel @Inject constructor(
                 val working = current.route as? BackupWorking ?: return@update current
                 current.copy(route = working.copy(fileName = name))
             }
-            val outcome = backUpToDocument(target, password, includeSecrets) { progress -> show(progress, name) }
+            val outcome = backUpToDocument(
+                target,
+                password,
+                includeSecrets,
+                onUnfinishedDeleted = { deletedOnTheWayOut = it },
+            ) { progress -> show(progress, name) }
             _state.update { it.copy(route = routeOf(outcome, name)) }
             if (outcome is BackupToDocumentOutcome.Saved) fields = Fields()
         } catch (e: CancellationException) {
@@ -234,7 +248,7 @@ class BackupViewModel @Inject constructor(
                 it.copy(
                     route = BackupFailed(
                         reason = BackupFailReason.READ_FAILED,
-                        fileDeleted = documents.discard(target),
+                        fileDeleted = deletedOnTheWayOut ?: documents.discard(target),
                         fileName = documentName ?: suggestedName,
                     ),
                 )

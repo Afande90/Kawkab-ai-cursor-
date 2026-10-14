@@ -11,10 +11,12 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -81,17 +83,34 @@ class BackUpToDocumentUseCaseTest {
 
     @Test
     fun `given a cancel while the document is being opened when it stops then the document still goes`() = runTest {
-        // Given — the provider is slow to open the document.
-        coEvery { documents.openForWrite(DOCUMENT) } coAnswers { awaitCancellation() }
+        // Given — the provider opens the document only after the cancel has arrived.
+        val opening = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        coEvery { documents.openForWrite(DOCUMENT) } coAnswers {
+            withContext(NonCancellable) {
+                opening.complete(Unit)
+                release.await()
+            }
+            written
+        }
+        // The export's first suspension sees the cancel, as the real one's first switch to the IO thread does.
+        coEvery { exporter.export(any(), any(), false, any()) } coAnswers { awaitCancellation() }
+        var reported: Boolean? = null
 
         // When
-        val job = launch { useCase(DOCUMENT, PASSWORD.toCharArray(), includeSecrets = false) { } }
-        testScheduler.advanceUntilIdle()
+        val job = launch {
+            useCase(DOCUMENT, PASSWORD.toCharArray(), includeSecrets = false, onUnfinishedDeleted = {
+                reported = it
+            }) { }
+        }
+        opening.await()
         job.cancel(CancellationException("user"))
+        release.complete(Unit)
         job.join()
 
-        // Then — the deletion also closes a stream the use case never got.
+        // Then — deleted once (which also closes the stream it never used), and the caller told.
         coVerify(exactly = 1) { documents.discard(DOCUMENT) }
+        assertEquals(true, reported)
     }
 
     @Test
@@ -108,14 +127,16 @@ class BackUpToDocumentUseCaseTest {
             }
 
             // When
-            val job = launch { useCase(DOCUMENT, PASSWORD.toCharArray(), includeSecrets = false) { } }
+            var outcome: BackupToDocumentOutcome? = null
+            val job = launch { outcome = useCase(DOCUMENT, PASSWORD.toCharArray(), includeSecrets = false) { } }
             recording.await()
             job.cancel(CancellationException("user"))
             job.join()
 
-            // Then — never left marked unfinished, so no later start deletes a complete backup; and kept.
+            // Then — recorded, kept, and reported as saved: the screen shows the result the cancel came too late for.
             assertTrue(recorded)
             coVerify(exactly = 0) { documents.discard(any()) }
+            assertTrue(outcome is BackupToDocumentOutcome.Saved)
         }
 
     @Test
@@ -123,15 +144,47 @@ class BackUpToDocumentUseCaseTest {
         // Given
         coEvery { exporter.export(any(), any(), false, any()) } coAnswers { awaitCancellation() }
 
+        coEvery { documents.discard(DOCUMENT) } returns false
+        var reported: Boolean? = null
+
         // When
-        val job = launch { useCase(DOCUMENT, PASSWORD.toCharArray(), includeSecrets = false) { } }
+        val job = launch {
+            useCase(DOCUMENT, PASSWORD.toCharArray(), includeSecrets = false, onUnfinishedDeleted = {
+                reported = it
+            }) { }
+        }
         testScheduler.advanceUntilIdle()
         job.cancel(CancellationException("user"))
         job.join()
 
-        // Then
+        // Then — and the caller hears that the provider refused, since a cancelled call returns nothing.
         coVerify(exactly = 1) { documents.discard(DOCUMENT) }
         coVerify(exactly = 0) { documents.finish(any()) }
+        assertEquals(false, reported)
+    }
+
+    @Test
+    fun `given a cancel while a failed backup's file is deleted when it stops then the deletion completes`() = runTest {
+        // Given
+        val deleting = CompletableDeferred<Unit>()
+        var deletedFully = false
+        coEvery { exporter.export(any(), any(), false, any()) } throws
+            BackupExportException(BackupExportFailure.WRITE_FAILED, 0, "refused")
+        coEvery { documents.discard(DOCUMENT) } coAnswers {
+            deleting.complete(Unit)
+            delay(1_000)
+            deletedFully = true
+            true
+        }
+
+        // When
+        val job = launch { useCase(DOCUMENT, PASSWORD.toCharArray(), includeSecrets = false) { } }
+        deleting.await()
+        job.cancel(CancellationException("screen left"))
+        job.join()
+
+        // Then — a failed backup is never left half-deleted.
+        assertTrue(deletedFully)
     }
 
     @Test
