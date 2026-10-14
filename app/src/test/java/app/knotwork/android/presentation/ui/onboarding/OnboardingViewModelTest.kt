@@ -618,7 +618,7 @@ class OnboardingViewModelTest {
             // The record arrives while the download is still followed: showing it waits for the
             // download to end, so the selection never changes under it, and the live failure does
             // not word the stop a second time.
-            val e2b = OnboardingModelCatalog.entryById(OnboardingModelCatalog.ID_GEMMA_4_E2B)!!
+            val e4b = OnboardingModelCatalog.entryById(OnboardingModelCatalog.ID_GEMMA_4_E4B)!!
             val records = MutableStateFlow<List<InterruptedDownload>>(emptyList())
             every { downloadManager.observeInterruptedDownloads() } returns records
             val download = MutableSharedFlow<DownloadState>()
@@ -630,11 +630,12 @@ class OnboardingViewModelTest {
             advanceUntilIdle()
             download.emit(DownloadState.Downloading(40))
 
+            assertEquals(OnboardingModelCatalog.ID_GEMMA_4_E4B, viewModel.state.value.liteRtModel.id)
             records.value =
                 listOf(
                     InterruptedDownload(
-                        e2b.fileName,
-                        e2b.downloadUrl,
+                        e4b.fileName,
+                        e4b.downloadUrl,
                         ModelDownloadFailure.PAUSED_TIME_LIMIT,
                         "paused",
                     ),
@@ -656,8 +657,63 @@ class OnboardingViewModelTest {
             viewModel.showPendingInterruption()
 
             assertEquals("paused", viewModel.state.value.downloadError)
-            verify(exactly = 1) { downloadManager.acknowledgeInterruption(e2b.fileName) }
+            assertEquals(OnboardingModelCatalog.ID_GEMMA_4_E4B, viewModel.state.value.liteRtModel.id)
+            verify(exactly = 1) { downloadManager.acknowledgeInterruption(e4b.fileName) }
         }
+
+    @Test
+    fun `given two downloads stopped when setup shows one then the other is left for the Models screen`() = runTest {
+        // Showing the first acknowledges it, and the store then hands over the second at once:
+        // shown too, it would replace the first within a frame — neither would be read.
+        val e2b = OnboardingModelCatalog.entryById(OnboardingModelCatalog.ID_GEMMA_4_E2B)!!
+        val e4b = OnboardingModelCatalog.entryById(OnboardingModelCatalog.ID_GEMMA_4_E4B)!!
+        val first =
+            InterruptedDownload(e4b.fileName, e4b.downloadUrl, ModelDownloadFailure.PAUSED_TIME_LIMIT, "E4B")
+        val second =
+            InterruptedDownload(e2b.fileName, e2b.downloadUrl, ModelDownloadFailure.PAUSED_TIME_LIMIT, "E2B")
+        val records = MutableStateFlow(listOf(first, second))
+        every { downloadManager.observeInterruptedDownloads() } returns records
+        every { downloadManager.acknowledgeInterruption(e4b.fileName) } answers { records.value = listOf(second) }
+        val viewModel = newViewModel()
+        advanceUntilIdle()
+        viewModel.toDownloadStep()
+
+        viewModel.showPendingInterruption()
+        advanceUntilIdle()
+        viewModel.showPendingInterruption()
+        advanceUntilIdle()
+
+        assertEquals("E4B", viewModel.state.value.downloadError)
+        assertEquals(OnboardingModelCatalog.ID_GEMMA_4_E4B, viewModel.state.value.liteRtModel.id)
+        verify(exactly = 0) { downloadManager.acknowledgeInterruption(e2b.fileName) }
+    }
+
+    @Test
+    fun `given a model just installed when another download's stop arrives then setup keeps its selection`() = runTest {
+        // The step is about to warm the installed model up; switching to the stopped one would
+        // reset that and strand the user on a Download button for a model they did not pick.
+        val e2b = OnboardingModelCatalog.entryById(OnboardingModelCatalog.ID_GEMMA_4_E2B)!!
+        val records = MutableStateFlow<List<InterruptedDownload>>(emptyList())
+        every { downloadManager.observeInterruptedDownloads() } returns records
+        every { downloadManager.downloadModel(any(), any(), any()) } returns
+            flowOf(DownloadState.Success("/data/e4b.litertlm"))
+        val viewModel = newViewModel()
+        advanceUntilIdle()
+        viewModel.toDownloadStep()
+        viewModel.startDownload()
+        advanceUntilIdle()
+        assertEquals(OnboardingModelCatalog.ID_GEMMA_4_E4B, viewModel.state.value.installedModelId)
+
+        records.value =
+            listOf(InterruptedDownload(e2b.fileName, e2b.downloadUrl, ModelDownloadFailure.PAUSED_TIME_LIMIT, "x"))
+        advanceUntilIdle()
+        viewModel.showPendingInterruption()
+        advanceUntilIdle()
+
+        assertEquals(OnboardingModelCatalog.ID_GEMMA_4_E4B, viewModel.state.value.liteRtModel.id)
+        assertEquals(OnboardingModelCatalog.ID_GEMMA_4_E4B, viewModel.state.value.installedModelId)
+        verify(exactly = 0) { downloadManager.acknowledgeInterruption(any()) }
+    }
 
     /** Walks setup from its first step to its Download step. */
     private fun OnboardingViewModel.toDownloadStep() {

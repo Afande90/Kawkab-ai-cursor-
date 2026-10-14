@@ -27,8 +27,9 @@ import javax.inject.Singleton
  *
  * One notification per file ([NotificationIds.Family.MODEL_DOWNLOAD_OUTCOME], keyed by the file
  * name), on the model-download channel. Tapping it opens the app as its launcher icon does; the
- * Models screen says the same thing the next time it is opened (and offers Continue for a pause),
- * unless setup's Download step or the model's page in Discover said it first. It is removed when
+ * Models screen says the same thing the next time it is opened while no other download runs (and
+ * offers Continue for a pause), unless setup's Download step or the model's page in Discover said
+ * it first. It is removed when
  * the download starts again, is cancelled, or a screen has shown why it stopped. Without the
  * notification permission nothing is posted; the screens still say it.
  *
