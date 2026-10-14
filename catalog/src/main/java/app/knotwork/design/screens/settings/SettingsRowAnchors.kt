@@ -89,6 +89,9 @@ object SettingsRowAnchors {
     /** About · version/licenses link. */
     const val LINK_LICENSES = "LINK_LICENSES"
 
+    /** Privacy · the Backup & restore link row. */
+    const val LINK_BACKUP_RESTORE = "LINK_BACKUP_RESTORE"
+
     /** About · reset-all-settings action. */
     const val RESET = "RESET"
 
@@ -117,6 +120,7 @@ object SettingsRowAnchors {
         LINK_EXTERNAL_AUTOMATION_JOURNAL,
         LINK_RUN_LIMITS,
         CRASH_REPORTING_ENABLED,
+        LINK_BACKUP_RESTORE,
         IDENTITY,
         LINK_LICENSES,
         RESET,

@@ -30,7 +30,7 @@ enum class SettingsCategoryId {
     /** Notifications plus the resume and background-approval windows. */
     BACKGROUND,
 
-    /** Crash-reporting consent and run-trace retention. */
+    /** Crash-reporting consent, run-trace retention and backup & restore. */
     PRIVACY,
 
     /** Identity, version/licenses and the reset action. */

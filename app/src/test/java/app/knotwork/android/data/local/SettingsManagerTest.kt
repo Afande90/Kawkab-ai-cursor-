@@ -2049,6 +2049,8 @@ class SettingsManagerTest {
                 // twice now works.
                 "local_model_backend", "last_init_backend_attempt", "local_backend_failure_streak",
                 "default_pipeline_id", "console_preferred_tab", "last_test_probe_result",
+                // A document a backup was writing when the process died: deleted at the next start.
+                "unfinished_backup_document",
                 "active_embedding_provider_id", "last_reembed_provider_id",
                 // User-granted network permissions, in the same category as
                 // `allowed_http_domains`: a "reset to recommended defaults" that

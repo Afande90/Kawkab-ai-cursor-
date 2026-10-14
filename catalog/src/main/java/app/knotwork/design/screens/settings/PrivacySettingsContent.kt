@@ -12,7 +12,8 @@ import app.knotwork.design.theme.KnotworkTheme
 
 /**
  * Privacy category sub-screen. Basic tier surfaces the crash-reporting consent
- * toggle; the Advanced disclosure holds the run-trace retention sliders.
+ * toggle and the links to Usage statistics and Backup & restore; the Advanced
+ * disclosure holds the run-trace retention sliders.
  *
  * @param state Immutable Privacy state.
  * @param modifier Layout modifier.
@@ -52,6 +53,14 @@ fun PrivacySettingsContent(
             state = stringResource(R.string.knotwork_settings_privacy_usage_subtitle),
             onClick = callbacks.onOpenUsageStatistics,
         )
+        SettingsAnchor(anchorKey = SettingsRowAnchors.LINK_BACKUP_RESTORE) {
+            NavLinkRow(
+                icon = AppIcons.Archive,
+                title = stringResource(R.string.knotwork_backup_settings_row),
+                state = stringResource(R.string.knotwork_backup_settings_row_sub),
+                onClick = callbacks.onOpenBackup,
+            )
+        }
         AdvancedDisclosure(initiallyExpanded = advancedExpanded) {
             Column(
                 modifier = Modifier.fillMaxWidth(),

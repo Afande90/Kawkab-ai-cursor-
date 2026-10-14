@@ -25,11 +25,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.contentType
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.VisualTransformation
@@ -86,6 +88,11 @@ import app.knotwork.design.tokens.KnotworkTextStyles
  * @param contentDescription Optional a11y label, passed through to the
  *  outer box semantics. Required when [KnotworkField]'s caps-label is empty
  *  (e.g. inline rename, search bar).
+ * @param trailingIconDescription What the trailing icon button does, read by
+ *  TalkBack; `null` leaves it unlabelled, as a decorative icon.
+ * @param autofillType What the field holds, for an autofill service (a
+ *  password manager); `null` leaves what the text field reports by itself
+ *  ([ContentType.Password] under a password keyboard, nothing otherwise).
  */
 @Composable
 fun KnotworkTextField(
@@ -106,6 +113,8 @@ fun KnotworkTextField(
     monospace: Boolean = false,
     search: Boolean = false,
     contentDescription: String? = null,
+    trailingIconDescription: String? = null,
+    autofillType: ContentType? = null,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
@@ -169,7 +178,11 @@ fun KnotworkTextField(
                     keyboardActions = keyboardActions,
                     visualTransformation = visualTransformation,
                     interactionSource = interactionSource,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .then(
+                            if (autofillType != null) Modifier.semantics { contentType = autofillType } else Modifier,
+                        ),
                 )
                 if (value.isEmpty() && placeholder != null) {
                     Text(
@@ -187,7 +200,7 @@ fun KnotworkTextField(
                     ) {
                         Icon(
                             imageVector = trailingIcon,
-                            contentDescription = null,
+                            contentDescription = trailingIconDescription,
                             tint = visuals.trailingIconColor,
                             modifier = Modifier.size(KnotworkFieldDefaults.TrailingIconSize),
                         )

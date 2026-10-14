@@ -49,6 +49,7 @@ import app.knotwork.android.presentation.ui.settings.SettingsHubScreen
 import app.knotwork.android.presentation.ui.settings.SettingsNavActions
 import app.knotwork.android.presentation.ui.settings.SettingsViewModel
 import app.knotwork.android.presentation.ui.settings.ToolsSettingsScreen
+import app.knotwork.android.presentation.ui.settings.backup.BackupScreen
 import app.knotwork.android.presentation.ui.settings.provider.ProviderDetailScreen
 import app.knotwork.android.presentation.ui.settings.provider.ProviderPickerScreen
 import app.knotwork.android.presentation.ui.settings.runlimits.RunLimitsScreen
@@ -401,6 +402,9 @@ fun AppNavGraph(
             composable(NavRoutes.SETTINGS_PRIVACY_USAGE) {
                 UsageTelemetryScreen(onBack = { navController.popBackStack() })
             }
+            composable(NavRoutes.SETTINGS_PRIVACY_BACKUP) {
+                BackupScreen(onBack = { navController.popBackStack() })
+            }
             composable(NavRoutes.SETTINGS_ABOUT) { entry ->
                 AboutSettingsScreen(viewModel = settingsGraphViewModel(navController, entry), nav = nav)
             }
@@ -597,6 +601,7 @@ private fun settingsNavActions(navController: NavHostController): SettingsNavAct
     onOpenAllowedDomains = { navController.navigate(NavRoutes.ALLOWED_DOMAINS) },
     onOpenLicenses = { navController.navigate(NavRoutes.ABOUT) },
     onOpenUsageStatistics = { navController.navigate(NavRoutes.SETTINGS_PRIVACY_USAGE) },
+    onOpenBackup = { navController.navigate(NavRoutes.SETTINGS_PRIVACY_BACKUP) },
     onOpenExternalAutomationJournal = {
         navController.navigate(NavRoutes.SETTINGS_BACKGROUND_EXTERNAL_AUTOMATION)
     },

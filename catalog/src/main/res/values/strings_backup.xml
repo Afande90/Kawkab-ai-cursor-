@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Backup & restore (Settings → Privacy). The designer's copy is the authority for every string here; four
+  are the app's own, marked below, where the copy has no line for an outcome the export can report.
+-->
+<resources>
+    <!-- Settings → Privacy -->
+    <string name="knotwork_backup_settings_row">Backup &amp; restore</string>
+    <string name="knotwork_backup_settings_row_sub">Keep a copy, or move to a new phone</string>
+
+    <!-- Backup & restore screen -->
+    <string name="knotwork_backup_home_title">Backup &amp; restore</string>
+    <string name="knotwork_backup_home_intro">One file, locked with a password you choose: chats, memory, pipelines, run history, triggers, settings and files. Not the model files.</string>
+    <string name="knotwork_backup_home_no_server">Knotwork uploads nothing. The file goes only where you save it.</string>
+    <string name="knotwork_backup_action_backup">Back up…</string>
+    <string name="knotwork_backup_action_backup_sub">Choose a password and where to save the file</string>
+    <string name="knotwork_backup_action_restore">Restore from file…</string>
+    <string name="knotwork_backup_action_restore_sub">Replaces everything on this phone</string>
+
+    <!-- Back up · password -->
+    <string name="knotwork_backup_backup_title">Back up</string>
+    <string name="knotwork_backup_backup_lead">You’ll need this password to restore. If you forget it, nobody can open the backup, including us.</string>
+    <string name="knotwork_backup_pw_label">Password</string>
+    <string name="knotwork_backup_pw_rule">At least 12 characters. A few unrelated words make a strong one.</string>
+    <string name="knotwork_backup_pw_short">Too short. Use at least 12 characters.</string>
+    <string name="knotwork_backup_pw2_label">Password again</string>
+    <string name="knotwork_backup_pw2_mismatch">Doesn’t match the password above.</string>
+    <string name="knotwork_backup_secrets_label">Include API keys and sign-ins</string>
+    <string name="knotwork_backup_secrets_sub">Cloud API keys, the Hugging Face token and MCP sign-ins. Left off, you enter them again after a restore.</string>
+    <string name="knotwork_backup_choose_where">Choose where to save</string>
+
+    <!-- Back up · working -->
+    <string name="knotwork_backup_working_title">Backing up</string>
+    <string name="knotwork_backup_step_password">Securing the password</string>
+    <string name="knotwork_backup_step_db">Chats, memory and settings</string>
+    <string name="knotwork_backup_step_files">Files and images</string>
+    <string name="knotwork_backup_bytes">%1$s of %2$s</string>
+    <string name="knotwork_backup_keep_open">Keep Knotwork open until this finishes.</string>
+    <string name="knotwork_backup_cancel">Cancel</string>
+
+    <!-- Back up · result -->
+    <string name="knotwork_backup_saved_title">Backup saved</string>
+    <string name="knotwork_backup_saved_keys_in">API keys and sign-ins are in this file. Anyone with the file and the password can use them.</string>
+    <string name="knotwork_backup_saved_keys_out">API keys and sign-ins are not in this file.</string>
+    <string name="knotwork_backup_saved_reminder">Keep the password somewhere safe. Without it, the file can’t be opened.</string>
+    <!-- The app's own: the copy has no line for files whose names a backup cannot hold. -->
+    <plurals name="knotwork_backup_saved_skipped">
+        <item quantity="one">%1$s file isn’t in this backup: its name can’t be stored in one.</item>
+        <item quantity="other">%1$s files aren’t in this backup: their names can’t be stored in one.</item>
+    </plurals>
+    <string name="knotwork_backup_done">Done</string>
+    <string name="knotwork_backup_failed_title">Backup not saved</string>
+    <string name="knotwork_backup_failed_space">There wasn’t enough space where you chose to save it. It needs about %1$s.</string>
+    <string name="knotwork_backup_failed_write">The place you chose stopped accepting the file.</string>
+    <!-- The app's own: the copy has lines for the chosen place only, not for the phone itself. -->
+    <string name="knotwork_backup_failed_phone_full">This phone doesn’t have enough free space to prepare the backup.</string>
+    <!-- The app's own. -->
+    <string name="knotwork_backup_failed_read">Some of Knotwork’s data couldn’t be read.</string>
+    <string name="knotwork_backup_failed_deleted">The unfinished file was deleted.</string>
+    <!-- The app's own: the copy names a file left behind in the cancel snackbar only. -->
+    <string name="knotwork_backup_failed_left">Delete the unfinished file %1$s yourself.</string>
+    <string name="knotwork_backup_try_again">Try again</string>
+    <string name="knotwork_backup_close">Close</string>
+
+    <!-- Stat cells: the noun under a count, derived from the copy's count plurals. -->
+    <plurals name="knotwork_backup_stat_chats">
+        <item quantity="one">chat</item>
+        <item quantity="other">chats</item>
+    </plurals>
+    <plurals name="knotwork_backup_stat_memories">
+        <item quantity="one">memory</item>
+        <item quantity="other">memories</item>
+    </plurals>
+    <plurals name="knotwork_backup_stat_pipelines">
+        <item quantity="one">pipeline</item>
+        <item quantity="other">pipelines</item>
+    </plurals>
+    <plurals name="knotwork_backup_stat_files">
+        <item quantity="one">file</item>
+        <item quantity="other">files</item>
+    </plurals>
+</resources>

@@ -7,12 +7,14 @@ import app.knotwork.android.data.backup.BackupContentSource
 import app.knotwork.android.data.backup.BackupExporterImpl
 import app.knotwork.android.data.backup.BackupRestorerImpl
 import app.knotwork.android.data.backup.DatabaseSnapshotter
+import app.knotwork.android.data.backup.SafBackupDocuments
 import app.knotwork.android.data.backup.SqlCipherDatabaseSnapshotter
 import app.knotwork.android.data.backup.SqlCipherStagedDatabasePreparer
 import app.knotwork.android.data.backup.StagedDatabasePreparer
 import app.knotwork.android.data.local.ApiKeyManager
 import app.knotwork.android.data.local.settings.GenerationSettingsStore
 import app.knotwork.android.data.local.settings.ToolSettingsStore
+import app.knotwork.android.domain.backup.BackupDocuments
 import app.knotwork.android.domain.backup.BackupExporter
 import app.knotwork.android.domain.backup.BackupKeyDerivation
 import app.knotwork.android.domain.backup.BackupRestorer
@@ -43,6 +45,10 @@ internal abstract class BackupModule {
     /** The SQLCipher snapshot. */
     @Binds
     abstract fun bindDatabaseSnapshotter(impl: SqlCipherDatabaseSnapshotter): DatabaseSnapshotter
+
+    /** The documents a backup is written to, through the system picker. */
+    @Binds
+    abstract fun bindBackupDocuments(impl: SafBackupDocuments): BackupDocuments
 
     /** The restore. */
     @Binds
