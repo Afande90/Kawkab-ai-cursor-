@@ -7,8 +7,10 @@ import app.knotwork.android.domain.constants.OnboardingModelCatalog
 import app.knotwork.android.domain.models.AppError
 import app.knotwork.android.domain.models.CustomModelLink
 import app.knotwork.android.domain.models.DownloadState
+import app.knotwork.android.domain.models.ModelDownloadFailure
 import app.knotwork.android.domain.models.OnboardingMilestone
 import app.knotwork.android.domain.repositories.AppStateSettings
+import app.knotwork.android.domain.repositories.InterruptedDownload
 import app.knotwork.android.domain.repositories.LocalModelRepository
 import app.knotwork.android.domain.repositories.ModelDownloadManager
 import app.knotwork.android.domain.repositories.UsageTelemetryRepository
@@ -132,6 +134,7 @@ class OnboardingViewModel @Inject constructor(
         // the fields a future marker might read are initialised.
         markMilestone(OnboardingMilestone.ONBOARDING_STARTED)
         attachToRunningDownload()
+        observeInterruptions()
     }
 
     /** Advances to the next step. Idempotent at the final step. */
@@ -324,6 +327,36 @@ class OnboardingViewModel @Inject constructor(
     }
 
     /**
+     * Shows why a download stopped — a pause at the background time limit, or a file that
+     * failed its checksum — when no screen has shown it yet: usually the user left setup while
+     * it ran, and setup is where they come back to until they finish it.
+     *
+     * The step returns to the model that stopped, so its Download button starts that same
+     * download again: a paused one continues from the bytes it kept. Shown once — reported
+     * shown at once, since this screen is the one in front while setup runs.
+     */
+    private fun observeInterruptions() {
+        downloadManager.observeInterruptedDownloads()
+            .onEach { stopped -> stopped.firstOrNull()?.let(::showInterruption) }
+            .launchIn(viewModelScope)
+    }
+
+    private fun showInterruption(interruption: InterruptedDownload) {
+        val preset = OnboardingModelCatalog.PRESETS.firstOrNull { it.fileName == interruption.fileName }
+        val picked = OnboardingLiteRtModel.entries.firstOrNull { it.id == preset?.id }
+            ?: OnboardingLiteRtModel.CustomUrl
+        _state.update {
+            it.copy(
+                liteRtModel = picked,
+                customDownloadUrl = if (preset == null) interruption.url else it.customDownloadUrl,
+                downloadProgress = null,
+                downloadError = interruption.message,
+            )
+        }
+        downloadManager.acknowledgeInterruption(interruption.fileName)
+    }
+
+    /**
      * Folds a download state stream into the view state. Shared by the "start
      * one" and "re-attach to one" paths so both behave identically.
      */
@@ -400,11 +433,23 @@ class OnboardingViewModel @Inject constructor(
             is DownloadState.Error -> _state.update {
                 it.copy(
                     downloadProgress = null,
-                    downloadError = extractErrorMessage(downloadState.error),
+                    // A pause or a checksum mismatch was recorded before the download failed and
+                    // is shown from there, once — so its text is not written over here.
+                    downloadError = if (downloadState.error.isRecordedInterruption()) {
+                        it.downloadError
+                    } else {
+                        extractErrorMessage(downloadState.error)
+                    },
                 )
             }
         }
     }
+
+    /** Whether the download worker recorded this failure as an interruption before reporting it. */
+    private fun AppError.isRecordedInterruption(): Boolean =
+        (this as? AndroidModelDownloadManager.DownloadError)?.failure.let {
+            it == ModelDownloadFailure.PAUSED_TIME_LIMIT || it == ModelDownloadFailure.CHECKSUM_MISMATCH
+        }
 
     private fun extractErrorMessage(error: AppError): String {
         val message = (error as? AndroidModelDownloadManager.DownloadError)?.message

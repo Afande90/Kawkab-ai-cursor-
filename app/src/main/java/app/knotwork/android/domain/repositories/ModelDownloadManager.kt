@@ -1,6 +1,7 @@
 package app.knotwork.android.domain.repositories
 
 import app.knotwork.android.domain.models.DownloadState
+import app.knotwork.android.domain.models.ModelDownloadFailure
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -67,7 +68,47 @@ interface ModelDownloadManager {
      * @param fileName The local filename the download was started with.
      */
     fun cancelDownload(fileName: String)
+
+    /**
+     * The downloads that stopped without a model for a reason the user has to be told — a pause
+     * at the background time limit, or a file that did not match its published checksum — and
+     * that no screen has shown yet.
+     *
+     * A download usually ends while no screen watches it: it outlives the screen that started it
+     * by design. So the reason is kept until a screen shows it ([acknowledgeInterruption]), the
+     * download is started again, or it is cancelled — and it survives the app being closed.
+     *
+     * @return A [Flow] of the unshown interruptions, oldest first; empty when there are none.
+     */
+    fun observeInterruptedDownloads(): Flow<List<InterruptedDownload>>
+
+    /**
+     * Records that a screen has shown why the download of [fileName] stopped, so no screen shows
+     * it again, and removes its notification.
+     *
+     * @param fileName The local filename the download was started with.
+     */
+    fun acknowledgeInterruption(fileName: String)
 }
+
+/**
+ * A model download that stopped without a model, whose reason no screen has shown yet.
+ *
+ * @property fileName Local file name the download was started with.
+ * @property url The address it downloads from — what starting it again needs, since a paused
+ *   download continues only from the same address.
+ * @property failure Why it stopped: [ModelDownloadFailure.PAUSED_TIME_LIMIT] (the bytes so far
+ *   are kept; starting it again continues) or [ModelDownloadFailure.CHECKSUM_MISMATCH] (the file
+ *   was deleted).
+ * @property message The sentence that says so, in the words the download itself reported — the
+ *   same a screen watching the download would have shown.
+ */
+data class InterruptedDownload(
+    val fileName: String,
+    val url: String,
+    val failure: ModelDownloadFailure,
+    val message: String,
+)
 
 /**
  * A model download currently in flight.

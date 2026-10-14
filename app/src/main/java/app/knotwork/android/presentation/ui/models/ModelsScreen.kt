@@ -2,7 +2,9 @@ package app.knotwork.android.presentation.ui.models
 
 import android.content.Context
 import android.content.Intent
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -15,6 +17,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import app.knotwork.android.R
 import app.knotwork.android.data.network.AndroidModelDownloadManager.DownloadError
 import app.knotwork.android.domain.models.LocalModel
+import app.knotwork.android.domain.models.ModelDownloadFailure
 import app.knotwork.android.domain.usecases.BenchmarkRunPhase
 import app.knotwork.android.presentation.ui.common.readPlainClipboardText
 import app.knotwork.design.components.misc.KnotworkSnackbarHost
@@ -66,6 +69,21 @@ fun ModelsScreen(
             }
             snackbarHostState.showSnackbar(errorMessage)
             viewModel.clearError()
+        }
+    }
+
+    val interruptedFormat = stringResource(R.string.model_download_interrupted_format)
+    val continueLabel = stringResource(R.string.models_interrupted_continue)
+    LaunchedEffect(uiState.interruption) {
+        uiState.interruption?.let { interruption ->
+            val paused = interruption.failure == ModelDownloadFailure.PAUSED_TIME_LIMIT
+            val result = snackbarHostState.showSnackbar(
+                message = interruptedFormat.format(interruption.fileName, interruption.message),
+                // A paused download keeps its bytes: continuing is one tap, from here.
+                actionLabel = continueLabel.takeIf { paused },
+                duration = SnackbarDuration.Long,
+            )
+            viewModel.onInterruptionShown(interruption, continueDownload = result == SnackbarResult.ActionPerformed)
         }
     }
 

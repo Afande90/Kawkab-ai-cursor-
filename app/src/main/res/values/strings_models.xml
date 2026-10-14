@@ -4,6 +4,7 @@
     <string name="models_error_unknown">An unknown error occurred</string>
     <string name="models_meta_verified">Verified</string>
     <string name="models_meta_not_verified">Not verified</string>
+    <string name="models_interrupted_continue">Continue</string>
     <string name="models_error_link_not_litertlm">This link isn\'t a .litertlm file. Only .litertlm models run on the phone.</string>
 
     <!-- Knotwork redesign. -->

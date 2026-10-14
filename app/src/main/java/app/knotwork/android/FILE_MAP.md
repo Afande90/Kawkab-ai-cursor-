@@ -305,6 +305,7 @@ Only Kotlin files appear inside the generated blocks.
     - `ChargingTriggerSweepWorker.kt` - One-shot `@HiltWorker` registered by `WorkManagerTriggerScheduler` as a `setRequiresCharging(true)` request, so `JobScheduler` wakes even a closed app within seconds of charging starting; loads the active **charging** triggers and hands each to `FireTriggerUseCase`. No firing logic of its own — the decision stays single-sourced with the periodic poll, which re-arms on unplug and re-enqueues this one-shot for the next charge edge.
     - `DownloadedModelInstaller.kt` - Turns a finished download into an installed model — or refuses to.
     - `DownloadForegroundBudget.kt` - Keeps model downloads under Android's daily limit for `dataSync` foreground services.
+    - `DownloadInterruptionStore.kt` - Remembers the model downloads that stopped without a model for a reason the user has to be told, until a screen has told them.
     - `embedding/` - `EmbeddingProvider` implementations and the Koog client seam.
       - `CloudEmbeddingProvider.kt` - OpenAI `text-embedding-3-small` provider (1536-d) via Koog; on-device fallback when no key.
       - `KoogEmbedderFactory.kt` - Factory (+ default impl) building Koog OpenAI/Ollama embedding clients; `List<Double> → FloatArray` helper.
@@ -314,6 +315,7 @@ Only Kotlin files appear inside the generated blocks.
     - `MemoryCompactionScheduler.kt` - Owns the WorkManager scheduling of `MemoryCompactionWorker`: a daily periodic job (charging + device-idle) plus an out-of-schedule `startHardLimitWatch` that fires an immediate relaxed-constraint pass when the chunk count crosses `maxMemoryChunks`. Wired from `MainActivity.onCreate`.
     - `MemoryCompactionWorker.kt` - `@HiltWorker` that runs one long-term memory compaction pass. Gates on `MemorySettings.memoryCompactionEnabled` and delegates clustering/consolidation to `MemoryCompactionUseCase`.
     - `MemoryReembedWorker.kt` - `@HiltWorker` that re-embeds memory chunks flagged `needsReembedding` (imported under a different provider) off the hot path, delegating to `RecomputePendingEmbeddingsUseCase`; `Result.retry()` on failure so WorkManager backs off and retries.
+    - `ModelDownloadOutcomeNotifier.kt` - Tells the user, by a notification, that a model download stopped without a model.
     - `ModelDownloadWorker.kt` - `@HiltWorker` owning one model download: promotes itself to a `dataSync` foreground service (best-effort) with a progress + Cancel notification, resumes through `ResumableFileDownloader`, retries transport failures (HTTP statuses fail immediately), reads the Hugging Face token from the encrypted store rather than worker input, and registers the finished file via `RegisterDownloadedModelUseCase`.
     - `ModelFileHashWorker.kt` - Background worker that hashes every installed model file without a current SHA-256.
     - `PendingInteractionMaintenanceScheduler.kt` - Schedules the periodic `PendingInteractionMaintenanceWorker` expiry pass (battery-not-low only — deliberately looser than the compaction window so expiry tracks its window, not the charger). Wired from `MainActivity.onCreate`.

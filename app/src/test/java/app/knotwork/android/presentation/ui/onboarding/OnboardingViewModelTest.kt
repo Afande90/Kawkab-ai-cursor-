@@ -5,8 +5,10 @@ import app.knotwork.android.domain.constants.OnboardingModelCatalog
 import app.knotwork.android.domain.models.DownloadState
 import app.knotwork.android.domain.models.LocalBackend
 import app.knotwork.android.domain.models.LocalModel
+import app.knotwork.android.domain.models.ModelDownloadFailure
 import app.knotwork.android.domain.models.OnboardingMilestone
 import app.knotwork.android.domain.repositories.ActiveDownload
+import app.knotwork.android.domain.repositories.InterruptedDownload
 import app.knotwork.android.domain.repositories.LocalModelRepository
 import app.knotwork.android.domain.repositories.ModelDownloadManager
 import app.knotwork.android.domain.repositories.SettingsRepository
@@ -79,6 +81,7 @@ class OnboardingViewModelTest {
         downloadManager = mockk(relaxed = true)
         every { downloadManager.downloadModel(any(), any(), any()) } returns flowOf()
         every { downloadManager.observeActiveDownload() } returns flowOf(null)
+        every { downloadManager.observeInterruptedDownloads() } returns flowOf(emptyList())
         prepareInferenceBackendUseCase = mockk(relaxed = true)
         coEvery { prepareInferenceBackendUseCase.invoke(any(), any()) } returns
             PrepareInferenceBackendUseCase.Outcome.Warmed(LocalBackend.CPU)
@@ -519,6 +522,68 @@ class OnboardingViewModelTest {
 
         coVerify(atLeast = 1) { prepareInferenceBackendUseCase.invoke("/data/e4b.litertlm", any()) }
         coVerify(exactly = 0) { prepareInferenceBackendUseCase.invoke("/data/e2b.litertlm", any()) }
+    }
+
+    @Test
+    fun `given a preset's download paused while setup was closed when setup opens then it says so on that preset`() =
+        runTest {
+            val e2b = OnboardingModelCatalog.entryById(OnboardingModelCatalog.ID_GEMMA_4_E2B)!!
+            every { downloadManager.observeInterruptedDownloads() } returns flowOf(
+                listOf(
+                    InterruptedDownload(
+                        e2b.fileName,
+                        e2b.downloadUrl,
+                        ModelDownloadFailure.PAUSED_TIME_LIMIT,
+                        "paused",
+                    ),
+                ),
+            )
+
+            val viewModel = newViewModel()
+            advanceUntilIdle()
+
+            // The step returns to the preset that paused, so Download continues it from its bytes.
+            val state = viewModel.state.value
+            assertEquals(OnboardingModelCatalog.ID_GEMMA_4_E2B, state.liteRtModel.id)
+            assertEquals("paused", state.downloadError)
+            assertNull(state.downloadProgress)
+            verify(exactly = 1) { downloadManager.acknowledgeInterruption(e2b.fileName) }
+        }
+
+    @Test
+    fun `given a custom link's download stopped when setup opens then its link is back in the field`() = runTest {
+        val url = "https://example.com/models/mine.litertlm"
+        every { downloadManager.observeInterruptedDownloads() } returns flowOf(
+            listOf(InterruptedDownload("mine.litertlm", url, ModelDownloadFailure.CHECKSUM_MISMATCH, "did not match")),
+        )
+
+        val viewModel = newViewModel()
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertEquals(OnboardingLiteRtModel.CustomUrl, state.liteRtModel)
+        assertEquals(url, state.customDownloadUrl)
+        assertEquals("did not match", state.downloadError)
+    }
+
+    @Test
+    fun `given a pause when the watched download fails then its sentence is not written over`() = runTest {
+        // The record arrives first and sets the sentence; the failure that follows must not
+        // replace it with the generic one, or blank it.
+        val viewModel = newViewModel()
+        advanceUntilIdle()
+        every { downloadManager.downloadModel(any(), any(), any()) } returns flowOf(
+            DownloadState.Pending,
+            DownloadState.Error(
+                AndroidModelDownloadManager.DownloadError("ignored", failure = ModelDownloadFailure.PAUSED_TIME_LIMIT),
+            ),
+        )
+
+        viewModel.startDownload()
+        advanceUntilIdle()
+
+        assertNull(viewModel.state.value.downloadError)
+        assertNull(viewModel.state.value.downloadProgress)
     }
 
     @Test

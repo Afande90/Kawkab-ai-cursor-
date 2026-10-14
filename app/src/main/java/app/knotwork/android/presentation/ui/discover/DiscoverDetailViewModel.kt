@@ -7,6 +7,7 @@ import app.knotwork.android.domain.models.DiscoverableModelFile
 import app.knotwork.android.domain.models.DownloadState
 import app.knotwork.android.domain.models.ModelDownloadFailure
 import app.knotwork.android.domain.repositories.GenerationSettings
+import app.knotwork.android.domain.repositories.InterruptedDownload
 import app.knotwork.android.domain.repositories.ModelDownloadManager
 import app.knotwork.android.domain.usecases.GetDiscoverableModelDetailUseCase
 import app.knotwork.android.domain.usecases.InstallDiscoveredModelUseCase
@@ -67,6 +68,7 @@ class DiscoverDetailViewModel @Inject constructor(
 
     private var repoId: String? = null
     private var tokenObserved = false
+    private var interruptionsObserved = false
 
     /**
      * Binds the screen to [repoId]: starts observing the stored token (once)
@@ -106,6 +108,7 @@ class DiscoverDetailViewModel @Inject constructor(
                         )
                     }
                     followRunningDownloads(detail.files)
+                    observeInterruptions(detail.files)
                 },
                 onFailure = {
                     _uiState.update { it.copy(status = DiscoverDetailStatus.Error) }
@@ -160,7 +163,11 @@ class DiscoverDetailViewModel @Inject constructor(
             is DownloadState.Error -> {
                 clearProgress(fileName)
                 installJobs.remove(fileName)
-                _installEvents.tryEmit(DiscoverInstallEvent.Failed(state.failureReason()))
+                // A pause or a checksum mismatch was recorded before the download failed, and
+                // reaches the screen as an interruption — reported here too, it would show twice.
+                if (!state.isRecordedInterruption()) {
+                    _installEvents.tryEmit(DiscoverInstallEvent.Failed(state.failureReason()))
+                }
             }
         }
     }
@@ -214,24 +221,49 @@ class DiscoverDetailViewModel @Inject constructor(
     }
 
     /**
-     * Names why the install failed, from the typed fields of [DownloadError] rather
-     * than its free-text message (which also covers arbitrary transport-error strings).
-     *
-     * A 401/403 refusal is an access-gated failure, so the screen can nudge the user
-     * toward accepting the licence and supplying a token; a checksum mismatch and a
-     * pause each have their own sentence. Anything else reads as a connection problem.
+     * Names why the install failed, from the typed HTTP status carried on
+     * [DownloadError.code] rather than its free-text message (which also covers
+     * arbitrary transport-error strings): a 401/403 refusal is an access-gated failure,
+     * so the screen can nudge the user toward accepting the licence and supplying a
+     * token. Anything else reads as a connection problem.
      */
     private fun DownloadState.Error.failureReason(): DiscoverInstallEvent.FailureReason {
-        val downloadError = error as? DownloadError
-        val code = downloadError?.code
-        return when {
-            code == HTTP_UNAUTHORIZED || code == HTTP_FORBIDDEN -> DiscoverInstallEvent.FailureReason.GATED
-            downloadError?.failure == ModelDownloadFailure.CHECKSUM_MISMATCH ->
-                DiscoverInstallEvent.FailureReason.CHECKSUM_MISMATCH
-            downloadError?.failure == ModelDownloadFailure.PAUSED_TIME_LIMIT ->
-                DiscoverInstallEvent.FailureReason.PAUSED
-            else -> DiscoverInstallEvent.FailureReason.OTHER
+        val code = (error as? DownloadError)?.code
+        return if (code == HTTP_UNAUTHORIZED || code == HTTP_FORBIDDEN) {
+            DiscoverInstallEvent.FailureReason.GATED
+        } else {
+            DiscoverInstallEvent.FailureReason.OTHER
         }
+    }
+
+    /** Whether the download worker recorded this failure as an interruption before reporting it. */
+    private fun DownloadState.Error.isRecordedInterruption(): Boolean = (error as? DownloadError)?.failure.let {
+        it == ModelDownloadFailure.PAUSED_TIME_LIMIT || it == ModelDownloadFailure.CHECKSUM_MISMATCH
+    }
+
+    /**
+     * Follows the downloads that stopped for a reason not shown yet, keeping the oldest of this
+     * repository's files for the screen to show — including one that stopped while the screen was
+     * closed, which no download stream reports any more. Started once the files are known.
+     */
+    private fun observeInterruptions(files: List<DiscoverableModelFile>) {
+        if (interruptionsObserved) return
+        interruptionsObserved = true
+        val names = files.map { it.fileName }.toSet()
+        downloadManager.observeInterruptedDownloads()
+            .onEach { stopped ->
+                _uiState.update { state -> state.copy(interruption = stopped.firstOrNull { it.fileName in names }) }
+            }
+            .launchIn(viewModelScope)
+    }
+
+    /**
+     * The screen has shown why a download stopped: it is not shown again, anywhere.
+     *
+     * @param interruption What was shown.
+     */
+    fun onInterruptionShown(interruption: InterruptedDownload) {
+        downloadManager.acknowledgeInterruption(interruption.fileName)
     }
 
     private companion object {
