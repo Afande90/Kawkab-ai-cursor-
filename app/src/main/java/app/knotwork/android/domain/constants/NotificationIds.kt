@@ -57,6 +57,9 @@ object NotificationIds {
 
         /** An overdue trigger, keyed by trigger. */
         TRIGGER_STALE(base = 45_000),
+
+        /** A model download that paused or failed its checksum, keyed by the model's file name. */
+        MODEL_DOWNLOAD_OUTCOME(base = 50_000),
         ;
 
         /** Every id this family can produce. */

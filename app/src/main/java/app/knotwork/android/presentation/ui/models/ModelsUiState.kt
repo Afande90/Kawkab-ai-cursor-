@@ -3,6 +3,7 @@ package app.knotwork.android.presentation.ui.models
 import app.knotwork.android.domain.models.AppError
 import app.knotwork.android.domain.models.LocalModel
 import app.knotwork.android.domain.models.ModelPerformanceSummary
+import app.knotwork.android.domain.repositories.InterruptedDownload
 import app.knotwork.android.domain.usecases.BenchmarkReport
 import app.knotwork.android.domain.usecases.BenchmarkRunPhase
 
@@ -76,7 +77,21 @@ data class ModelsUiState(
      * has not changed since. Every other model reads "Not verified".
      */
     val verifiedModelIds: Set<Long> = emptySet(),
-)
+    /**
+     * The next download that stopped without a model for a reason not shown yet — a pause at
+     * the background time limit or a file that failed its checksum — usually while this screen
+     * was closed. The screen shows it once and reports it shown; `null` when there is none.
+     */
+    val interruption: InterruptedDownload? = null,
+) {
+
+    /**
+     * The [interruption] to show now: none while a download is running. This screen follows one
+     * download at a time, so a paused one could not be continued from here until it ends — and a
+     * stop of the followed download itself is recorded before its failure arrives.
+     */
+    val interruptionToShow: InterruptedDownload? get() = interruption.takeUnless { isDownloading }
+}
 
 /**
  * Presentation state of the model benchmark, layered over the rolling-average

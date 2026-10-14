@@ -5,8 +5,10 @@ import app.knotwork.android.domain.engine.TaskQueueManager
 import app.knotwork.android.domain.models.AgentOrchestratorState
 import app.knotwork.android.domain.models.DownloadState
 import app.knotwork.android.domain.models.LocalModel
+import app.knotwork.android.domain.models.ModelDownloadFailure
 import app.knotwork.android.domain.models.ModelPerformanceSummary
 import app.knotwork.android.domain.repositories.ActiveDownload
+import app.knotwork.android.domain.repositories.InterruptedDownload
 import app.knotwork.android.domain.repositories.LocalModelRepository
 import app.knotwork.android.domain.repositories.ModelDownloadManager
 import app.knotwork.android.domain.repositories.SettingsRepository
@@ -21,7 +23,9 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -72,6 +76,7 @@ class ModelsViewModelTest {
         every { getModelPerformanceUseCase(any()) } returns flowOf(null)
         every { taskQueueManager.globalState } returns MutableStateFlow(AgentOrchestratorState.Idle)
         every { downloadManager.observeActiveDownload() } returns flowOf(null)
+        every { downloadManager.observeInterruptedDownloads() } returns flowOf(emptyList())
 
         viewModel = createViewModel()
     }
@@ -261,6 +266,93 @@ class ModelsViewModelTest {
         assertEquals(false, state.isDownloading)
         assertEquals(error, state.downloadError)
     }
+
+    @Test
+    fun `given a pause or a checksum mismatch when the download fails then no download error is set`() = runTest {
+        // Both are recorded before the download fails and shown from there, once — a download
+        // error as well would show the same stop twice.
+        for (failure in listOf(ModelDownloadFailure.PAUSED_TIME_LIMIT, ModelDownloadFailure.CHECKSUM_MISMATCH)) {
+            val error = AndroidModelDownloadManager.DownloadError("stopped", failure = failure)
+            // The stream stays open after the failure, so only the Error frame can have cleared
+            // the in-flight flag — proof the frame was handled, not merely never collected.
+            every { downloadManager.downloadModel("http://x/m.bin", "m.bin", any()) } returns
+                flow {
+                    emit(DownloadState.Error(error))
+                    awaitCancellation()
+                }
+
+            viewModel.startDownload("http://x/m.bin", "m.bin")
+            advanceUntilIdle()
+
+            assertEquals("$failure", null, viewModel.uiState.value.downloadError)
+            assertEquals(false, viewModel.uiState.value.isDownloading)
+            viewModel.cancelDownload()
+        }
+    }
+
+    @Test
+    fun `given downloads that stopped while the screen was closed when it opens then the oldest is shown`() = runTest {
+        val first = stopped("a.litertlm", ModelDownloadFailure.PAUSED_TIME_LIMIT)
+        val second = stopped("b.litertlm", ModelDownloadFailure.CHECKSUM_MISMATCH)
+        every { downloadManager.observeInterruptedDownloads() } returns flowOf(listOf(first, second))
+        viewModel = createViewModel()
+
+        advanceUntilIdle()
+
+        assertEquals(first, viewModel.uiState.value.interruption)
+    }
+
+    @Test
+    fun `given a shown stop when the user lets it go then it is acknowledged and nothing starts`() = runTest {
+        val paused = stopped("a.litertlm", ModelDownloadFailure.PAUSED_TIME_LIMIT)
+
+        viewModel.onInterruptionShown(paused, continueDownload = false)
+        advanceUntilIdle()
+
+        verify(exactly = 1) { downloadManager.acknowledgeInterruption("a.litertlm") }
+        verify(exactly = 0) { downloadManager.downloadModel(any(), any(), any()) }
+    }
+
+    @Test
+    fun `given another download running when the user continues a pause then the pause is kept`() = runTest {
+        // Only one download is followed at a time, so starting it would do nothing. Dropping
+        // the record anyway would lose the pause and its notice for good.
+        every { downloadManager.downloadModel("http://x/running.bin", "running.bin", any()) } returns
+            flow { awaitCancellation() }
+        viewModel.startDownload("http://x/running.bin", "running.bin")
+        advanceUntilIdle()
+        val paused = stopped("a.litertlm", ModelDownloadFailure.PAUSED_TIME_LIMIT)
+
+        viewModel.onInterruptionShown(paused, continueDownload = true)
+        advanceUntilIdle()
+
+        verify(exactly = 0) { downloadManager.acknowledgeInterruption("a.litertlm") }
+    }
+
+    @Test
+    fun `given a shown pause when the user continues then the same download starts again`() = runTest {
+        val paused = stopped("a.litertlm", ModelDownloadFailure.PAUSED_TIME_LIMIT)
+        every { downloadManager.downloadModel(any(), any(), any()) } returns flowOf()
+
+        viewModel.onInterruptionShown(paused, continueDownload = true)
+        advanceUntilIdle()
+
+        // Same address and name: the part file is keyed by both, so the bytes kept are used.
+        verify(exactly = 1) { downloadManager.acknowledgeInterruption("a.litertlm") }
+        verify(exactly = 1) { downloadManager.downloadModel(paused.url, "a.litertlm", false) }
+    }
+
+    @Test
+    fun `given a download running when a stop is recorded then it is not shown until the download ends`() {
+        val paused = stopped("a.litertlm", ModelDownloadFailure.PAUSED_TIME_LIMIT)
+
+        assertEquals(null, ModelsUiState(interruption = paused, isDownloading = true).interruptionToShow)
+        assertEquals(paused, ModelsUiState(interruption = paused, isDownloading = false).interruptionToShow)
+    }
+
+    /** A stop of [fileName] as the download manager reports it. */
+    private fun stopped(fileName: String, failure: ModelDownloadFailure) =
+        InterruptedDownload(fileName, "https://huggingface.co/o/r/resolve/main/$fileName", failure, "why")
 
     @Test
     fun `given a download already running when the screen opens then it re-attaches`() = runTest {

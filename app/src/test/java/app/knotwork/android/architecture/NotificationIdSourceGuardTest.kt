@@ -81,6 +81,7 @@ class NotificationIdSourceGuardTest {
             "AgentForegroundService.kt",
             "AgentWorker.kt",
             "ModelDownloadWorker.kt",
+            "ModelDownloadOutcomeNotifier.kt",
         )
     }
 }

@@ -6,6 +6,5 @@
     <string name="discover_detail_load_error">Couldn\'t load this model\'s details.</string>
     <string name="discover_install_success">Installed %1$s</string>
     <string name="discover_install_gated">This model is access-gated. Accept its licence on Hugging Face and add a token, then try again.</string>
-    <string name="discover_install_checksum_mismatch">The download did not match the checksum Hugging Face published for it, so it was deleted. Try installing it again.</string>
     <string name="discover_install_failed">Download failed. Check your connection and try again.</string>
 </resources>

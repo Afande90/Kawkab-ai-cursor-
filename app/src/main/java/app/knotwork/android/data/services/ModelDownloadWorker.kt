@@ -1,11 +1,8 @@
 package app.knotwork.android.data.services
 
-import android.app.NotificationManager
 import android.content.Context
 import android.content.pm.ServiceInfo
-import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
@@ -60,12 +57,20 @@ import timber.log.Timber
  * [DownloadForegroundBudget] allows and then pauses, reporting a failure the
  * screen shows; starting the download again resumes it from the partial file.
  *
+ * **Telling a stop nobody watched.** A pause comes after hours out of sight, and
+ * a checksum mismatch at the end of a transfer the user has usually left. For
+ * both, the worker records why it stopped ([DownloadInterruptionStore]) — a
+ * screen opened later shows it — and posts a notice
+ * ([ModelDownloadOutcomeNotifier]) before it returns.
+ *
  * @property downloader Performs the resumable transfer.
  * @property generationSettings Source of the stored Hugging Face token.
  * @property installer Checks the finished file against its source's hash and
  *   installs it in the local model store.
  * @property foregroundBudget Foreground time the download may still spend
  *   before it pauses, so it never reaches Android's `dataSync` limit.
+ * @property interruptions Keeps why a download stopped until a screen shows it.
+ * @property outcomeNotifier Posts the notice that a download stopped.
  */
 @HiltWorker
 class ModelDownloadWorker @AssistedInject constructor(
@@ -75,6 +80,8 @@ class ModelDownloadWorker @AssistedInject constructor(
     private val generationSettings: GenerationSettings,
     private val installer: DownloadedModelInstaller,
     private val foregroundBudget: DownloadForegroundBudget,
+    private val interruptions: DownloadInterruptionStore,
+    private val outcomeNotifier: ModelDownloadOutcomeNotifier,
 ) : CoroutineWorker(appContext, workerParams) {
 
     /**
@@ -99,7 +106,7 @@ class ModelDownloadWorker @AssistedInject constructor(
             return Result.failure(workDataOf(KEY_ERROR to "Download request was missing its URL or file name."))
         }
         if (foregroundBudget.isExhausted()) {
-            return pausedByTimeLimit()
+            return pausedByTimeLimit(url, fileName)
         }
 
         val meter = foregroundBudget.startMeter()
@@ -145,7 +152,7 @@ class ModelDownloadWorker @AssistedInject constructor(
                 setProgress(workDataOf(KEY_PROGRESS to percent))
                 promoteToForeground(fileName, percent)
             }
-        } ?: return pausedByTimeLimit()
+        } ?: return pausedByTimeLimit(url, fileName)
 
         return when (outcome) {
             is ResumableFileDownloader.Outcome.Downloaded -> install(outcome, fileName, url)
@@ -175,12 +182,11 @@ class ModelDownloadWorker @AssistedInject constructor(
         url: String,
     ): Result = when (val installed = installer.install(downloaded, fileName = fileName, sourceUrl = url)) {
         is DownloadedModelInstaller.Result.Installed -> Result.success(workDataOf(KEY_OUTPUT_PATH to installed.path))
-        is DownloadedModelInstaller.Result.Rejected -> Result.failure(
-            workDataOf(
-                KEY_ERROR to applicationContext.getString(R.string.model_download_checksum_mismatch),
-                KEY_ERROR_CODE to NO_HTTP_CODE,
-                KEY_FAILURE to ModelDownloadFailure.CHECKSUM_MISMATCH.name,
-            ),
+        is DownloadedModelInstaller.Result.Rejected -> stopped(
+            url = url,
+            fileName = fileName,
+            failure = ModelDownloadFailure.CHECKSUM_MISMATCH,
+            message = applicationContext.getString(R.string.model_download_checksum_mismatch),
         )
         is DownloadedModelInstaller.Result.NotInstalled ->
             failOrRetry(
@@ -231,15 +237,41 @@ class ModelDownloadWorker @AssistedInject constructor(
      * as a failure so the screen shows why the download stopped; starting it
      * again resets the budget and resumes from the partial file.
      *
+     * @param url Direct URL of the model file, which starting it again needs.
+     * @param fileName Target file name.
      * @return A failure carrying the pause message and no HTTP status.
      */
-    private fun pausedByTimeLimit(): Result {
+    private fun pausedByTimeLimit(url: String, fileName: String): Result {
         Timber.i("Model download paused: foreground time budget spent")
+        return stopped(
+            url = url,
+            fileName = fileName,
+            failure = ModelDownloadFailure.PAUSED_TIME_LIMIT,
+            message = applicationContext.getString(R.string.model_download_paused_time_limit),
+        )
+    }
+
+    /**
+     * Ends the attempt for a reason the user has to be told even if no screen watches: records
+     * it for the screen opened next, posts the notice, and fails with it.
+     *
+     * Recorded before the failure is returned, so a screen that is watching finds the record by
+     * the time it sees the failure.
+     *
+     * @param url Direct URL of the model file.
+     * @param fileName Target file name.
+     * @param failure Why the download stopped.
+     * @param message The sentence a screen that words no failure of its own shows.
+     * @return A failure carrying [message], [failure] and no HTTP status.
+     */
+    private fun stopped(url: String, fileName: String, failure: ModelDownloadFailure, message: String): Result {
+        interruptions.record(fileName = fileName, url = url, failure = failure, message = message)
+        outcomeNotifier.notifyStopped(fileName, failure)
         return Result.failure(
             workDataOf(
-                KEY_ERROR to applicationContext.getString(R.string.model_download_paused_time_limit),
+                KEY_ERROR to message,
                 KEY_ERROR_CODE to NO_HTTP_CODE,
-                KEY_FAILURE to ModelDownloadFailure.PAUSED_TIME_LIMIT.name,
+                KEY_FAILURE to failure.name,
             ),
         )
     }
@@ -277,7 +309,7 @@ class ModelDownloadWorker @AssistedInject constructor(
      * service type — the type the platform defines for exactly this work.
      */
     private fun foregroundInfo(fileName: String, progress: Int): ForegroundInfo {
-        ensureChannel()
+        ModelDownloadChannel.ensure(applicationContext)
         val cancelIntent = WorkManager.getInstance(applicationContext).createCancelPendingIntent(id)
         val notification = NotificationCompat.Builder(applicationContext, NotificationChannels.MODEL_DOWNLOAD)
             .setContentTitle(applicationContext.getString(R.string.notifications_model_download_title))
@@ -298,17 +330,6 @@ class ModelDownloadWorker @AssistedInject constructor(
             notification,
             ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
         )
-    }
-
-    /** Registers the download channel; `createNotificationChannel` is idempotent. */
-    private fun ensureChannel() {
-        val channel = NotificationChannelCompat.Builder(
-            NotificationChannels.MODEL_DOWNLOAD,
-            NotificationManager.IMPORTANCE_LOW,
-        )
-            .setName(applicationContext.getString(R.string.notifications_model_download_channel_name))
-            .build()
-        NotificationManagerCompat.from(applicationContext).createNotificationChannel(channel)
     }
 
     companion object {

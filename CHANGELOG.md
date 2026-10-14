@@ -269,6 +269,15 @@ details.
 
 ### Fixed
 
+- **A paused model download tells you.** A download that paused at Android's
+  background time limit — after five hours out of sight — went quiet: its
+  notification disappeared, and a screen opened afterwards showed nothing. It
+  now posts a notification that it paused (if the app may post notifications),
+  and the Models screen says so once the next time you open it while no other
+  download is running, with **Continue** — or setup's Download step, or the
+  model's page in Discover, if you reach one of those first. A file that did not match its checksum is told
+  the same way. Once a screen has shown it, or the download is started again or
+  cancelled, the notification goes too.
 - **Discover says why an install paused.** A download that paused at its
   background time limit showed Discover's *Download failed. Check your
   connection* — wrong, and with no hint that installing again continues it. It
@@ -399,10 +408,10 @@ details.
   Hugging Face names a file's SHA-256 in its answer to the download; the app
   reads it from Hugging Face's own answer only — never from the CDN it redirects
   to, never from another host — and hashes the file before it takes a model's
-  name. A file that does not match is deleted, no model is added, and Models,
-  Discover or setup, whichever follows the download, says the file did not
-  match. This also catches a resumed download that joined two versions of a
-  file changed on Hugging Face in between. A file from another host, or one
+  name. A file that does not match is deleted, no model is added, and the app
+  says so as it does for a paused download (see Fixed). This also catches a
+  resumed download that joined two versions of a file changed on Hugging Face
+  in between. A file from another host, or one
   Hugging Face keeps outside LFS, has no hash to check; on the Models screen
   every model now reads **Verified** or **Not verified**, and models installed
   before this release read **Not verified** until downloaded again. A Hugging

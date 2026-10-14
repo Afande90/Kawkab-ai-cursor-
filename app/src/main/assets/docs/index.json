@@ -21,8 +21,8 @@
         "your-data-cant-be-unlocked-appears-at-startup": 12925,
         "installing-over-a-copy-from-google-play-fails": 14260,
         "a-model-download-paused-after-five-hours": 15924,
-        "a-downloaded-model-did-not-match-its-checksum": 16253,
-        "see-also": 16982
+        "a-downloaded-model-did-not-match-its-checksum": 16542,
+        "see-also": 17327
       },
       "links": {
         "faq.md": {"kind": "bundled", "id": "faq", "anchor": null},

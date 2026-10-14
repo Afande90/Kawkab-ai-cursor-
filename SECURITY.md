@@ -631,9 +631,10 @@ A model file downloaded from Hugging Face is checked before it becomes a model.
   redirected to, which is what the hash is checked against, and never from
   another host.
 - **The file is hashed before it reaches its final name.** A file whose hash
-  differs is deleted and never added to the model list, and the Models screen,
-  Discover or setup — whichever follows the download — says the file did not
-  match. A transfer corrupted on the way, or a resume that joined two versions
+  differs is deleted and never added to the model list. A notification says the
+  file did not match (if the app may post notifications), and so does the Models
+  screen the next time it is opened while no other download runs — or setup's
+  Download step, or the model's page in Discover, if one of those comes first. A transfer corrupted on the way, or a resume that joined two versions
   of a file, ends here.
 - **The Models screen says which files were checked.** A model reads
   **Verified** only while its file's current SHA-256 equals the one Hugging Face

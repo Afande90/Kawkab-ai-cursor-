@@ -385,6 +385,22 @@ class PersistentStorageInventoryGuardTest {
             archive = emptyList(),
             notArchived = "a duration counter of this phone",
         ),
+
+        /**
+         * Why a model download stopped (`DownloadInterruptionStore`) — per file, its name, the
+         * address it downloads from, the reason and when, in a plain preferences file until a
+         * screen has shown it or the download is started again or cancelled. WorkManager keeps
+         * the same address in the clear in its own record, for less long; the domain-wide
+         * `sharedpref` rule keeps both out of backups.
+         */
+        DOWNLOAD_INTERRUPTIONS(
+            domain = "sharedpref",
+            plaintextPath = null,
+            erasedBy = null,
+            kept = "a note about a download's partial file, which the wipe keeps too; shown once, then dropped",
+            archive = emptyList(),
+            notArchived = "a note about a download on this phone",
+        ),
     }
 
     private companion object {
@@ -441,6 +457,7 @@ class PersistentStorageInventoryGuardTest {
             "/data/engine/MediaPipeTextEmbeddingEngine.kt" to "DOWNLOADED_MODELS (the embedding model)",
             "/debug/TriggerJournalDumpReceiver.kt" to "DEBUG_SOAK_DUMPS",
             "/data/services/DownloadForegroundBudget.kt" to "DOWNLOAD_BUDGET",
+            "/data/services/DownloadInterruptionStore.kt" to "DOWNLOAD_INTERRUPTIONS",
             "/data/backup/SqlCipherDatabaseSnapshotter.kt" to "DATABASE, read for a backup's snapshot",
             "/data/backup/BackupFileSource.kt" to "WORKSPACE and ATTACHMENTS, read for a backup",
             "/data/backup/RestoreLayout.kt" to "RESTORE, and the DATABASE, WORKSPACE, ATTACHMENTS it replaces",

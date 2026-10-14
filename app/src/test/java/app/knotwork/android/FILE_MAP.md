@@ -217,6 +217,7 @@ Only Kotlin files appear inside the generated blocks.
     - `ChargingTriggerSweepWorkerTest.kt` - Robolectric coverage for `ChargingTriggerSweepWorker` — the one-shot worker `PowerConnectionReceiver` enqueues on a power edge to fire charging triggers immediately.
     - `DownloadedModelInstallerTest.kt` - Covers the one place a downloaded file becomes a model: the file is checked against the hash its source published before it reaches its final name, a file that fails is deleted and never registered, and a file with nothing to check against is installed as unchecked.
     - `DownloadForegroundBudgetTest.kt` - Covers the foreground-time budget that keeps a model download under Android's daily `dataSync` limit: what it books, when it runs out, and that the count outlives the process that measured it.
+    - `DownloadInterruptionStoreTest.kt` - Covers the record of why a model download stopped: it is kept until cleared, one per file, read back across instances (the worker writes it, a screen opened later reads it), and a record this build cannot read is left out rather than failing the screen.
     - `embedding/` - Tests for the embedding service layer.
       - `CloudEmbeddingProviderTest.kt` - Unit tests for `CloudEmbeddingProvider`.
       - `DefaultKoogEmbedderFactoryTest.kt` - Unit tests for `DefaultKoogEmbedderFactory`.
@@ -226,6 +227,7 @@ Only Kotlin files appear inside the generated blocks.
     - `MemoryCompactionSchedulerTest.kt` - Unit tests for `MemoryCompactionScheduler`.
     - `MemoryCompactionWorkerTest.kt` - Robolectric coverage for the `@HiltWorker`-annotated `MemoryCompactionWorker`.
     - `MemoryReembedWorkerTest.kt` - Robolectric coverage for the `@HiltWorker`-annotated `MemoryReembedWorker`.
+    - `ModelDownloadOutcomeNotifierTest.kt` - Covers the notice that a model download stopped: which stops post one, what it says, that each file has its own slot in the registry's family, that it goes when asked, and that nothing is posted without the permission.
     - `ModelDownloadWorkerTest.kt` - Covers the download worker's policy decisions: what it does with the token, what it does once the bytes are on disk, and — the part that decides whether a flaky network costs the user their progress — when a failure is worth another attempt.
     - `ModelFileHashWorkerTest.kt` - Robolectric coverage for the `@HiltWorker`-annotated `ModelFileHashWorker`, mirroring `MemoryReembedWorkerTest`: the mocked use case reaches the worker through a manual `WorkerFactory`.
     - `PendingInteractionMaintenanceWorkerTest.kt` - Robolectric coverage for the `@HiltWorker`-annotated `PendingInteractionMaintenanceWorker`.

@@ -8,11 +8,14 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import app.knotwork.android.data.services.DownloadForegroundBudget
+import app.knotwork.android.data.services.DownloadInterruptionStore
+import app.knotwork.android.data.services.ModelDownloadOutcomeNotifier
 import app.knotwork.android.data.services.ModelDownloadWorker
 import app.knotwork.android.domain.models.AppError
 import app.knotwork.android.domain.models.DownloadState
 import app.knotwork.android.domain.models.ModelDownloadFailure
 import app.knotwork.android.domain.repositories.ActiveDownload
+import app.knotwork.android.domain.repositories.InterruptedDownload
 import app.knotwork.android.domain.repositories.ModelDownloadManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -40,10 +43,15 @@ import javax.inject.Inject
  * @property workManager Schedules and observes the download work.
  * @property foregroundBudget Foreground time downloads may spend before they
  *   pause; started over by [downloadModel].
+ * @property interruptions Why a download stopped, kept until a screen shows it;
+ *   starting or cancelling the download drops it.
+ * @property outcomeNotifier The notice that a download stopped, removed with its record.
  */
 class AndroidModelDownloadManager @Inject constructor(
     private val workManager: WorkManager,
     private val foregroundBudget: DownloadForegroundBudget,
+    private val interruptions: DownloadInterruptionStore,
+    private val outcomeNotifier: ModelDownloadOutcomeNotifier,
 ) : ModelDownloadManager {
 
     override fun downloadModel(url: String, fileName: String, useStoredAuth: Boolean): Flow<DownloadState> = flow {
@@ -69,6 +77,9 @@ class AndroidModelDownloadManager @Inject constructor(
         // download's foreground budget starts over here too. This is also how a
         // paused download continues: starting it again lands here.
         foregroundBudget.reset()
+        // Starting it again answers why it stopped: the pause it continues, or the
+        // mismatch it downloads past.
+        forgetInterruption(fileName)
         workManager.enqueueUniqueWork(uniqueWorkName(fileName), ExistingWorkPolicy.KEEP, request)
 
         emitAll(observeUniqueWork(fileName, requireLive = false))
@@ -92,6 +103,17 @@ class AndroidModelDownloadManager @Inject constructor(
 
     override fun cancelDownload(fileName: String) {
         workManager.cancelUniqueWork(uniqueWorkName(fileName))
+        forgetInterruption(fileName)
+    }
+
+    override fun observeInterruptedDownloads(): Flow<List<InterruptedDownload>> = interruptions.observe()
+
+    override fun acknowledgeInterruption(fileName: String) = forgetInterruption(fileName)
+
+    /** Drops why the download of [fileName] stopped, and its notice. */
+    private fun forgetInterruption(fileName: String) {
+        interruptions.clear(fileName)
+        outcomeNotifier.dismiss(fileName)
     }
 
     /**

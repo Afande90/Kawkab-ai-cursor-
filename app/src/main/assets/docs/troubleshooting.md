@@ -294,14 +294,19 @@ one.
 
 Android lets an app transfer data in the background for six hours a day, and
 stops the app if a transfer runs longer. A model download therefore pauses on
-its own after five hours of downloading. Nothing is lost: start the same
-download again and it continues from where it stopped.
+its own after five hours of downloading. It posts a notification that it paused
+(if the app may post notifications), and the Models screen says so the next
+time you open it while no other download is running, with a **Continue**
+button — or setup's Download step, or the model's page in Discover, if you
+reach one of those first. Nothing is lost:
+start the same download again and it continues from where it stopped.
 
 ## A downloaded model did not match its checksum
 
 Hugging Face publishes a SHA-256 for the model files it hosts, and the app
 compares the downloaded file with it before installing the model. When the two
-differ, the file is deleted and no model is installed.
+differ, the file is deleted, no model is installed, and the app says so the
+same way as for a paused download.
 
 One way this happens: the file changed on Hugging Face while your download was
 interrupted, so the part fetched before and the part fetched after belong to two

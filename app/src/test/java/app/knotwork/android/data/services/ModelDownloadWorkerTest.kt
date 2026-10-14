@@ -12,6 +12,7 @@ import androidx.work.workDataOf
 import app.knotwork.android.R
 import app.knotwork.android.data.local.StreamingModelFileHasher
 import app.knotwork.android.data.network.ResumableFileDownloader
+import app.knotwork.android.domain.models.ModelDownloadFailure
 import app.knotwork.android.domain.repositories.SettingsRepository
 import app.knotwork.android.domain.usecases.RegisterDownloadedModelUseCase
 import com.google.common.util.concurrent.ListenableFuture
@@ -19,6 +20,8 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
+import io.mockk.verifyOrder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
@@ -59,6 +62,8 @@ class ModelDownloadWorkerTest {
     private lateinit var settingsRepository: SettingsRepository
     private lateinit var registerDownloadedModel: RegisterDownloadedModelUseCase
     private lateinit var installer: DownloadedModelInstaller
+    private lateinit var interruptions: DownloadInterruptionStore
+    private lateinit var notifier: ModelDownloadOutcomeNotifier
 
     @Before
     fun setUp() {
@@ -68,6 +73,8 @@ class ModelDownloadWorkerTest {
         every { settingsRepository.huggingFaceAuthToken } returns flowOf("hf_stored")
         registerDownloadedModel = mockk(relaxed = true)
         coEvery { registerDownloadedModel(any(), any(), any(), any(), any(), any()) } returns 1L
+        interruptions = mockk(relaxed = true)
+        notifier = mockk(relaxed = true)
         installer = mockk()
         coEvery { installer.install(any(), any(), any()) } returns
             DownloadedModelInstaller.Result.Installed(path = "/models/m.bin", verified = false)
@@ -112,6 +119,13 @@ class ModelDownloadWorkerTest {
             ModelDownloadWorker.NO_HTTP_CODE,
             failure.outputData.getInt(ModelDownloadWorker.KEY_ERROR_CODE, 0),
         )
+        // Usually nobody is watching at the end of a transfer: the reason waits for the next
+        // screen, and the shade says it now.
+        val message = context.getString(R.string.model_download_checksum_mismatch)
+        verifyOrder {
+            interruptions.record("m.bin", "http://example.com/m.bin", ModelDownloadFailure.CHECKSUM_MISMATCH, message)
+            notifier.notifyStopped("m.bin", ModelDownloadFailure.CHECKSUM_MISMATCH)
+        }
     }
 
     @Test
@@ -268,6 +282,9 @@ class ModelDownloadWorkerTest {
         val failure = result as ListenableWorker.Result.Failure
         assertEquals(404, failure.outputData.getInt(ModelDownloadWorker.KEY_ERROR_CODE, 0))
         assertEquals("Server returned code: 404", failure.outputData.getString(ModelDownloadWorker.KEY_ERROR))
+        // An HTTP refusal comes at once, while the user is looking: nothing to keep or announce.
+        verify(exactly = 0) { interruptions.record(any(), any(), any(), any()) }
+        verify(exactly = 0) { notifier.notifyStopped(any(), any()) }
     }
 
     @Test
@@ -333,6 +350,16 @@ class ModelDownloadWorkerTest {
             assertEquals("PAUSED_TIME_LIMIT", failure.outputData.getString(ModelDownloadWorker.KEY_FAILURE))
             assertEquals(0, foreground.calls)
             coVerify(exactly = 0) { downloader.download(any(), any(), any(), any()) }
+            // This run is WorkManager's, after Android stopped the last one: nobody started it.
+            verify(exactly = 1) {
+                interruptions.record(
+                    "m.bin",
+                    "http://example.com/m.bin",
+                    ModelDownloadFailure.PAUSED_TIME_LIMIT,
+                    context.getString(R.string.model_download_paused_time_limit),
+                )
+            }
+            verify(exactly = 1) { notifier.notifyStopped("m.bin", ModelDownloadFailure.PAUSED_TIME_LIMIT) }
         }
 
     @Test
@@ -356,6 +383,10 @@ class ModelDownloadWorkerTest {
         assertTrue(budget.isExhausted())
         assertEquals("PAUSED_TIME_LIMIT", failure.outputData.getString(ModelDownloadWorker.KEY_FAILURE))
         coVerify(exactly = 0) { installer.install(any(), any(), any()) }
+        verify(exactly = 1) {
+            interruptions.record("m.bin", "http://example.com/m.bin", ModelDownloadFailure.PAUSED_TIME_LIMIT, any())
+        }
+        verify(exactly = 1) { notifier.notifyStopped("m.bin", ModelDownloadFailure.PAUSED_TIME_LIMIT) }
     }
 
     @Test
@@ -446,6 +477,8 @@ class ModelDownloadWorkerTest {
                     settingsRepository,
                     installer,
                     budget,
+                    interruptions,
+                    notifier,
                 )
             },
         )
