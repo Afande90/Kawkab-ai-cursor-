@@ -19,7 +19,7 @@ import org.junit.runner.RunWith
 /**
  * Instrumented coverage for [LocalModelDao] — every public method is
  * exercised against an in-memory Room database so the `isActive`
- * single-row invariant, the `countByName` / `findByName` lookups, and
+ * single-row invariant, the `findByName` lookup, and
  * the `observeActiveModel` Flow emissions are pinned by the suite.
  */
 @RunWith(AndroidJUnit4::class)
@@ -121,15 +121,6 @@ class LocalModelDaoTest {
 
         val survivors = dao.getAllModels().first()
         assertEquals(listOf(keep), survivors.map { it.id })
-    }
-
-    @Test
-    fun countByName_reportsRowCount() = runBlocking {
-        assertEquals(0, dao.countByName("ghost.tflite"))
-
-        dao.insertModel(LocalModelEntity(name = "gemma.tflite", path = "/g", size = 1, isActive = false))
-        assertEquals(1, dao.countByName("gemma.tflite"))
-        assertEquals(0, dao.countByName("phi.tflite"))
     }
 
     @Test

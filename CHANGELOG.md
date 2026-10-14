@@ -268,6 +268,11 @@ details.
 
 ### Fixed
 
+- **Discover offers a model again when its file is gone.** It marked a file
+  **Installed** whenever the app had the model registered, even after the file
+  was deleted outside the app — and, after a restore, every model the backup
+  listed but did not bring, so the sheet's **Discover** led to a model that
+  could not be installed. It now marks only files that are on the phone.
 - **A cloud model's repair no longer sends a temperature.** When a Tool,
   Decomposition or other structured step on a cloud model got an answer that did
   not parse, the second try asked the provider for a low temperature. Claude 4.7

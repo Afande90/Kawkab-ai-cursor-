@@ -880,7 +880,9 @@ file to the existing download path — no new download mechanism.
    polymorphic `gated` field (`false` vs `"auto"`/`"manual"`), filters to
    engine-compatible `.litertlm` siblings and builds each file's `resolve` URL.
 3. **Enrich + wrap.** `ModelDiscoveryRepositoryImpl` stamps each detail file's
-   "already installed" flag from `LocalModelRepository.isInstalled`, drops repos
+   "already installed" flag from `LocalModelRepository.isInstalled` — a
+   registered model whose file is on disk; a row whose file is gone, as a
+   restore leaves for a model it did not bring, is offered again — drops repos
    with no `.litertlm` file, and converts success/failure into a `Result` (the
    suspend network calls re-throw `CancellationException` from a dedicated first
    catch before mapping other failures — never `runCatching`). `SearchDiscoverableModelsUseCase`

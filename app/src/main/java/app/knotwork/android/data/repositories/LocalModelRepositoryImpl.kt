@@ -93,7 +93,7 @@ class LocalModelRepositoryImpl @Inject constructor(
     }
 
     override suspend fun isInstalled(fileName: String): Boolean = withContext(Dispatchers.IO) {
-        localModelDao.countByName(fileName) > 0
+        localModelDao.findByName(fileName)?.let { File(it.path).isFile } == true
     }
 
     override suspend fun findByFileName(fileName: String): LocalModel? = withContext(Dispatchers.IO) {
