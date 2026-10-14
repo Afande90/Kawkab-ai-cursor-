@@ -381,6 +381,22 @@ class AndroidModelDownloadManagerTest {
         }
     }
 
+    @Test
+    fun `given an HTTP status when read then only 401 and 403 are refusals for access`() {
+        val refused = listOf(null, 400, 401, 403, 404, 416, 500)
+            .filter { AndroidModelDownloadManager.DownloadError("x", code = it).accessRefused }
+
+        assertEquals(listOf(401, 403), refused)
+    }
+
+    @Test
+    fun `given why a download stopped when read then only a pause and a checksum mismatch were recorded`() {
+        val recorded = ModelDownloadFailure.entries
+            .filter { AndroidModelDownloadManager.DownloadError("x", failure = it).recordedInterruption }
+
+        assertEquals(listOf(ModelDownloadFailure.CHECKSUM_MISMATCH, ModelDownloadFailure.PAUSED_TIME_LIMIT), recorded)
+    }
+
     private fun stubWorkInfos(vararg infos: WorkInfo) {
         val frames = infos.map { listOf(it) }.toTypedArray()
         every { workManager.getWorkInfosForUniqueWorkFlow(any()) } returns flowOf(*frames)

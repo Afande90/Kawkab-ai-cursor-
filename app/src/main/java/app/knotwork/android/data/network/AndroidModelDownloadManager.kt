@@ -215,7 +215,34 @@ class AndroidModelDownloadManager @Inject constructor(
         val message: String,
         val code: Int? = null,
         val failure: ModelDownloadFailure = ModelDownloadFailure.OTHER,
-    ) : AppError.Network
+    ) : AppError.Network {
+
+        /**
+         * Whether the source refused the download for access — HTTP 401 or 403, which is how an
+         * access-gated Hugging Face repository answers a request without a token, or with one whose
+         * account has not accepted the licence. A screen words this as "accept the licence and add a
+         * token" rather than as a connection problem.
+         */
+        val accessRefused: Boolean
+            get() = code == HTTP_UNAUTHORIZED || code == HTTP_FORBIDDEN
+
+        /**
+         * Whether the download worker recorded this stop before failing — a pause at the foreground
+         * time limit, or a file that failed its checksum. A screen shows such a stop from that record,
+         * once, so the screen that watched the download does not word it a second time.
+         */
+        val recordedInterruption: Boolean
+            get() = failure == ModelDownloadFailure.PAUSED_TIME_LIMIT ||
+                failure == ModelDownloadFailure.CHECKSUM_MISMATCH
+
+        private companion object {
+            /** Missing or invalid credentials. */
+            const val HTTP_UNAUTHORIZED = 401
+
+            /** Credentials accepted, access not granted — the licence not accepted. */
+            const val HTTP_FORBIDDEN = 403
+        }
+    }
 
     private companion object {
 

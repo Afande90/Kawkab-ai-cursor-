@@ -7,7 +7,6 @@ import app.knotwork.android.domain.constants.OnboardingModelCatalog
 import app.knotwork.android.domain.models.AppError
 import app.knotwork.android.domain.models.CustomModelLink
 import app.knotwork.android.domain.models.DownloadState
-import app.knotwork.android.domain.models.ModelDownloadFailure
 import app.knotwork.android.domain.models.OnboardingMilestone
 import app.knotwork.android.domain.repositories.AppStateSettings
 import app.knotwork.android.domain.repositories.InterruptedDownload
@@ -482,9 +481,7 @@ class OnboardingViewModel @Inject constructor(
 
     /** Whether the download worker recorded this failure as an interruption before reporting it. */
     private fun AppError.isRecordedInterruption(): Boolean =
-        (this as? AndroidModelDownloadManager.DownloadError)?.failure.let {
-            it == ModelDownloadFailure.PAUSED_TIME_LIMIT || it == ModelDownloadFailure.CHECKSUM_MISMATCH
-        }
+        (this as? AndroidModelDownloadManager.DownloadError)?.recordedInterruption == true
 
     private fun extractErrorMessage(error: AppError): String {
         val message = (error as? AndroidModelDownloadManager.DownloadError)?.message

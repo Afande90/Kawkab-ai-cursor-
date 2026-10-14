@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import app.knotwork.android.data.network.AndroidModelDownloadManager.DownloadError
 import app.knotwork.android.domain.models.DiscoverableModelFile
 import app.knotwork.android.domain.models.DownloadState
-import app.knotwork.android.domain.models.ModelDownloadFailure
 import app.knotwork.android.domain.repositories.GenerationSettings
 import app.knotwork.android.domain.repositories.InterruptedDownload
 import app.knotwork.android.domain.repositories.ModelDownloadManager
@@ -227,19 +226,16 @@ class DiscoverDetailViewModel @Inject constructor(
      * so the screen can nudge the user toward accepting the licence and supplying a
      * token. Anything else reads as a connection problem.
      */
-    private fun DownloadState.Error.failureReason(): DiscoverInstallEvent.FailureReason {
-        val code = (error as? DownloadError)?.code
-        return if (code == HTTP_UNAUTHORIZED || code == HTTP_FORBIDDEN) {
+    private fun DownloadState.Error.failureReason(): DiscoverInstallEvent.FailureReason =
+        if ((error as? DownloadError)?.accessRefused == true) {
             DiscoverInstallEvent.FailureReason.GATED
         } else {
             DiscoverInstallEvent.FailureReason.OTHER
         }
-    }
 
     /** Whether the download worker recorded this failure as an interruption before reporting it. */
-    private fun DownloadState.Error.isRecordedInterruption(): Boolean = (error as? DownloadError)?.failure.let {
-        it == ModelDownloadFailure.PAUSED_TIME_LIMIT || it == ModelDownloadFailure.CHECKSUM_MISMATCH
-    }
+    private fun DownloadState.Error.isRecordedInterruption(): Boolean =
+        (error as? DownloadError)?.recordedInterruption == true
 
     /**
      * Follows the downloads that stopped for a reason not shown yet, keeping the oldest of this
@@ -264,13 +260,5 @@ class DiscoverDetailViewModel @Inject constructor(
      */
     fun onInterruptionShown(interruption: InterruptedDownload) {
         downloadManager.acknowledgeInterruption(interruption.fileName)
-    }
-
-    private companion object {
-        /** HTTP 401 — missing/invalid credentials for a gated repository. */
-        const val HTTP_UNAUTHORIZED = 401
-
-        /** HTTP 403 — licence not accepted for a gated repository. */
-        const val HTTP_FORBIDDEN = 403
     }
 }
