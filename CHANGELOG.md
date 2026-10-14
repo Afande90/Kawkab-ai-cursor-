@@ -98,9 +98,19 @@ details.
   done, what the file holds. A cancelled or failed backup deletes its unfinished
   file, and names it for you to delete where the place you chose does not allow
   that; a file left by the app being closed halfway is deleted at the next start
-  if the place allows it. Search
-  settings for *backup*, *export*, *transfer* or *new phone* to find it. The
-  [format](docs/backup-format.md) is public.
+  if the place allows it. Search settings for *backup*, *export*, *transfer* or
+  *new phone* to find it. The [format](docs/backup-format.md) is public.
+- **Restore from a backup, on this phone or a new one.** *Restore from file…*
+  in Settings → Privacy → *Backup & restore* reads a backup you pick, checks its
+  password and every part of it while nothing on the phone changes, and shows
+  what comes in and what this phone loses before you type **REPLACE**; the app
+  then restarts and applies it. A file that is not a backup, one made by a
+  newer Knotwork, a damaged or cut-short file and too little free space are each
+  told in their own words. After the restart a sheet over the chat lists the
+  models to download again — straight from where each came from, or through
+  Discover — the keys to enter again and the scheduled tasks that were not
+  carried; with nothing left to do, the app says *Restored*. Moving between
+  Google Play and a release build is now a backup and a restore.
 - **Each downloaded model remembers where it came from.** A model downloaded
   from a link or from Discover keeps that address with it. A model found on
   disk at start-up — after *Erase data*, or a file copied into the app's folder

@@ -131,10 +131,11 @@ https://github.com/user-attachments/assets/2ea06de5-6832-4e0c-ad48-430f375d8b72
   [Known limitations](docs/faq.md#known-limitations).
 - Archiving a chat takes it out of the drawer without deleting it. It stays
   readable and exportable on its own screen until you restore it.
-- **Back up** what you made — chats, memory, pipelines, run history, triggers,
-  settings and files — into one file locked with a password you choose, saved
-  wherever you pick. API keys go in only if you tick the box; model files stay
-  out. The [format](docs/backup-format.md) is public.
+- **Back up and restore** what you made — chats, memory, pipelines, run history,
+  triggers, settings and files — as one file locked with a password you choose,
+  saved wherever you pick; restore it on this phone or a new one. API keys go in
+  only if you tick the box; model files stay out, and the restored app offers to
+  download them again. The [format](docs/backup-format.md) is public.
 - Settings with a number, a borrowed term or a side effect explain themselves in
   one sentence behind the **ⓘ** next to the label. The reference table in the
   user guide is generated from the same strings.
@@ -223,8 +224,8 @@ browser's `prefers-color-scheme`.
 The Play build is the `full` flavour described below. Google Play signs the
 copies it delivers with its own key; the APKs on the Releases page carry this
 project's key. Android will not update one with the other, so moving between
-Google Play and a release APK means exporting what you want to keep,
-uninstalling, and installing from the other channel. Which channel is signed by
+Google Play and a release APK means making a backup, uninstalling, installing
+from the other channel and restoring the backup. Which channel is signed by
 which key is set out in
 [docs/release.md](docs/release.md#signing-identities-by-channel).
 

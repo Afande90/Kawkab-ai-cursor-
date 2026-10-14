@@ -1817,6 +1817,26 @@ Settings → Privacy → *Backup & restore* → *Back up*. The file's layout is 
   deleted. So `StartupMaintenance` deletes a file a killed process left behind —
   but never the one a backup in this process is still writing, since the
   maintenance also runs when the activity is only recreated.
+- **Restore.** `RestoreViewModel` drives *Restore from file…*.
+  `InspectBackupDocumentUseCase` reads the picked file's open header, name and
+  size — a file this build cannot read comes back as an answer, not a failure.
+  `StageRestoreFromDocumentUseCase` hands the document and the password to
+  `BackupRestorer.stage`, which authenticates and unpacks everything into
+  `files/restore/` and readies the database there (`RestoreStager`,
+  `StagedDatabasePreparer`); nothing the app uses changes.
+  `SummarizeRestoreUseCase` weighs the staged manifest against this phone
+  through `LocalDataCounter` (`BackupLocalDataCounter`) and the model registry.
+  After the typed confirm, `BackupRestorer.commit` writes the commit marker and
+  stops background work, and the screen restarts the process with
+  ProcessPhoenix. The next start swaps the files in before Hilt exists
+  (`PendingRestoreApplier` in `App.onCreate`, main process only), migrates the
+  settings when DataStore first opens (`RestoredPreferencesMigration`), and
+  `RestoreFinisher` — the first stage of `AppInitializationUseCase` — applies
+  the secrets and the models' paths and writes the report.
+  `AfterRestoreViewModel`, hosted by the chat screen, reads that report once:
+  a sheet with what is left to do, whose downloads are the download worker's
+  as on the Models screen, or the snackbar *Restored* through
+  `TransientMessageRelay`.
 
 ### 5.3. JSON parsing
 

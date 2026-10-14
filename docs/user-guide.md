@@ -2995,7 +2995,8 @@ Advanced:
 - **Usage statistics** *(link)* — opens a fully on-device usage dashboard (see
   below).
 - **Backup & restore** *(link)* — puts what you made in the app into one file
-  locked with a password (see [Backup & restore](#backup--restore)).
+  locked with a password, and restores one (see
+  [Backup & restore](#backup--restore)).
 
 #### Usage statistics
 
@@ -3087,6 +3088,33 @@ cancel, names the file for you to delete. If the app was closed halfway, the
 file is deleted the next time it starts, where the place still allows it —
 nothing is shown then. A workspace file or image whose name a backup cannot
 store is left out, and the result says how many were.
+
+**Restore from file…** puts a backup back — on this phone or a new one — and
+replaces everything the app keeps here.
+
+1. **Pick the file** in the system's *Open document* screen. Any file can be
+   picked; the backup's own header decides. A file that is not a backup is
+   named and refused, and so is one made by a newer Knotwork than this phone's.
+2. **Enter its password** and tap **Check**, or *Done* on the keyboard. A wrong
+   password is said in place; nothing counts the tries.
+3. **Checking the backup** reads every part of the file into a copy the app
+   keeps aside — nothing on the phone is replaced yet. A damaged or cut-short
+   file, or too little free space, stops it, and the screen says which;
+   **Cancel** goes back to the password.
+4. **Ready to restore** shows what the backup holds, whether its API keys come
+   in, how many of its models this phone will have to download again, and —
+   under **Will be lost** — everything now on this phone. Tasks the agent
+   scheduled are never in a backup.
+5. **Replace my data** asks you to type **REPLACE**. The app then restarts and
+   applies the backup.
+
+After the restart the chat shows what is left to do: the models to download
+again — **Download** where the backup recorded where a model came from,
+**Discover** where it did not — the API keys to enter again when the backup had
+none, and the scheduled tasks that were not carried. Downloads go on after the
+sheet closes. With nothing left to do, the app just says *Restored*. A restored
+phone takes over the backup's settings and usage statistics. Closing the
+summary, or cancelling the check, deletes the copy kept aside.
 
 The file's layout and cryptography are described in
 [backup-format.md](backup-format.md).

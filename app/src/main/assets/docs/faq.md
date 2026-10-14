@@ -142,8 +142,9 @@ Yes, into one file locked with a password you choose: Settings → Privacy →
 **Backup & restore** → **Back up…**. It holds chats, memory, pipelines, run
 history, triggers, settings and files — not the model files, and not your API
 keys unless you tick the box (a token written into a server's address travels
-with the address). The file goes only where you save it. See [Backup
-& restore](user-guide.md#backup--restore).
+with the address). The file goes only where you save it. **Restore from file…**
+puts it back — on this phone or a new one — and replaces everything there. See
+[Backup & restore](user-guide.md#backup--restore).
 
 ### Is there telemetry?
 
@@ -425,8 +426,10 @@ memory](user-guide.md#browsing-long-term-memory).
 
 ### Does memory move to a new phone?
 
-Export and import move it, and the export is a file you hold. See [Moving memory
-to another
+With everything else, in a backup you restore there: Settings → Privacy →
+**Backup & restore**. Memory alone also moves by export and import, and the
+export is a file you hold. See [Backup & restore](user-guide.md#backup--restore)
+and [Moving memory to another
 device](user-guide.md#moving-memory-to-another-device-export--import).
 
 ### Why doesn't a memory I know exists come back?

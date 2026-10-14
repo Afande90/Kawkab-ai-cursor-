@@ -320,6 +320,12 @@ derived
 has the file and the password can read everything in it. If you pick a cloud
 drive in the picker, that drive's app uploads the file under its own policy.
 
+**Restore from file…** reads a backup you pick, after its password, and — once
+you confirm — replaces everything the app keeps on this phone with it: the
+usage statistics included, so they continue those of the phone the backup came
+from, and your keys, when the backup carries them. The app opens no connection
+to do it.
+
 ---
 
 ## 4. What never leaves your device

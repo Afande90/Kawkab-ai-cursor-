@@ -272,16 +272,15 @@ different keys ([Signing identities by
 channel](release.md#signing-identities-by-channel)), and Android updates an app
 only with a copy from the same signer. To switch channels:
 
-1. Export what you want to keep:
-   [chats](user-guide.md#exporting-and-importing-chat-history),
-   [memory](user-guide.md#exporting-memory), your own
-   [pipelines](user-guide.md#managing-presets) and
-   [prompts](user-guide.md#importing-and-exporting-a-prompt).
+1. Make a backup: Settings → Privacy → **Backup & restore** → **Back up…**
+   ([how](user-guide.md#backup--restore)). Tick **Include API keys and
+   sign-ins** to bring your keys along, and save the file where an uninstall
+   does not reach — Downloads, a memory card or a cloud drive.
 2. Uninstall the app. That deletes everything it keeps on the device,
-   including downloaded models, settings and saved API keys, which have no
-   export.
-3. Install from the other channel, download a model, set up your settings and
-   keys again, and import the files.
+   downloaded models included.
+3. Install from the other channel, open **Backup & restore** → **Restore from
+   file…**, pick the backup, enter its password and confirm. After the app
+   restarts, download the models again from the sheet it shows.
 
 ## A model download paused after five hours
 
