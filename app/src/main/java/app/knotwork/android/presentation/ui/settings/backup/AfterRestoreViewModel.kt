@@ -29,8 +29,8 @@ import javax.inject.Inject
 
 /**
  * What the app tells the user the first time it opens after a restore: a sheet over the chat with the models to
- * download again, the keys to enter again — when neither the backup nor this phone has any — and the tasks that were
- * not carried; or, when nothing is left to do, the snackbar *Restored*.
+ * download again, the keys to enter again — when the backup did not bring them and none is set on this phone — and
+ * the tasks that were not carried; or, when nothing is left to do, the snackbar *Restored*.
  *
  * The report is read once and dismissed on *Done*; until then the sheet shows each time the chat does. A download
  * started here is the download worker's, as on the Models screen: it goes on after the sheet closes, and the

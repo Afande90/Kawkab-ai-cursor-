@@ -326,7 +326,8 @@ memory, pipelines, run history, triggers, settings and files, and the usage
 statistics, which then continue those of the phone the backup came from. The
 model files on this phone stay. So do its API keys, Hugging Face token and MCP
 sign-ins, except those the backup carries, which replace them — a restore is not
-a way to clear them. The app opens no connection to do it.
+a way to clear them. MCP servers come from the backup, so a sign-in for a server
+it does not list is kept but goes unused. The app opens no connection to do it.
 
 ---
 

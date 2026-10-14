@@ -105,14 +105,15 @@ details.
   password and every part of it while nothing on the phone changes, and shows
   what comes in and what this phone loses before you type **REPLACE**; the app
   then restarts and applies it. The model files stay, and so do the phone's own
-  keys and sign-ins, except those the backup carries. A file that is not a
+  keys, except those the backup carries; MCP servers come from the backup, so a
+  sign-in for a server it does not list goes unused. A file that is not a
   backup, one in a newer format or with a newer database, a damaged or
   cut-short file and too little free space are each told in their own words.
   After the restart a sheet over the chat lists the models to download again —
   straight from where each came from, or through Discover — a reminder to enter
-  keys again when neither the backup nor the phone holds any key, token or
-  sign-in, and the scheduled tasks that were not carried; with nothing left to
-  do, the app says *Restored*.
+  keys, token and sign-ins again when the backup did not bring them and none is
+  set on the phone, and the scheduled tasks that were not carried; with nothing
+  left to do, the app says *Restored*.
   Moving between Google Play and a release build is now a backup and a restore.
 - **Each downloaded model remembers where it came from.** A model downloaded
   from a link or from Discover keeps that address with it. A model found on

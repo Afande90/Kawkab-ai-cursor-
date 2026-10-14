@@ -170,8 +170,9 @@ class BackupRestoreException(
  * @property secretsApplied Whether secrets from the archive were written to this phone. Those of this phone the
  *   archive did not carry stay either way.
  * @property backupCreatedAtEpochMillis When the restored backup was made; `null` in a report an earlier build wrote.
- * @property secretsOnPhone Whether this phone holds any API key, token or sign-in after the restore — when it
- *   holds none and the archive carried none, the user has them to enter again.
+ * @property secretsOnPhone Whether this phone holds any API key, token or sign-in after the restore — an MCP
+ *   sign-in counting only for a server the restored list names. When it holds none and none was applied from the
+ *   archive ([secretsApplied] false), the user has them to enter again.
  */
 data class RestoreReport(
     val modelsToDownload: List<BackupModelEntry>,
