@@ -553,6 +553,7 @@ matters.
   - `SecretFieldImeTest.kt` - Every field that takes a credential tells the keyboard it is a password.
   - `settings/` - the settings hub and its category sub-screens, including the hint affordance, the search surface, and the provider / run-limits details.
     - `backup/` - Roborazzi baselines for the *Backup & restore* screen.
+      - `BackupContentSemanticsTest.kt` - What the *Back up* route puts in the semantics tree for TalkBack: the working steps are one polite live region whose text is the current step, so the step's name changes as the work moves on — the content change a live region is announced on.
       - `BackupSnapshotTest.kt` - Roborazzi baseline for Settings → Privacy → *Backup & restore* and its *Back up* route: the screen, the password form (empty, flagged, ready, 200 %), the work (key derivation, files), the saved result (also at 200 %, where the counts fall into one column) and two failures — light, and dark for every state the user reads a result in.
     - `HeroSnapshotTest.kt` - Roborazzi baseline for the README "Settings" hero shot at the canonical 1080 × 2400 resolution.
     - `ModelPickerSheetTest.kt` - Behaviour of `ModelPickerSheetContent`: what a server's list becomes, and what a pick returns.

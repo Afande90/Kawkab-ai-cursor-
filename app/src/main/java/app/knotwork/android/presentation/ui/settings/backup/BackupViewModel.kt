@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.knotwork.android.domain.backup.BackupDocuments
 import app.knotwork.android.domain.backup.BackupExportFailure
+import app.knotwork.android.domain.backup.BackupFormat
 import app.knotwork.android.domain.backup.BackupProgress
 import app.knotwork.android.domain.backup.BackupStep
 import app.knotwork.android.domain.usecases.BackUpToDocumentUseCase
@@ -20,6 +21,7 @@ import app.knotwork.design.screens.settings.backup.BackupWorking
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,18 +32,24 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
+import java.time.LocalDate
 import javax.inject.Inject
 
 /**
  * Settings → Privacy → *Backup & restore*, and its *Back up* route.
  *
  * The password lives here for the route only: kept across the system picker and *Try again*, dropped on
- * *Done*, *Close* and when the screen goes (the process dying drops it too — it is never saved). The checkbox
- * for secrets starts off every time.
+ * *Done*, *Close*, a saved backup and when the screen goes (the process dying drops it too — it is never saved).
+ * It is read when the picker returns, so nothing done on the screen afterwards changes what the backup is locked
+ * with. The checkbox for secrets starts off every time.
  *
  * Field errors follow the designer's rule: *Too short* once the first field has lost focus holding 1–11
  * characters, then live until it reaches 12; *Doesn't match* once the second field has lost focus, or as soon as
  * it is as long as the first and differs, clearing live. An empty field shows no error.
+ *
+ * A document the picker returns when no backup can start with it — a second one while a backup runs, or one that
+ * comes back after the process was recreated and the password went with it — was created empty by the picker,
+ * and is deleted.
  *
  * @property backUpToDocument Writes the backup into the picked document.
  * @property documents Names and deletes the picked document.
@@ -60,13 +68,22 @@ class BackupViewModel @Inject constructor(
     private val _events =
         MutableSharedFlow<BackupEvent>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
-    /** One-shot requests to the screen: open the picker, show a snackbar. */
+    /** One-shot requests to the screen: open the picker. */
     val events: SharedFlow<BackupEvent> = _events.asSharedFlow()
+
+    private val _cancelNotice = MutableStateFlow<BackupCancelNotice?>(null)
+
+    /**
+     * What a cancelled backup left, until the screen has shown it ([onCancelNoticeShown]). Held as state, not
+     * sent as an event: it can be the only word that a file was left behind, and a rotation must not lose it.
+     */
+    val cancelNotice: StateFlow<BackupCancelNotice?> = _cancelNotice.asStateFlow()
 
     private var fields = Fields()
     private var job: Job? = null
     private var document: String? = null
     private var documentName: String? = null
+    private var suggestedName: String = suggestedFileName()
 
     /** Opens *Back up* with empty fields. */
     fun startBackup() {
@@ -110,7 +127,7 @@ class BackupViewModel @Inject constructor(
 
     /** *Choose where to save*: asks the screen to open the system picker. */
     fun onChooseWhere() {
-        if (formOf(fields).canContinue) _events.tryEmit(BackupEvent.PickDocument)
+        if (formOf(fields).canContinue) requestDocument()
     }
 
     /**
@@ -119,33 +136,52 @@ class BackupViewModel @Inject constructor(
      * @param document The picked document's URI, or `null` when the user backed out — the form stays as it was.
      */
     fun onDocumentPicked(document: String?) {
-        if (document == null || job?.isActive == true) {
+        if (document == null) {
             showForm()
             return
         }
+        if (job?.isActive == true || !formOf(fields).canContinue) {
+            viewModelScope.launch { documents.discard(document) }
+            return
+        }
         this.document = document
-        job = viewModelScope.launch { backUp(document) }
+        documentName = null
+        val password = fields.password.toCharArray()
+        val includeSecrets = fields.includeSecrets
+        // The form goes at once: from here Back and Close mean Cancel.
+        _state.update { it.copy(route = BackupWorking(fileName = suggestedName, step = BackupWorkStep.PASSWORD)) }
+        job = viewModelScope.launch { backUp(document, password, includeSecrets) }
     }
 
-    /** *Cancel* while working, or Back: stops the backup, deletes the unfinished file and says whether it did. */
+    /**
+     * *Cancel* while working, or Back: stops the backup, deletes the unfinished file and leaves a notice saying
+     * whether it did. Once only; and a backup that finished before the cancel reached it keeps its result.
+     */
     fun onCancel() {
-        val running = job ?: return
+        val running = job?.takeIf { it.isActive } ?: return
         val target = document ?: return
+        job = null
         viewModelScope.launch {
-            running.cancel()
-            running.join()
-            val name = documentName
-            // The backup deleted it on its way out; asking again says whether that worked.
+            running.cancelAndJoin()
+            // The result reached the screen first: the backup is not unfinished, and stays.
+            if (_state.value.route !is BackupWorking) return@launch
+            // The backup deleted it on its way out; asking again reports how that went.
             val deleted = documents.discard(target)
+            val name = documentName ?: suggestedName
             closeRoute()
-            _events.tryEmit(BackupEvent.Cancelled(fileDeleted = deleted, fileName = name))
+            _cancelNotice.value = BackupCancelNotice(fileDeleted = deleted, fileName = name)
         }
+    }
+
+    /** The screen showed [cancelNotice]. */
+    fun onCancelNoticeShown() {
+        _cancelNotice.value = null
     }
 
     /** *Try again* after a failure: the picker again, the password kept. */
     fun onTryAgain() {
         showForm()
-        _events.tryEmit(BackupEvent.PickDocument)
+        requestDocument()
     }
 
     /** *Done* or *Close*: back to the screen, the password dropped. */
@@ -173,13 +209,21 @@ class BackupViewModel @Inject constructor(
         }
     }
 
-    private suspend fun backUp(target: String) {
-        val name = documents.displayName(target)
-        documentName = name
-        _state.update { it.copy(route = BackupWorking(fileName = name, step = BackupWorkStep.PASSWORD)) }
-        val password = fields.password.toCharArray()
+    private fun requestDocument() {
+        suggestedName = suggestedFileName()
+        _events.tryEmit(BackupEvent.PickDocument(suggestedName))
+    }
+
+    private suspend fun backUp(target: String, password: CharArray, includeSecrets: Boolean) {
         try {
-            val outcome = backUpToDocument(target, password, fields.includeSecrets) { progress -> show(progress, name) }
+            // The provider may have renamed it; without a name from it, the one suggested is the best guess.
+            val name = documents.displayName(target) ?: suggestedName
+            documentName = name
+            _state.update { current ->
+                val working = current.route as? BackupWorking ?: return@update current
+                current.copy(route = working.copy(fileName = name))
+            }
+            val outcome = backUpToDocument(target, password, includeSecrets) { progress -> show(progress, name) }
             _state.update { it.copy(route = routeOf(outcome, name)) }
             if (outcome is BackupToDocumentOutcome.Saved) fields = Fields()
         } catch (e: CancellationException) {
@@ -191,7 +235,7 @@ class BackupViewModel @Inject constructor(
                     route = BackupFailed(
                         reason = BackupFailReason.READ_FAILED,
                         fileDeleted = documents.discard(target),
-                        fileName = name,
+                        fileName = documentName ?: suggestedName,
                     ),
                 )
             }
@@ -200,7 +244,7 @@ class BackupViewModel @Inject constructor(
         }
     }
 
-    private fun show(progress: BackupProgress, name: String?) {
+    private fun show(progress: BackupProgress, name: String) {
         _state.update { current ->
             if (current.route !is BackupWorking) return@update current
             current.copy(
@@ -245,13 +289,16 @@ class BackupViewModel @Inject constructor(
 
         fun codePoints(text: String): Int = text.codePointCount(0, text.length)
 
+        /** The name offered in the picker: `knotwork-backup-<date>.knotwork`. */
+        fun suggestedFileName(): String = "knotwork-backup-${LocalDate.now()}.${BackupFormat.FILE_EXTENSION}"
+
         fun stepOf(step: BackupStep): BackupWorkStep = when (step) {
             BackupStep.KEY -> BackupWorkStep.PASSWORD
             BackupStep.DATABASE -> BackupWorkStep.DATABASE
             BackupStep.FILES -> BackupWorkStep.FILES
         }
 
-        fun routeOf(outcome: BackupToDocumentOutcome, name: String?): BackupRoute = when (outcome) {
+        fun routeOf(outcome: BackupToDocumentOutcome, name: String): BackupRoute = when (outcome) {
             is BackupToDocumentOutcome.Saved -> BackupSaved(
                 fileName = name,
                 sizeBytes = outcome.sizeBytes,
@@ -279,14 +326,18 @@ class BackupViewModel @Inject constructor(
 
 /** What the *Backup & restore* screen is asked to do once. */
 sealed interface BackupEvent {
-    /** Open the system picker to create the backup file. */
-    data object PickDocument : BackupEvent
-
     /**
-     * The backup was cancelled.
+     * Open the system picker to create the backup file.
      *
-     * @property fileDeleted Whether the unfinished file was deleted.
-     * @property fileName Its name, for when the user has to delete it.
+     * @property suggestedName The name the picker offers.
      */
-    data class Cancelled(val fileDeleted: Boolean, val fileName: String?) : BackupEvent
+    data class PickDocument(val suggestedName: String) : BackupEvent
 }
+
+/**
+ * A cancelled backup, for the snackbar.
+ *
+ * @property fileDeleted Whether the unfinished file was deleted.
+ * @property fileName Its name, for when the user has to delete it.
+ */
+data class BackupCancelNotice(val fileDeleted: Boolean, val fileName: String)

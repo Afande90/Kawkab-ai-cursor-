@@ -10,7 +10,9 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -22,7 +24,8 @@ import java.io.OutputStream
 
 /**
  * [BackUpToDocumentUseCase]: a saved backup is finished and measured; a failed, refused, cancelled or broken one
- * deletes its unfinished document — and only a complete one is ever kept.
+ * deletes its unfinished document, once — and a complete one is kept and recorded as finished even when a cancel
+ * arrives while that is written.
  */
 class BackUpToDocumentUseCaseTest {
 
@@ -73,8 +76,47 @@ class BackUpToDocumentUseCaseTest {
         val outcome = useCase(DOCUMENT, PASSWORD.toCharArray(), includeSecrets = false) { }
 
         assertEquals(BackupToDocumentOutcome.Failed(BackupExportFailure.WRITE_FAILED, 0, true), outcome)
-        coVerify { documents.discard(DOCUMENT) }
+        coVerify(exactly = 1) { documents.discard(DOCUMENT) }
     }
+
+    @Test
+    fun `given a cancel while the document is being opened when it stops then the document still goes`() = runTest {
+        // Given — the provider is slow to open the document.
+        coEvery { documents.openForWrite(DOCUMENT) } coAnswers { awaitCancellation() }
+
+        // When
+        val job = launch { useCase(DOCUMENT, PASSWORD.toCharArray(), includeSecrets = false) { } }
+        testScheduler.advanceUntilIdle()
+        job.cancel(CancellationException("user"))
+        job.join()
+
+        // Then — the deletion also closes a stream the use case never got.
+        coVerify(exactly = 1) { documents.discard(DOCUMENT) }
+    }
+
+    @Test
+    fun `given a cancel while the complete backup is being recorded when it stops then the record is finished`() =
+        runTest {
+            // Given
+            val recording = CompletableDeferred<Unit>()
+            var recorded = false
+            coEvery { exporter.export(any(), any(), false, any()) } returns MANIFEST
+            coEvery { documents.finish(DOCUMENT) } coAnswers {
+                recording.complete(Unit)
+                delay(1_000)
+                recorded = true
+            }
+
+            // When
+            val job = launch { useCase(DOCUMENT, PASSWORD.toCharArray(), includeSecrets = false) { } }
+            recording.await()
+            job.cancel(CancellationException("user"))
+            job.join()
+
+            // Then — never left marked unfinished, so no later start deletes a complete backup; and kept.
+            assertTrue(recorded)
+            coVerify(exactly = 0) { documents.discard(any()) }
+        }
 
     @Test
     fun `given the backup is cancelled when it stops then the unfinished document is deleted`() = runTest {

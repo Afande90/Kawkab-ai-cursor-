@@ -4,6 +4,7 @@ import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
@@ -16,8 +17,8 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
 /**
- * [KnotworkPasswordField]: TalkBack hears what the eye does, and a password manager hears a password — a new one
- * where the caller says one is being chosen.
+ * [KnotworkPasswordField]: TalkBack hears what the eye does, a revealed field stays revealed across recreation, and
+ * a password manager hears a password — a new one where the caller says one is being chosen.
  */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [36])
@@ -33,6 +34,20 @@ class KnotworkPasswordFieldTest {
 
         // When
         rule.onNodeWithContentDescription("Show password").performClick()
+
+        // Then
+        rule.onNodeWithContentDescription("Hide password").assertExists()
+    }
+
+    @Test
+    fun `given a revealed field when the activity is recreated then it stays revealed`() {
+        // Given
+        val restoration = StateRestorationTester(rule)
+        restoration.setContent { KnotworkTheme { KnotworkPasswordField(value = "brass lantern", onValueChange = {}) } }
+        rule.onNodeWithContentDescription("Show password").performClick()
+
+        // When
+        restoration.emulateSavedInstanceStateRestore()
 
         // Then
         rule.onNodeWithContentDescription("Hide password").assertExists()

@@ -29,14 +29,17 @@ interface BackupDocuments {
     suspend fun displayName(document: String): String?
 
     /**
-     * Forgets [document] as unfinished: the backup in it is complete.
+     * Forgets [document] as unfinished: the backup in it is complete, and the stream is closed.
      *
      * @param document The document's URI.
      */
     suspend fun finish(document: String)
 
     /**
-     * Deletes [document] and forgets it.
+     * Deletes [document] and forgets it, closing first any stream [openForWrite] opened to it that its caller never
+     * got — a caller cancelled on the way back.
+     *
+     * Asked again about a document it already deleted, it reports what the first time answered.
      *
      * @param document The document's URI.
      * @return `true` when the document is gone; `false` when its provider refused to delete it.

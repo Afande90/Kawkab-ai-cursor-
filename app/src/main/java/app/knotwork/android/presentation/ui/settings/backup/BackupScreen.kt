@@ -7,9 +7,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -18,12 +16,11 @@ import app.knotwork.android.domain.backup.BackupFormat
 import app.knotwork.design.components.misc.KnotworkSnackbarHost
 import app.knotwork.design.screens.settings.backup.BackupCallbacks
 import app.knotwork.design.screens.settings.backup.BackupContent
-import java.time.LocalDate
 
 /**
  * Settings → Privacy → *Backup & restore*: the screen and its *Back up* route, over [BackupViewModel].
  *
- * Owns the system *Create document* picker (`application/octet-stream`, named `knotwork-backup-<date>.knotwork`)
+ * Owns the system *Create document* picker (`application/octet-stream`, under the name the view model suggests)
  * and the snackbar a cancelled backup leaves. Back inside a route closes it — or cancels the work.
  *
  * @param onBack Leaves the screen.
@@ -32,32 +29,30 @@ import java.time.LocalDate
 @Composable
 fun BackupScreen(onBack: () -> Unit, viewModel: BackupViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val cancelNotice by viewModel.cancelNotice.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(BackupFormat.MIME_TYPE)) {
         viewModel.onDocumentPicked(it?.toString())
     }
-    var cancelled by remember { mutableStateOf<BackupEvent.Cancelled?>(null) }
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
             when (event) {
-                BackupEvent.PickDocument -> picker.launch(
-                    "knotwork-backup-${LocalDate.now()}.${BackupFormat.FILE_EXTENSION}",
-                )
-                is BackupEvent.Cancelled -> cancelled = event
+                is BackupEvent.PickDocument -> picker.launch(event.suggestedName)
             }
         }
     }
-    // Resolved in composition: the snackbar names the file the user has to delete when the provider refused.
-    cancelled?.let { event ->
-        val text = if (event.fileDeleted) {
+    // Resolved in composition: the snackbar names the file the user has to delete when the provider refused. The
+    // notice is cleared only once shown, so a rotation in between shows it again rather than never.
+    cancelNotice?.let { notice ->
+        val text = if (notice.fileDeleted) {
             stringResource(R.string.backup_snack_cancelled)
         } else {
-            stringResource(R.string.backup_snack_cancelled_left, event.fileName.orEmpty())
+            stringResource(R.string.backup_snack_cancelled_left, notice.fileName)
         }
-        LaunchedEffect(event) {
+        LaunchedEffect(notice) {
             snackbarHostState.showSnackbar(text)
-            cancelled = null
+            viewModel.onCancelNoticeShown()
         }
     }
     BackHandler(enabled = state.route != null) { viewModel.onBack() }

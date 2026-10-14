@@ -18,6 +18,7 @@ import timber.log.Timber
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.io.OutputStream
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -26,11 +27,13 @@ import javax.inject.Singleton
  *
  * The picked document's grant is taken as persistable, so a start after the process died can still delete it;
  * the grant is released once the document is finished or deleted. A provider that refuses — a grant it never
- * made persistable, a `deleteDocument` it does not support — is answered with `false`, never a crash. Deleting a
- * document that is already gone counts as deleted, so a second [discard] reports what the first did.
+ * made persistable, a `deleteDocument` it does not support — is answered with `false`, never a crash. A document
+ * deleted once in this process is not asked about again: a second [discard] reports what the first did, whatever
+ * the provider would say about a document it no longer has.
  *
  * [discardLeftBehind] never deletes the document a backup in this process is still writing: the start-up
- * maintenance that calls it also runs when the activity is only recreated.
+ * maintenance that calls it also runs when the activity is only recreated. So the document is marked as being
+ * written before it is recorded as unfinished, and its record is cleared before the mark.
  *
  * @param resolver Opens, queries and deletes documents.
  * @param appState Remembers the unfinished document between starts.
@@ -47,6 +50,12 @@ internal class SafBackupDocuments(
     @Volatile
     private var writing: String? = null
 
+    /** The streams opened here and not yet handed over for good, by document. */
+    private val streams = ConcurrentHashMap<String, OutputStream>()
+
+    /** What deleting each document answered, so asking again reports the same. */
+    private val discarded = ConcurrentHashMap<String, Boolean>()
+
     /** Documents of the app's own content resolver. */
     @Inject
     constructor(
@@ -57,22 +66,24 @@ internal class SafBackupDocuments(
 
     override suspend fun openForWrite(document: String): OutputStream = withContext(ioDispatcher) {
         val uri = document.toUri()
+        discarded.remove(document)
         try {
             resolver.takePersistableUriPermission(uri, GRANT)
         } catch (e: SecurityException) {
             // Not persistable here: the document is deleted while the process lives, not after a restart.
             Timber.w(e, "A backup document's grant could not be kept")
         }
-        appState.setUnfinishedBackupDocument(document)
         writing = document
-        // The stream is the caller's to close: the export closes it whatever way it ends.
+        appState.setUnfinishedBackupDocument(document)
+        // The stream is the caller's to close: the export closes it whatever way it ends, and [discard] closes it
+        // when the caller was cancelled before it got the stream.
         @SuppressLint("Recycle")
         val stream = try {
             resolver.openOutputStream(uri, WRITE)
         } catch (e: SecurityException) {
             throw IOException("the provider refused the document", e)
         }
-        stream ?: throw IOException("the provider opened no stream")
+        (stream ?: throw IOException("the provider opened no stream")).also { streams[document] = it }
     }
 
     override suspend fun displayName(document: String): String? = withContext(ioDispatcher) {
@@ -80,24 +91,25 @@ internal class SafBackupDocuments(
             resolver.query(document.toUri(), arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use {
                 if (it.moveToFirst()) it.getString(0) else null
             }
-        } catch (e: SecurityException) {
-            Timber.w(e, "A backup document's name could not be read")
-            null
-        } catch (e: IllegalArgumentException) {
+        } catch (e: RuntimeException) {
+            // A provider's failure crosses the binder as any runtime exception; the name is only shown.
             Timber.w(e, "A backup document's name could not be read")
             null
         }
     }
 
     override suspend fun finish(document: String) = withContext(ioDispatcher) {
+        streams.remove(document)
         forget(document)
     }
 
     override suspend fun discard(document: String): Boolean = withContext(ioDispatcher) {
+        discarded[document]?.let { return@withContext it }
+        closeStream(document)
         val deleted = try {
             DocumentsContract.deleteDocument(resolver, document.toUri())
         } catch (e: FileNotFoundException) {
-            Timber.w(e, "A backup document to delete was already gone")
+            Timber.i(e, "A backup document to delete was already gone")
             true
         } catch (e: SecurityException) {
             Timber.w(e, "A backup document's provider refused to delete it")
@@ -109,6 +121,7 @@ internal class SafBackupDocuments(
             Timber.w(e, "A backup document's provider refused to delete it")
             false
         }
+        discarded[document] = deleted
         forget(document)
         deleted
     }
@@ -119,13 +132,24 @@ internal class SafBackupDocuments(
         return discard(document)
     }
 
+    /** Closes the stream this process opened to [document], if it was never handed over. */
+    private fun closeStream(document: String) {
+        val stream = streams.remove(document) ?: return
+        try {
+            stream.close()
+        } catch (e: IOException) {
+            Timber.i(e, "An unfinished backup's stream failed to close")
+        }
+    }
+
     private suspend fun forget(document: String) {
+        // Only this document's record: deleting a stray document must not clear a running backup's.
+        if (appState.unfinishedBackupDocument.first() == document) appState.setUnfinishedBackupDocument(null)
         if (writing == document) writing = null
-        appState.setUnfinishedBackupDocument(null)
         try {
             resolver.releasePersistableUriPermission(document.toUri(), GRANT)
         } catch (e: SecurityException) {
-            Timber.w(e, "A backup document's grant was not held")
+            Timber.i(e, "A backup document's grant was not held")
         }
     }
 

@@ -17,8 +17,9 @@ import javax.inject.Inject
  *
  * The document is remembered as unfinished while it is written, so a start after the process died deletes it. A
  * backup that fails deletes its unfinished document and says whether that worked. A cancelled one deletes it
- * too, whatever cancelled it; a caller that needs to know whether that worked asks [BackupDocuments.discard]
- * again — a document already gone counts as deleted.
+ * too, whatever cancelled it — on the way into the document as well; a caller that needs to know whether that
+ * worked asks [BackupDocuments.discard] again, which reports what the first time answered. Once the archive is
+ * complete, recording that is not cancellable: a complete backup is never left marked unfinished.
  *
  * @property exportBackup Writes the archive.
  * @property documents The picked document.
@@ -43,17 +44,19 @@ class BackUpToDocumentUseCase @Inject constructor(
         includeSecrets: Boolean,
         onProgress: (BackupProgress) -> Unit,
     ): BackupToDocumentOutcome {
-        val counting = try {
-            CountingOutputStream(documents.openForWrite(document))
-        } catch (e: IOException) {
-            return BackupToDocumentOutcome.Failed(BackupExportFailure.WRITE_FAILED, 0, documents.discard(document))
-        }
         var settled = false
         try {
+            val counting = try {
+                CountingOutputStream(documents.openForWrite(document))
+            } catch (e: IOException) {
+                settled = true
+                return BackupToDocumentOutcome.Failed(BackupExportFailure.WRITE_FAILED, 0, documents.discard(document))
+            }
             val manifest = exportBackup(counting, password, includeSecrets, onProgress)
-            // From here the file is a complete backup: nothing below may delete it.
+            // From here the file is a complete backup: nothing below may delete it, and a cancel cannot stop the
+            // record that it is complete.
             settled = true
-            documents.finish(document)
+            withContext(NonCancellable) { documents.finish(document) }
             return BackupToDocumentOutcome.Saved(manifest, counting.written)
         } catch (e: BackupExportException) {
             settled = true

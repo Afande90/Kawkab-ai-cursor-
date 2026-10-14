@@ -2,6 +2,7 @@ package app.knotwork.android.data.backup
 
 import android.content.ContentResolver
 import android.content.Intent
+import android.database.Cursor
 import android.net.Uri
 import android.provider.DocumentsContract
 import app.knotwork.android.domain.repositories.AppStateSettings
@@ -27,6 +28,7 @@ import org.robolectric.RobolectricTestRunner
 import java.io.ByteArrayOutputStream
 import java.io.FileNotFoundException
 import java.io.IOException
+import java.io.OutputStream
 
 /**
  * [SafBackupDocuments]: a document is remembered as unfinished from the moment it is opened until it is finished
@@ -138,10 +140,113 @@ class SafBackupDocumentsTest {
             assertEquals(DOCUMENT, unfinished.value)
         }
 
+    @Test
+    fun `given a document already deleted when asked again then the first answer stands, unasked`() = runTest {
+        // Given
+        val documents = documents()
+        documents.discard(DOCUMENT)
+        every { DocumentsContract.deleteDocument(any<ContentResolver>(), any()) } throws
+            IllegalArgumentException("no such document")
+
+        // When
+        val again = documents.discard(DOCUMENT)
+
+        // Then
+        assertTrue(again)
+        verify(exactly = 1) { DocumentsContract.deleteDocument(any<ContentResolver>(), any()) }
+    }
+
+    @Test
+    fun `given a document opened again after a delete when discarded then the provider is asked again`() = runTest {
+        val documents = documents()
+        documents.discard(DOCUMENT)
+
+        documents.openForWrite(DOCUMENT)
+        documents.discard(DOCUMENT)
+
+        verify(exactly = 2) { DocumentsContract.deleteDocument(any<ContentResolver>(), any()) }
+    }
+
+    @Test
+    fun `given a stream its caller never got when the document is discarded then the stream is closed`() = runTest {
+        // Given
+        val stream = mockk<OutputStream>(relaxed = true)
+        every { resolver.openOutputStream(any(), "w") } returns stream
+        val documents = documents()
+        documents.openForWrite(DOCUMENT)
+
+        // When
+        documents.discard(DOCUMENT)
+
+        // Then
+        verify { stream.close() }
+    }
+
+    @Test
+    fun `given a running backup when a stray document is discarded then the running one stays recorded`() = runTest {
+        val documents = documents()
+        documents.openForWrite(DOCUMENT)
+
+        documents.discard(OTHER_DOCUMENT)
+
+        assertEquals(DOCUMENT, unfinished.value)
+    }
+
+    @Test
+    fun `given a leftover the provider will not delete when the app starts then it says so and lets it go`() = runTest {
+        unfinished.value = DOCUMENT
+        every { DocumentsContract.deleteDocument(any<ContentResolver>(), any()) } throws
+            SecurityException("no grant")
+
+        val clean = documents().discardLeftBehind()
+
+        assertFalse(clean)
+        assertNull(unfinished.value)
+    }
+
+    @Test
+    fun `given a provider that names the document when asked then its name is returned`() = runTest {
+        val cursor = mockk<Cursor>(relaxed = true) {
+            every { moveToFirst() } returns true
+            every { getString(0) } returns "backup (1).knotwork"
+        }
+        every { resolver.query(any(), any(), any(), any(), any()) } returns cursor
+
+        assertEquals("backup (1).knotwork", documents().displayName(DOCUMENT))
+    }
+
+    @Test
+    fun `given a provider that fails while naming when asked then there is no name, not a crash`() = runTest {
+        every { resolver.query(any(), any(), any(), any(), any()) } throws IllegalStateException("provider died")
+
+        assertNull(documents().displayName(DOCUMENT))
+    }
+
+    @Test
+    fun `given start-up maintenance at the moment a document is recorded when it runs then that document stays`() =
+        runTest {
+            // Given — the clean-up runs (an activity recreated) exactly while the document is being recorded.
+            lateinit var documents: SafBackupDocuments
+            var cleanUpDuringRecord: Boolean? = null
+            coEvery { appState.setUnfinishedBackupDocument(any()) } coAnswers {
+                unfinished.value = firstArg()
+                if (firstArg<String?>() != null) cleanUpDuringRecord = documents.discardLeftBehind()
+            }
+            documents = documents()
+
+            // When
+            documents.openForWrite(DOCUMENT)
+
+            // Then — it already counted as being written.
+            assertEquals(true, cleanUpDuringRecord)
+            verify(exactly = 0) { DocumentsContract.deleteDocument(any<ContentResolver>(), any()) }
+        }
+
     private fun TestScope.documents() = SafBackupDocuments(resolver, appState, StandardTestDispatcher(testScheduler))
 
     private companion object {
         const val DOCUMENT = "content://com.android.externalstorage.documents/document/primary%3Abackup.knotwork"
+        const val OTHER_DOCUMENT = "content://com.android.externalstorage.documents/document/primary%3Aother.knotwork"
         const val GRANT = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
     }
 }

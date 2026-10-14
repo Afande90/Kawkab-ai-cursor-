@@ -25,6 +25,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -163,8 +164,12 @@ private fun BackupWorkingBody(working: BackupWorking) {
                 else -> StepMark.NEXT
             }
         },
-        // A polite live region names each new step; the bytes are never announced.
-        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+        // One polite live region whose text is the current step, so each new step is announced by name; the glyphs
+        // are decorative and the bytes are never announced.
+        modifier = Modifier.clearAndSetSemantics {
+            liveRegion = LiveRegionMode.Polite
+            contentDescription = names[working.step.ordinal]
+        },
     )
     BackupNote(icon = AppIcons.Info, text = stringResource(R.string.knotwork_backup_keep_open))
 }
