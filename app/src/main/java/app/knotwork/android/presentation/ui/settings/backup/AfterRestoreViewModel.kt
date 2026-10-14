@@ -7,6 +7,7 @@ import app.knotwork.android.R
 import app.knotwork.android.domain.backup.BackupRestorer
 import app.knotwork.android.domain.backup.RestoreReport
 import app.knotwork.android.domain.models.DownloadState
+import app.knotwork.android.domain.repositories.LocalModelRepository
 import app.knotwork.android.domain.repositories.ModelDownloadManager
 import app.knotwork.android.presentation.state.TransientMessageRelay
 import app.knotwork.design.screens.settings.backup.AfterRestoreModel
@@ -33,12 +34,16 @@ import javax.inject.Inject
  * [RestoreReport.secretsOnPhone] — and the tasks that were not carried; or, when nothing is left to do, the snackbar
  * *Restored*.
  *
- * The report is read once and dismissed on *Done*; until then the sheet shows each time the chat does. A download
- * started here is the download worker's, as on the Models screen: it goes on after the sheet closes, and the
- * worker registers the file. One runs at a time.
+ * The report is read once and dismissed on *Done*; until then the sheet shows each time the chat is resumed
+ * ([onResumed]) and hides when it pauses ([onPaused]). A back gesture that previews the chat starts it without
+ * resuming it, so no sheet appears under the gesture to take it over. Each time the chat is resumed, the models
+ * now on the phone — installed meanwhile from Discover or the Models screen — leave the list. A download started
+ * here is the download worker's, as on the Models screen: it goes on after the sheet closes, and the worker
+ * registers the file. One runs at a time.
  *
  * @property restorer Reads and dismisses the report of the restore applied last.
  * @property downloads Starts, follows and cancels a model's download.
+ * @property localModels Tells which of the report's models are on the phone now.
  * @property relay Shows *Restored* in the app's snackbar.
  * @property appContext Reads the snackbar's text.
  * @property formatDate Formats when the backup was made; the device's medium date and short time by default.
@@ -47,6 +52,7 @@ import javax.inject.Inject
 class AfterRestoreViewModel internal constructor(
     private val restorer: BackupRestorer,
     private val downloads: ModelDownloadManager,
+    private val localModels: LocalModelRepository,
     private val relay: TransientMessageRelay,
     private val appContext: Context,
     private val formatDate: (Long) -> String,
@@ -57,9 +63,10 @@ class AfterRestoreViewModel internal constructor(
     constructor(
         restorer: BackupRestorer,
         downloads: ModelDownloadManager,
+        localModels: LocalModelRepository,
         relay: TransientMessageRelay,
         @ApplicationContext appContext: Context,
-    ) : this(restorer, downloads, relay, appContext, ::deviceDate)
+    ) : this(restorer, downloads, localModels, relay, appContext, ::deviceDate)
 
     private val _state = MutableStateFlow<AfterRestoreState?>(null)
 
@@ -67,7 +74,19 @@ class AfterRestoreViewModel internal constructor(
     val state: StateFlow<AfterRestoreState?> = _state.asStateFlow()
 
     private var report: RestoreReport? = null
-    private var downloaded = emptySet<String>()
+    private var shown = false
+
+    /** Counts resumes and pauses: a resume's check shows the sheet only if nothing came after it. */
+    private var visibility = 0
+
+    /** The report's models downloaded from this sheet; their rows leave for good. */
+    private var downloadedHere = emptySet<String>()
+
+    /**
+     * The report's models found on the phone at the last check — installed meanwhile from Discover or the Models
+     * screen. Replaced whole by each check, so a model deleted again comes back to the list.
+     */
+    private var foundOnPhone = emptySet<String>()
     private var running: Pair<String, Int>? = null
     private var downloadJob: Job? = null
 
@@ -93,7 +112,7 @@ class AfterRestoreViewModel internal constructor(
                     is DownloadState.Downloading -> running = name to state.progress
                     is DownloadState.Success -> {
                         running = null
-                        downloaded = downloaded + name
+                        downloadedHere = downloadedHere + name
                     }
                     is DownloadState.Error -> running = null
                 }
@@ -123,6 +142,27 @@ class AfterRestoreViewModel internal constructor(
         render()
     }
 
+    /**
+     * The chat is resumed: the sheet shows, without the models installed since it last showed — checked before it
+     * shows, so a model just installed from Discover is not listed again for a moment.
+     */
+    fun onResumed() {
+        val resume = ++visibility
+        viewModelScope.launch {
+            report?.let { checkModelsOnPhone(it) }
+            if (resume != visibility) return@launch
+            shown = true
+            render()
+        }
+    }
+
+    /** The chat pauses — left for another screen, or behind a back gesture's preview: the sheet hides. */
+    fun onPaused() {
+        visibility++
+        shown = false
+        render()
+    }
+
     /** *Done*, or the sheet dismissed: the report is not shown again. A running download goes on. */
     fun onDone() {
         _state.value = null
@@ -140,7 +180,9 @@ class AfterRestoreViewModel internal constructor(
             Timber.w(e, "The restore report could not be read")
             null
         } ?: return
-        val leftToDo = loaded.modelsToDownload.isNotEmpty() ||
+        // A model installed in an earlier process, while this report waited for *Done*, is not listed again.
+        checkModelsOnPhone(loaded)
+        val leftToDo = loaded.modelsToDownload.any { it.name !in foundOnPhone } ||
             keysToEnter(loaded) ||
             loaded.scheduledTasksLeftBehind > 0
         if (!leftToDo) {
@@ -152,12 +194,38 @@ class AfterRestoreViewModel internal constructor(
         render()
     }
 
+    /**
+     * Replaces [foundOnPhone] with the report's models on the phone now. A model downloaded here is left to
+     * [downloadedHere], which this never writes — a download that ends while this reads stays off the list — and a
+     * model whose download is running keeps its row.
+     */
+    private suspend fun checkModelsOnPhone(current: RestoreReport) {
+        foundOnPhone = current.modelsToDownload
+            .map { it.name }
+            .filter { name -> name !in downloadedHere && running?.first != name && isOnPhone(name) }
+            .toSet()
+    }
+
+    private suspend fun isOnPhone(name: String): Boolean = try {
+        localModels.isInstalled(name)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        // Unknown counts as absent: the row stays, and its button still leads to the model.
+        Timber.w(e, "Whether a restored model is on the phone could not be read")
+        false
+    }
+
     private fun render() {
         val current = report ?: return
+        if (!shown) {
+            _state.value = null
+            return
+        }
         _state.value = AfterRestoreState(
             madeOnLabel = current.backupCreatedAtEpochMillis?.let(formatDate),
             models = current.modelsToDownload
-                .filterNot { it.name in downloaded }
+                .filterNot { it.name in downloadedHere || it.name in foundOnPhone }
                 .map { model ->
                     AfterRestoreModel(
                         name = model.name,
