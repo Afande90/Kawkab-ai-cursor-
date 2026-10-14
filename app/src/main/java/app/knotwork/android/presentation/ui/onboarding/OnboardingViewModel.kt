@@ -98,8 +98,12 @@ class OnboardingViewModel @Inject constructor(
 
     private val _pendingInterruption = MutableStateFlow<InterruptedDownload?>(null)
 
-    /** Set when the step has shown a stop; the user's next pick or download clears it. */
-    private var shownStopAwaitsUser = false
+    /**
+     * Set once setup has shown a stop. Setup shows one per visit; every other stop is left for the
+     * Models screen, which shows them one at a time. Cleared by nothing: a stop held back and shown
+     * after the user's next action would land over that action's own result.
+     */
+    private var shownStopThisVisit = false
 
     /**
      * The oldest download that stopped for a reason no screen has shown yet, or `null`. The screen
@@ -270,7 +274,6 @@ class OnboardingViewModel @Inject constructor(
      * another") and synchronously re-checks whether that file is installed.
      */
     fun pickLiteRtModel(model: OnboardingLiteRtModel) {
-        shownStopAwaitsUser = false
         installCheckJob?.cancel()
         downloadJob?.cancel()
         warmUpJob?.cancel()
@@ -299,7 +302,6 @@ class OnboardingViewModel @Inject constructor(
      */
     fun startDownload() {
         if (_state.value.downloadProgress != null) return
-        shownStopAwaitsUser = false
 
         val picked = _state.value.liteRtModel
         val resolved = resolveDownloadTarget(picked) ?: return
@@ -357,12 +359,13 @@ class OnboardingViewModel @Inject constructor(
     /**
      * Shows the oldest stop no screen has shown yet, when the Download step can draw it: that step
      * is in front, no download is being followed — a stop that arrives while one is waits for it to
-     * end, so the selection never changes under a followed download — and no model has just been
-     * installed, which the step is about to warm up.
+     * end, so the selection never changes under a followed download — and the picked model is not
+     * installed, which the step would warm up.
      *
-     * One stop at a time: until the user acts on the step (starts a download or picks a model),
-     * a second stop is left for the Models screen. Showing the first acknowledges it, and the
-     * store then hands over the next at once; shown too, it would replace the first unread.
+     * One stop per visit to setup ([shownStopThisVisit]); every other is left for the Models
+     * screen. Showing a stop acknowledges it, and the store then hands over the next at once:
+     * shown too, it would replace the first unread — and held back until the user acts, it would
+     * land over the result of that action.
      *
      * The step returns to the model that stopped, so its Download button starts that same download
      * again — a paused one continues from the bytes it kept — and the stop is acknowledged, which
@@ -372,7 +375,7 @@ class OnboardingViewModel @Inject constructor(
         val interruption = _pendingInterruption.value ?: return
         val current = _state.value
         val stepCanShow = current.step == OnboardingStep.Download && current.downloadProgress == null
-        if (!stepCanShow || current.installedModelId != null || shownStopAwaitsUser) return
+        if (!stepCanShow || current.installedModelId != null || shownStopThisVisit) return
         val preset = OnboardingModelCatalog.PRESETS.firstOrNull { it.fileName == interruption.fileName }
         val picked = OnboardingLiteRtModel.entries.firstOrNull { it.id == preset?.id }
             ?: OnboardingLiteRtModel.CustomUrl
@@ -384,7 +387,7 @@ class OnboardingViewModel @Inject constructor(
             )
         }
         _pendingInterruption.value = null
-        shownStopAwaitsUser = true
+        shownStopThisVisit = true
         downloadManager.acknowledgeInterruption(interruption.fileName)
     }
 
