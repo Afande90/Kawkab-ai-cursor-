@@ -296,8 +296,9 @@ Android lets an app transfer data in the background for six hours a day, and
 stops the app if a transfer runs longer. A model download therefore pauses on
 its own after five hours of downloading. It posts a notification that it paused
 (if the app may post notifications), and the Models screen says so the next
-time you open it, with a **Continue** button — or setup's Download step, or the
-model's page in Discover, if you reach one of those first. Nothing is lost:
+time you open it while no other download is running, with a **Continue**
+button — or setup's Download step, or the model's page in Discover, if you
+reach one of those first. Nothing is lost:
 start the same download again and it continues from where it stopped.
 
 ## A downloaded model did not match its checksum
