@@ -111,8 +111,14 @@ internal class RestoreStager(
             if (header.schemaVersion > AppDatabase.SCHEMA_VERSION) throw newerVersion(header)
             layout.staging.mkdirs()
             val needed = header.contentBytes + header.contentBytes / SPACE_MARGIN_DIVISOR + SPACE_MARGIN_BYTES
-            if (usableBytes(layout.staging) < needed) {
-                throw BackupRestoreException(RestoreFailure.NO_SPACE, "not enough room to stage", neededBytes = needed)
+            val free = usableBytes(layout.staging)
+            if (free < needed) {
+                throw BackupRestoreException(
+                    RestoreFailure.NO_SPACE,
+                    "not enough room to stage",
+                    neededBytes = needed,
+                    freeBytes = free,
+                )
             }
             val unpacked = BackupArchiveReader(input, parsed, keys).use { reader ->
                 unpack(reader, Progress(header.contentBytes, onProgress, ensureActive))
@@ -208,11 +214,13 @@ internal class RestoreStager(
     private fun prepareDatabase(databaseKey: ByteArray) {
         try {
             val needed = layout.stagedDatabase.length() * DATABASE_COPIES + SPACE_MARGIN_BYTES
-            if (usableBytes(layout.staging) < needed) {
+            val free = usableBytes(layout.staging)
+            if (free < needed) {
                 throw BackupRestoreException(
                     RestoreFailure.NO_SPACE,
                     "not enough room to key the database",
                     neededBytes = needed,
+                    freeBytes = free,
                 )
             }
             val key = try {

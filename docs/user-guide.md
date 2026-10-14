@@ -2995,7 +2995,8 @@ Advanced:
 - **Usage statistics** *(link)* — opens a fully on-device usage dashboard (see
   below).
 - **Backup & restore** *(link)* — puts what you made in the app into one file
-  locked with a password (see [Backup & restore](#backup--restore)).
+  locked with a password, and restores one (see
+  [Backup & restore](#backup--restore)).
 
 #### Usage statistics
 
@@ -3058,9 +3059,9 @@ find the screen.
    it and nobody can open the backup, the developer included.
 2. **Include API keys and sign-ins** — off unless you tick it. Ticked, the file
    also carries your cloud API keys, the Hugging Face token and MCP sign-ins,
-   and anyone with the file and the password can use them. Left off, you enter
-   them again on the phone you restore to. Server addresses go in either way, so
-   a token written into a server's address travels with it.
+   and anyone with the file and the password can use them. Left off, they are
+   not in the file: on a new phone you enter them again. Server addresses go in
+   either way, so a token written into a server's address travels with it.
 3. **Choose where to save** opens the system's *Create document* screen with
    the name `knotwork-backup-<date>.knotwork`. Any place it offers will do — a
    folder on the phone, a memory card, a cloud drive. Picking an existing file
@@ -3087,6 +3088,39 @@ cancel, names the file for you to delete. If the app was closed halfway, the
 file is deleted the next time it starts, where the place still allows it —
 nothing is shown then. A workspace file or image whose name a backup cannot
 store is left out, and the result says how many were.
+
+**Restore from file…** puts a backup back — on this phone or a new one. It
+replaces the app's data here — chats, memory, pipelines, run history, triggers,
+settings and files — with the backup's. The model files stay, and so do this
+phone's API keys, Hugging Face token and MCP sign-ins, except those the backup
+carries. MCP servers come from the backup, so a sign-in for a server the backup
+does not list is kept but not used.
+
+1. **Pick the file** in the system's *Open document* screen. Any file can be
+   picked; the backup's own header decides. A file that is not a backup is
+   named and refused, and so is one written in a newer format, or with a newer
+   database, than this phone's Knotwork reads — update the app first.
+2. **Enter its password** and tap **Check**, or *Done* on the keyboard. A wrong
+   password is said in place; nothing counts the tries.
+3. **Checking the backup** reads every part of the file into a copy the app
+   keeps aside — nothing on the phone is replaced yet. A damaged or cut-short
+   file, or too little free space, stops it, and the screen says which;
+   **Cancel** goes back to the password.
+4. **Ready to restore** shows what the backup holds, whether its API keys come
+   in, how many of its models this phone will have to download again, and —
+   under **Will be lost** — everything now on this phone. Tasks the agent
+   scheduled are never in a backup.
+5. **Replace my data** asks you to type **REPLACE**. The app then restarts and
+   applies the backup.
+
+After the restart the chat shows what is left to do: the models to download
+again — **Download** where the backup recorded where a model came from,
+**Discover** where it did not — a reminder to enter your keys, token and
+sign-ins again when the backup was made without them and none is set on this
+phone, and the scheduled tasks that were not carried. Downloads go on after
+the sheet closes. With nothing left to do, the app just says *Restored*. A
+restored phone takes over the backup's settings and usage statistics. Closing the
+summary, or cancelling the check, deletes the copy kept aside.
 
 The file's layout and cryptography are described in
 [backup-format.md](backup-format.md).

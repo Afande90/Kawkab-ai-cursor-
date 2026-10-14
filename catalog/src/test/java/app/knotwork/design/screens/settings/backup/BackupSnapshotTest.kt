@@ -31,10 +31,14 @@ class BackupSnapshotTest {
     val composeTestRule = createComposeRule()
 
     @Test
-    fun backup_home_light() = snapshot("home", dark = false) { BackupContent(BackupViewState(), BackupCallbacks()) }
+    fun backup_home_light() = snapshot("home", dark = false) {
+        BackupContent(BackupViewState(restoreAvailable = true), BackupCallbacks())
+    }
 
     @Test
-    fun backup_home_dark() = snapshot("home", dark = true) { BackupContent(BackupViewState(), BackupCallbacks()) }
+    fun backup_home_dark() = snapshot("home", dark = true) {
+        BackupContent(BackupViewState(restoreAvailable = true), BackupCallbacks())
+    }
 
     @Test
     fun backup_form_empty_light() = snapshot("form_empty", dark = false) { RouteScreen(BackupForm()) }
@@ -87,7 +91,8 @@ class BackupSnapshotTest {
     }
 
     @Composable
-    private fun RouteScreen(route: BackupRoute) = BackupContent(BackupViewState(route = route), BackupCallbacks())
+    private fun RouteScreen(route: BackupRoute) =
+        BackupContent(BackupViewState(route = route, restoreAvailable = true), BackupCallbacks())
 
     private fun snapshot(name: String, dark: Boolean, fontScale: Float = 1f, content: @Composable () -> Unit) {
         composeTestRule.setContent {

@@ -5,6 +5,7 @@ import app.knotwork.android.data.backup.BackedUpSecrets
 import app.knotwork.android.data.backup.BackupContentCollector
 import app.knotwork.android.data.backup.BackupContentSource
 import app.knotwork.android.data.backup.BackupExporterImpl
+import app.knotwork.android.data.backup.BackupLocalDataCounter
 import app.knotwork.android.data.backup.BackupRestorerImpl
 import app.knotwork.android.data.backup.DatabaseSnapshotter
 import app.knotwork.android.data.backup.SafBackupDocuments
@@ -18,6 +19,7 @@ import app.knotwork.android.domain.backup.BackupDocuments
 import app.knotwork.android.domain.backup.BackupExporter
 import app.knotwork.android.domain.backup.BackupKeyDerivation
 import app.knotwork.android.domain.backup.BackupRestorer
+import app.knotwork.android.domain.backup.LocalDataCounter
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -61,6 +63,10 @@ internal abstract class BackupModule {
     /** What the export gathers. */
     @Binds
     abstract fun bindBackupContentSource(impl: BackupContentCollector): BackupContentSource
+
+    /** What a restore would replace, counted as a backup counts it. */
+    @Binds
+    abstract fun bindLocalDataCounter(impl: BackupLocalDataCounter): LocalDataCounter
 
     /** Cloud API keys, and each provider's model and server address. */
     @Binds

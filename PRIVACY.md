@@ -320,6 +320,15 @@ derived
 has the file and the password can read everything in it. If you pick a cloud
 drive in the picker, that drive's app uploads the file under its own policy.
 
+**Restore from file…** reads a backup you pick, after its password, and — once
+you confirm — replaces the app's data on this phone with the backup's: chats,
+memory, pipelines, run history, triggers, settings and files, and the usage
+statistics, which then continue those of the phone the backup came from. The
+model files on this phone stay. So do its API keys, Hugging Face token and MCP
+sign-ins, except those the backup carries, which replace them — a restore is not
+a way to clear them. MCP servers come from the backup, so a sign-in for a server
+it does not list is kept but goes unused. The app opens no connection to do it.
+
 ---
 
 ## 4. What never leaves your device

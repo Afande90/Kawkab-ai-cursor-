@@ -9,7 +9,7 @@ package app.knotwork.android.domain.constants
  * Used exclusively by the onboarding flow
  * ([app.knotwork.android.presentation.ui.onboarding.OnboardingViewModel]):
  *  - to look up the expected `fileName` so it can call
- *    [app.knotwork.android.domain.repositories.LocalModelRepository.isInstalled]
+ *    [app.knotwork.android.domain.repositories.LocalModelRepository.findByFileName]
  *    when the user re-enters onboarding after a previous install;
  *  - to start the download via
  *    [app.knotwork.android.domain.repositories.ModelDownloadManager.downloadModel]

@@ -76,6 +76,7 @@ Only Kotlin files appear inside the generated blocks.
     - `BackupFileSourceTest.kt` - `BackupFileSource`: regular files of both directories become entries under their prefixes, sorted; unfinished writes and symbolic links stay out; a path that cannot be an entry name is counted, not written; a missing directory is simply empty.
     - `BackupFormatV1FixtureTest.kt` - Reads the committed format-1 archive `src/test/resources/backup/format-1.knotwork` — the regression anchor of the public format (`docs/backup-format.md`).
     - `BackupHeaderCodecTest.kt` - `BackupHeaderCodec`: the header survives a round trip, its MAC tells a wrong key, and every field a reader cannot trust before the password is bounded — each failure with its own reason.
+    - `BackupLocalDataCounterTest.kt` - `BackupLocalDataCounter`: counts what a backup taken now would hold, files from the same listing it uses.
     - `BackupRestorerImplTest.kt` - `BackupRestorerImpl` with `RestoreStager` and `RestoreFinisher` over real archives, a real DataStore and a Keystore-backed store on a fake cipher; the database step is a recording fake (the real one is tested on a device).
     - `BackupTestArchives.kt` - Builders shared by the archive tests: fixed keys and headers, an archive of given content, and the byte ranges of its chunk frames — so a test can cut, swap or alter one frame exactly.
     - `PendingRestoreApplierTest.kt` - `PendingRestoreApplier` moves a committed restore's database and files into place, does nothing without the commit, and finishes a start that stopped half-way — a second run changes nothing.
@@ -478,6 +479,7 @@ Only Kotlin files appear inside the generated blocks.
     - `ImportPipelineBundleUseCaseTest.kt` - Tests for `ImportPipelineBundleUseCase` — the prepare (parse + validate + collision-detect) and persist (id policy + atomic write) steps.
     - `ImportPipelineUseCaseTest.kt` - Tests for `ImportPipelineUseCase`.
     - `InitializeAppUseCaseTest.kt` - Tests for InitializeAppUseCase.
+    - `InspectBackupDocumentUseCaseTest.kt` - `InspectBackupDocumentUseCase`: a readable backup comes back with its name, size and header; one this build cannot read comes back with its name and why, not as a failure; a file that cannot be read at all fails.
     - `InstallDiscoveredModelUseCaseTest.kt` - Unit tests for `InstallDiscoveredModelUseCase`.
     - `JournalDayGrouperTest.kt` - Unit tests for `JournalDayGrouper` — the day-bucketing and timestamp arithmetic shared by the trigger evaluation journal and the external-automation request journal.
     - `LaunchSharePipelineUseCaseTest.kt` - Unit tests for `LaunchSharePipelineUseCase`: the empty / unbound guards, the text-only, image-only and failed-ingest launch branches, and the single-chat session-reuse toggle.
@@ -530,9 +532,11 @@ Only Kotlin files appear inside the generated blocks.
     - `SeedBundledSkillsUseCaseTest.kt` - Verifies that bundled-skill seeding is idempotent: running it repeatedly inserts each bundled skill exactly once (upsert by stable id), so an upgrading user who launches many times never accumulates duplicates.
     - `SetSurfacePipelineUseCaseTest.kt` - Unit tests for `SetSurfacePipelineUseCase`, confirming each surface writes to its own binding and that `null` clears it.
     - `SetUpScenarioUseCaseTest.kt` - Unit tests for `SetUpScenarioUseCase` — the one-tap onboarding set-up orchestration.
+    - `StageRestoreFromDocumentUseCaseTest.kt` - `StageRestoreFromDocumentUseCase`: the picked document's stream and the password go to the restorer as given.
     - `SubmitApprovalDecisionUseCaseTest.kt` - Unit tests for `SubmitApprovalDecisionUseCase` — the single entry point of the user's approve / deny decision across both waiting phases.
     - `SubmitCeilingDecisionUseCaseTest.kt` - Unit tests for `SubmitCeilingDecisionUseCase`.
     - `SubmitClarificationAnswerUseCaseTest.kt` - Unit tests for `SubmitClarificationAnswerUseCase` — the single entry point of the user's clarification answer across both waiting phases.
+    - `SummarizeRestoreUseCaseTest.kt` - `SummarizeRestoreUseCase`: this phone's counts as they are, and of the backup's models only those whose file is not here — a registered model with its file missing still has to be downloaded.
     - `SyncTriggersUseCaseTest.kt` - Unit tests for `SyncTriggersUseCase` — the one-shot reconcile that hands the current active-trigger snapshot to the scheduler.
     - `TestBackendUseCaseTest.kt` - Covers the fixed-prompt backend probe, including the caller-supplied model path added for the onboarding acceleration check — where the model that was just installed is not necessarily the active one yet, so resolving through "active model" would measure the wrong thing (or nothing at all).
     - `TranscribeAudioUseCaseTest.kt` - Unit tests for `TranscribeAudioUseCase` covering every branch of the voice-input transcription pre-flight: the engine-busy gate, the active-model audio-capability checks, the success path, and the failure paths — plus the ephemeral-clip cleanup contract.
@@ -677,7 +681,9 @@ Only Kotlin files appear inside the generated blocks.
       - `PromptLibraryViewModelTest.kt` - Unit tests for `PromptLibraryViewModel`.
     - `settings/` - Tests for the settings screens and their catalogues.
       - `backup/` - Tests for the *Backup & restore* screen's ViewModel.
+        - `AfterRestoreViewModelTest.kt` - `AfterRestoreViewModel`: the sheet from the report, the snackbar when nothing is left to do, the downloads it starts — one at a time — and *Done*.
         - `BackupViewModelTest.kt` - `BackupViewModel`: the password rule as the designer wrote it, the picker, the work and its three endings — saved, failed, cancelled — and Back inside a route.
+        - `RestoreViewModelTest.kt` - `RestoreViewModel`: the picked file and what is wrong with it, the password and its check, every failure in the user's terms, the summary, the typed confirm and the commit — and that nothing staged outlives a cancel or a close.
       - `ExternalAutomationRowSummaryTest.kt` - Unit tests for the pure half of the external-automation Background rows.
       - `MemorySettingsDelegateTest.kt` - Unit tests for `MemorySettingsDelegate` — the memory import's last step, where a failure meets the user.
       - `ModelsSettingsDelegateTest.kt` - The provider rows of Settings → Models, as `ModelsSettingsDelegate` summarises them: one per provider in the order every provider surface uses, and the one state no row had before — a key saved with no model, for a provider that has no default.

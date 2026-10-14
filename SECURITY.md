@@ -144,7 +144,8 @@ stores are sealed under Keystore keys that never leave the device, so a copy
 only lands the new install on the recovery screen, and the model files are
 found through the database. What is readable as is — attachments, the agent
 workspace, settings — is what must stay on the device; those three
-directories are also excluded by name. A new device starts empty.
+directories are also excluded by name. A new device starts empty, unless you
+restore a backup you made yourself (below).
 
 The one way the data leaves is a backup you make yourself: Settings → Privacy
 → *Backup & restore* → **Back up** writes one file to a place you pick in the
@@ -154,9 +155,10 @@ cloud drive you pick uploads the file as it would any other.
 - **Locked with your password.** Argon2id (64 MiB, 3 passes) derives the keys
   from it, and AES-256-GCM seals the content in authenticated chunks — the
   [format](docs/backup-format.md) is public. The password must be at least 12
-  characters. The app keeps it only while the *Back up* screen is open, never
-  writes it to storage or a log, and it cannot be recovered. The fields are marked as a new password, so a password manager
-  may offer to keep it.
+  characters. The app keeps it only while the *Back up* or *Restore* screen is
+  open, never writes it to storage or a log, and it cannot be recovered. The
+  fields are marked as a password, so a password manager may offer to keep it
+  and to fill it in.
 - **The database travels under a key of its own.** The archive carries a copy
   of the database encrypted with 32 random bytes made for that archive alone,
   stored inside the encrypted content. The phone's own database key never goes
@@ -177,6 +179,18 @@ cloud drive you pick uploads the file as it would any other.
   names the file for you to delete. A file cut short by the app being closed is
   deleted at the next start — silently, and only if the place still lets the
   app delete it.
+- **A restore changes nothing until you confirm.** *Restore from file…* reads
+  the whole file with its password into a staging folder inside the app's
+  private storage: every chunk is authenticated, the database is checked, keyed
+  to this phone's own database key and brought to this build's schema there. Its
+  secrets — when it carries any — wait in a Keystore-backed store of their own,
+  never in plain text. The summary then says what comes in and what this phone
+  loses, and only typing the confirm word replaces anything; the app restarts to
+  finish. A check you cancel or a summary you close deletes the staged copy, and
+  one left by leaving the screen is deleted at the next start. Once applied, the
+  backup's secrets replace this phone's entries of the same name — the phone's
+  other keys and sign-ins stay, so a restore does not clear them — and the
+  staging store is destroyed.
 
 ### Agent file workspace (at-rest)
 

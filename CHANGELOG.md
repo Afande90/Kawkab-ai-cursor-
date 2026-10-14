@@ -98,9 +98,23 @@ details.
   done, what the file holds. A cancelled or failed backup deletes its unfinished
   file, and names it for you to delete where the place you chose does not allow
   that; a file left by the app being closed halfway is deleted at the next start
-  if the place allows it. Search
-  settings for *backup*, *export*, *transfer* or *new phone* to find it. The
-  [format](docs/backup-format.md) is public.
+  if the place allows it. Search settings for *backup*, *export*, *transfer* or
+  *new phone* to find it. The [format](docs/backup-format.md) is public.
+- **Restore from a backup, on this phone or a new one.** *Restore from file…*
+  in Settings → Privacy → *Backup & restore* reads a backup you pick, checks its
+  password and every part of it while nothing on the phone changes, and shows
+  what comes in and what this phone loses before you type **REPLACE**; the app
+  then restarts and applies it. The model files stay, and so do the phone's own
+  keys and sign-ins, except those the backup carries; MCP servers come from the
+  backup, so a sign-in for a server it does not list goes unused. A file that is
+  not a backup, one in a newer format or with a newer database, a damaged or
+  cut-short file and too little free space are each told in their own words.
+  After the restart a sheet over the chat lists the models to download again —
+  straight from where each came from, or through Discover — a reminder to enter
+  keys, token and sign-ins again when the backup was made without them and none
+  is set on the phone, and the scheduled tasks that were not carried; with nothing
+  left to do, the app says *Restored*.
+  Moving between Google Play and a release build is now a backup and a restore.
 - **Each downloaded model remembers where it came from.** A model downloaded
   from a link or from Discover keeps that address with it. A model found on
   disk at start-up — after *Erase data*, or a file copied into the app's folder
@@ -254,6 +268,11 @@ details.
 
 ### Fixed
 
+- **Discover offers a model again when its file is gone.** It marked a file
+  **Installed** whenever the app had the model registered, even after the file
+  was deleted outside the app — and, after a restore, every model the backup
+  listed but did not bring, so the sheet's **Discover** led to a model that
+  could not be installed. It now marks only files that are on the phone.
 - **A cloud model's repair no longer sends a temperature.** When a Tool,
   Decomposition or other structured step on a cloud model got an answer that did
   not parse, the second try asked the provider for a low temperature. Claude 4.7

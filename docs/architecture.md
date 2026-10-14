@@ -880,7 +880,9 @@ file to the existing download path — no new download mechanism.
    polymorphic `gated` field (`false` vs `"auto"`/`"manual"`), filters to
    engine-compatible `.litertlm` siblings and builds each file's `resolve` URL.
 3. **Enrich + wrap.** `ModelDiscoveryRepositoryImpl` stamps each detail file's
-   "already installed" flag from `LocalModelRepository.isInstalled`, drops repos
+   "already installed" flag from `LocalModelRepository.isInstalled` — a
+   registered model whose file is on disk; a row whose file is gone, as a
+   restore leaves for a model it did not bring, is offered again — drops repos
    with no `.litertlm` file, and converts success/failure into a `Result` (the
    suspend network calls re-throw `CancellationException` from a dedicated first
    catch before mapping other failures — never `runCatching`). `SearchDiscoverableModelsUseCase`
@@ -1817,6 +1819,28 @@ Settings → Privacy → *Backup & restore* → *Back up*. The file's layout is 
   deleted. So `StartupMaintenance` deletes a file a killed process left behind —
   but never the one a backup in this process is still writing, since the
   maintenance also runs when the activity is only recreated.
+- **Restore.** `RestoreViewModel` drives *Restore from file…*.
+  `InspectBackupDocumentUseCase` reads the picked file's open header, name and
+  size — a file this build cannot read comes back as an answer, not a failure.
+  `StageRestoreFromDocumentUseCase` hands the document and the password to
+  `BackupRestorer.stage`, which authenticates and unpacks everything into
+  `files/restore/` and readies the database there (`RestoreStager`,
+  `StagedDatabasePreparer`); nothing the app uses changes.
+  `SummarizeRestoreUseCase` weighs the staged manifest against this phone
+  through `LocalDataCounter` (`BackupLocalDataCounter`) and the model registry.
+  After the typed confirm, `BackupRestorer.commit` writes the commit marker and
+  stops background work, and `RestoreViewModel` sets `AppRestartRequest`;
+  `MainActivity`, not the screen, restarts the process with ProcessPhoenix, so
+  leaving the screen while the commit finishes cannot lose the restart. The
+  next start swaps the files in before Hilt exists
+  (`PendingRestoreApplier` in `App.onCreate`, main process only), migrates the
+  settings when DataStore first opens (`RestoredPreferencesMigration`), and
+  `RestoreFinisher` — the first stage of `AppInitializationUseCase` — applies
+  the secrets and the models' paths and writes the report.
+  `AfterRestoreViewModel`, shown over the chat's destination, reads that
+  report once: a sheet with what is left to do, whose downloads are the download worker's
+  as on the Models screen, or the snackbar *Restored* through
+  `TransientMessageRelay`.
 
 ### 5.3. JSON parsing
 

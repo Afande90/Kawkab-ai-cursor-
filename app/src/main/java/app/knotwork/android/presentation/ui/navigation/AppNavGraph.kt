@@ -49,6 +49,7 @@ import app.knotwork.android.presentation.ui.settings.SettingsHubScreen
 import app.knotwork.android.presentation.ui.settings.SettingsNavActions
 import app.knotwork.android.presentation.ui.settings.SettingsViewModel
 import app.knotwork.android.presentation.ui.settings.ToolsSettingsScreen
+import app.knotwork.android.presentation.ui.settings.backup.AfterRestoreHost
 import app.knotwork.android.presentation.ui.settings.backup.BackupScreen
 import app.knotwork.android.presentation.ui.settings.provider.ProviderDetailScreen
 import app.knotwork.android.presentation.ui.settings.provider.ProviderPickerScreen
@@ -192,6 +193,9 @@ fun AppNavGraph(
                 onOpenRunLimits = { navController.navigate(NavRoutes.SETTINGS_PIPELINES_RUN_LIMITS) },
                 onOpenGenerationSettings = { navController.navigate(NavRoutes.SETTINGS_GENERATION) },
             )
+            // Over the chat, the first time it opens after a restore: what is left to do, or *Restored*. Hosted
+            // here rather than in ChatHomeScreen, which the instrumented tests draw without Hilt.
+            AfterRestoreHost(onOpenDiscover = { navController.navigate(NavRoutes.DISCOVER) })
         }
 
         // ─── Pipelines tab (nested graph) ──────────────────────────────────

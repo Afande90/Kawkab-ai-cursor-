@@ -81,11 +81,21 @@ internal class RestoreFinisher(
         restoreEntries(RestoreStagedEntries.Kind.PROVIDERS)
         val secretsApplied = marker.applySecrets && restoreEntries(RestoreStagedEntries.Kind.SECRETS)
         val modelsToDownload = attemptOrNull("model paths") { repointModels() }.orEmpty()
+        // Unknown counts as present: the sheet never tells the user to enter keys this phone may still hold.
+        val secretsOnPhone = attemptOrNull("secrets present") {
+            secretOwners.any { it.secretEntries().isNotEmpty() }
+        } ?: true
         attempt("report") {
             val manifest = BackupManifestJson.decode(layout.stagedManifest.readText())
             RestoreReportJson.write(
                 layout.report,
-                RestoreReport(modelsToDownload, manifest.scheduledTasks, secretsApplied),
+                RestoreReport(
+                    modelsToDownload = modelsToDownload,
+                    scheduledTasksLeftBehind = manifest.scheduledTasks,
+                    secretsApplied = secretsApplied,
+                    backupCreatedAtEpochMillis = manifest.createdAtEpochMillis,
+                    secretsOnPhone = secretsOnPhone,
+                ),
             )
         }
         clear()
@@ -181,6 +191,8 @@ internal object RestoreReportJson {
                 .put(KEY_MODELS, models)
                 .put(KEY_SCHEDULED, report.scheduledTasksLeftBehind)
                 .put(KEY_SECRETS, report.secretsApplied)
+                .apply { report.backupCreatedAtEpochMillis?.let { put(KEY_CREATED, it) } }
+                .put(KEY_SECRETS_ON_PHONE, report.secretsOnPhone)
                 .toString(),
         )
     }
@@ -208,6 +220,8 @@ internal object RestoreReportJson {
                 },
                 scheduledTasksLeftBehind = json.getInt(KEY_SCHEDULED),
                 secretsApplied = json.getBoolean(KEY_SECRETS),
+                backupCreatedAtEpochMillis = json.optLong(KEY_CREATED).takeIf { json.has(KEY_CREATED) },
+                secretsOnPhone = json.optBoolean(KEY_SECRETS_ON_PHONE, true),
             )
         } catch (e: JSONException) {
             Timber.w(e, "The restore report does not parse")
@@ -221,4 +235,6 @@ internal object RestoreReportJson {
     private const val KEY_SOURCE = "sourceUrl"
     private const val KEY_SCHEDULED = "scheduledTasksLeftBehind"
     private const val KEY_SECRETS = "secretsApplied"
+    private const val KEY_CREATED = "backupCreatedAt"
+    private const val KEY_SECRETS_ON_PHONE = "secretsOnPhone"
 }

@@ -20,6 +20,7 @@ import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.io.FileNotFoundException
 import java.io.IOException
+import java.io.InputStream
 import java.io.OutputStream
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
@@ -87,6 +88,19 @@ internal class SafBackupDocuments(
         openTruncating(uri).also { streams[document] = it }
     }
 
+    override suspend fun openForRead(document: String): InputStream = withContext(ioDispatcher) {
+        @SuppressLint("Recycle") // Returned to the caller, who closes it.
+        val stream = try {
+            resolver.openInputStream(document.toUri())
+        } catch (e: RuntimeException) {
+            // A refusal, or a provider's own failure crossing the binder: the file cannot be read either way.
+            throw IOException("the provider could not open the document", e)
+        }
+        stream ?: throw IOException("the provider opened no stream")
+    }
+
+    override suspend fun sizeOf(document: String): Long? = withContext(ioDispatcher) { size(document) }
+
     override suspend fun displayName(document: String): String? = withContext(ioDispatcher) {
         try {
             resolver.query(document.toUri(), arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use {
@@ -114,7 +128,7 @@ internal class SafBackupDocuments(
         // The document a backup is writing is empty for its first second, while the key is derived.
         if (document == writing || streams.containsKey(document)) return@withContext false
         // Unknown counts as not empty: a file that may hold someone's data is never deleted on a guess.
-        if (sizeOf(document) != 0L) return@withContext false
+        if (size(document) != 0L) return@withContext false
         recordLock.withLock { deleteAndForget(document) }
     }
 
@@ -155,7 +169,7 @@ internal class SafBackupDocuments(
     }
 
     /** The document's size, or `null` when the provider does not say. */
-    private fun sizeOf(document: String): Long? = try {
+    private fun size(document: String): Long? = try {
         resolver.query(document.toUri(), arrayOf(OpenableColumns.SIZE), null, null, null)?.use {
             if (it.moveToFirst() && !it.isNull(0)) it.getLong(0) else null
         }

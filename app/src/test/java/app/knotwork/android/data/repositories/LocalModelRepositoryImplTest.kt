@@ -13,6 +13,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.io.File
@@ -98,6 +99,31 @@ class LocalModelRepositoryImplTest {
         coVerify(exactly = 1) { localModelDao.deleteModelById(7) }
         // The model's performance history is dropped too (samples carry no FK).
         coVerify(exactly = 1) { modelPerformanceRepository.deleteForModel(file.absolutePath) }
+    }
+
+    @Test
+    fun `given a registered model whose file is gone when asked if installed then it is not`() = runTest {
+        // A restore keeps the rows of models it did not bring: Discover must offer them again.
+        coEvery { localModelDao.findByName("gemma.litertlm") } returns
+            LocalModelEntity(3, "gemma.litertlm", "/no/such/gemma.litertlm", 100L, false)
+
+        assertFalse(repository.isInstalled("gemma.litertlm"))
+    }
+
+    @Test
+    fun `given a registered model with its file when asked if installed then it is`() = runTest {
+        val file = File.createTempFile("model", ".litertlm").apply { deleteOnExit() }
+        coEvery { localModelDao.findByName("gemma.litertlm") } returns
+            LocalModelEntity(3, "gemma.litertlm", file.absolutePath, 100L, false)
+
+        assertTrue(repository.isInstalled("gemma.litertlm"))
+    }
+
+    @Test
+    fun `given no registered model when asked if installed then it is not`() = runTest {
+        coEvery { localModelDao.findByName(any()) } returns null
+
+        assertFalse(repository.isInstalled("gemma.litertlm"))
     }
 
     @Test

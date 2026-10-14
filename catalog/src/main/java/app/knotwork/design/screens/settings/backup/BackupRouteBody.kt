@@ -56,6 +56,7 @@ internal fun BackupRouteBody(route: BackupRoute?, restoreAvailable: Boolean, cal
         is BackupWorking -> BackupWorkingBody(route)
         is BackupSaved -> BackupSavedBody(route)
         is BackupFailed -> BackupFailedBody(route)
+        is RestoreRoute -> RestoreRouteBody(route, callbacks.restore)
     }
 }
 
@@ -150,50 +151,70 @@ private fun BackupWorkingBody(working: BackupWorking) {
         color = MaterialTheme.colorScheme.onSurface,
     )
     BackupFileRow(name = working.fileName, meta = null)
-    BackupProgress(working)
-    val names = listOf(
-        stringResource(R.string.knotwork_backup_step_password),
-        stringResource(R.string.knotwork_backup_step_db),
-        stringResource(R.string.knotwork_backup_step_files),
+    BackupProgress(
+        measuredStep = working.step != BackupWorkStep.PASSWORD,
+        bytesDone = working.bytesDone,
+        bytesTotal = working.bytesTotal,
     )
-    BackupSteps(
-        steps = BackupWorkStep.entries.mapIndexed { index, step ->
-            names[index] to when {
-                step.ordinal < working.step.ordinal -> StepMark.DONE
-                step == working.step -> StepMark.NOW
-                else -> StepMark.NEXT
-            }
-        },
-        // One polite live region whose text is the current step, so each new step is announced by name; the glyphs
-        // are decorative and the bytes are never announced.
-        modifier = Modifier.clearAndSetSemantics {
-            liveRegion = LiveRegionMode.Polite
-            contentDescription = names[working.step.ordinal]
-        },
+    BackupStepList(
+        names = listOf(
+            stringResource(R.string.knotwork_backup_step_password),
+            stringResource(R.string.knotwork_backup_step_db),
+            stringResource(R.string.knotwork_backup_step_files),
+        ),
+        current = working.step.ordinal,
     )
     BackupNote(icon = AppIcons.Info, text = stringResource(R.string.knotwork_backup_keep_open))
 }
 
 /**
- * The bar: indeterminate while the password is secured (about a second, nothing to measure — an empty bar under
- * reduced motion, the step label carries it), then determinate in bytes, easing to each new value.
+ * The named steps under the bar — done, now, next — as one polite live region whose text is the current step, so
+ * each new step is announced by name; the glyphs are decorative and the bytes are never announced.
+ *
+ * @param names The steps' names, in order.
+ * @param current The index of the step running now.
  */
 @Composable
-private fun BackupProgress(working: BackupWorking) {
+internal fun BackupStepList(names: List<String>, current: Int) {
+    BackupSteps(
+        steps = names.mapIndexed { index, name ->
+            name to when {
+                index < current -> StepMark.DONE
+                index == current -> StepMark.NOW
+                else -> StepMark.NEXT
+            }
+        },
+        modifier = Modifier.clearAndSetSemantics {
+            liveRegion = LiveRegionMode.Polite
+            contentDescription = names[current]
+        },
+    )
+}
+
+/**
+ * The bar: indeterminate while the password is worked on (about a second, nothing to measure — an empty bar under
+ * reduced motion, the step label carries it), then determinate in bytes, easing to each new value.
+ *
+ * @param measuredStep Whether the step running now is measured in bytes.
+ * @param bytesDone Bytes done so far.
+ * @param bytesTotal Bytes in all; 0 while not known.
+ */
+@Composable
+internal fun BackupProgress(measuredStep: Boolean, bytesDone: Long, bytesTotal: Long) {
     val context = LocalContext.current
     val reduced = KnotworkTheme.a11y.reducedMotion()
-    val measured = working.step != BackupWorkStep.PASSWORD && working.bytesTotal > 0
+    val measured = measuredStep && bytesTotal > 0
     val bytesText = if (measured) {
         stringResource(
             R.string.knotwork_backup_bytes,
-            Formatter.formatShortFileSize(context, working.bytesDone),
-            Formatter.formatShortFileSize(context, working.bytesTotal),
+            Formatter.formatShortFileSize(context, bytesDone),
+            Formatter.formatShortFileSize(context, bytesTotal),
         )
     } else {
         null
     }
     val fraction by animateFloatAsState(
-        targetValue = if (measured) (working.bytesDone.toFloat() / working.bytesTotal).coerceIn(0f, 1f) else 0f,
+        targetValue = if (measured) (bytesDone.toFloat() / bytesTotal).coerceIn(0f, 1f) else 0f,
         animationSpec = if (reduced) snap() else tween(BAR_EASE_MS),
         label = "backup-bytes",
     )

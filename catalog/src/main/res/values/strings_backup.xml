@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Backup & restore (Settings → Privacy). The designer's copy is the authority for every string here; four
-  are the app's own, marked below, where the copy has no line for an outcome the export can report.
+  Backup & restore (Settings → Privacy). The designer's copy is the authority for every string here; the
+  app's own are marked below, where the copy has no line for an outcome the export or the restore can report.
 -->
 <resources>
     <!-- Settings → Privacy -->
@@ -26,7 +26,8 @@
     <string name="knotwork_backup_pw2_label">Password again</string>
     <string name="knotwork_backup_pw2_mismatch">Doesn’t match the password above.</string>
     <string name="knotwork_backup_secrets_label">Include API keys and sign-ins</string>
-    <string name="knotwork_backup_secrets_sub">Cloud API keys, the Hugging Face token and MCP sign-ins. Left off, you enter them again after a restore.</string>
+    <!-- The designer's first sentence; the second is the app's own: a phone restored to keeps its own keys. -->
+    <string name="knotwork_backup_secrets_sub">Cloud API keys, the Hugging Face token and MCP sign-ins. Left off, a new phone needs them entered again.</string>
     <string name="knotwork_backup_choose_where">Choose where to save</string>
 
     <!-- Back up · working -->
@@ -61,6 +62,98 @@
     <string name="knotwork_backup_failed_left">Delete the unfinished file %1$s yourself.</string>
     <string name="knotwork_backup_try_again">Try again</string>
     <string name="knotwork_backup_close">Close</string>
+
+    <!-- Restore · open -->
+    <string name="knotwork_backup_restore_title">Restore</string>
+    <string name="knotwork_backup_not_backup_title">Not a Knotwork backup</string>
+    <string name="knotwork_backup_not_backup_body">%1$s isn’t a backup made by Knotwork.</string>
+    <string name="knotwork_backup_choose_another">Choose another file</string>
+    <!-- The app's own: stands in for a file name its provider does not give. -->
+    <string name="knotwork_backup_this_file">This file</string>
+    <string name="knotwork_backup_newer_title">Update Knotwork first</string>
+    <string name="knotwork_backup_newer_body">This backup was made with Knotwork %1$s. This phone has %2$s, which can’t read it.</string>
+    <string name="knotwork_backup_made_with">Made with Knotwork %1$s on %2$s</string>
+    <string name="knotwork_backup_restore_lead">Enter the password this backup was made with.</string>
+    <string name="knotwork_backup_check">Check</string>
+
+    <!-- Restore · checking, problems -->
+    <string name="knotwork_backup_checking_title">Checking the backup</string>
+    <string name="knotwork_backup_step_check_password">Checking the password</string>
+    <string name="knotwork_backup_step_check_file">Checking every part of the file</string>
+    <string name="knotwork_backup_nothing_yet">Nothing on this phone has been replaced yet.</string>
+    <string name="knotwork_backup_wrong_password">That password doesn’t open this backup.</string>
+    <string name="knotwork_backup_damaged_title">This backup is damaged</string>
+    <string name="knotwork_backup_damaged_body">Part of the file can’t be read, so it can’t be restored.</string>
+    <string name="knotwork_backup_incomplete_title">This backup is incomplete</string>
+    <string name="knotwork_backup_incomplete_body">The file ends early. It may not have finished copying.</string>
+    <string name="knotwork_backup_untouched">Nothing on this phone has changed.</string>
+    <string name="knotwork_backup_space_title">Not enough space</string>
+    <string name="knotwork_backup_space_body">Restoring needs %1$s free on this phone. %2$s is free now.</string>
+    <!-- The app's own: the phone ran out part-way, so how much is needed is not known. -->
+    <string name="knotwork_backup_space_ran_out">This phone ran out of space while the backup was checked.</string>
+    <!-- The app's own: the copy has no line for a file or storage that fails while it is read. -->
+    <string name="knotwork_backup_read_failed_title">The backup couldn’t be read</string>
+    <string name="knotwork_backup_read_failed_body">The file stopped being readable, or this phone’s storage failed, while it was checked.</string>
+    <!-- The app's own: the copy has no line for this phone's own database key being unreadable. -->
+    <string name="knotwork_backup_phone_key_title">Can’t restore on this phone</string>
+    <!-- The app's own: the checked backup could not be set to apply. -->
+    <string name="knotwork_backup_not_started_title">Restore not started</string>
+    <string name="knotwork_backup_not_started_body">Knotwork couldn’t set the backup to apply. Try again from the start.</string>
+    <string name="knotwork_backup_phone_key_body">Knotwork can’t read this phone’s own database key, so it can’t set the backup up here.</string>
+
+    <!-- Restore · summary, confirm -->
+    <string name="knotwork_backup_summary_title">Ready to restore</string>
+    <string name="knotwork_backup_summary_checked">Password and file checked</string>
+    <string name="knotwork_backup_summary_from">From the backup</string>
+    <string name="knotwork_backup_summary_keys_in">API keys and sign-ins: included</string>
+    <string name="knotwork_backup_summary_keys_out">API keys and sign-ins: not in this backup</string>
+    <plurals name="knotwork_backup_summary_models">
+        <item quantity="one">%1$d model to download again · %2$s</item>
+        <item quantity="other">%1$d models to download again · %2$s</item>
+    </plurals>
+    <string name="knotwork_backup_summary_never">Tasks the agent scheduled are never in a backup.</string>
+    <string name="knotwork_backup_summary_lost">Will be lost</string>
+    <string name="knotwork_backup_summary_lost_body">Everything now on this phone: %1$s, and its settings.</string>
+    <!-- The app's own: a phone with nothing but its settings to lose. -->
+    <string name="knotwork_backup_summary_lost_settings">Everything now on this phone: its settings.</string>
+    <string name="knotwork_backup_replace">Replace my data</string>
+    <string name="knotwork_backup_confirm_title">Replace everything on this phone?</string>
+    <string name="knotwork_backup_confirm_body">Your current chats, memory, pipelines, files and settings are deleted and replaced by the backup. This can’t be undone.</string>
+    <string name="knotwork_backup_confirm_prompt">Type %1$s to confirm</string>
+    <string name="knotwork_backup_confirm_keyword">REPLACE</string>
+    <string name="knotwork_backup_confirm_action">Replace</string>
+
+    <!-- Restoring, after restore -->
+    <string name="knotwork_backup_restoring">Restoring…</string>
+    <string name="knotwork_backup_restoring_sub">Knotwork will restart in a few seconds.</string>
+    <string name="knotwork_backup_after_title">Restored</string>
+    <string name="knotwork_backup_after_sub">From the backup made on %1$s</string>
+    <string name="knotwork_backup_after_models">Models to download again</string>
+    <string name="knotwork_backup_download">Download</string>
+    <string name="knotwork_backup_discover">Discover</string>
+    <string name="knotwork_backup_model_unknown">Source unknown. Find it in Discover.</string>
+    <string name="knotwork_backup_after_keys">Enter your API keys, Hugging Face token and MCP sign-ins again in Settings.</string>
+    <string name="knotwork_backup_after_tasks">Tasks the agent scheduled weren’t carried over. Ask it to set them up again.</string>
+    <!-- The app's own: the model row's cancel while it downloads. -->
+    <string name="knotwork_backup_cancel_download">Cancel download</string>
+
+    <!-- Counts, joined into the Will be lost list. -->
+    <plurals name="knotwork_backup_n_chats">
+        <item quantity="one">%1$s chat</item>
+        <item quantity="other">%1$s chats</item>
+    </plurals>
+    <plurals name="knotwork_backup_n_memories">
+        <item quantity="one">%1$s memory</item>
+        <item quantity="other">%1$s memories</item>
+    </plurals>
+    <plurals name="knotwork_backup_n_pipelines">
+        <item quantity="one">%1$s pipeline</item>
+        <item quantity="other">%1$s pipelines</item>
+    </plurals>
+    <plurals name="knotwork_backup_n_files">
+        <item quantity="one">%1$s file</item>
+        <item quantity="other">%1$s files</item>
+    </plurals>
 
     <!-- Stat cells: the noun under a count, derived from the copy's count plurals. -->
     <plurals name="knotwork_backup_stat_chats">

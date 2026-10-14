@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -220,10 +221,16 @@ private fun StepMarkGlyph(mark: StepMark) {
     }
 }
 
-/** The head of a result: a tile in the signal colour and the title, read as a heading. */
+/**
+ * The head of a result: a tile in the signal colour and the title, read as a heading — and announced as the pane's
+ * new title when the result replaces what was on screen.
+ */
 @Composable
 internal fun BackupResultHead(icon: ImageVector, tone: Color, title: String, modifier: Modifier = Modifier) {
-    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(KnotworkTheme.spacing.sp3)) {
+    Column(
+        modifier = modifier.fillMaxWidth().semantics { paneTitle = title },
+        verticalArrangement = Arrangement.spacedBy(KnotworkTheme.spacing.sp3),
+    ) {
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier.size(48.dp).background(tone.copy(alpha = 0.14f), KnotworkTheme.shapes.md),

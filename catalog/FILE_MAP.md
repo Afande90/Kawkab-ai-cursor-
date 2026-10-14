@@ -349,10 +349,12 @@ Paths below are relative to `src/main/java/app/knotwork/design/`.
     - `AboutSettingsContent.kt` - identity card, build info, licenses and the reset actions.
     - `BackgroundSettingsContent.kt` - background work, triggers, notifications and entry-surface bindings.
     - `backup/` - The *Backup & restore* screen: its content, route bodies, parts and view states.
+      - `AfterRestoreSheet.kt` - The after-restore sheet over the chat: the models to download again, and what was not carried.
       - `BackupContent.kt` - Settings → Privacy → *Backup & restore*, and the *Back up* route over it.
       - `BackupParts.kt` - The pieces the backup screens share: notes, action rows, the checkbox row, the file row, steps, the result head, counts and the bottom action.
       - `BackupRouteBody.kt` - The scrolling body of the *Backup & restore* screen for what is in front: the screen itself, or a route.
       - `BackupViewState.kt` - What the Settings → Privacy → *Backup & restore* screen shows: the screen itself, or one of its full-screen routes over it.
+      - `RestoreRouteBody.kt` - The scrolling body of a *Restore* route: a problem with the file, the password, the check, or the summary.
     - `GenerationSettingsContent.kt` - system instructions, restrictions and the LLM generation parameters.
     - `KnotworkMonoTextArea.kt` - multi-line monospace textarea (brand outline) for system instructions.
     - `KnotworkParamSlider.kt` - labelled numeric-parameter slider with value label, optional validation error, and (inside a settings screen) its own help glyph and explanation panel under the track.
@@ -555,6 +557,7 @@ matters.
     - `backup/` - Roborazzi baselines for the *Backup & restore* screen.
       - `BackupContentSemanticsTest.kt` - What the *Back up* route puts in the semantics tree for TalkBack: the working steps are one polite live region whose text is the current step, so the step's name changes as the work moves on — the content change a live region is announced on.
       - `BackupSnapshotTest.kt` - Roborazzi baseline for Settings → Privacy → *Backup & restore* and its *Back up* route: the screen, the password form (empty, flagged, ready, 200 %), the work (key derivation, files), the saved result (also at 200 %, where the counts fall into one column) and two failures — light, and dark for every state the user reads a result in.
+      - `RestoreSnapshotTest.kt` - Roborazzi baseline for the *Restore* route of Settings → Privacy → *Backup & restore* and the sheet over the chat after a restore: the password (also refused, and at 200 %), the check (both steps), every problem the user is told, the summary (also with nothing on the phone, and at 200 %), *Restoring…*, and the sheet (also with a download running, and at 200 %) — light, and dark for the states read most.
     - `HeroSnapshotTest.kt` - Roborazzi baseline for the README "Settings" hero shot at the canonical 1080 × 2400 resolution.
     - `ModelPickerSheetTest.kt` - Behaviour of `ModelPickerSheetContent`: what a server's list becomes, and what a pick returns.
     - `ProviderDetailSnapshotTest.kt` - Roborazzi baselines for the provider detail screen.

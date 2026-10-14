@@ -55,9 +55,16 @@ fun BackupContent(
     snackbarHost: @Composable () -> Unit = {},
 ) {
     val route = state.route
+    if (route is Restoring) {
+        // Committed: no bar, no action, no Back — the app restarts in a moment.
+        RestoringScreen(modifier = modifier.fillMaxSize())
+        return
+    }
     val (title, nav) = when (route) {
         null -> stringResource(R.string.knotwork_backup_home_title) to BarNav.BACK
         is BackupWorking -> stringResource(R.string.knotwork_backup_backup_title) to BarNav.NONE
+        is RestoreChecking -> stringResource(R.string.knotwork_backup_restore_title) to BarNav.NONE
+        is RestoreRoute -> stringResource(R.string.knotwork_backup_restore_title) to BarNav.CLOSE
         else -> stringResource(R.string.knotwork_backup_backup_title) to BarNav.CLOSE
     }
     val onNav = when (route) {
@@ -149,7 +156,38 @@ private fun BackupRouteAction(route: BackupRoute, callbacks: BackupCallbacks) {
                 onClick = callbacks.onTryAgain,
                 modifier = Modifier.fillMaxWidth(),
             )
+            is RestoreRoute -> RestoreRouteAction(route, callbacks)
         }
+    }
+}
+
+/** The action pinned under a *Restore* route. */
+@Composable
+private fun RestoreRouteAction(route: RestoreRoute, callbacks: BackupCallbacks) {
+    val restore = callbacks.restore
+    when (route) {
+        is RestoreProblem -> {
+            val (label, action) = when (route.kind) {
+                RestoreProblemKind.NO_SPACE -> R.string.knotwork_backup_try_again to restore.onTryAgain
+                RestoreProblemKind.PHONE_KEY_UNAVAILABLE, RestoreProblemKind.NOT_STARTED ->
+                    R.string.knotwork_backup_close to callbacks.onCloseRoute
+                else -> R.string.knotwork_backup_choose_another to restore.onChooseAnother
+            }
+            KnotworkPrimaryButton(text = stringResource(label), onClick = action, modifier = Modifier.fillMaxWidth())
+        }
+        is RestorePassword -> KnotworkPrimaryButton(
+            text = stringResource(R.string.knotwork_backup_check),
+            onClick = restore.onCheck,
+            enabled = route.canCheck,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        is RestoreChecking -> BackupCancelButton(onClick = restore.onCancelCheck)
+        is RestoreSummary -> KnotworkPrimaryButton(
+            text = stringResource(R.string.knotwork_backup_replace),
+            onClick = restore.onReplace,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Restoring -> Unit
     }
 }
 

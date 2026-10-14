@@ -220,6 +220,8 @@ class BackupRestorerImplTest {
             // Then
             assertEquals(RestoreFailure.NO_SPACE, failure.failure)
             assertTrue(failure.neededBytes > 1_000)
+            // The screen says how much is free beside how much is needed.
+            assertEquals(1_000L, failure.freeBytes)
             assertNothingStaged()
         }
 
@@ -310,6 +312,7 @@ class BackupRestorerImplTest {
         // Then
         assertEquals(RestoreFailure.NO_SPACE, failure.failure)
         assertTrue(failure.neededBytes > DATABASE_BYTES.size)
+        assertEquals(DATABASE_BYTES.size.toLong(), failure.freeBytes)
         assertTrue("the database is not touched", preparer.calls.isEmpty())
         assertNothingStaged()
     }
@@ -449,6 +452,10 @@ class BackupRestorerImplTest {
                     modelsToDownload = listOf(BackupModelEntry("qwen.litertlm", 2_000, null, "https://q")),
                     scheduledTasksLeftBehind = 2,
                     secretsApplied = true,
+                    // When the backup was made, for the sheet's *From the backup made on …*.
+                    backupCreatedAtEpochMillis = CREATED_AT,
+                    // The secrets just written are on the phone: nothing to enter again.
+                    secretsOnPhone = true,
                 ),
                 restorer.report(),
             )
@@ -473,7 +480,27 @@ class BackupRestorerImplTest {
         assertEquals(listOf(mapOf("openai_model" to "gpt-5")), apiKeys.restored)
         assertTrue(settingsSecrets.restored.isEmpty())
         assertFalse(restorer.report()!!.secretsApplied)
+        // A phone that held none and got none: the sheet asks for them.
+        assertFalse(restorer.report()!!.secretsOnPhone)
     }
+
+    @Test
+    fun `given secrets were not chosen onto a phone holding its own when the app starts then the report says so`() =
+        runTest {
+            // Given — this phone's own token, which a restore leaves where it is.
+            settingsSecrets.secrets["hugging_face_token"] = "hf_own"
+            val restorer = restorer(testScheduler)
+            restorer.stage(input(archive()), password.toCharArray()) { }
+            restorer.commit(applySecrets = false)
+            PendingRestoreApplier.applyIfCommitted(layout)
+
+            // When
+            restorer.finishPending()
+
+            // Then
+            assertFalse(restorer.report()!!.secretsApplied)
+            assertTrue(restorer.report()!!.secretsOnPhone)
+        }
 
     @Test
     fun `given the process ended before background work was stopped when the app starts then the runs are cancelled`() =
@@ -519,6 +546,19 @@ class BackupRestorerImplTest {
 
         // Then
         assertNothingStaged()
+    }
+
+    @Test
+    fun `given a report an earlier build wrote when read then it has no backup date`() = runTest {
+        // Given — no date field: written before reports carried one.
+        layout.report.parentFile?.mkdirs()
+        layout.report.writeText("""{"modelsToDownload":[],"scheduledTasksLeftBehind":1,"secretsApplied":true}""")
+
+        // When
+        val report = restorer(testScheduler).report()
+
+        // Then
+        assertEquals(RestoreReport(emptyList(), scheduledTasksLeftBehind = 1, secretsApplied = true), report)
     }
 
     @Test
@@ -804,16 +844,18 @@ class BackupRestorerImplTest {
             throw IllegalStateException("keystore")
     }
 
-    /** An owner that records what it is asked to restore. */
+    /** An owner that records what it is asked to restore, and holds the secrets written to it. */
     private class RecordingOwner(override val storeName: String) : BackedUpSecrets {
         val restored = mutableListOf<Map<String, String>>()
+        val secrets = mutableMapOf<String, String>()
 
         override suspend fun alwaysEntries(): Map<String, String> = emptyMap()
 
-        override suspend fun secretEntries(): Map<String, String> = emptyMap()
+        override suspend fun secretEntries(): Map<String, String> = secrets.toMap()
 
         override suspend fun restore(entries: Map<String, String>, secrets: Boolean): Int {
             restored += entries
+            if (secrets) this.secrets += entries
             return entries.size
         }
     }

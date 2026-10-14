@@ -49,6 +49,62 @@ class BackupContentSemanticsTest {
         assertEquals(listOf("Files and images"), liveRegionTexts())
     }
 
+    @Test
+    fun `given a refused password when shown then the field is a live region carrying the error`() {
+        rule.setContent {
+            KnotworkTheme {
+                BackupContent(
+                    state = BackupViewState(
+                        route = RestorePassword(RestoreFile("b.knotwork"), "x", wrongPassword = true),
+                    ),
+                    callbacks = BackupCallbacks(),
+                )
+            }
+        }
+
+        val errors = rule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.Error)).fetchSemanticsNodes()
+        assertEquals(
+            listOf("That password doesn’t open this backup."),
+            errors.map {
+                it.config[SemanticsProperties.Error]
+            },
+        )
+        assertEquals(
+            LiveRegionMode.Polite,
+            errors.single().config.getOrNull(SemanticsProperties.LiveRegion),
+        )
+    }
+
+    @Test
+    fun `given the restore committed when Restoring shows then it is read once as its two lines, not the loader`() {
+        rule.setContent {
+            KnotworkTheme { BackupContent(state = BackupViewState(route = Restoring), callbacks = BackupCallbacks()) }
+        }
+
+        assertEquals(
+            listOf("Restoring… Knotwork will restart in a few seconds."),
+            liveRegionTexts(),
+        )
+    }
+
+    @Test
+    fun `given a result or a problem when shown then its title is the pane's title`() {
+        val route = mutableStateOf<BackupRoute>(BackupFailed(BackupFailReason.WRITE_FAILED))
+        rule.setContent {
+            KnotworkTheme { BackupContent(state = BackupViewState(route = route.value), callbacks = BackupCallbacks()) }
+        }
+
+        assertEquals(listOf("Backup not saved"), paneTitles())
+        route.value = RestoreProblem(RestoreProblemKind.DAMAGED)
+        rule.waitForIdle()
+        assertEquals(listOf("This backup is damaged"), paneTitles())
+    }
+
+    private fun paneTitles(): List<String> =
+        rule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.PaneTitle))
+            .fetchSemanticsNodes()
+            .map { it.config[SemanticsProperties.PaneTitle] }
+
     /** The text of every polite live region on screen. */
     private fun liveRegionTexts(): List<String> =
         rule.onAllNodes(SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite))
