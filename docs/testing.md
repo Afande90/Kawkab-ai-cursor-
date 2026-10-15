@@ -214,9 +214,26 @@ visits it.
 ### Setup
 
 ```kotlin
+import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+
 @get:Rule
 val composeTestRule = createAndroidComposeRule<MainActivity>()
 ```
+
+Compose tests use the **v2** factories, from the `v2` packages
+(`junit4.v2.createComposeRule`, `junit4.v2.createAndroidComposeRule`,
+`v2.runComposeUiTest`). The v1 factories are deprecated, and they ran the
+composition's coroutines (effects, `rememberCoroutineScope`) on an
+`UnconfinedTestDispatcher`: one launched there ran at once, which can hide a
+timing bug. The v2 factories use a `StandardTestDispatcher`, as `runTest`
+does, so such a coroutine runs when the test lets the clock move. A gesture
+(`performClick`, `performTouchInput`) and a Compose finder's assertion do that
+themselves; before a non-Compose assertion — a MockK `verify`, a captured
+value — that follows a semantics action such as `performTextInput`, call
+`waitForIdle()` or assert inside `runOnIdle { }`. Every instrumented test and
+every `:catalog` test is on v2. `ComposeTestRuleV2GuardTest` — one in `:app` over
+`src/androidTest`, one in `:catalog` over its tests — fails a v1 factory,
+imported or written out.
 
 ### Naming
 

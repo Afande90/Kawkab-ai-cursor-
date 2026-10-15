@@ -494,6 +494,7 @@ matters.
     - `PromptPreviewSheetSnapshotTest.kt` - Roborazzi baselines for the prompt-preview sheet.
   - `topbar/` - top-bar actions whose behaviour outruns their appearance.
     - `JournalExportActionsBehaviourTest.kt` - Behaviour of the journal-export actions on both journal surfaces — the parts a Roborazzi baseline cannot show.
+- `ComposeTestRuleV2GuardTest.kt` - Keeps the design system's tests on the v2 Compose test APIs.
 - `foundations/` - the foundations catalog page — the surface that renders the tokens themselves.
   - `FoundationsCatalogPageSnapshotTest.kt` - Roborazzi snapshot baseline for the `FoundationsCatalogPage` in both Knotwork themes.
 - `icons/` - the `AppIcons` registry: a cheap correctness gate over every entry, plus the catalog page baseline.
