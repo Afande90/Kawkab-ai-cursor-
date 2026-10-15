@@ -257,8 +257,12 @@ interface Tool {
 - **A stream that ends without a finish reason is a failure, not an answer.** The
   OpenAI-compatible clients end a dropped stream normally and simply omit the
   finish reason, so the only signal that a reply was truncated is the absent
-  `StreamFrame.End.finishReason`. `CloudLlmNodeExecutor` rejects such a response
-  instead of forwarding a half-written answer. The check is per provider and
+  `StreamFrame.End.finishReason`. Every caller that turns a cloud stream into an
+  answer — the Cloud node, a structured step on a cloud model, `delegate_task` —
+  asks one rule, `CloudStreamEnd` in the domain layer, and rejects such a
+  response instead of forwarding a half-written answer;
+  `CloudStreamEndCallersGuardTest` fails a new reader of `executeStreaming` that
+  does not. The check is per provider and
   enabled only where the behaviour was measured — Koog's Ollama client never
   emits a finish reason at all, so enabling it there would fail healthy runs.
   On OpenAI it also depends on the model: Koog sends a model that supports only

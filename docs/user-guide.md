@@ -2750,6 +2750,10 @@ missing "I have finished" marker — so a half-written answer can look exactly
 like a complete one. The app checks for that marker and, when it is absent,
 discards the partial text and tells you the reply was cut off, rather than
 handing you an answer that stops mid-sentence as though the model meant it.
+The same check covers every reply a cloud model streams: a Cloud node's answer,
+the steps that must answer in a fixed shape (a Tool node's arguments, a router,
+a plan, a condition) when they run on a cloud model, and a task the agent hands
+to a cloud model with `delegate_task`.
 
 Which providers this protection covers was decided by measurement only, because
 the opposite mistake — treating a healthy reply as truncated — would break

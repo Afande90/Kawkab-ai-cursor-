@@ -1414,11 +1414,16 @@ SSE path above, `HttpTimeout` *does* apply here.
 **A dropped stream is a failure, not an answer.** On the OpenAI-compatible
 clients a socket cut mid-answer ends the flow **normally**, with no exception,
 and the frames are byte-identical to a healthy stream apart from
-`End.finishReason` being `null` instead of `"stop"`. `CloudLlmNodeExecutor`
-therefore rejects a stream that ended without a finish reason
-(`NodeExecutionResult(error = …)`) rather than forwarding half an answer. The
-check is enabled **per provider and only where measured**
-(`providerReportsFinishReason`), because the inverse mistake fails working
+`End.finishReason` being `null` instead of `"stop"`. Every caller that turns a
+cloud stream into an answer therefore rejects a stream that ended without a
+finish reason rather than forwarding half an answer: `CloudLlmNodeExecutor`
+(`NodeExecutionResult(error = …)`), the cloud client of the structured-output
+gate (`CloudStreamCutOffException`, which the node's error path shows as a
+provider failure) and `delegate_task` (an `Error:` result). All three ask one
+rule, `domain/engine/CloudStreamEnd`, and `CloudStreamEndCallersGuardTest` keeps
+a new reader of `executeStreaming` from skipping it. The check is enabled **per
+provider and only where measured** (`CloudStreamEnd.reportsFinishReason`),
+because the inverse mistake fails working
 runs: Koog's Ollama client never emits a finish reason at all, and the harness
 could not produce a stream Anthropic's parser accepts, so both are excluded and
 a mid-answer cut on those two still reads as a short but complete reply. On

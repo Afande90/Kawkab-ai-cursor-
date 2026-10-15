@@ -281,6 +281,14 @@ details.
 
 ### Fixed
 
+- **A cut-off answer from a cloud model is caught everywhere, not only on a Cloud
+  node.** When the connection drops mid-answer, OpenAI's and DeepSeek's clients
+  end the stream normally, only without the marker that says it finished. A Cloud
+  node already refused such an answer; a task handed to a cloud model with
+  `delegate_task` and the steps that must answer in a fixed shape (a Tool node's
+  arguments, a router, a plan, a condition) on a cloud model took the partial
+  text as the whole answer. They now refuse it the same way, by the same
+  per-provider rule.
 - **A paused model download tells you.** A download that paused at Android's
   background time limit — after five hours out of sight — went quiet: its
   notification disappeared, and a screen opened afterwards showed nothing. It
