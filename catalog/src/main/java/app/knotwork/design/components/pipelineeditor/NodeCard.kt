@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -26,11 +27,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import app.knotwork.design.icons.AppIcons
@@ -73,8 +76,8 @@ private val HeaderGlyphSize = 16.dp
 /** Vertical gap between an outbound dot and its label. */
 private val PortLabelGap = NodePortGeometry.LABEL_GAP.dp
 
-/** Height of the `LabelSm` row used for outbound port labels. */
-private val PortLabelLineHeight = NodePortGeometry.LABEL_LINE_HEIGHT.dp
+/** Test tag of the card's surface — the rounded body whose edges the port dots sit on. */
+const val NODE_CARD_SURFACE_TEST_TAG: String = "node_card_surface"
 
 /** Test tag of the inbound port dot. */
 const val NODE_CARD_INBOUND_DOT_TEST_TAG: String = "node_card_inbound_dot"
@@ -148,7 +151,8 @@ fun NodeCard(
     }
     val showOutboundLabels = ports.outbound.size > 1
     val topInset = if (ports.inbound > 0) PortDotRadius else 0.dp
-    val bottomInset = NodePortGeometry.belowOutboundDots(ports.outbound.size).dp
+    val labelLineHeight = nodePortLabelLineHeight()
+    val bottomInset = NodePortGeometry.belowOutboundDots(ports.outbound.size, labelLineHeight.value).dp
     // The outer Box hosts the Surface AND the port dots as siblings. Surface
     // clips its content to its rounded shape; placing dots at the Box level
     // (outside Surface) is what lets them protrude past the card edge per
@@ -159,7 +163,8 @@ fun NodeCard(
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = topInset, bottom = bottomInset),
+                .padding(top = topInset, bottom = bottomInset)
+                .testTag(NODE_CARD_SURFACE_TEST_TAG),
             color = MaterialTheme.colorScheme.surface,
             shape = KnotworkTheme.shapes.md,
             tonalElevation = elevation,
@@ -189,6 +194,7 @@ fun NodeCard(
                 ports = ports.outbound,
                 color = headerColor,
                 showLabels = showOutboundLabels,
+                labelLineHeight = labelLineHeight,
             )
         }
         if (multiSelected) {
@@ -301,14 +307,15 @@ private fun androidx.compose.foundation.layout.BoxScope.InboundDot(color: Color)
  * are; the card is as wide as [NodePortGeometry.cardWidth] needs.
  *
  * Vertical alignment is computed by the outer card layout — the Surface is inset by
- * [NodePortGeometry.belowOutboundDots], so the dot centres always land on the Surface bottom edge
- * whether or not labels are present.
+ * [NodePortGeometry.belowOutboundDots] for a label exactly [labelLineHeight] tall, so the dot
+ * centres land on the Surface bottom edge whether or not labels are present, at any font scale.
  */
 @Composable
 private fun androidx.compose.foundation.layout.BoxScope.OutboundPortRow(
     ports: List<OutboundPort>,
     color: Color,
     showLabels: Boolean,
+    labelLineHeight: Dp,
 ) {
     val slot = NodePortGeometry.slotWidth(ports.size).dp
     ports.forEachIndexed { index, port ->
@@ -324,10 +331,10 @@ private fun androidx.compose.foundation.layout.BoxScope.OutboundPortRow(
                 Spacer(modifier = Modifier.size(PortLabelGap))
                 Text(
                     text = port.label,
-                    // A single LabelSm line can measure short of its line height (13 dp, measured);
-                    // the floor keeps the dot centres on the surface edge. A larger font scale still
-                    // grows the label.
-                    modifier = Modifier.heightIn(min = PortLabelLineHeight),
+                    // Exactly one line tall at the current font scale: a single LabelSm line can
+                    // measure short of it (13 dp of 14, measured) or, at 200 %, past the 14 dp the
+                    // inset used to hold, which pushed the dots up onto the card's text.
+                    modifier = Modifier.height(labelLineHeight),
                     style = KnotworkTextStyles.LabelSm,
                     color = KnotworkTheme.extended.onSurfaceMuted,
                     textAlign = TextAlign.Center,
@@ -338,6 +345,20 @@ private fun androidx.compose.foundation.layout.BoxScope.OutboundPortRow(
         }
     }
 }
+
+/**
+ * Height of an outbound port's label line on screen: `LabelSm`'s line height converted at the
+ * current font scale through [LocalDensity], the same conversion that lays the text out — so
+ * Android 14's non-linear font scaling applies to both. 14 dp at font scale 1.
+ *
+ * [NodeCard] gives every port label exactly this height, so its outbound dots sit
+ * [NodePortGeometry.belowOutboundDots] above the bottom of its layout box at any font scale; the
+ * editor canvas reads the same value to find them.
+ *
+ * @return the label line height.
+ */
+@Composable
+fun nodePortLabelLineHeight(): Dp = with(LocalDensity.current) { KnotworkTextStyles.LabelSm.lineHeight.toDp() }
 
 /** Single port dot — 12 dp filled circle with a 1 dp surface-coloured ring. */
 @Composable

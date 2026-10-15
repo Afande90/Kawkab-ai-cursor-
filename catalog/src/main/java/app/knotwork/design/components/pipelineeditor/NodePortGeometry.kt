@@ -36,7 +36,10 @@ object NodePortGeometry {
     /** Gap between an outbound dot and its label. */
     const val LABEL_GAP: Float = 4f
 
-    /** Height of the label line under an outbound dot. */
+    /**
+     * Height of the label line under an outbound dot at font scale 1 — `LabelSm`'s 14 sp line. On
+     * screen the line follows the font scale; [nodePortLabelLineHeight] gives its current height.
+     */
     const val LABEL_LINE_HEIGHT: Float = 14f
 
     /** Height of the card's surface when it shows a title only — the shortest it renders. */
@@ -97,11 +100,13 @@ object NodePortGeometry {
      * dot's lower half, and — when the ports are labelled — the gap and the label line.
      *
      * @param outboundCount Number of outbound ports; more than one are labelled.
+     * @param labelLineHeight Height of the label line in dp: [LABEL_LINE_HEIGHT] at font scale 1,
+     *   [nodePortLabelLineHeight] for the font scale on screen.
      * @return The distance in dp; `0` when there are no outbound ports.
      */
-    fun belowOutboundDots(outboundCount: Int): Float = when {
+    fun belowOutboundDots(outboundCount: Int, labelLineHeight: Float = LABEL_LINE_HEIGHT): Float = when {
         outboundCount == 0 -> 0f
         outboundCount == 1 -> DOT_RADIUS
-        else -> DOT_RADIUS + LABEL_GAP + LABEL_LINE_HEIGHT
+        else -> DOT_RADIUS + LABEL_GAP + labelLineHeight
     }
 }
