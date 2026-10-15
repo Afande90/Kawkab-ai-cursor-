@@ -124,6 +124,10 @@ sealed interface McpToolShadowing {
  * `domain.models.McpTransport` to keep the catalog free of app
  * dependencies; the host translates between the two.
  *
+ * Declared in the order the form shows the chips: Streamable HTTP, the
+ * MCP specification's current transport, first; HTTP+SSE, which the
+ * specification deprecates, after it, for servers that speak only that.
+ *
  * @property selectable `true` for options the user can actually pick
  * in the UI today. Both transports are end-to-end wired against real
  * servers (SSE via Koog's `defaultSseTransport`, Streamable HTTP via
@@ -131,8 +135,8 @@ sealed interface McpToolShadowing {
  * extension).
  */
 enum class McpTransportOption(val label: String, val selectable: Boolean) {
-    SSE(label = "SSE", selectable = true),
     StreamableHttp(label = "Streamable HTTP", selectable = true),
+    SSE(label = "SSE", selectable = true),
 }
 
 /** One header key/value pair authored in the MCP server form. */
@@ -168,7 +172,8 @@ enum class McpAuthSelector(val label: String) {
  * @property url the URL field (required).
  * @property urlError inline validation error for [url]; null when valid.
  * @property name optional display label; rendered alongside the URL.
- * @property transport active transport selection.
+ * @property transport active transport selection; a new server starts on
+ * Streamable HTTP, the specification's current transport.
  * @property headers repeating list of header rows ("Authorization",
  * "Bearer …"). May contain empty rows the user has not finished
  * filling out.
@@ -182,7 +187,7 @@ data class AddMcpServerForm(
     val url: String = "",
     val urlError: String? = null,
     val name: String = "",
-    val transport: McpTransportOption = McpTransportOption.SSE,
+    val transport: McpTransportOption = McpTransportOption.StreamableHttp,
     val authType: McpAuthSelector = McpAuthSelector.NONE,
     val bearerToken: String = "",
     val basicUsername: String = "",
