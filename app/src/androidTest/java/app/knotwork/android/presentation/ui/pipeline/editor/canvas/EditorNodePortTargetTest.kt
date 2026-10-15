@@ -100,7 +100,10 @@ class EditorNodePortTargetTest {
         }
     }
 
-    private fun bounds(tag: String): DpRect = composeTestRule.onNodeWithTag(tag).getBoundsInRoot()
+    // EditorNode's click handler merges its descendants' semantics, so the dots and targets
+    // are found in the unmerged tree.
+    private fun bounds(tag: String): DpRect =
+        composeTestRule.onNodeWithTag(tag, useUnmergedTree = true).getBoundsInRoot()
 
     private fun DpRect.centreX(): Float = (left.value + right.value) / 2f
 
