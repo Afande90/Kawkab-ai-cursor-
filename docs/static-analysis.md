@@ -35,6 +35,7 @@ means a document is being generated from a rule nobody is checking.
 |-----------------------------------------------|-------------------------------------------------------------------------|
 | `:app:detekt`                                 | Kotlin static analysis. Fails on any unsuppressed finding.              |
 | `:app:detektFullDebug` + `:app:detektFossDebug` | Type-resolution gate (the rules the plain task cannot run, one per flavour). See below. |
+| `:catalog:detektDebug`                        | The same gate over the design system, with two catalog settings layered on top. See below. |
 | `:app:ktlintCheck`                            | Kotlin formatting & idiomatic style rules. Run `ktlintFormat` to fix.  |
 | `:app:lintFullDebug` + `:app:lintFossDebug`   | Android Lint over both distribution flavours + library dependencies. `:catalog:lint` runs too. |
 | `:app:testFullDebugUnitTest`                      | JVM unit tests for the debug variant.                                   |
@@ -168,6 +169,17 @@ and added to `check`. Both flavours run so the gate also covers the
 flavour-specific sources (`src/full` / `src/foss`), which the plain task's
 `source` never reached either.
 
+**`:catalog` runs the gate too** (`:catalog:detektDebug`, in `check`), with
+[`config/detekt/detekt-type-resolution-catalog.yml`](../config/detekt/detekt-type-resolution-catalog.yml)
+layered on top. It holds two settings the design system needs and the app does not:
+a defaulted parameter does not count toward `LongParameterList`, because a screen's
+callbacks are one constructor of defaulted lambdas, one per user action; and a
+`@Preview` function is not reported as unused, because only the IDE calls one. Until
+it was wired, the catalog's plain `detekt` task ran in `light` mode and so checked
+none of the four rules. The first run found 104 findings: 63 of them were the two
+patterns above, and the remaining 41 were 39 unused imports and two dead private
+functions, all removed.
+
 | Rule                                    | What it catches                                                        |
 |-----------------------------------------|------------------------------------------------------------------------|
 | `coroutines.SuspendFunSwallowedCancellation` | `runCatching` wrapping suspend calls, and `try`/`catch` in suspend functions that catches `CancellationException` (or a superclass such as `Exception` / `Throwable`) without immediately re-throwing. |
@@ -286,8 +298,10 @@ suppression where the rule never runs is exactly the dead kind.
   configuration edits and are reviewed as such.
 
 **Where `LongParameterList` does not run.** It runs only in the type-resolution
-tasks of `:app`, and their source is `src/main`. It checks nothing in
-`:catalog`, `buildSrc` or any test set, suppressed or not.
+tasks of `:app` and `:catalog` (where a defaulted parameter is not counted), and
+their source is the debug variant's production code (`src/main` plus the
+build-type and flavour directories). It checks nothing in `buildSrc` or any
+test set, suppressed or not.
 
 **Observed failing.** One suppression was added to `NodeContextBuilder.build`
 and one listed suppression was removed from `DefaultPipelineFactory.create`. The

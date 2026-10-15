@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import app.knotwork.design.R
 import app.knotwork.design.components.controls.KnotworkSegmentedControl
 import app.knotwork.design.components.misc.StripedPlaceholder
@@ -84,6 +85,9 @@ private fun ToolRiskSection(risk: ToolRiskUi, onRiskChange: (BuiltInToolRisk) ->
  * and the order the index round-trips through.
  */
 private val RISK_ORDER = listOf(BuiltInToolRisk.ReadOnly, BuiltInToolRisk.Sensitive, BuiltInToolRisk.Destructive)
+
+/** Height of the input-schema preview box. */
+private val SchemaPreviewHeight = 240.dp
 
 /**
  * Stateless tool-detail surface — schema preview + enable/disable toggle.

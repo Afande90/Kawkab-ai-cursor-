@@ -1,7 +1,9 @@
 # Detekt configuration for the type-resolution gate.
 #
 # This config backs the dedicated `detektFullDebug` / `detektFossDebug` runs
-# wired into `./gradlew check` (see `app/build.gradle.kts`). It exists because
+# wired into `./gradlew check` (see `app/build.gradle.kts`), and
+# `:catalog:detektDebug`, which layers `detekt-type-resolution-catalog.yml` on top
+# (see `catalog/build.gradle.kts`). It exists because
 # a detekt rule that implements `dev.detekt.api.RequiresAnalysisApi` is
 # **silently skipped** by the plain `detekt` task (the main strict gate,
 # `config/detekt/detekt.yml`), which runs in `light` analysis mode: no error,

@@ -962,7 +962,6 @@
     <string name="knotwork_node_validation_field_required">This field is required</string>
     <string name="knotwork_node_validation_out_of_range">Value must be within the allowed range</string>
     <string name="knotwork_node_validation_intent_class_count">Provide between 2 and 6 classes</string>
-    <string name="knotwork_node_validation_invalid_json">Provided JSON is invalid</string>
     <string name="knotwork_node_validation_fallback_unknown">Fallback class is no longer declared above</string>
     <string name="knotwork_node_validation_class_duplicate">Class names must be unique</string>
     <string name="knotwork_node_validation_target_pipeline_missing">Choose a pipeline to run</string>

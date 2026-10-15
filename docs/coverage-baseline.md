@@ -149,7 +149,7 @@ Each is justified below.
 | `*_Provide*Factory`, `*_Provide*Factory$*`        | Hilt module-provider factories.                                          |
 | `dagger.hilt.internal.*`, `hilt_aggregated_deps.*`| Hilt internals.                                                          |
 | `*_Impl`, `*_Impl$*`                              | Room-generated DAO implementations.                                      |
-| `app.knotwork.android.data.local.AppDatabase`        | Room database class (declarations + migration shells).                    |
+| `app.knotwork.android.data.local.AppDatabase`        | Abstract Room database class (one counted line, its constructor); the migrations in `data.local.migrations` are measured. |
 | `app.knotwork.android.data.local.AppDatabase_Impl*`  | Room-generated database implementation.                                  |
 | `*_AutoMigration_*`                               | Room auto-migration generated bridges.                                   |
 | `app.knotwork.android.data.local.dao.*`              | Room DAO **interfaces** (only `companion object` constants in source).   |

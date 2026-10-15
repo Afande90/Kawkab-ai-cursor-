@@ -253,8 +253,9 @@ being generated from a rule nobody checked.
 
 `check` is the task CI runs on every pull request. It executes
 detekt (including the type-resolution gate, `detektFullDebug` +
-`detektFossDebug`), ktlint, Android lint, the unit-test suite for both
-flavours (`testFullDebugUnitTest` + `testFossDebugUnitTest`, which include the
+`detektFossDebug`, and `:catalog:detektDebug` for the design system),
+ktlint, Android lint, the unit-test suite for both flavours
+(`testFullDebugUnitTest` + `testFossDebugUnitTest`, which include the
 [golden run traces](#golden-run-traces)), the `:catalog`
 screenshot tests **in verify mode** (`verifyRoborazziDebug` — a render that
 differs from its committed baseline beyond anti-aliasing fails the build; capture

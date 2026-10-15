@@ -143,6 +143,13 @@ details.
 
 ### Changed
 
+- **The design system's code is checked for dead code too.** The detekt rules
+  that need resolved types (unused imports, unused private functions, long
+  parameter lists, swallowed cancellation) ran only over the app; over the
+  design-system module they were skipped without a word. They now run there as
+  well, with two settings of its own: previews are not dead code, and a screen's
+  defaulted callbacks do not count as a long parameter list. The first run found
+  39 unused imports and two unused functions, now removed.
 - **A new MCP server starts on Streamable HTTP.** The server form selected SSE
   and showed `…/sse` as its example address. The MCP specification has
   deprecated HTTP+SSE in favour of Streamable HTTP, so the form now selects
