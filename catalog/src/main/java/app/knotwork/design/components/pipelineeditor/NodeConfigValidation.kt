@@ -63,9 +63,6 @@ enum class ValidationFailure(val stringRes: Int) {
     /** IntentRouter has fewer than 2 or more than 6 classes. */
     INTENT_CLASS_COUNT(app.knotwork.design.R.string.knotwork_node_validation_intent_class_count),
 
-    /** JSON-Schema body failed to parse. */
-    INVALID_JSON(app.knotwork.design.R.string.knotwork_node_validation_invalid_json),
-
     /**
      * IntentRouter `fallbackClass` references a name that is no longer in
      * the declared `classes` list — typically after the user renamed /

@@ -299,8 +299,9 @@ suppression where the rule never runs is exactly the dead kind.
 
 **Where `LongParameterList` does not run.** It runs only in the type-resolution
 tasks of `:app` and `:catalog` (where a defaulted parameter is not counted), and
-their source is `src/main`. It checks nothing in `buildSrc` or any test set,
-suppressed or not.
+their source is the debug variant's production code (`src/main` plus the
+build-type and flavour directories). It checks nothing in `buildSrc` or any
+test set, suppressed or not.
 
 **Observed failing.** One suppression was added to `NodeContextBuilder.build`
 and one listed suppression was removed from `DefaultPipelineFactory.create`. The
