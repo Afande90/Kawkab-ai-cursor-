@@ -502,6 +502,7 @@ flag them with spurious, environment-dependent violations.
 | `EntrySurfaceLimitsDocumentsTest`  | Every number the public documents quote about the entry surfaces' limits (share ceiling, contract value ceilings, journal value bound) equals the constant that enforces it. |
 | `RunRateCeilingTest` (census)      | Every `RunOrigin` is bounded by its own `RunRateCeiling` or exempt for a written reason, and the two origins another app can start without a permission (`SHARE`, `EXTERNAL`) have a ceiling. A new origin does not compile until someone decides. |
 | `TabRootEntryGuardTest`            | A bottom-nav tab root is entered as a tab switch, never pushed onto another subtree's back stack. |
+| `ComposeTestRuleV2GuardTest`       | No instrumented test builds its Compose rule with a deprecated v1 factory (`junit4.createComposeRule` and the rest); the v2 ones run effects on a `StandardTestDispatcher`, as `runTest` does. A twin in `:catalog` holds its screenshot tests to the same rule. |
 | `InstrumentedTestExclusionGuardTest` | The roster of device-only instrumented tests, and the annotation the emulator workflow excludes by, stay in step. |
 
 **Why these rules and not more.** Konsist analyses *declarations*, not the
