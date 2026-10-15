@@ -287,8 +287,10 @@ details.
   node already refused such an answer; a task handed to a cloud model with
   `delegate_task` and the steps that must answer in a fixed shape (a Tool node's
   arguments, a router, a plan, a condition) on a cloud model took the partial
-  text as the whole answer. They now refuse it the same way, by the same
-  per-provider rule.
+  text as the whole answer. They now refuse it by the same per-provider rule:
+  `delegate_task`, Tool arguments, routers and plans fail with the cut-off
+  message, and a condition takes its False branch as one it could not
+  classify.
 - **A paused model download tells you.** A download that paused at Android's
   background time limit — after five hours out of sight — went quiet: its
   notification disappeared, and a screen opened afterwards showed nothing. It
