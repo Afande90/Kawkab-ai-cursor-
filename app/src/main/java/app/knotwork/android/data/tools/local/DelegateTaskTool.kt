@@ -7,13 +7,11 @@ import ai.koog.prompt.streaming.StreamFrame
 import app.knotwork.android.domain.engine.CloudErrorSanitizer
 import app.knotwork.android.domain.engine.CloudLlmClientFactory
 import app.knotwork.android.domain.engine.CloudLlmModelResolver
+import app.knotwork.android.domain.engine.CloudStreamEnd
 import app.knotwork.android.domain.models.CloudProvider
 import app.knotwork.android.domain.repositories.NetworkActivityTracker
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.mapNotNull
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
@@ -88,19 +86,28 @@ class DelegateTaskTool @Inject constructor(
             networkActivityTracker.recordOutbound()
             // Apply a 60-second timeout for the external API call
             val result = withTimeoutOrNull(LLM_CALL_TIMEOUT_MS) {
-                val stream = client.executeStreaming(prompt("default") { user(taskDescription) }, model)
-                stream
+                val text = StringBuilder()
+                var finishReason: String? = null
+                client.executeStreaming(prompt("default") { user(taskDescription) }, model).collect { frame ->
                     // Told again per frame, so a long answer keeps the indicator "online".
-                    .onEach { networkActivityTracker.recordOutbound() }
-                    .mapNotNull { frame -> (frame as? StreamFrame.TextDelta)?.text }
-                    .toList()
-                    .joinToString("")
+                    networkActivityTracker.recordOutbound()
+                    when (frame) {
+                        is StreamFrame.TextDelta -> text.append(frame.text)
+                        is StreamFrame.End -> finishReason = frame.finishReason
+                        else -> Unit
+                    }
+                }
+                Streamed(text.toString(), finishReason)
             }
 
-            if (result.isNullOrBlank()) {
-                "Error: Task delegation to '${provider.id}' timed out or returned empty after 60 seconds."
-            } else {
-                "Success: Task completed by '${provider.id}'. Response:\n$result"
+            when {
+                // A dropped connection can end the stream normally, without a finish reason:
+                // half an answer would reach the agent as the whole of it.
+                result != null && CloudStreamEnd.cutOff(provider, model, result.finishReason) ->
+                    "Error: ${CloudStreamEnd.truncatedMessage(provider.id)}"
+                result == null || result.text.isBlank() ->
+                    "Error: Task delegation to '${provider.id}' timed out or returned empty after 60 seconds."
+                else -> "Success: Task completed by '${provider.id}'. Response:\n${result.text}"
             }
         } catch (e: CancellationException) {
             throw e
@@ -110,6 +117,14 @@ class DelegateTaskTool @Inject constructor(
             "Error: Task delegation failed due to an exception: ${CloudErrorSanitizer.sanitize(e)}"
         }
     }
+
+    /**
+     * A delegated answer as it streamed: its text, and the finish reason its end frame gave.
+     *
+     * @property text The concatenated text deltas.
+     * @property finishReason The end frame's finish reason; `null` when it had none or never came.
+     */
+    private data class Streamed(val text: String, val finishReason: String?)
 
     private companion object {
         /** Maximum wall-clock time, in milliseconds, allowed for a single delegated cloud-LLM call. */

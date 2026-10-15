@@ -412,6 +412,7 @@ Only Kotlin files appear inside the generated blocks.
     - `CloudLlmClientFactory.kt` - Domain interface for constructing cloud LLM clients (data-layer impl: `KoogClientFactory`).
     - `CloudLlmModelResolver.kt` - Domain interface for resolving cloud-LLM model objects (data-layer impl: `KoogCloudLlmModelResolver`).
     - `CloudModelCatalog.kt` - The cloud models the app offers, and the model a run uses for what the user saved.
+    - `CloudStreamEnd.kt` - Whether a cloud answer that streamed to its end was whole, or was cut off.
     - `DefaultPipelineFactory.kt` - Factory for default pipelines.
     - `executors/` - Per-`NodeType` `NodeExecutor` strategies dispatched by `NodeExecutorFactory`.
       - `ClarificationNodeExecutor.kt` - Executor for `NodeType.CLARIFICATION` that asks the local LLM to generate a question/options JSON, suspends on `ClarificationRepository.requestAnswer`, and forwards the user's reply downstream.
