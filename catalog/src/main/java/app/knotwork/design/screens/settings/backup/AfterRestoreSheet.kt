@@ -66,6 +66,7 @@ data class AfterRestoreState(
  * @property sourceKnown Whether the backup recorded where it came from: *Download* when it did, *Discover* when not.
  * @property progress Its download's progress in percent while it runs; `null` when it does not.
  * @property canDownload Whether *Download* is enabled — one download runs at a time.
+ * @property failure Why its last download stopped without installing it; `null` when none did, or while one runs.
  */
 @Immutable
 data class AfterRestoreModel(
@@ -74,7 +75,26 @@ data class AfterRestoreModel(
     val sourceKnown: Boolean,
     val progress: Int? = null,
     val canDownload: Boolean = true,
+    val failure: AfterRestoreDownloadFailure? = null,
 )
+
+/** Why a model's download stopped without installing it, in the words its row on the after-restore sheet shows. */
+enum class AfterRestoreDownloadFailure {
+    /**
+     * Hugging Face refused it (401 or 403) — what an access-gated repository answers without a token, or with one
+     * whose account has not accepted the model's licence.
+     */
+    NeedsAccess,
+
+    /** Anything else: another HTTP error, a server that did not answer, or a file that could not be stored. */
+    Failed,
+
+    /** It paused at the time a download may run in the background. */
+    Paused,
+
+    /** The file did not match the checksum Hugging Face published for it, and was deleted. */
+    ChecksumMismatch,
+}
 
 /**
  * What the after-restore sheet asks the app to do.
@@ -185,7 +205,10 @@ fun AfterRestoreSheetContent(
     }
 }
 
-/** A model to download again: its tile, name and size, then *Download*, *Discover* or the running download. */
+/**
+ * A model to download again: its tile, name and size — and why its last download failed — then *Download*, *Discover*
+ * or the running download.
+ */
 @Composable
 private fun AfterRestoreModelRow(model: AfterRestoreModel, callbacks: AfterRestoreCallbacks) {
     val context = LocalContext.current
@@ -223,6 +246,20 @@ private fun AfterRestoreModelRow(model: AfterRestoreModel, callbacks: AfterResto
                     text = stringResource(R.string.knotwork_backup_model_unknown),
                     style = KnotworkTextStyles.BodySm,
                     color = KnotworkTheme.extended.onSurface2,
+                )
+            }
+            model.failure?.let { failure ->
+                Text(
+                    text = stringResource(
+                        when (failure) {
+                            AfterRestoreDownloadFailure.NeedsAccess -> R.string.knotwork_backup_download_needs_access
+                            AfterRestoreDownloadFailure.Failed -> R.string.knotwork_backup_download_failed
+                            AfterRestoreDownloadFailure.Paused -> R.string.knotwork_backup_download_paused
+                            AfterRestoreDownloadFailure.ChecksumMismatch -> R.string.knotwork_backup_download_mismatch
+                        },
+                    ),
+                    style = KnotworkTextStyles.BodySm,
+                    color = KnotworkTheme.extended.signalError,
                 )
             }
             model.progress?.let { progress ->

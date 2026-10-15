@@ -1,5 +1,7 @@
 package app.knotwork.design.screens.settings.backup
 
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
@@ -22,7 +24,8 @@ import org.robolectric.annotation.GraphicsMode
  * Roborazzi baseline for the *Restore* route of Settings → Privacy → *Backup & restore* and the sheet over the chat
  * after a restore: the password (also refused, and at 200 %), the check (both steps), every problem the user is
  * told, the summary (also with nothing on the phone, and at 200 %), *Restoring…*, and the sheet (also with a
- * download running, and at 200 %) — light, and dark for the states read most.
+ * download running, at 200 %, with the failures a download's stream reports — also at 200 % — and with the stops
+ * a download records) — light, and dark for the states read most.
  *
  * The typed confirm over the summary is not captured: the shared `TypedConfirmDialog` never lets Compose go idle
  * under Robolectric (its field inside an `AlertDialog`), which is why no screen has a baseline of it.
@@ -168,12 +171,31 @@ class RestoreSnapshotTest {
             SheetScreen(AFTER)
         }
 
+    @Test
+    fun restore_after_sheet_failed_light() = snapshot("after_sheet_failed", dark = false) { SheetScreen(AFTER_FAILED) }
+
+    @Test
+    fun restore_after_sheet_failed_dark() = snapshot("after_sheet_failed", dark = true) { SheetScreen(AFTER_FAILED) }
+
+    @Test
+    fun restore_after_sheet_failed_font_scale_2x_light() =
+        snapshot("after_sheet_failed_font_scale_2x", dark = false, fontScale = 2f) {
+            SheetScreen(AFTER_FAILED)
+        }
+
+    @Test
+    fun restore_after_sheet_stopped_light() = snapshot("after_sheet_stopped", dark = false) {
+        SheetScreen(AFTER_STOPPED)
+    }
+
     @Composable
     private fun RouteScreen(route: BackupRoute) =
         BackupContent(BackupViewState(route = route, restoreAvailable = true), BackupCallbacks())
 
+    /** The sheet's content on the surface the sheet gives it — without one, the dark captures had no background. */
     @Composable
-    private fun SheetScreen(state: AfterRestoreState) = AfterRestoreSheetContent(state, AfterRestoreCallbacks())
+    private fun SheetScreen(state: AfterRestoreState) =
+        Surface(color = MaterialTheme.colorScheme.surface) { AfterRestoreSheetContent(state, AfterRestoreCallbacks()) }
 
     private fun snapshot(name: String, dark: Boolean, fontScale: Float = 1f, content: @Composable () -> Unit) {
         composeTestRule.setContent {
@@ -219,6 +241,50 @@ class RestoreSnapshotTest {
             ),
             enterKeysAgain = true,
             tasksLeftBehind = true,
+        )
+
+        /**
+         * The failures a download's own stream reports: Hugging Face refused one — no token came with the backup —
+         * and another did not finish.
+         */
+        val AFTER_FAILED = AFTER.copy(
+            models = listOf(
+                AfterRestoreModel(
+                    "gemma-3n-E4B-it-int4.litertlm",
+                    4_405_000_000,
+                    sourceKnown = true,
+                    failure = AfterRestoreDownloadFailure.NeedsAccess,
+                ),
+                AfterRestoreModel(
+                    "gemma-4-E2B-it.litertlm",
+                    2_588_147_712,
+                    sourceKnown = true,
+                    failure = AfterRestoreDownloadFailure.Failed,
+                ),
+                AfterRestoreModel("custom-finetune.litertlm", 612_000_000, sourceKnown = false),
+            ),
+        )
+
+        /**
+         * The stops a download records: a pause at the background time limit, and — on a model whose source is
+         * unknown, downloaded through Discover — a file that failed its checksum.
+         */
+        val AFTER_STOPPED = AFTER.copy(
+            models = listOf(
+                AfterRestoreModel(
+                    "gemma-3n-E4B-it-int4.litertlm",
+                    4_405_000_000,
+                    sourceKnown = true,
+                    failure = AfterRestoreDownloadFailure.Paused,
+                ),
+                AfterRestoreModel(
+                    "custom-finetune.litertlm",
+                    612_000_000,
+                    sourceKnown = false,
+                    failure = AfterRestoreDownloadFailure.ChecksumMismatch,
+                ),
+            ),
+            enterKeysAgain = false,
         )
     }
 }

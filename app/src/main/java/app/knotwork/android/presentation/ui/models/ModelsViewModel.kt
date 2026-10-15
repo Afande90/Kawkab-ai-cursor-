@@ -8,7 +8,6 @@ import app.knotwork.android.domain.models.AppError
 import app.knotwork.android.domain.models.CustomModelLink
 import app.knotwork.android.domain.models.DownloadState
 import app.knotwork.android.domain.models.LocalModel
-import app.knotwork.android.domain.models.ModelDownloadFailure
 import app.knotwork.android.domain.models.isBusy
 import app.knotwork.android.domain.repositories.GenerationSettings
 import app.knotwork.android.domain.repositories.InterruptedDownload
@@ -375,7 +374,7 @@ class ModelsViewModel @Inject constructor(
 
     /** Whether the download worker records this failure as an interruption rather than only reporting it. */
     private fun AppError.isRecordedInterruption(): Boolean =
-        (this as? AndroidModelDownloadManager.DownloadError)?.failure in RECORDED_FAILURES
+        (this as? AndroidModelDownloadManager.DownloadError)?.recordedInterruption == true
 
     /**
      * Sets the specified model as the active one for the application.
@@ -511,10 +510,5 @@ class ModelsViewModel @Inject constructor(
     /** Dismisses the inline benchmark result, returning to the rolling-average view. */
     fun onDismissBenchmark() {
         _uiState.update { it.copy(benchmark = BenchmarkUiState.Idle) }
-    }
-
-    private companion object {
-        /** The failures the download worker records as interruptions before it reports them. */
-        val RECORDED_FAILURES = setOf(ModelDownloadFailure.PAUSED_TIME_LIMIT, ModelDownloadFailure.CHECKSUM_MISMATCH)
     }
 }
