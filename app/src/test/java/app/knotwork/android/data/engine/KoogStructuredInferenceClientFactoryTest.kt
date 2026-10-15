@@ -8,9 +8,11 @@ import ai.koog.prompt.llm.LLMCapability
 import ai.koog.prompt.llm.LLMProvider
 import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.message.Message
+import ai.koog.prompt.message.ResponseMetaInfo
 import ai.koog.prompt.streaming.StreamFrame
 import app.knotwork.android.domain.engine.CloudLlmClientFactory
 import app.knotwork.android.domain.engine.CloudLlmModelResolver
+import app.knotwork.android.domain.engine.CloudStreamCutOffException
 import app.knotwork.android.domain.engine.structured.StructuredOutputGate
 import app.knotwork.android.domain.models.CloudProvider
 import app.knotwork.android.domain.repositories.NetworkActivityTracker
@@ -23,6 +25,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -51,7 +54,7 @@ class KoogStructuredInferenceClientFactoryTest {
     fun `given a model that advertises JSON when infer then the request carries no response schema`() = runTest {
         // The gate keeps its repair budget on a cloud engine because nothing in the
         // request constrains the answer to JSON — whatever the model advertises.
-        val client = FakeStreamingClient(flowOf(StreamFrame.TextDelta("{}")))
+        val client = FakeStreamingClient(flowOf(StreamFrame.TextDelta("{}"), STOP))
         coEvery { clientFactory.createClient(CloudProvider.OPENAI, any()) } returns client
         coEvery { modelResolver.resolveModel(CloudProvider.OPENAI) } returns
             LLModel(LLMProvider.OpenAI, "gpt", listOf(LLMCapability.Schema.JSON.Standard))
@@ -79,7 +82,7 @@ class KoogStructuredInferenceClientFactoryTest {
     @Test
     fun `given streamed deltas when infer then concatenates and forwards each token`() = runTest {
         coEvery { clientFactory.createClient(CloudProvider.OPENAI, any()) } returns
-            FakeStreamingClient(flowOf(StreamFrame.TextDelta("Hel"), StreamFrame.TextDelta("lo")))
+            FakeStreamingClient(flowOf(StreamFrame.TextDelta("Hel"), StreamFrame.TextDelta("lo"), STOP))
         coEvery { modelResolver.resolveModel(CloudProvider.OPENAI) } returns
             LLModel(LLMProvider.OpenAI, "gpt", emptyList())
 
@@ -96,13 +99,54 @@ class KoogStructuredInferenceClientFactoryTest {
     fun `given a streamed answer when infer then the privacy indicator is told for as long as it streams`() = runTest {
         // Once before the call and once per frame, as on the free-form CLOUD path.
         coEvery { clientFactory.createClient(CloudProvider.OPENAI, any()) } returns
-            FakeStreamingClient(flowOf(StreamFrame.TextDelta("{"), StreamFrame.TextDelta("}")))
+            FakeStreamingClient(flowOf(StreamFrame.TextDelta("{"), StreamFrame.TextDelta("}"), STOP))
         coEvery { modelResolver.resolveModel(CloudProvider.OPENAI) } returns
             LLModel(LLMProvider.OpenAI, "gpt", emptyList())
 
         factory.create(CloudProvider.OPENAI) {}!!.infer("prompt", temperature = null)
 
-        verify(exactly = 3) { networkTracker.recordOutbound() }
+        verify(exactly = 4) { networkTracker.recordOutbound() }
+    }
+
+    @Test
+    fun `given a stream that ends without a finish reason when infer then it fails as cut off`() = runTest {
+        // A dropped connection ends an OpenAI-compatible stream normally: half a JSON array, or the
+        // first word of a router's answer, could otherwise pass the gate as the whole answer.
+        coEvery { clientFactory.createClient(CloudProvider.DEEPSEEK, any()) } returns
+            FakeStreamingClient(flowOf(StreamFrame.TextDelta("[\"step one\", "), CUT))
+        coEvery { modelResolver.resolveModel(CloudProvider.DEEPSEEK) } returns
+            LLModel(LLMProvider.DeepSeek, "deepseek-chat", emptyList())
+        val tokens = mutableListOf<String>()
+
+        val error = try {
+            factory.create(CloudProvider.DEEPSEEK) { tokens.add(it) }!!.infer("prompt", temperature = null)
+            null
+        } catch (e: CloudStreamCutOffException) {
+            e
+        }
+
+        assertTrue(error?.message.orEmpty().contains("'deepseek' was cut off"))
+        assertEquals(listOf("[\"step one\", "), tokens)
+    }
+
+    @Test
+    fun `given a provider whose missing finish reason proves nothing when infer then the answer is returned`() =
+        runTest {
+            // Ollama's client never sends a finish reason, so a healthy answer looks exactly like this.
+            coEvery { clientFactory.createClient(CloudProvider.OLLAMA, any()) } returns
+                FakeStreamingClient(flowOf(StreamFrame.TextDelta("TRUE"), CUT))
+            coEvery { modelResolver.resolveModel(CloudProvider.OLLAMA) } returns
+                LLModel(LLMProvider.Ollama, "llama3", emptyList())
+
+            assertEquals("TRUE", factory.create(CloudProvider.OLLAMA) { }!!.infer("prompt", temperature = null))
+        }
+
+    private companion object {
+        /** The end frame a complete Chat Completions answer carries. */
+        val STOP = StreamFrame.End(finishReason = "stop", metaInfo = ResponseMetaInfo.Empty)
+
+        /** The end frame an OpenAI-compatible stream carries when its connection was cut. */
+        val CUT = StreamFrame.End(finishReason = null, metaInfo = ResponseMetaInfo.Empty)
     }
 
     /** [LLMClient] returning a scripted streaming flow and keeping the prompt it got; other members are unused. */

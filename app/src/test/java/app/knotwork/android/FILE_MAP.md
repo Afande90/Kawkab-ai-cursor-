@@ -16,6 +16,7 @@ Only Kotlin files appear inside the generated blocks.
   - `ArchitectureScope.kt` - Shared Konsist scope for the architecture guard suite.
   - `BackedUpSecretsGuardTest.kt` - Every owner of entries in a Keystore-backed store tells the backup what it holds.
   - `BundledDocumentationRoutingGuardTest.kt` - Keeps a document that ships in the app from opening in the browser.
+  - `CloudStreamEndCallersGuardTest.kt` - Census of the code that turns a cloud model's stream into an answer — every caller of `executeStreaming` — and the rule that each asks `CloudStreamEnd` whether the stream was cut off.
   - `ComposableUseCaseKonsistTest.kt` - Konsist guard for the presentation rule "Composables observe a ViewModel / UiState, never the use-case layer directly".
   - `ContentUriReadInventoryTest.kt` - Inventory of every production file that opens a URI through `ContentResolver`, with where that URI comes from.
   - `CrashReportingConsentOwnerTest.kt` - Only the app's release-only observer turns the crash collector on or off.
@@ -283,6 +284,7 @@ Only Kotlin files appear inside the generated blocks.
     - `CheckpointReplayTest.kt` - Unit coverage for `CheckpointReplay`.
     - `CloudClientUnavailabilityTest.kt` - Unit tests for `CloudClientUnavailability.message` — each cause must name the setting that resolves it and must not borrow another cause's remedy.
     - `CloudErrorSanitizerTest.kt` - Unit tests for `CloudErrorSanitizer`.
+    - `CloudStreamEndTest.kt` - `CloudStreamEnd`: which providers' missing finish reason means a cut answer — by measurement, per provider and, on OpenAI, per endpoint — and that a finish reason always means a whole one.
     - `DefaultPipelineFactoryTest.kt` - Unit tests for `DefaultPipelineFactory`.
     - `executors/` - Tests for the per-`NodeType` `NodeExecutor` strategies.
       - `ClarificationNodeExecutorTest.kt` - Unit tests for `ClarificationNodeExecutor`.

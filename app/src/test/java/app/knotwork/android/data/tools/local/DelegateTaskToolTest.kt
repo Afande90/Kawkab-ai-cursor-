@@ -3,6 +3,7 @@ package app.knotwork.android.data.tools.local
 import ai.koog.prompt.Prompt
 import ai.koog.prompt.executor.clients.LLMClient
 import ai.koog.prompt.llm.LLModel
+import ai.koog.prompt.message.ResponseMetaInfo
 import ai.koog.prompt.streaming.StreamFrame
 import app.knotwork.android.data.repositories.NetworkActivityTrackerImpl
 import app.knotwork.android.domain.engine.CloudClientUnavailability
@@ -217,4 +218,49 @@ class DelegateTaskToolTest {
             result,
         )
     }
+
+    @Test
+    fun `given a stream that ends without a finish reason when executeDelegation then it is an error, not an answer`() =
+        runTest {
+            // A dropped connection ends an OpenAI-compatible stream normally: half an answer would reach
+            // the agent as the whole of it.
+            givenClient(CloudProvider.DEEPSEEK, mockClient)
+            coEvery { mockClient.executeStreaming(any<Prompt>(), any<LLModel>()) } returns
+                flowOf(StreamFrame.TextDelta("The first half of"), cut())
+
+            val result = delegateTaskTool.executeDelegation("Summarise this", "deepseek")
+
+            assertEquals(
+                "Error: The response from 'deepseek' was cut off before it finished — the connection " +
+                    "ended without a completion signal. The partial answer was discarded; try again.",
+                result,
+            )
+        }
+
+    @Test
+    fun `given a stream that ends with a finish reason when executeDelegation then the answer is returned`() = runTest {
+        givenClient(CloudProvider.DEEPSEEK, mockClient)
+        coEvery { mockClient.executeStreaming(any<Prompt>(), any<LLModel>()) } returns
+            flowOf(StreamFrame.TextDelta("Whole answer."), StreamFrame.End("stop", ResponseMetaInfo.Empty))
+
+        val result = delegateTaskTool.executeDelegation("Summarise this", "deepseek")
+
+        assertEquals("Success: Task completed by 'deepseek'. Response:\nWhole answer.", result)
+    }
+
+    @Test
+    fun `given a provider whose missing finish reason proves nothing when executeDelegation then the answer stands`() =
+        runTest {
+            // Anthropic is not measured: a cut there still reads as a short answer, as on a Cloud node.
+            givenClient(CloudProvider.ANTHROPIC, mockClient)
+            coEvery { mockClient.executeStreaming(any<Prompt>(), any<LLModel>()) } returns
+                flowOf(StreamFrame.TextDelta("Short answer."), cut())
+
+            val result = delegateTaskTool.executeDelegation("Summarise this", "anthropic")
+
+            assertEquals("Success: Task completed by 'anthropic'. Response:\nShort answer.", result)
+        }
+
+    /** The end frame an OpenAI-compatible stream carries when its connection was cut. */
+    private fun cut() = StreamFrame.End(finishReason = null, metaInfo = ResponseMetaInfo.Empty)
 }

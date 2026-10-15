@@ -768,9 +768,11 @@ The catalog composables that power these screens:
 
 ### 3.6. Decide whether an absent finish reason means truncation
 
-[`CloudLlmNodeExecutor.providerReportsFinishReason(...)`](../app/src/main/java/app/knotwork/android/domain/engine/executors/CloudLlmNodeExecutor.kt)
+[`CloudStreamEnd.reportsFinishReason(...)`](../app/src/main/java/app/knotwork/android/domain/engine/CloudStreamEnd.kt)
 is exhaustive over `CloudProvider`, so a new constant will not compile
-until you answer this. Answer it by **measuring, not by reading the
+until you answer this. Every caller that turns a cloud stream into an
+answer — the Cloud node, a structured step, `delegate_task` — asks this one
+rule, so the answer covers all of them. Answer it by **measuring, not by reading the
 provider's docs** — this is the one step in the recipe where a plausible
 guess causes a user-visible defect either way.
 
@@ -779,7 +781,7 @@ middle of a streamed answer. Some clients raise; the OpenAI-compatible
 ones end the flow *normally*, emitting frames byte-identical to a healthy
 stream except that `End.finishReason` is `null` instead of `"stop"`. For
 those, a missing finish reason is the only evidence that the answer was
-cut off, and returning `true` makes the executor reject the partial text
+cut off, and returning `true` makes every caller reject the partial text
 instead of passing half an answer down the graph.
 
 Return `false` when you have no evidence, and say why in the KDoc:
@@ -811,12 +813,12 @@ it is based on.
 - Unit test the new branch in `KoogClientFactory` with a fake key.
 - Unit test the resolver branch — both the "known model id" and the
   "fallback to default model" paths.
-- Cover the finish-reason decision from §3.6 in
-  `CloudLlmNodeExecutorTest`: a stream that ends without a finish reason
-  must fail the node when the provider is `true`, and must succeed when
-  it is `false`. If the client picks an API per model, run every model the
-  app offers end to end, as `OpenAiResponsesStreamEndToEndTest` does for
-  OpenAI.
+- Cover the finish-reason decision from §3.6 in `CloudStreamEndTest`,
+  which pins the exact set of providers whose missing finish reason means a
+  cut answer: add the new provider to that set when it is `true`, and leave
+  it out when it is `false`. If the client picks an API per model, run every
+  model the app offers end to end, as `OpenAiResponsesStreamEndToEndTest`
+  does for OpenAI.
 - If the Settings UI gained a new field, add a Compose test that
   verifies the field round-trips through the ViewModel.
 
@@ -1570,7 +1572,7 @@ double-check it for every recipe in this guide.**
 | A new `Tool`                 | a new `LocalToolExecutor` implementation · `di/LocalToolsModule.kt` (`@Binds @IntoMap @StringKey`) · declare `ToolRisk` correctly · executor unit test · optional Compose test if new UI                                                                            |
 | A new **workspace tool**     | a new `LocalToolExecutor` that goes through `AgentWorkspace` (never raw `File`) · `di/LocalToolsModule.kt` (`@Binds @IntoMap @StringKey`) · risk tier in `ToolRepositoryImpl` built-in list · `docs/user-guide.md` (built-in-tools table) · executor unit test against a `@TempDir`-backed `AgentWorkspace` (happy path + `../` traversal + quota/not-found) |
 | A new callee-side AppFunction | an injectable logic class under `data/tools/local/appfunctions/` · a one-line `@AppFunction(isDescribedByKDoc = true)` method on `AgentAppFunctionService` (KDoc written for the calling agent) · logic-class unit test · scenario in `AppFunctionsEndToEndTest` |
-| A new cloud provider         | `domain/models/CloudProvider.kt` · `data/engine/KoogClientFactory.kt` · `data/engine/KoogCloudLlmModelResolver.kt` · `data/engine/KoogModelMapper.kt` (a provider Koog lists) · `data/local/ApiKeyManager.kt` · `domain/models/ProviderSummary.kt` (`ProviderId` — the Settings provider list and picker) · **`domain/engine/executors/CloudLlmNodeExecutor.kt`** (`providerReportsFinishReason` — exhaustive `when`, decide it by measurement per §3.6) · `docs/user-guide.md` (the truncated-answer table under Settings → Models) · factory / resolver / executor unit tests |
+| A new cloud provider         | `domain/models/CloudProvider.kt` · `data/engine/KoogClientFactory.kt` · `data/engine/KoogCloudLlmModelResolver.kt` · `data/engine/KoogModelMapper.kt` (a provider Koog lists) · `data/local/ApiKeyManager.kt` · `domain/models/ProviderSummary.kt` (`ProviderId` — the Settings provider list and picker) · **`domain/engine/CloudStreamEnd.kt`** (`reportsFinishReason` — exhaustive `when`, decide it by measurement per §3.6) · `docs/user-guide.md` (the truncated-answer table under Settings → Models) · factory / resolver unit tests · `CloudStreamEndTest` |
 | A new prompt variable        | a new `PromptVariableProvider` implementation · `di/PromptTemplateModule.kt` (`@Binds @IntoSet`) · **`pipeline-editor.html`** (`PROMPT_VARIABLES`) · `docs/user-guide.md` (variables table) · provider unit test · `PromptTemplateEngine` round-trip test           |
 | A new bundled pipeline preset | a JSON file under `assets/presets/pipelines/` · `PipelinePresetCatalogValidationTest.expectedFileNames` · `BundledPresetCatalog.DISPLAY_ORDER` (unless `internal`) · run `./gradlew :app:generateBrowserEditorConstants` (`BUILTIN_PIPELINE_PRESETS` is generated) · catalogue + `PipelinePresetIntegrationTest` already cover the directory |
 | A new bundled prompt preset  | a JSON file under `assets/presets/prompts/` · `PromptPresetCatalogValidationTest.expectedFileNames` · run `./gradlew :app:generateBrowserEditorConstants` (`BUILTIN_PROMPT_TEMPLATES` is generated) · catalogue + `PromptPresetIntegrationTest` already cover the directory |
