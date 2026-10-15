@@ -188,9 +188,11 @@ internal fun EditorNode(
         // One touch target per outbound port, a NodePortGeometry.HIT_TARGET square centred on
         // its dot: the same offset the card draws the dot at and the edge layer starts the
         // edge from, and the card's real dot line — the bottom of the card less the dot's
-        // lower half and, on a multi-port node, its label — so it lands on the dot however
-        // tall the card is. As wide as the narrowest slot, so neighbouring targets never
-        // overlap; on a multi-port node it covers the label too. `onConnectionStart(port.label)`
+        // lower half and, on a multi-port node, its label — so it follows the dot down a
+        // card made taller by a body line or an error. A larger font scale makes the label
+        // taller and lifts the dot by the difference (11 dp at 200 %), which the square still
+        // covers. As wide as the narrowest slot, so neighbouring targets never overlap; on a
+        // multi-port node it covers the label too. `onConnectionStart(port.label)`
         // forwards the label to the canvas so the eventual ConnectionModel carries it.
         //
         // Routed via its own pointerInput so the gesture arbitration is unambiguous:

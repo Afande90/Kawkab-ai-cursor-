@@ -324,8 +324,9 @@ private fun androidx.compose.foundation.layout.BoxScope.OutboundPortRow(
                 Spacer(modifier = Modifier.size(PortLabelGap))
                 Text(
                     text = port.label,
-                    // A single LabelSm line measures a pixel short of its line height; the floor keeps
-                    // the dot centres on the surface edge. A larger font scale still grows the label.
+                    // A single LabelSm line can measure short of its line height (13 dp, measured);
+                    // the floor keeps the dot centres on the surface edge. A larger font scale still
+                    // grows the label.
                     modifier = Modifier.heightIn(min = PortLabelLineHeight),
                     style = KnotworkTextStyles.LabelSm,
                     color = KnotworkTheme.extended.onSurfaceMuted,

@@ -4,6 +4,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -203,6 +204,11 @@ internal fun EditorEdges(
     val edgeColor = KnotworkTheme.extended.divider
     val accentColor = KnotworkTheme.extended.outlineStrong
     val strokeWidth = with(density) { 2.dp.toPx() }
+    // A node's ports come from its decoded config and its edges. Work them out once per graph
+    // change rather than for both ends of every edge on every frame of the run-trace animation.
+    val portsById = remember(nodesById, connections) {
+        nodesById.mapValues { (id, node) -> portsFor(node, outboundLabelsOf(id, connections)) }
+    }
 
     Canvas(modifier = modifier.fillMaxSize()) {
         connections.forEach { c ->
@@ -210,9 +216,8 @@ internal fun EditorEdges(
             val target = nodesById[c.targetNodeId] ?: return@forEach
             // Per-port anchors: edges originate at the dot matching the connection label
             // (e.g. Item / Done on QUEUE, True / False on IF) rather than the node centre.
-            val srcAnchor =
-                outboundPortAnchor(source, portsFor(source, outboundLabelsOf(source.id, connections)), c.label)
-            val tgtAnchor = inboundPortAnchor(target, portsFor(target, outboundLabelsOf(target.id, connections)))
+            val srcAnchor = outboundPortAnchor(source, portsById.getValue(source.id), c.label)
+            val tgtAnchor = inboundPortAnchor(target, portsById.getValue(target.id))
             val sx = transform.canvasToScreenX(srcAnchor.xCanvas)
             val sy = transform.canvasToScreenY(srcAnchor.yCanvas)
             val tx = transform.canvasToScreenX(tgtAnchor.xCanvas)

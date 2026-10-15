@@ -11,9 +11,10 @@ import app.knotwork.design.components.pipelineeditor.NodePortGeometry
  *
  * A card's **width** grows with its outbound ports and its port positions are the
  * design system's [NodePortGeometry] — the one source the card draws from. The
- * canvas reads a node's width through `cardWidthOf`, which counts its ports, so port
- * anchors, hit tests, fit-to-view, the mini-map, the auto-layout and the guard that
- * keeps bundled presets from overlapping cannot drift from the card.
+ * canvas reads a node's width through `cardWidthOf`, which counts the same ports the
+ * card draws, so port anchors, hit tests, fit-to-view, the mini-map and the
+ * auto-layout use the card's real width. The guard that keeps bundled presets from
+ * overlapping counts those ports from the preset files by the same rule.
  */
 object NodeCardFootprint {
 
