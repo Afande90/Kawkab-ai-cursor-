@@ -518,6 +518,7 @@ flag them with spurious, environment-dependent violations.
 | `ComposeTestRuleV2GuardTest`       | No instrumented test builds its Compose rule with a deprecated v1 factory (`junit4.createComposeRule` and the rest); the v2 ones run the composition's coroutines on a `StandardTestDispatcher`, as `runTest` does. A twin in `:catalog` holds its screenshot tests to the same rule. |
 | `InstrumentedTestExclusionGuardTest` | The roster of device-only instrumented tests, and the annotation the emulator workflow excludes by, stay in step. |
 | `FdroidSigningStripGuardTest`      | The release signing assignment in `app/build.gradle.kts` keeps a shape F-Droid's build server removes whole. Before building, fdroidserver strips signing configuration line by line; the test runs a port of its rules over the real script and fails when a signing assignment survives — F-Droid's release build would come out debug-signed — or when a kept line continues a statement whose first line was removed, as the two-line `findByName("release") ?: getByName("debug")` did, its second half gluing onto the line above. Fixtures show the port reproduces both. |
+| `ArchitectureGuardsDocumentedTest` | Every test class of this suite is named in this guide — as a row of this table or in the heading of its own section — and every row names a test that exists. Seventeen rows were once missing at the same time, each found by hand. |
 
 **Why these rules and not more.** Konsist analyses *declarations*, not the
 data flow inside a function body, so it cannot prove a `@Composable` never
