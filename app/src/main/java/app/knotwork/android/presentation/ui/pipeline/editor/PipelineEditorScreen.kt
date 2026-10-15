@@ -52,12 +52,14 @@ import app.knotwork.android.presentation.ui.orchestrator.presets.PipelinePresets
 import app.knotwork.android.presentation.ui.orchestrator.presets.PresetPickerSheet
 import app.knotwork.android.presentation.ui.orchestrator.presets.SaveAsPresetDialog
 import app.knotwork.android.presentation.ui.orchestrator.toProviderChoices
+import app.knotwork.android.presentation.ui.pipeline.editor.canvas.cardWidthOf
 import app.knotwork.android.presentation.ui.pipeline.editor.canvas.formatScalePercent
 import app.knotwork.android.presentation.ui.pipeline.editor.config.NodeConfigCodec
 import app.knotwork.android.presentation.ui.pipeline.editor.config.NodeTypeMapper
 import app.knotwork.android.presentation.ui.pipeline.editor.core.AutoLayout
 import app.knotwork.android.presentation.ui.pipeline.editor.core.Bounds
 import app.knotwork.android.presentation.ui.pipeline.editor.core.CanvasTransform
+import app.knotwork.android.presentation.ui.pipeline.editor.core.CardRect
 import app.knotwork.android.presentation.ui.pipeline.editor.core.EditorState
 import app.knotwork.android.presentation.ui.pipeline.editor.core.NodeCardFootprint
 import app.knotwork.android.presentation.ui.pipeline.editor.core.ValidationAutoFix
@@ -157,7 +159,7 @@ fun PipelineEditorScreen(viewModel: OrchestratorViewModel, onBack: () -> Unit) {
     LaunchedEffect(Unit) {
         viewModel.focusNodeRequest.collect { nodeId ->
             val target = uiState.currentPipeline.nodes.find { it.id == nodeId } ?: return@collect
-            editor.focusOn(target)
+            editor.focusOn(target, cardWidthOf(target, uiState.currentPipeline.connections))
         }
     }
 
@@ -249,7 +251,11 @@ fun PipelineEditorScreen(viewModel: OrchestratorViewModel, onBack: () -> Unit) {
         // default gaps are already the on-screen spacing at every display density.
         val onAutoLayoutClick: () -> Unit = autoLayoutClick@{
             editor.undoRedo.push(pipeline)
-            val result = AutoLayout.compute(graph = pipeline)
+            val widths = pipeline.nodes.associate { it.id to cardWidthOf(it, pipeline.connections) }
+            val result = AutoLayout.compute(
+                graph = pipeline,
+                cardWidth = { id -> widths[id] ?: NodeCardFootprint.MIN_WIDTH },
+            )
             if (result.positions.isEmpty()) return@autoLayoutClick
             // `AutoLayout.compute` emits coordinates anchored at the canvas
             // origin (`(0, 0)` for the seed layer); without an offset the
@@ -259,15 +265,16 @@ fun PipelineEditorScreen(viewModel: OrchestratorViewModel, onBack: () -> Unit) {
             // so its centre lands on the centre of the previously occupied
             // bbox — the user stays put visually and the layout simply
             // tightens around their viewport.
-            val originalBbox = Bounds.ofNodes(
-                positions = pipeline.nodes.map { it.x to it.y },
-                nodeWidth = NodeCardFootprint.WIDTH,
-                nodeHeight = NodeCardFootprint.MAX_HEIGHT,
+            val originalBbox = Bounds.ofCards(
+                cards = pipeline.nodes.map { node ->
+                    CardRect(node.x, node.y, widths.getValue(node.id), NodeCardFootprint.MAX_HEIGHT)
+                },
             )
-            val computedBbox = Bounds.ofNodes(
-                positions = result.positions.values.toList(),
-                nodeWidth = NodeCardFootprint.WIDTH,
-                nodeHeight = NodeCardFootprint.MAX_HEIGHT,
+            val computedBbox = Bounds.ofCards(
+                cards = result.positions.map { (id, position) ->
+                    val width = widths[id] ?: NodeCardFootprint.MIN_WIDTH
+                    CardRect(position.first, position.second, width, NodeCardFootprint.MAX_HEIGHT)
+                },
             )
             val dx = if (originalBbox != null && computedBbox != null) {
                 (originalBbox.minX + originalBbox.maxX) / 2f -

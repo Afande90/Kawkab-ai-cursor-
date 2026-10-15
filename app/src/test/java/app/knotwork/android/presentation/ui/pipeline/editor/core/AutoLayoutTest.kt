@@ -178,6 +178,54 @@ class AutoLayoutTest {
     }
 
     @Test
+    fun `given a sibling card that grew for its ports when compute then its neighbours keep clear of it`() {
+        // An Intent Router with eight routes is 344 dp wide; spaced as if every card were the
+        // narrowest, its right-hand neighbour would land on top of it. Two of the three grow,
+        // so whatever order the layer gets, a grown card has a neighbour on its right.
+        val input = node(NodeType.INPUT, "in")
+        val siblings = listOf("a", "wide1", "wide2").map { node(NodeType.LITE_RT, it) }
+        val graph = PipelineGraph(
+            id = "g",
+            name = "g",
+            nodes = listOf(input) + siblings,
+            connections = siblings.map { ConnectionModel(id = it.id, sourceNodeId = "in", targetNodeId = it.id) },
+        )
+        val widths = mapOf("wide1" to 344f, "wide2" to 344f)
+        val width = { id: String -> widths[id] ?: NodeCardFootprint.MIN_WIDTH }
+
+        val result = AutoLayout.compute(graph, cardWidth = width)
+
+        val row = siblings.map { it.id }.sortedBy { result.positions.getValue(it).first }
+        val gutter = AutoLayout.SIBLING_GAP_X - NodeCardFootprint.MIN_WIDTH
+        row.zipWithNext().forEach { (left, right) ->
+            val leftEnd = result.positions.getValue(left).first + width(left)
+            val gap = result.positions.getValue(right).first - leftEnd
+            assertTrue("$left..$right gap $gap", gap >= gutter - CanvasTransform.GRID_STEP)
+        }
+    }
+
+    @Test
+    fun `given cards of the narrowest width when compute then siblings sit a sibling gap apart`() {
+        // Every card at 168 dp lays out exactly as before cards could grow.
+        val input = node(NodeType.INPUT, "in")
+        val left = node(NodeType.LITE_RT, "l")
+        val right = node(NodeType.LITE_RT, "r")
+        val graph = PipelineGraph(
+            id = "g",
+            name = "g",
+            nodes = listOf(input, left, right),
+            connections = listOf(
+                ConnectionModel(id = "1", sourceNodeId = "in", targetNodeId = "l"),
+                ConnectionModel(id = "2", sourceNodeId = "in", targetNodeId = "r"),
+            ),
+        )
+        val result = AutoLayout.compute(graph)
+        val xs = listOf("l", "r").map { result.positions.getValue(it).first }.sorted()
+        assertEquals(AutoLayout.SIBLING_GAP_X, xs[1] - xs[0], 0f)
+        assertEquals(0f, result.positions.getValue("in").first, 0f)
+    }
+
+    @Test
     fun `given a larger layer gap when compute then layers spread further apart`() {
         val a = node(NodeType.INPUT, "a")
         val b = node(NodeType.LITE_RT, "b")

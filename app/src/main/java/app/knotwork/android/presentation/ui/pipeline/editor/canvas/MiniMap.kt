@@ -31,6 +31,7 @@ import app.knotwork.android.domain.models.PipelineGraph
 import app.knotwork.android.presentation.ui.pipeline.editor.config.NodeTypeMapper
 import app.knotwork.android.presentation.ui.pipeline.editor.core.Bounds
 import app.knotwork.android.presentation.ui.pipeline.editor.core.CanvasTransform
+import app.knotwork.android.presentation.ui.pipeline.editor.core.CardRect
 import app.knotwork.android.presentation.ui.pipeline.editor.core.MiniMapGeometry
 import app.knotwork.android.presentation.ui.pipeline.editor.core.NodeCardFootprint
 import app.knotwork.design.components.pipelineeditor.headerTint
@@ -140,10 +141,10 @@ private fun MiniMapBody(
     modifier: Modifier = Modifier,
 ) {
     val bbox = remember(graph.nodes) {
-        Bounds.ofNodes(
-            positions = graph.nodes.map { it.x to it.y },
-            nodeWidth = NodeCardFootprint.WIDTH,
-            nodeHeight = NodeCardFootprint.MAX_HEIGHT,
+        Bounds.ofCards(
+            cards = graph.nodes.map { node ->
+                CardRect(node.x, node.y, cardWidthOf(node, graph.connections), NodeCardFootprint.MAX_HEIGHT)
+            },
         )
     }
     val accent = KnotworkTheme.extended.signalWarn
@@ -151,6 +152,7 @@ private fun MiniMapBody(
     // Map each node to its per-type hue once per graph mutation so the draw
     // loop stays linear in node count and the lookup table doesn't churn.
     val nodeHues = graph.nodes.map { it to NodeTypeMapper.toCatalog(it.type).headerTint() }
+    val nodeWidths = remember(graph) { graph.nodes.associate { it.id to cardWidthOf(it, graph.connections) } }
 
     Box(modifier = modifier) {
         Canvas(
@@ -180,7 +182,7 @@ private fun MiniMapBody(
             nodeHues.forEach { (node, hue) ->
                 val left = geometry.canvasToMiniX(node.x)
                 val top = geometry.canvasToMiniY(node.y)
-                val w = NodeCardFootprint.WIDTH * geometry.scale
+                val w = (nodeWidths[node.id] ?: NodeCardFootprint.MIN_WIDTH) * geometry.scale
                 val h = NodeCardFootprint.MAX_HEIGHT * geometry.scale
                 drawRect(
                     color = hue,

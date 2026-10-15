@@ -11,7 +11,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -20,12 +19,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import app.knotwork.android.domain.models.NodeModel
 import app.knotwork.android.presentation.ui.pipeline.editor.config.NodeTypeMapper
@@ -33,11 +32,13 @@ import app.knotwork.android.presentation.ui.pipeline.editor.core.CanvasTransform
 import app.knotwork.android.presentation.ui.pipeline.editor.core.CoordinatesRef
 import app.knotwork.design.components.pipelineeditor.NodeCard
 import app.knotwork.design.components.pipelineeditor.NodeError
+import app.knotwork.design.components.pipelineeditor.NodePortGeometry
 import app.knotwork.design.components.pipelineeditor.NodePorts
 import app.knotwork.design.theme.KnotworkTheme
 import androidx.compose.animation.core.Animatable as AnimFloat
 
-private const val PORT_HIT_TARGET_DP = 24f
+/** Test-tag prefix of an outbound port's touch target; the port's index, left to right, follows. */
+internal const val EDITOR_PORT_TARGET_TEST_TAG_PREFIX: String = "editor_port_target_"
 private const val DRAG_PICKUP_SCALE = 1.04f
 private const val DRAG_PICKUP_DURATION_MS = 100
 
@@ -184,17 +185,19 @@ internal fun EditorNode(
             multiSelected = multiSelected,
             ports = ports,
         )
-        // One hit-target circle per outbound port. Each is 24 dp wide and straddles the
-        // node's bottom edge (via .offset, since Modifier.padding rejects negative values).
-        // For multi-out nodes (IF / Queue / Eval / IntentRouter) the per-port X offset uses
-        // the same `outboundPortOffsetDp` rule the edge layer uses, so the user grabs the
-        // dot that corresponds to the label they want — and `onConnectionStart(port.label)`
-        // forwards that label to the canvas so the eventual ConnectionModel carries it.
+        // One touch target per outbound port, a NodePortGeometry.HIT_TARGET square centred on
+        // its dot: the same offset the card draws the dot at and the edge layer starts the
+        // edge from, and the card's real dot line — the bottom of the card less the dot's
+        // lower half and, on a multi-port node, its label — so it lands on the dot however
+        // tall the card is. As wide as the narrowest slot, so neighbouring targets never
+        // overlap; on a multi-port node it covers the label too. `onConnectionStart(port.label)`
+        // forwards the label to the canvas so the eventual ConnectionModel carries it.
         //
         // Routed via its own pointerInput so the gesture arbitration is unambiguous:
         // dragging from this Box always means "start a connection", never "move the node".
+        val targetCentreAboveBottom = NodePortGeometry.belowOutboundDots(ports.outbound.size)
         ports.outbound.forEachIndexed { index, port ->
-            val portOffsetDp = outboundPortOffsetDp(index, ports.outbound.size)
+            val portOffsetDp = NodePortGeometry.outboundOffset(index, ports.outbound.size)
             // Capture the port-box's LayoutCoordinates into a NON-state CoordinatesRef.
             // Holding it in `mutableStateOf` would trigger a re-layout pump for the same
             // reason canvasLayoutCoordinatesRef does (LayoutCoordinates has identity-only
@@ -206,9 +209,12 @@ internal fun EditorNode(
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .size(PORT_HIT_TARGET_DP.dp)
-                    .offset(x = portOffsetDp.dp, y = (PORT_HIT_TARGET_DP / 2).dp)
-                    .clip(CircleShape)
+                    .offset(
+                        x = portOffsetDp.dp,
+                        y = (NodePortGeometry.HIT_TARGET / 2f - targetCentreAboveBottom).dp,
+                    )
+                    .size(NodePortGeometry.HIT_TARGET.dp)
+                    .testTag(EDITOR_PORT_TARGET_TEST_TAG_PREFIX + index)
                     .background(Color.Transparent)
                     .onGloballyPositioned { portCoordsRef.value = it }
                     .pointerInput(node.id, port.label) {
