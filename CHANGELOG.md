@@ -534,6 +534,13 @@ details.
   and a test fails when a guard has no row or a row names a test that no longer
   exists. See [`docs/static-analysis.md`](docs/static-analysis.md#konsist--architecture-guard).
 
+- **A Windows checkout no longer fails the build checks.** With
+  `core.autocrlf=true`, git checked every text file out with Windows line
+  endings, and the checks that compare a committed file with generated text
+  failed, as did the store-listing length checks: the English description read
+  as 4024 characters against Play's limit of 4000. Every text file is now checked
+  out with Unix line endings on every platform.
+
 ## [0.11.1] - 2026-10-02
 
 ### Changed
