@@ -373,7 +373,7 @@
     <string name="knotwork_tools_cleartext_consent_body">Traffic to %1$s is not encrypted. Anyone on the same network can read what you send, including any token set below. Approve it only if this address is a machine you trust on your own network.</string>
     <string name="knotwork_tools_cleartext_consent_action">Approve unencrypted connection</string>
     <!-- Add-server form placeholder. -->
-    <string name="knotwork_tools_add_form_placeholder">https://mcp.example.com/sse</string>
+    <string name="knotwork_tools_add_form_placeholder">https://mcp.example.com/mcp</string>
     <!-- Add-server address explanation, opened from the field\'s help glyph. -->
     <string name="knotwork_tools_add_form_address_hint">The endpoint your server prints when it starts. Match the transport below it, and an address on your own network is fine.</string>
     <!-- Add-server cancel button label. -->

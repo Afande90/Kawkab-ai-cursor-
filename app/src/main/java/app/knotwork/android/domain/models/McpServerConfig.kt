@@ -9,7 +9,10 @@ package app.knotwork.android.domain.models
  * row falls back to [url] when null/blank.
  * @property transport transport protocol (see [McpTransport]). Both
  * variants are wired end to end: the runtime branches on this field when
- * it builds the transport at connect time.
+ * it builds the transport at connect time. The default is [McpTransport.SSE]
+ * because it is what every server saved before the field existed used — the
+ * URL-only legacy entries are read with it; a server added in the form starts
+ * on Streamable HTTP, chosen there.
  * @property auth typed authentication scheme. The runtime composes the
  * matching request header at connect time; [McpAuth.None] keeps the
  * request anonymous.

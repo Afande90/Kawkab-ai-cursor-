@@ -290,9 +290,10 @@ doing](user-guide.md#checking-what-a-trigger-has-been-doing).
 ### What address does my MCP server need?
 
 The endpoint your server prints when it starts, path included — the form's own
-example is `https://mcp.example.com/sse`. There is no separate port field: a
+example is `https://mcp.example.com/mcp`. There is no separate port field: a
 non-default port belongs in the URL, and the transport selector below the field
-has to match the endpoint. See [Adding an MCP
+has to match the endpoint: **Streamable HTTP**, selected for a new server, or
+**SSE** for a server that speaks only the older transport. See [Adding an MCP
 server](user-guide.md#adding-an-mcp-server).
 
 ### Which authentication methods do MCP servers support?
