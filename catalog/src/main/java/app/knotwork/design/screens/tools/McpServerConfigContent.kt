@@ -365,9 +365,9 @@ fun McpServerConfigContent(
             FormSectionLabel(text = stringResource(R.string.knotwork_tools_form_transport_label))
             Row(horizontalArrangement = Arrangement.spacedBy(KnotworkTheme.spacing.sp2)) {
                 // Render the selectable options plus, if the form was loaded
-                // with a non-selectable choice (e.g. an older "Streamable HTTP"
-                // pick), surface that chip too so the user can see what's
-                // persisted instead of being silently downgraded.
+                // with an option that is no longer selectable, that chip too,
+                // so the user sees what is saved instead of it being silently
+                // replaced.
                 val visible = McpTransportOption.entries.filter { it.selectable || it == form.transport }
                 visible.forEach { option ->
                     TransportChip(

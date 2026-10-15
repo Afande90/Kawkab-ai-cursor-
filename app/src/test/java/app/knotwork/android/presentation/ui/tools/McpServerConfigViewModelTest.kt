@@ -152,7 +152,8 @@ class McpServerConfigViewModelTest {
         viewModel.onNameChange(value = "Added")
         viewModel.onHeaderAdd()
         viewModel.onHeaderChange(index = 0, key = "Authorization", value = "Bearer x")
-        viewModel.onTransportSelect(option = McpTransportOption.StreamableHttp)
+        // Away from the default: a server that speaks only the older transport.
+        viewModel.onTransportSelect(option = McpTransportOption.SSE)
 
         viewModel.onSubmit()
         advanceUntilIdle()
@@ -162,7 +163,7 @@ class McpServerConfigViewModelTest {
                 config = McpServerConfig(
                     url = "https://added.example/mcp",
                     name = "Added",
-                    transport = McpTransport.STREAMABLE_HTTP,
+                    transport = McpTransport.SSE,
                     headers = mapOf("Authorization" to "Bearer x"),
                 ),
             )

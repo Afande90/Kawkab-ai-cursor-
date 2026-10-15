@@ -621,7 +621,7 @@ internal object ToolsPreview {
      * and refuses to save until it is resolved.
      */
     fun addMcpNeedingCleartextConsent(): AddMcpServerForm = AddMcpServerForm(
-        url = "http://192.168.1.42:8080/sse",
+        url = "http://192.168.1.42:8080/mcp",
         cleartextConsentOrigin = "http://192.168.1.42:8080",
     )
 
