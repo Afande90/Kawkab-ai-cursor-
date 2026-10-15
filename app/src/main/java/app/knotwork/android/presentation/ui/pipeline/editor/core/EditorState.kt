@@ -196,13 +196,14 @@ class EditorState(undoCapacity: Int = EditorUndoRedo.DEFAULT_CAPACITY, density: 
      * stays where it is.
      *
      * @param node the node to bring into view.
+     * @param cardWidth the width of [node]'s card, which grows with its outbound ports.
      */
-    fun focusOn(node: NodeModel) {
+    fun focusOn(node: NodeModel, cardWidth: Float) {
         selection = setOf(node.id)
         multiSelectMode = false
         if (viewportWidthPx <= 0f || viewportHeightPx <= 0f) return
         transform = transform.centeredOn(
-            x = node.x + NodeCardFootprint.WIDTH / 2f,
+            x = node.x + cardWidth / 2f,
             y = node.y + NodeCardFootprint.MAX_HEIGHT / 2f,
             viewportW = viewportWidthPx,
             viewportH = viewportHeightPx,
@@ -236,17 +237,22 @@ class EditorState(undoCapacity: Int = EditorUndoRedo.DEFAULT_CAPACITY, density: 
      * @param viewportW measured viewport width in pixels; `0` means not measured yet.
      * @param viewportH measured viewport height in pixels.
      * @param paddingPx screen-space padding to leave around the framed graph.
+     * @param cardWidth the width of a node's card, which grows with its outbound ports.
      * @return `true` when [transform] was changed.
      */
-    fun frameIfNeeded(graph: PipelineGraph, viewportW: Float, viewportH: Float, paddingPx: Float): Boolean {
+    fun frameIfNeeded(
+        graph: PipelineGraph,
+        viewportW: Float,
+        viewportH: Float,
+        paddingPx: Float,
+        cardWidth: (NodeModel) -> Float,
+    ): Boolean {
         if (viewportW <= 0f || viewportH <= 0f) return false
         val firstView = framedPipelineId != graph.id
         if (!firstView && !fitRequested) return false
         framedPipelineId = graph.id
-        val bbox = Bounds.ofNodes(
-            positions = graph.nodes.map { it.x to it.y },
-            nodeWidth = NodeCardFootprint.WIDTH,
-            nodeHeight = NodeCardFootprint.MAX_HEIGHT,
+        val bbox = Bounds.ofCards(
+            cards = graph.nodes.map { CardRect(it.x, it.y, cardWidth(it), NodeCardFootprint.MAX_HEIGHT) },
         ) ?: return false
         fitRequested = false
         transform = transform.fitToBounds(

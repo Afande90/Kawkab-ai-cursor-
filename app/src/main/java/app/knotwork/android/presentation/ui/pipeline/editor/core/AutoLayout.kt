@@ -35,8 +35,10 @@ object AutoLayout {
     const val LAYER_GAP_Y: Float = 216f
 
     /**
-     * Default horizontal centre-to-centre step between siblings on the same layer, in canvas
-     * units (dp): the 168 dp card width plus a 72 dp gutter.
+     * Default horizontal step between siblings on the same layer, in canvas units (dp): the
+     * 168 dp narrowest card plus a 72 dp gutter. A wider card — one that grew for its outbound
+     * ports — pushes its neighbours out by its extra width, so the gutter between two cards is
+     * always `siblingGap − 168`.
      */
     const val SIBLING_GAP_X: Float = 240f
 
@@ -57,17 +59,25 @@ object AutoLayout {
      * canvas units (dp); defaults to [SIBLING_GAP_X].
      * @param layerGap vertical centre-to-centre step between layers, in canvas units (dp);
      * defaults to [LAYER_GAP_Y].
+     * @param cardWidth the width of a node's card by id; the narrowest card for every node by
+     * default. A layer's cards keep their gutters at their own widths and stay centred on the
+     * axis a layer of narrowest cards is centred on.
      * @return a [Result] populated for every node id in [graph]. The map is empty when
      * [graph] has no nodes.
      */
-    fun compute(graph: PipelineGraph, siblingGap: Float = SIBLING_GAP_X, layerGap: Float = LAYER_GAP_Y): Result {
+    fun compute(
+        graph: PipelineGraph,
+        siblingGap: Float = SIBLING_GAP_X,
+        layerGap: Float = LAYER_GAP_Y,
+        cardWidth: (String) -> Float = { NodeCardFootprint.MIN_WIDTH },
+    ): Result {
         if (graph.nodes.isEmpty()) return Result(emptyMap(), emptyMap())
         val depths = computeDepths(graph)
         val byLayer = depths.entries
             .groupBy({ it.value }, { it.key })
             .toSortedMap()
         val byLayerOrdered = orderWithinLayers(byLayer, graph)
-        val positions = assignCoordinates(byLayerOrdered, siblingGap, layerGap)
+        val positions = assignCoordinates(byLayerOrdered, siblingGap, layerGap, cardWidth)
         return Result(positions = positions, depths = depths)
     }
 
@@ -143,21 +153,29 @@ object AutoLayout {
 
     // ─── Pass 3 — coordinates with grid snapping ─────────────────────────────
 
+    /**
+     * Places each layer's cards left to right, `siblingGap − 168` dp apart edge to edge at their
+     * own widths, and centres the layer on the axis of a single narrowest card (`x = 84`). With
+     * every card at the narrowest width this is the even `siblingGap` centre-to-centre step.
+     */
     private fun assignCoordinates(
         byLayer: Map<Int, List<String>>,
         siblingGap: Float,
         layerGap: Float,
+        cardWidth: (String) -> Float,
     ): Map<String, Pair<Float, Float>> {
         if (byLayer.isEmpty()) return emptyMap()
         val widest = byLayer.values.maxOfOrNull { it.size } ?: 0
         val positions = mutableMapOf<String, Pair<Float, Float>>()
+        val gutter = siblingGap - NodeCardFootprint.MIN_WIDTH
         byLayer.forEach { (depth, layerNodes) ->
-            val layerWidth = max(1, layerNodes.size)
-            val startX = -siblingGap * (layerWidth - 1) / 2f
+            val widths = layerNodes.map(cardWidth)
+            val span = widths.sum() + gutter * max(0, layerNodes.size - 1)
+            var rawX = NodeCardFootprint.MIN_WIDTH / 2f - span / 2f
             layerNodes.forEachIndexed { index, id ->
-                val rawX = startX + index * siblingGap
                 val rawY = depth * layerGap
                 positions[id] = CanvasTransform.snapToGrid(rawX) to CanvasTransform.snapToGrid(rawY)
+                rawX += widths[index] + gutter
             }
         }
         // Suppress unused so Kotlin doesn't warn when "widest" is read only by tests

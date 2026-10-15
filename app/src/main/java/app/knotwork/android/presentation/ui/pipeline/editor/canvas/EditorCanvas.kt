@@ -40,11 +40,13 @@ import app.knotwork.android.domain.models.NodeType
 import app.knotwork.android.domain.models.PipelineGraph
 import app.knotwork.android.presentation.ui.pipeline.editor.core.Bounds
 import app.knotwork.android.presentation.ui.pipeline.editor.core.CanvasTransform
+import app.knotwork.android.presentation.ui.pipeline.editor.core.CardRect
 import app.knotwork.android.presentation.ui.pipeline.editor.core.ConnectionDraft
 import app.knotwork.android.presentation.ui.pipeline.editor.core.EditorState
 import app.knotwork.android.presentation.ui.pipeline.editor.core.NodeCardFootprint
 import app.knotwork.android.presentation.ui.pipeline.editor.sheet.NodeTypePickerSheet
 import app.knotwork.design.components.pipelineeditor.NodeError
+import app.knotwork.design.components.pipelineeditor.NodePortGeometry
 import app.knotwork.design.icons.AppIcons
 import app.knotwork.design.theme.KnotworkTheme
 
@@ -121,6 +123,7 @@ internal fun EditorCanvas(
             viewportW = viewportSize.first.toFloat(),
             viewportH = viewportSize.second.toFloat(),
             paddingPx = fitPaddingPx,
+            cardWidth = { node -> cardWidthOf(node, graph.connections) },
         )
     }
 
@@ -234,7 +237,6 @@ internal fun EditorCanvas(
                             downCanvasX,
                             downCanvasY,
                             currentNodesById.values,
-                            editor.transform,
                             currentGraph.connections,
                         ) != null
                     ) {
@@ -380,6 +382,7 @@ internal fun EditorCanvas(
                             pointerCanvasY = draft.pointerCanvasY,
                             nodes = nodesByIdLive.values,
                             excludeNodeId = draft.sourceNodeId,
+                            connections = graph.connections,
                         )
                         if (target != null) {
                             // Forward the source-port label so multi-out nodes (IF / Queue /
@@ -526,8 +529,8 @@ internal fun EditorCanvas(
         // Always-visible zoom rail anchored to the top-right corner of the canvas.
         // Tile callbacks read `viewportSize` (recorded by `onSizeChanged` above) so
         // the +/− buttons zoom around the viewport centre, not (0, 0). Fit-to-view
-        // uses `Bounds.ofNodes` over the live node positions; falls back to no-op
-        // when the graph is empty.
+        // uses `Bounds.ofCards` over the live cards at their own widths; falls back
+        // to no-op when the graph is empty.
         ZoomRail(
             onZoomIn = {
                 editor.transform = editor.transform.zoomedOneStep(
@@ -544,10 +547,10 @@ internal fun EditorCanvas(
                 )
             },
             onFit = {
-                val bbox = Bounds.ofNodes(
-                    positions = graph.nodes.map { it.x to it.y },
-                    nodeWidth = NodeCardFootprint.WIDTH,
-                    nodeHeight = NodeCardFootprint.MAX_HEIGHT,
+                val bbox = Bounds.ofCards(
+                    cards = graph.nodes.map { node ->
+                        CardRect(node.x, node.y, cardWidthOf(node, graph.connections), NodeCardFootprint.MAX_HEIGHT)
+                    },
                 ) ?: return@ZoomRail
                 editor.transform = editor.transform.fitToBounds(
                     bbox = bbox,
@@ -592,6 +595,7 @@ internal fun hitTestInputNode(
     pointerCanvasY: Float,
     nodes: Collection<NodeModel>,
     excludeNodeId: String? = null,
+    connections: List<ConnectionModel> = emptyList(),
 ): NodeModel? {
     // A canvas unit is a dp, so the padding needs no conversion — and, like the card it
     // pads, it scales with zoom.
@@ -600,7 +604,7 @@ internal fun hitTestInputNode(
     var bestDist = Float.MAX_VALUE
     nodes.forEach { node ->
         if (node.id == excludeNodeId) return@forEach
-        val b = nodeCanvasBounds(node)
+        val b = nodeCanvasBounds(node, cardWidthOf(node, connections))
         val inside = pointerCanvasX in (b.left - padCanvas)..(b.right + padCanvas) &&
             pointerCanvasY in (b.top - padCanvas)..(b.bottom + padCanvas)
         if (inside) {
@@ -617,26 +621,30 @@ internal fun hitTestInputNode(
 }
 
 /**
- * Returns the outbound port (node id + label) nearest a **canvas-space** press, or `null`
- * when the press is not within [OUTBOUND_HIT_DP] of any port. Lets the canvas decide whether
- * a gesture is a connection drag (→ leave it to the node's port handler, do not pan) or a
- * pan. The tolerance is a screen-space dp divided by the canvas scale — a canvas unit is a
- * dp at zoom 1 — so the grab area stays visually constant across zoom.
+ * Returns the outbound port (node id + label) whose touch target holds a **canvas-space**
+ * press, or `null` when the press is on no port's target. Lets the canvas decide whether a
+ * gesture is a connection drag (→ leave it to the node's port handler, do not pan) or a pan.
+ *
+ * The area is the target `EditorNode` places on each port: a [NodePortGeometry.HIT_TARGET]
+ * square centred on the dot. The target is drawn inside the card, so it scales with zoom and
+ * is the same in canvas units at every zoom — and so is this test. When two targets meet at
+ * a shared edge the nearer dot wins.
  */
 internal fun hitTestOutboundPort(
     pointerCanvasX: Float,
     pointerCanvasY: Float,
     nodes: Collection<NodeModel>,
-    transform: CanvasTransform,
     connections: List<ConnectionModel> = emptyList(),
 ): OutboundHit? {
-    val toleranceCanvas = OUTBOUND_HIT_DP / transform.scale
+    val half = NodePortGeometry.HIT_TARGET / 2f
     var best: OutboundHit? = null
     var bestDist = Float.MAX_VALUE
     nodes.forEach { node ->
         outboundPortAnchors(node, outboundLabelsOf(node.id, connections)).forEach { (label, anchor) ->
-            val dist = kotlin.math.hypot(anchor.xCanvas - pointerCanvasX, anchor.yCanvas - pointerCanvasY)
-            if (dist < toleranceCanvas && dist < bestDist) {
+            val dx = kotlin.math.abs(anchor.xCanvas - pointerCanvasX)
+            val dy = kotlin.math.abs(anchor.yCanvas - pointerCanvasY)
+            val dist = kotlin.math.hypot(dx, dy)
+            if (dx <= half && dy <= half && dist < bestDist) {
                 best = OutboundHit(node.id, label)
                 bestDist = dist
             }
@@ -648,14 +656,6 @@ internal fun hitTestOutboundPort(
 internal data class OutboundHit(val nodeId: String, val label: String)
 
 private const val INBOUND_HIT_DP = 32f
-
-/**
- * Grab radius (dp) around an outbound port anchor for the canvas's "is this gesture a
- * connection drag?" opt-out test. Sized to cover the per-port hit circle (24 dp ⇒ ~12 dp
- * radius) with a small margin so the opt-out reliably overlaps wherever the port handler
- * grabs, while keeping the no-pan zone just below a node tight.
- */
-private const val OUTBOUND_HIT_DP = 20f
 
 /** Screen-space padding (dp) around the framed bbox when the user taps Fit-to-view. */
 private const val ZOOM_RAIL_FIT_PADDING_DP = 32f

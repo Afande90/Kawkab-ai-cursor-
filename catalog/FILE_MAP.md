@@ -137,6 +137,7 @@ Paths below are relative to `src/main/java/app/knotwork/design/`.
     - `NodeConfigValidation.kt` - pure-Kotlin validator for `NodeConfig` rules (title uniqueness, range bounds, JSON parsing) → field-keyed error map.
     - `NodeError.kt` - sealed `Validation` / `Runtime` error states surfaced on `NodeCard` borders and bodies.
     - `NodeIcons.kt` - `NodeType` → header glyph extension over `AppIcons`.
+    - `NodePortGeometry.kt` - Where a `NodeCard`'s ports sit, in dp — the one source the card draws from and the editor canvas places its edges and touch targets by.
     - `NodePorts.kt` - `OutboundPort` sealed class + `NodePorts` descriptor of inbound/outbound port topology per node type.
     - `NodeType.kt` - enum of the 12 editor node types (Input, Output, LiteRT, Cloud, IntentRouter, IfCondition, Clarification, Tool, Decomposition, QueueProcessor, Evaluation, Summary).
     - `NodeTypeColors.kt` - composables mapping `NodeType` to header tint, luminance-banded foreground, and display label.
@@ -482,8 +483,10 @@ matters.
   - `pipelineeditor/` - the node canvas and its configuration sheets — ports, validation rules, the toolbar roster, and the baselines for each.
     - `EditorToolbarTest.kt` - Pins the editor toolbar's action roster.
     - `HeroSnapshotTest.kt` - Roborazzi baseline of the editor's node-card surface at the canonical 1080 × 2400 resolution, in both themes.
+    - `NodeCardPortLayoutTest.kt` - `NodeCard` draws every outbound port where `NodePortGeometry` says it is — the positions the editor canvas starts its edges from and places its touch targets at.
     - `NodeConfigSheetSnapshotTest.kt` - Visual baselines for the node configuration sheets.
     - `NodeConfigValidationTest.kt` - Tests for `NodeConfigValidation` — covers happy path + every failure mode listed in `node-specs.md` §Validation rules.
+    - `NodePortGeometryTest.kt` - `NodePortGeometry`: the card grows so every outbound port keeps a slot of at least 40 dp, the slots share the inner width evenly and stay inside the card, and the dot lines sit where the card draws them.
     - `NodePortsTest.kt` - Pure-JVM tests for `NodePorts.forType` — the single source for the outbound-port enumeration per node type.
     - `NodeTypePickerSheetBodyTest.kt` - Behaviour of `NodeTypePickerSheetBody`: what a search keeps, what a tap returns, and what TalkBack is given.
     - `NodeTypePickerSnapshotTest.kt` - Roborazzi baselines for the "Add node" sheet's body, one per state the design draws: the sheet as opened, a search that keeps several groups, one that keeps a single type, a search nothing matches, and the opened and searching sheets at 200 % font scale, where nothing may be cut.

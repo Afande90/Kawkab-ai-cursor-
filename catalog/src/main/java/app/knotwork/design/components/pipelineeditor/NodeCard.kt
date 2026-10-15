@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -25,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -35,11 +37,8 @@ import app.knotwork.design.icons.AppIcons
 import app.knotwork.design.theme.KnotworkTheme
 import app.knotwork.design.tokens.KnotworkTextStyles
 
-/** Width of every NodeCard on the canvas. */
-private val NodeCardWidth = 168.dp
-
-/** Minimum NodeCard height — body wraps within this floor. */
-private val NodeCardMinHeight = 64.dp
+/** Minimum NodeCard surface height — body wraps within this floor. */
+private val NodeCardMinHeight = NodePortGeometry.MIN_SURFACE_HEIGHT.dp
 
 /** Maximum NodeCard height — body clamps to two lines past this ceiling. */
 private val NodeCardMaxHeight = 96.dp
@@ -59,11 +58,11 @@ private val IdleBorderWidth = 1.dp
 /** Multi-select corner-chevron side (spec). */
 private val MultiSelectChevronSize = 8.dp
 
-/** Visual port-dot diameter. */
-private val PortDotVisualDiameter = 12.dp
-
 /** Half the visual port-dot — equals how far each dot protrudes past the card edge. */
-private val PortDotRadius = 6.dp
+private val PortDotRadius = NodePortGeometry.DOT_RADIUS.dp
+
+/** Visual port-dot diameter. */
+private val PortDotVisualDiameter = PortDotRadius * 2
 
 /** Stroke width applied to the port-dot border. */
 private val PortDotBorderWidth = 1.dp
@@ -72,10 +71,16 @@ private val PortDotBorderWidth = 1.dp
 private val HeaderGlyphSize = 16.dp
 
 /** Vertical gap between an outbound dot and its label. */
-private val PortLabelGap = 4.dp
+private val PortLabelGap = NodePortGeometry.LABEL_GAP.dp
 
-/** Approximate height of the `LabelSm` row used for outbound port labels. */
-private val PortLabelLineHeight = 14.dp
+/** Height of the `LabelSm` row used for outbound port labels. */
+private val PortLabelLineHeight = NodePortGeometry.LABEL_LINE_HEIGHT.dp
+
+/** Test tag of the inbound port dot. */
+const val NODE_CARD_INBOUND_DOT_TEST_TAG: String = "node_card_inbound_dot"
+
+/** Test-tag prefix of an outbound port dot; the port's index, left to right, follows. */
+const val NODE_CARD_OUTBOUND_DOT_TEST_TAG_PREFIX: String = "node_card_outbound_dot_"
 
 /** Header strip opacity. Constant — the card has no animated state. */
 private const val HEADER_STRIP_ALPHA = 1.0f
@@ -109,7 +114,10 @@ private const val HEADER_LABEL_TRACKING_EM = 0.08f
  * @param multiSelected `true` swaps the outline for the 2 dp `accent300`
  * multi-select border and renders the top-right chevron marker.
  * @param ports inbound / outbound port descriptors. Multi-out nodes show
- * the per-port label under each dot in `LabelSm`.
+ * the per-port label under each dot in `LabelSm`. The card is
+ * [NodePortGeometry.cardWidth] wide for their number, and each dot sits at
+ * [NodePortGeometry.outboundOffset] — the positions the editor canvas
+ * places its edges and touch targets by.
  * @param modifier optional layout modifier applied to the card root.
  */
 @Composable
@@ -140,18 +148,14 @@ fun NodeCard(
     }
     val showOutboundLabels = ports.outbound.size > 1
     val topInset = if (ports.inbound > 0) PortDotRadius else 0.dp
-    val bottomInset = when {
-        ports.outbound.isEmpty() -> 0.dp
-        showOutboundLabels -> PortDotRadius + PortLabelGap + PortLabelLineHeight
-        else -> PortDotRadius
-    }
+    val bottomInset = NodePortGeometry.belowOutboundDots(ports.outbound.size).dp
     // The outer Box hosts the Surface AND the port dots as siblings. Surface
     // clips its content to its rounded shape; placing dots at the Box level
     // (outside Surface) is what lets them protrude past the card edge per
     // spec ("baseline -6 dp into the header"). The Box pads the Surface
     // inward by exactly the protruding extent so dot centres land on the
     // Surface edges.
-    Box(modifier = modifier.width(NodeCardWidth)) {
+    Box(modifier = modifier.width(NodePortGeometry.cardWidth(ports.outbound.size).dp)) {
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
@@ -286,20 +290,19 @@ private fun NodeBody(title: String, subtitle: String?, error: NodeError?) {
 private fun androidx.compose.foundation.layout.BoxScope.InboundDot(color: Color) {
     PortDot(
         color = color,
-        modifier = Modifier.align(Alignment.TopCenter),
+        modifier = Modifier.align(Alignment.TopCenter).testTag(NODE_CARD_INBOUND_DOT_TEST_TAG),
     )
 }
 
 /**
- * Outbound port row pinned to the bottom edge of the outer Box. Single
- * ports render the dot only; multi-port nodes render each dot with a
- * `LabelSm` underneath so the canvas can identify each branch without
- * consulting the edge labels.
+ * Outbound ports pinned to the bottom edge of the outer Box, each in its own slot: the dot at
+ * [NodePortGeometry.outboundOffset] from the centre line, and — on a multi-port node — its
+ * `LabelSm` label underneath, never wider than the slot. Every port is drawn, however many there
+ * are; the card is as wide as [NodePortGeometry.cardWidth] needs.
  *
- * Vertical alignment is computed by the outer card layout — the Surface
- * is inset by `PortDotRadius` (single-port) or `PortDotRadius + gap +
- * label height` (multi-port), so the dot centres always land on the
- * Surface bottom edge regardless of whether labels are present.
+ * Vertical alignment is computed by the outer card layout — the Surface is inset by
+ * [NodePortGeometry.belowOutboundDots], so the dot centres always land on the Surface bottom edge
+ * whether or not labels are present.
  */
 @Composable
 private fun androidx.compose.foundation.layout.BoxScope.OutboundPortRow(
@@ -307,33 +310,30 @@ private fun androidx.compose.foundation.layout.BoxScope.OutboundPortRow(
     color: Color,
     showLabels: Boolean,
 ) {
-    Row(
-        modifier = Modifier
-            .align(Alignment.BottomCenter)
-            .fillMaxWidth()
-            .padding(horizontal = KnotworkTheme.spacing.sp3),
-        horizontalArrangement = Arrangement.spacedBy(
-            space = KnotworkTheme.spacing.sp2,
-            alignment = Alignment.CenterHorizontally,
-        ),
-        verticalAlignment = Alignment.Bottom,
-    ) {
-        ports.forEach { port ->
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                PortDot(color = color, modifier = Modifier)
-                if (showLabels) {
-                    Spacer(modifier = Modifier.size(PortLabelGap))
-                    Text(
-                        text = port.label,
-                        style = KnotworkTextStyles.LabelSm,
-                        color = KnotworkTheme.extended.onSurfaceMuted,
-                        textAlign = TextAlign.Center,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
+    val slot = NodePortGeometry.slotWidth(ports.size).dp
+    ports.forEachIndexed { index, port ->
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .offset(x = NodePortGeometry.outboundOffset(index, ports.size).dp)
+                .width(slot),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            PortDot(color = color, modifier = Modifier.testTag(NODE_CARD_OUTBOUND_DOT_TEST_TAG_PREFIX + index))
+            if (showLabels) {
+                Spacer(modifier = Modifier.size(PortLabelGap))
+                Text(
+                    text = port.label,
+                    // A single LabelSm line can measure short of its line height (13 dp, measured);
+                    // the floor keeps the dot centres on the surface edge. A larger font scale still
+                    // grows the label.
+                    modifier = Modifier.heightIn(min = PortLabelLineHeight),
+                    style = KnotworkTextStyles.LabelSm,
+                    color = KnotworkTheme.extended.onSurfaceMuted,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
     }

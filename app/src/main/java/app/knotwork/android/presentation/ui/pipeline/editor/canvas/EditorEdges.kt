@@ -4,6 +4,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -23,6 +24,7 @@ import app.knotwork.android.presentation.ui.pipeline.editor.core.CanvasTransform
 import app.knotwork.android.presentation.ui.pipeline.editor.core.NodeCardFootprint
 import app.knotwork.design.components.pipelineeditor.EvaluationConfig
 import app.knotwork.design.components.pipelineeditor.IntentRouterConfig
+import app.knotwork.design.components.pipelineeditor.NodePortGeometry
 import app.knotwork.design.components.pipelineeditor.NodePorts
 import app.knotwork.design.components.pipelineeditor.OutboundPort
 import app.knotwork.design.theme.KnotworkTheme
@@ -37,34 +39,28 @@ import app.knotwork.design.theme.KnotworkTheme
 internal data class PortAnchor(val xCanvas: Float, val yCanvas: Float)
 
 /**
- * Per-port horizontal spacing in dp. Picked to match the catalog NodeCard's outbound
- * port row visually: each column has the 12 dp port dot plus an optional `LabelSm`
- * label that measures ~28–32 dp wide for the canonical labels (`True`, `False`,
- * `Item`, `Done`, `Pass`, `Retry`, `Fail`); the row arrangement adds an 8 dp gap, so
- * the visible centre-to-centre distance lands around 40 dp. Used by both
- * [outboundPortAnchor] (for edge rendering) AND `EditorNode` (for per-port hit
- * targets), so the two stay in lockstep.
+ * Width of [node]'s card on the canvas: one slot per outbound port ([NodePortGeometry.cardWidth]).
+ * On an Intent Router that is one per class and one per edge label no class names, so the edges
+ * leaving the node count — the same ports [portsFor] gives the card.
+ *
+ * @param node the node.
+ * @param connections the graph's edges.
+ * @return the card width in canvas units (dp).
  */
-internal const val PORT_SPACING_DP = 40f
-
-/** Inner card width available for the outbound port row (NodeCard width − 2 × sp3 padding). */
-private const val NODE_INNER_WIDTH_DP = NodeCardFootprint.WIDTH - 24f
+internal fun cardWidthOf(node: NodeModel, connections: List<ConnectionModel>): Float =
+    NodePortGeometry.cardWidth(portsFor(node, outboundLabelsOf(node.id, connections)).outbound.size)
 
 /**
- * Returns the canvas-space horizontal offset (relative to the node's centre) of outbound
- * port [index] given [count] total ports. Symmetric around centre; clamped so an
- * IntentRouter with 6 classes still fits inside the card.
+ * Inbound port anchor — the centre of the single dot on the top edge.
+ *
+ * @param node the node.
+ * @param ports the node's ports, which set its card's width.
+ * @return the anchor in canvas space.
  */
-internal fun outboundPortOffsetDp(index: Int, count: Int): Float {
-    if (count <= 1) return 0f
-    val maxSpacing = NODE_INNER_WIDTH_DP / count
-    val spacing = minOf(PORT_SPACING_DP, maxSpacing)
-    return (index - (count - 1) / 2f) * spacing
-}
-
-/** Inbound port anchor — single dot centred on the top edge. */
-internal fun inboundPortAnchor(node: NodeModel): PortAnchor =
-    PortAnchor(xCanvas = node.x + NodeCardFootprint.WIDTH / 2f, yCanvas = node.y)
+internal fun inboundPortAnchor(node: NodeModel, ports: NodePorts): PortAnchor = PortAnchor(
+    xCanvas = node.x + NodePortGeometry.cardWidth(ports.outbound.size) / 2f,
+    yCanvas = node.y + NodePortGeometry.INBOUND_DOT_Y,
+)
 
 /**
  * Outbound port anchor for the port with [portLabel] on [node] (using [ports] to enumerate).
@@ -78,13 +74,13 @@ internal fun inboundPortAnchor(node: NodeModel): PortAnchor =
  * lone default way out of an IF_CONDITION.
  */
 internal fun outboundPortAnchor(node: NodeModel, ports: NodePorts, portLabel: String?): PortAnchor {
-    val centreX = node.x + NodeCardFootprint.WIDTH / 2f
-    val outY = node.y + NodeCardFootprint.BASE_HEIGHT
     val outbound = ports.outbound
+    val centreX = node.x + NodePortGeometry.cardWidth(outbound.size) / 2f
+    val outY = node.y + NodePortGeometry.outboundDotY(hasInbound = ports.inbound > 0)
     if (outbound.isEmpty()) return PortAnchor(centreX, outY)
     val matched = outbound.indexOfFirst { matchesPort(it, portLabel) }
     val index = if (matched >= 0) matched else 0
-    return PortAnchor(xCanvas = centreX + outboundPortOffsetDp(index, outbound.size), yCanvas = outY)
+    return PortAnchor(xCanvas = centreX + NodePortGeometry.outboundOffset(index, outbound.size), yCanvas = outY)
 }
 
 /**
@@ -95,10 +91,10 @@ internal fun outboundPortAnchor(node: NodeModel, ports: NodePorts, portLabel: St
  */
 internal data class NodeBounds(val left: Float, val top: Float, val right: Float, val bottom: Float)
 
-internal fun nodeCanvasBounds(node: NodeModel): NodeBounds = NodeBounds(
+internal fun nodeCanvasBounds(node: NodeModel, width: Float): NodeBounds = NodeBounds(
     left = node.x,
     top = node.y,
-    right = node.x + NodeCardFootprint.WIDTH,
+    right = node.x + width,
     bottom = node.y + NodeCardFootprint.MAX_HEIGHT,
 )
 
@@ -112,12 +108,16 @@ internal fun outboundPortAnchors(
     node: NodeModel,
     outboundLabels: List<String?> = emptyList(),
 ): List<Pair<String, PortAnchor>> {
-    val outbound = portsFor(node, outboundLabels).outbound
+    val ports = portsFor(node, outboundLabels)
+    val outbound = ports.outbound
     if (outbound.isEmpty()) return emptyList()
-    val centreX = node.x + NodeCardFootprint.WIDTH / 2f
-    val outY = node.y + NodeCardFootprint.BASE_HEIGHT
+    val centreX = node.x + NodePortGeometry.cardWidth(outbound.size) / 2f
+    val outY = node.y + NodePortGeometry.outboundDotY(hasInbound = ports.inbound > 0)
     return outbound.mapIndexed { index, port ->
-        port.label to PortAnchor(xCanvas = centreX + outboundPortOffsetDp(index, outbound.size), yCanvas = outY)
+        port.label to PortAnchor(
+            xCanvas = centreX + NodePortGeometry.outboundOffset(index, outbound.size),
+            yCanvas = outY,
+        )
     }
 }
 
@@ -204,6 +204,11 @@ internal fun EditorEdges(
     val edgeColor = KnotworkTheme.extended.divider
     val accentColor = KnotworkTheme.extended.outlineStrong
     val strokeWidth = with(density) { 2.dp.toPx() }
+    // A node's ports come from its decoded config and its edges. Work them out once per graph
+    // change rather than for both ends of every edge on every frame of the run-trace animation.
+    val portsById = remember(nodesById, connections) {
+        nodesById.mapValues { (id, node) -> portsFor(node, outboundLabelsOf(id, connections)) }
+    }
 
     Canvas(modifier = modifier.fillMaxSize()) {
         connections.forEach { c ->
@@ -211,9 +216,8 @@ internal fun EditorEdges(
             val target = nodesById[c.targetNodeId] ?: return@forEach
             // Per-port anchors: edges originate at the dot matching the connection label
             // (e.g. Item / Done on QUEUE, True / False on IF) rather than the node centre.
-            val srcAnchor =
-                outboundPortAnchor(source, portsFor(source, outboundLabelsOf(source.id, connections)), c.label)
-            val tgtAnchor = inboundPortAnchor(target)
+            val srcAnchor = outboundPortAnchor(source, portsById.getValue(source.id), c.label)
+            val tgtAnchor = inboundPortAnchor(target, portsById.getValue(target.id))
             val sx = transform.canvasToScreenX(srcAnchor.xCanvas)
             val sy = transform.canvasToScreenY(srcAnchor.yCanvas)
             val tx = transform.canvasToScreenX(tgtAnchor.xCanvas)
@@ -275,7 +279,7 @@ internal fun hitTestEdge(
         val src = nodesById[c.sourceNodeId] ?: return@forEach
         val tgt = nodesById[c.targetNodeId] ?: return@forEach
         val srcAnchor = outboundPortAnchor(src, portsFor(src, outboundLabelsOf(src.id, connections)), c.label)
-        val tgtAnchor = inboundPortAnchor(tgt)
+        val tgtAnchor = inboundPortAnchor(tgt, portsFor(tgt, outboundLabelsOf(tgt.id, connections)))
         val (cp0, cp1) = BezierEdge.controlPoints(
             srcAnchor.xCanvas,
             srcAnchor.yCanvas,

@@ -206,7 +206,7 @@ class CanvasTransformTest {
         // The regression: presets space cards 240 canvas units apart while a card is 168 dp.
         // With canvas units treated as pixels, a 3x screen drew them 240 px apart — less than
         // one 504 px card. As dp they are 720 px apart, clear of the card.
-        val cardWidthPx = NodeCardFootprint.WIDTH * 3f
+        val cardWidthPx = NodeCardFootprint.MIN_WIDTH * 3f
         val dense = CanvasTransform(density = 3f)
         val gapPx = dense.canvasToScreenX(240f) - dense.canvasToScreenX(0f)
         assertEquals(720f, gapPx, 1e-3f)
@@ -286,18 +286,17 @@ class CanvasTransformTest {
     }
 
     @Test
-    fun `given node positions when Bounds-ofNodes then card size is included on each axis`() {
-        val b = Bounds.ofNodes(
-            positions = listOf(0f to 0f, 100f to 50f),
-            nodeWidth = 168f,
-            nodeHeight = 64f,
+    fun `given cards when Bounds-ofCards then each card's own size is included on each axis`() {
+        val b = Bounds.ofCards(
+            cards = listOf(CardRect(0f, 0f, 168f, 64f), CardRect(100f, 50f, 264f, 64f)),
         )
-        assertEquals(Bounds(minX = 0f, minY = 0f, maxX = 268f, maxY = 114f), b)
+        // The second card grew for its ports: its own width, not the narrowest card's, sets the right edge.
+        assertEquals(Bounds(minX = 0f, minY = 0f, maxX = 364f, maxY = 114f), b)
     }
 
     @Test
-    fun `given empty nodes when Bounds-ofNodes then returns null`() {
-        assertEquals(null, Bounds.ofNodes(emptyList(), nodeWidth = 168f, nodeHeight = 64f))
+    fun `given no cards when Bounds-ofCards then returns null`() {
+        assertEquals(null, Bounds.ofCards(emptyList()))
     }
 
     @Test
