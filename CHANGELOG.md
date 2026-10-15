@@ -527,6 +527,20 @@ details.
   failed — a full disk, a lock — returned as if it had run. The test suite now
   refuses that call in the app's code.
 
+- **The static-analysis guide lists every architecture guard again.** Its table
+  of the architecture rules had fallen behind: seventeen guards were missing at
+  the same time, each found by hand. The fourteen still missing are described
+  now, each from what its test checks rather than from the test's own comment,
+  and a test fails when a guard has no row or a row names a test that no longer
+  exists. See [`docs/static-analysis.md`](docs/static-analysis.md#konsist--architecture-guard).
+
+- **A Windows checkout no longer fails the build checks.** With
+  `core.autocrlf=true`, git checked every text file out with Windows line
+  endings, and the checks that compare a committed file with generated text
+  failed, as did the store-listing length checks: the English description read
+  as 4024 characters against Play's limit of 4000. Every text file is now checked
+  out with Unix line endings on every platform.
+
 ## [0.11.1] - 2026-10-02
 
 ### Changed

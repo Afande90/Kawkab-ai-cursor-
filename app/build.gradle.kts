@@ -2002,6 +2002,11 @@ tasks.withType<Test>().configureEach {
     inputs.file(rootProject.file("docs/external-automation.md"))
         .withPropertyName("externalAutomationContract")
         .withPathSensitivity(PathSensitivity.RELATIVE)
+    // `ArchitectureGuardsDocumentedTest` holds the Konsist table of the static-analysis
+    // guide to the suite; the suite is compiled test code, the guide is not.
+    inputs.file(rootProject.file("docs/static-analysis.md"))
+        .withPropertyName("staticAnalysisGuide")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
     // `FdroidSigningStripGuardTest` reads this very script. Editing it reconfigures
     // the project but leaves this task's inputs as they were: measured, the signing
     // assignment put back on two lines left the task UP-TO-DATE and green.
