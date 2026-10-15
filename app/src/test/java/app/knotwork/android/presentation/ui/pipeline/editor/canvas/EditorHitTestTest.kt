@@ -3,6 +3,8 @@ package app.knotwork.android.presentation.ui.pipeline.editor.canvas
 import app.knotwork.android.domain.models.ConnectionModel
 import app.knotwork.android.domain.models.NodeModel
 import app.knotwork.android.domain.models.NodeType
+import app.knotwork.android.presentation.ui.pipeline.editor.core.CanvasTransform
+import app.knotwork.android.presentation.ui.pipeline.editor.core.CardMeasure
 import app.knotwork.design.components.pipelineeditor.NodePortGeometry
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -150,6 +152,53 @@ class EditorHitTestTest {
         }
     }
 
+    @Test
+    fun `given a card measured taller when its edge is anchored then it leaves the measured dot line`() {
+        // A Pipeline node's subtitle, a runtime error or a larger font scale draws the dots lower
+        // than the shortest card; the edge follows the card's measure, not the constant.
+        val ports = portsFor(liteRt)
+        assertEquals(DOT_LINE, outboundPortAnchor(liteRt, ports, portLabel = null).yCanvas)
+        assertEquals(
+            TALL_DOT_LINE,
+            outboundPortAnchor(liteRt, ports, portLabel = null, dotLine = TALL_DOT_LINE).yCanvas,
+        )
+    }
+
+    @Test
+    fun `given a card measured taller when its dot is pressed then the press is on its port, not the old line`() {
+        val measured = mapOf("n1" to CardMeasure(height = TALL_DOT_LINE + 6f, outboundDotLine = TALL_DOT_LINE))
+        assertNotNull(hitTestOutboundPort(84f, TALL_DOT_LINE, listOf(liteRt), measuredCards = measured))
+        // 31 dp above the measured dot: outside its 40 dp square, so the canvas may pan there.
+        assertNull(hitTestOutboundPort(84f, DOT_LINE, listOf(liteRt), measuredCards = measured))
+    }
+
+    @Test
+    fun `given a card measured taller when its edge is tapped then the edge starts at the measured dots`() {
+        val below = node("n2", NodeType.LITE_RT, x = 0f, y = 400f)
+        val edges = listOf(ConnectionModel(id = "e", sourceNodeId = "n1", targetNodeId = "n2"))
+        val nodes = mapOf("n1" to liteRt, "n2" to below)
+        val measured = mapOf("n1" to CardMeasure(height = 137f, outboundDotLine = 131f))
+        // 90 dp is on the edge that starts at the shortest card's dot line (70), and 41 dp above
+        // the one that starts at the measured dots — past the 24 dp tap tolerance.
+        assertEquals("e", hitTestEdge(84f, 90f, edges, nodes, CanvasTransform()))
+        assertNull(hitTestEdge(84f, 90f, edges, nodes, CanvasTransform(), measuredCards = measured))
+    }
+
+    @Test
+    fun `given a card measured taller than the default box when released on its lower part then it connects`() {
+        val tall = mapOf("n1" to CardMeasure(height = 140f, outboundDotLine = 102f))
+        // 150 dp: past the default 96 dp box and its 32 dp margin, inside the measured card's.
+        assertNull(hitTestInputNode(84f, 150f, nodes = listOf(liteRt)))
+        assertEquals("n1", hitTestInputNode(84f, 150f, nodes = listOf(liteRt), measuredCards = tall)?.id)
+    }
+
+    @Test
+    fun `given a card measured shorter than the default box when released below it then the drop area is kept`() {
+        val short = mapOf("n1" to CardMeasure(height = 76f, outboundDotLine = 70f))
+        // 120 dp: inside the default 96 dp box plus margin; a short measure does not shrink it.
+        assertEquals("n1", hitTestInputNode(84f, 120f, nodes = listOf(liteRt), measuredCards = short)?.id)
+    }
+
     private val router = node("r1", NodeType.INTENT_ROUTER, x = 0f, y = 0f)
 
     // A router's routes come from its classes and from the labels of its edges; edges alone
@@ -160,6 +209,9 @@ class EditorHitTestTest {
 
     private companion object {
         val DOT_LINE = NodePortGeometry.outboundDotY(hasInbound = true)
+
+        /** A taller card's dot line: 31 dp below the shortest card's, as at 200 % font scale with a body line. */
+        const val TALL_DOT_LINE = 101f
         val ROUTES = listOf("billing", "support", "sales", "refund", "general", "other")
     }
 }

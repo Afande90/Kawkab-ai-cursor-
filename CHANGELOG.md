@@ -294,6 +294,12 @@ details.
 
 ### Fixed
 
+- **Edges meet the port dots on taller cards and with larger text.** A Pipeline
+  card's body line, a runtime error or a larger font scale makes a node card
+  taller, but edges and port presses still used the shortest card's dot line. At
+  200 % text, an If or Router card's ports also climbed onto the card's text. The
+  editor now measures each card, port labels follow the font scale, and edges and
+  presses meet the dots the card draws.
 - **The provider check's "connection refused" test no longer hangs on macOS.** It
   took a free port from a socket bound with `SO_REUSEADDR`, and macOS can hand out
   such a port while another process is listening on it. The check then waited for

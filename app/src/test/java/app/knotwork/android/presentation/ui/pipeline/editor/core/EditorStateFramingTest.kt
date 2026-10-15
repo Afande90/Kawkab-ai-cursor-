@@ -249,6 +249,19 @@ class EditorStateFramingTest {
         )
     }
 
+    @Test
+    fun `given card measures when nodes leave the graph then only the remaining nodes keep theirs`() {
+        val editor = EditorState()
+        val measure = CardMeasure(height = 94f, outboundDotLine = 70f)
+
+        editor.recordCardMeasure("n0", measure)
+        editor.recordCardMeasure("n0", measure.copy())
+        editor.recordCardMeasure("n1", CardMeasure(height = 101f, outboundDotLine = 77f))
+        editor.forgetCardsNotIn(setOf("n1"))
+
+        assertEquals(mapOf("n1" to CardMeasure(height = 101f, outboundDotLine = 77f)), editor.measuredCards.toMap())
+    }
+
     private companion object {
         /** Every node in these graphs has at most three outbound ports: the narrowest card. */
         val MIN_CARD: (NodeModel) -> Float = { NodeCardFootprint.MIN_WIDTH }
