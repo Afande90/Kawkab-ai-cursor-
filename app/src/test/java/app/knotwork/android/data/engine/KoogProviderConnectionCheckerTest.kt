@@ -26,9 +26,15 @@ import mockwebserver3.RecordedRequest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.net.BindException
+import java.net.ConnectException
+import java.net.InetAddress
+import java.net.InetSocketAddress
 import java.net.ServerSocket
+import java.net.Socket
 import java.net.URI
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.seconds
@@ -53,6 +59,28 @@ class KoogProviderConnectionCheckerTest {
     }
 
     private val origin get() = server.url("/").toString().trimEnd('/')
+
+    /**
+     * A loopback port nothing listens on, for a check that must be refused.
+     *
+     * `ServerSocket(0)` is not enough. On macOS a new server socket has `SO_REUSEADDR` on, and a
+     * wildcard bind with it is handed ports another socket is already listening on: in a measured
+     * run, every one of 40 held ports in 40 000 draws. A silent listener on such a port turns the
+     * refusal into a wait the test can only time out of. With `SO_REUSEADDR` off and bound to
+     * 127.0.0.1, the kernel skips every port in use.
+     */
+    private fun closedLoopbackPort(): Int = ServerSocket().use { socket ->
+        socket.reuseAddress = false
+        socket.bind(InetSocketAddress(LOOPBACK, 0))
+        socket.localPort
+    }
+
+    /** Fails at once, naming [port], when something answers on it — rather than at the check's timeout. */
+    private fun assertRefused(port: Int) = Socket().use { socket ->
+        assertThrows("port $port answers; the test needs one nothing listens on", ConnectException::class.java) {
+            socket.connect(InetSocketAddress(LOOPBACK, port), PROBE_CONNECT_TIMEOUT_MS)
+        }
+    }
     private val localOnly = MutableStateFlow(false)
     private val approved = MutableStateFlow(setOf<String>())
 
@@ -204,7 +232,9 @@ class KoogProviderConnectionCheckerTest {
 
     @Test
     fun `given nothing listening on the port when checked then the connection was refused`() = bounded {
-        val closed = "http://127.0.0.1:${ServerSocket(0).use { it.localPort }}"
+        val port = closedLoopbackPort()
+        assertRefused(port)
+        val closed = "http://127.0.0.1:$port"
         approved.value = setOf(closed)
 
         val result = withTimeout(15.seconds) {
@@ -212,6 +242,29 @@ class KoogProviderConnectionCheckerTest {
         }
 
         assertEquals(ConnectionCheckResult.Failed("127.0.0.1", ConnectionFailure.ConnectionRefused), result)
+    }
+
+    @Test
+    fun `given listeners on the next loopback ports when a closed port is drawn then none of theirs is handed out`() {
+        // macOS hands out ephemeral ports in order, so these are the ports the next draws reach first.
+        val start = closedLoopbackPort()
+        val listeners = (start + 1..start + HELD_LISTENERS).mapNotNull { port ->
+            try {
+                ServerSocket(port, 0, LOOPBACK)
+            } catch (_: BindException) {
+                null
+            }
+        }
+        try {
+            val held = listeners.map { it.localPort }.toSet()
+            repeat(held.size + 1) {
+                val port = closedLoopbackPort()
+                assertTrue("port $port is held by a listener", port !in held)
+                assertRefused(port)
+            }
+        } finally {
+            listeners.forEach { it.close() }
+        }
     }
 
     @Test
@@ -315,5 +368,15 @@ class KoogProviderConnectionCheckerTest {
         )
         assertEquals("192.168.1.20", checker.destination(CloudProvider.OLLAMA, "http://192.168.1.20:11434"))
         assertNull(checker.destination(CloudProvider.OPENAI_COMPATIBLE, " "))
+    }
+
+    private companion object {
+        val LOOPBACK: InetAddress = InetAddress.getByName("127.0.0.1")
+
+        /** Listeners the premise test holds on the ports just past a fresh draw. */
+        const val HELD_LISTENERS = 20
+
+        /** A refused connect on loopback returns at once; anything slower is not a refusal. */
+        const val PROBE_CONNECT_TIMEOUT_MS = 1_000
     }
 }

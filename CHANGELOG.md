@@ -294,6 +294,11 @@ details.
 
 ### Fixed
 
+- **The provider check's "connection refused" test no longer hangs on macOS.** It
+  took a free port from a socket bound with `SO_REUSEADDR`, and macOS can hand out
+  such a port while another process is listening on it. The check then waited for
+  an answer that never came, and the test failed after 15 seconds. The test now
+  takes a port that nothing listens on and makes sure of it first.
 - **A router with many routes can be connected on a phone.** With four or more
   classes, a Router card's ports drifted away from where a press grabbed them,
   and with five or six, two of them were not drawn at all. The card now grows
