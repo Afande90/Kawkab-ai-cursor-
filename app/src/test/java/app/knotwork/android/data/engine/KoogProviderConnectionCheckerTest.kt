@@ -59,28 +59,6 @@ class KoogProviderConnectionCheckerTest {
     }
 
     private val origin get() = server.url("/").toString().trimEnd('/')
-
-    /**
-     * A loopback port nothing listens on, for a check that must be refused.
-     *
-     * `ServerSocket(0)` is not enough. On macOS a new server socket has `SO_REUSEADDR` on, and a
-     * wildcard bind with it is handed ports another socket is already listening on: in a measured
-     * run, every one of 40 held ports in 40 000 draws. A silent listener on such a port turns the
-     * refusal into a wait the test can only time out of. With `SO_REUSEADDR` off and bound to
-     * 127.0.0.1, the kernel skips every port in use.
-     */
-    private fun closedLoopbackPort(): Int = ServerSocket().use { socket ->
-        socket.reuseAddress = false
-        socket.bind(InetSocketAddress(LOOPBACK, 0))
-        socket.localPort
-    }
-
-    /** Fails at once, naming [port], when something answers on it — rather than at the check's timeout. */
-    private fun assertRefused(port: Int) = Socket().use { socket ->
-        assertThrows("port $port answers; the test needs one nothing listens on", ConnectException::class.java) {
-            socket.connect(InetSocketAddress(LOOPBACK, port), PROBE_CONNECT_TIMEOUT_MS)
-        }
-    }
     private val localOnly = MutableStateFlow(false)
     private val approved = MutableStateFlow(setOf<String>())
 
@@ -133,6 +111,28 @@ class KoogProviderConnectionCheckerTest {
     /** The next request the server received; fails instead of waiting for one that never comes. */
     private fun MockWebServer.taken(): RecordedRequest =
         checkNotNull(takeRequest(5, TimeUnit.SECONDS)) { "the server received no further request" }
+
+    /**
+     * A loopback port nothing listens on, for a check that must be refused.
+     *
+     * `ServerSocket(0)` is not enough. On macOS a new server socket has `SO_REUSEADDR` on, and a
+     * wildcard bind with it is handed ports another socket is already listening on: in a measured
+     * run, every one of 40 held ports in 40 000 draws. A silent listener on such a port turns the
+     * refusal into a wait the test can only time out of. With `SO_REUSEADDR` off and bound to
+     * 127.0.0.1, the kernel skips ports other sockets are listening on (none in 40 000 draws).
+     */
+    private fun closedLoopbackPort(): Int = ServerSocket().use { socket ->
+        socket.reuseAddress = false
+        socket.bind(InetSocketAddress(LOOPBACK, 0))
+        socket.localPort
+    }
+
+    /** Fails at once, naming [port], when something answers on it — rather than at the check's timeout. */
+    private fun assertRefused(port: Int) = Socket().use { socket ->
+        assertThrows("port $port answers; the test needs one nothing listens on", ConnectException::class.java) {
+            socket.connect(InetSocketAddress(LOOPBACK, port), PROBE_CONNECT_TIMEOUT_MS)
+        }
+    }
 
     private fun json(body: String, code: Int = 200): MockResponse =
         MockResponse.Builder().code(code).addHeader("Content-Type", "application/json").body(body).build()
@@ -257,6 +257,7 @@ class KoogProviderConnectionCheckerTest {
         }
         try {
             val held = listeners.map { it.localPort }.toSet()
+            assertTrue("no port past $start could be held, so nothing would be tested", held.isNotEmpty())
             repeat(held.size + 1) {
                 val port = closedLoopbackPort()
                 assertTrue("port $port is held by a listener", port !in held)
