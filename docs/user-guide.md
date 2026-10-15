@@ -1460,7 +1460,8 @@ sheet lets you grow / shrink the class list: each row has a small
 **−** button to remove it (disabled below the 2-class minimum), and a
 **+ Add class** button under the list creates a new empty class row
 (disabled above the 6-class maximum). The new class shows up as an
-additional outbound port on the node card immediately on Save.
+additional outbound port on the node card immediately on Save. Past three
+classes the card grows wider, so each class keeps its own port dot and label.
 
 #### Why the same question can take a different route
 

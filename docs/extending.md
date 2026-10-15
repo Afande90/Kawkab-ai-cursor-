@@ -1027,8 +1027,10 @@ Rules:
   `MAX_NAME_LENGTH`).
 - `position` is in **dp**, the unit the editor lays node cards out in — a card
   is 168 dp wide and up to 96 dp tall, so the example's 80 is 80 dp from the
-  canvas origin on every screen. Leave at least one 24 dp grid step between
-  cards (a left-to-right row of 240 dp steps is a safe default).
+  canvas origin on every screen. A card with more than three outbound ports is
+  wider: 24 dp plus 40 dp per port (a router with six routes is 264 dp). Leave
+  at least one 24 dp grid step between cards (a left-to-right row of 240 dp
+  steps is a safe default for cards of up to three ports).
   `ShippedPipelineLayoutTest` fails the build when two cards in a bundled
   preset or a cookbook recipe overlap.
 - `internal` is optional and defaults to `false`. Set it to `true` **only**

@@ -294,6 +294,12 @@ details.
 
 ### Fixed
 
+- **A router with many routes can be connected on a phone.** With four or more
+  classes, a Router card's ports drifted away from where a press grabbed them,
+  and with five or six, two of them were not drawn at all. The card now grows
+  with its outbound ports so each has at least 40 dp, and every port gets its
+  own dot and label. A press on a dot grabs that port, and edges start and end
+  at the dots. Auto-layout and fit-to-screen leave room for a wider card.
 - **A cut-off answer from a cloud model is caught everywhere, not only on a Cloud
   node.** When the connection drops mid-answer, OpenAI's and DeepSeek's clients
   end the stream normally, only without the marker that says it finished. A Cloud
