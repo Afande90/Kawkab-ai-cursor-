@@ -89,6 +89,24 @@ detekt {
     source.setFrom("src/main/java", "src/test/java")
 }
 
+// Type-resolution gate, as in :app (see its build file and docs/static-analysis.md): the plain
+// `detekt` task above runs in `light` mode, where a rule that needs resolved types is skipped
+// without a word. The debug variant's type-resolution task runs the four rules that need them —
+// `UnusedPrivateFunction` and `UnusedImport` among them, which is how dead code went unseen here —
+// with the catalog's two settings layered on top.
+val typeResolutionGateDetektTask = "detektDebug"
+tasks.matching { it.name == typeResolutionGateDetektTask }.configureEach {
+    this as Detekt
+    config.setFrom(
+        files(
+            "$rootDir/config/detekt/detekt-type-resolution.yml",
+            "$rootDir/config/detekt/detekt-type-resolution-catalog.yml",
+        ),
+    )
+    buildUponDefaultConfig.set(false)
+}
+tasks.named("check") { dependsOn(typeResolutionGateDetektTask) }
+
 tasks.withType<Detekt>().configureEach {
     reports {
         html.required.set(true)

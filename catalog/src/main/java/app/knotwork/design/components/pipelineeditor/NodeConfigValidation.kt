@@ -1,8 +1,5 @@
 package app.knotwork.design.components.pipelineeditor
 
-import org.json.JSONException
-import org.json.JSONObject
-
 /**
  * Stable identifier for one validatable field inside a [NodeConfig].
  *
@@ -318,20 +315,5 @@ object NodeConfigValidation {
             errors[FieldId.SKILL_ID] = ValidationFailure.TARGET_SKILL_MISSING
         }
         return errors
-    }
-
-    /**
-     * Returns `true` when [json] parses cleanly as a JSON object. The
-     * spec only allows schemas to be objects — arrays / primitives are
-     * rejected, so the parser uses [JSONObject] directly.
-     *
-     * Caller is expected to skip the check when the field is blank /
-     * `null`; this helper presumes non-empty input.
-     */
-    private fun isValidJson(json: String): Boolean = try {
-        JSONObject(json)
-        true
-    } catch (_: JSONException) {
-        false
     }
 }

@@ -24,9 +24,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -72,7 +69,6 @@ private val LeadingTileSize = 40.dp
 private val LeadingIconSize = 18.dp
 private val RiskPillHeight = 22.dp
 private val StatusDotSize = 10.dp
-internal val SchemaPreviewHeight = 240.dp
 
 // Material3's default Switch (52×32 dp) dwarfs the Knotwork row title scale.
 // `SettingsContent` shrinks it to ~78 % via `Modifier.scale` so the visual

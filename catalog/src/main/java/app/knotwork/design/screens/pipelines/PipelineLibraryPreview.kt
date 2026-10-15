@@ -1,7 +1,5 @@
 package app.knotwork.design.screens.pipelines
 
-import androidx.compose.material.icons.outlined.Bolt
-import androidx.compose.material.icons.outlined.Search
 import androidx.compose.ui.graphics.Color
 import app.knotwork.design.components.chips.Status
 import app.knotwork.design.icons.AppIcons
