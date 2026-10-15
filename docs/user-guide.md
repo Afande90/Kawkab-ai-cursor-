@@ -1941,9 +1941,14 @@ from the built-in catalogue. To add one:
    group also offers the same action.)
 2. Paste the endpoint into **Add New MCP Server URL** — the address your
    server prints when it starts, path included, as in
-   `https://mcp.example.com/sse`. There is no separate port field: a
+   `https://mcp.example.com/mcp`. There is no separate port field: a
    non-default port belongs in the URL.
 3. Pick the **transport** to match that endpoint, then tap **Add server**.
+   **Streamable HTTP**, selected for a new server, is the transport the MCP
+   specification defines today. **SSE** is the older HTTP+SSE transport,
+   which the specification has deprecated; pick it for a server that speaks
+   only that — often one whose endpoint ends in `/sse`. A server you saved
+   earlier keeps the transport it was saved with.
 
 The server's tools become available to the agent on the next run.
 Remove a server by tapping the trash icon next to its row.

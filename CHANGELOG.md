@@ -143,6 +143,12 @@ details.
 
 ### Changed
 
+- **A new MCP server starts on Streamable HTTP.** The server form selected SSE
+  and showed `…/sse` as its example address. The MCP specification has
+  deprecated HTTP+SSE in favour of Streamable HTTP, so the form now selects
+  Streamable HTTP and lists it first, and its example address ends in `/mcp`.
+  SSE stays a choice, for a server that speaks only that, and a server saved
+  earlier keeps the transport it was saved with.
 - **Bouncy Castle is bundled, and the licence list names it.** The backup
   archive's key is derived from its password with Argon2id, which the platform
   does not provide; the app now carries Bouncy Castle's implementation (MIT,
