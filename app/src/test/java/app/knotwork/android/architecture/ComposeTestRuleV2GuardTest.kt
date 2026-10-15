@@ -9,8 +9,9 @@ import java.io.File
  * Keeps the instrumented tests on the v2 Compose test APIs.
  *
  * **Why.** The v1 factories (`junit4.createComposeRule`, `createAndroidComposeRule`, `runComposeUiTest`
- * and the rest) are deprecated. They run effects on an `UnconfinedTestDispatcher`, so a launched
- * coroutine runs at once and can hide a timing bug the app has. The v2 factories in the `v2`
+ * and the rest) are deprecated. They run the composition's coroutines (effects,
+ * `rememberCoroutineScope`) on an `UnconfinedTestDispatcher`, so one launched there runs at once and
+ * can hide a timing bug the app has. The v2 factories in the `v2`
  * packages use a `StandardTestDispatcher`, as `runTest` does. Every test moved to v2 at once; this
  * fails the next one written against v1. The design system's screenshot tests have the same guard
  * in `:catalog`.
@@ -41,11 +42,15 @@ class ComposeTestRuleV2GuardTest {
     private companion object {
         const val ANDROID_TEST = "src/androidTest"
 
-        /** A deprecated v1 factory or environment, imported or written out. */
+        /**
+         * A deprecated v1 factory, imported or written out. The rule and environment *types*
+         * (`junit4.AndroidComposeTestRule`, `AndroidComposeUiTestEnvironment`) are left out: the v2
+         * factories return them, so naming one is valid v2 code; only their v1 construction is
+         * deprecated, and a test reaches it through these factories.
+         */
         val V1_API = Regex(
             """androidx\.compose\.ui\.test\.(junit4\.(createComposeRule|createAndroidComposeRule|""" +
-                """createEmptyComposeRule|AndroidComposeTestRule)|runComposeUiTest|runAndroidComposeUiTest|""" +
-                """runEmptyComposeUiTest|AndroidComposeUiTestEnvironment)\b""",
+                """createEmptyComposeRule)|runComposeUiTest|runAndroidComposeUiTest|runEmptyComposeUiTest)\b""",
         )
 
         /** A v2 factory, for the check that the scan reads what it claims to. */

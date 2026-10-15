@@ -144,9 +144,9 @@ details.
 ### Changed
 
 - **Compose tests run on the v2 test rules.** The v1 `createComposeRule` and
-  `createAndroidComposeRule` are deprecated, and they ran a test's coroutines at
-  once, which can hide a timing bug. Every instrumented test and every
-  design-system screenshot test now uses the v2 rules, whose dispatcher runs a
+  `createAndroidComposeRule` are deprecated, and they ran the composition's
+  coroutines at once, which can hide a timing bug. Every instrumented test and
+  every design-system test now uses the v2 rules, whose dispatcher runs such a
   coroutine when the test lets the clock move. No screenshot baseline changed.
   A guard in each module fails a test written against v1.
 - **The design system's code is checked for dead code too.** The detekt rules
