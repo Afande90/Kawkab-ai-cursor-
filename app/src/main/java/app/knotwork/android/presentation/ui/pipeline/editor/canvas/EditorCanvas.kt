@@ -40,6 +40,7 @@ import app.knotwork.android.domain.models.NodeType
 import app.knotwork.android.domain.models.PipelineGraph
 import app.knotwork.android.presentation.ui.pipeline.editor.core.Bounds
 import app.knotwork.android.presentation.ui.pipeline.editor.core.CanvasTransform
+import app.knotwork.android.presentation.ui.pipeline.editor.core.CardMeasure
 import app.knotwork.android.presentation.ui.pipeline.editor.core.CardRect
 import app.knotwork.android.presentation.ui.pipeline.editor.core.ConnectionDraft
 import app.knotwork.android.presentation.ui.pipeline.editor.core.EditorState
@@ -49,6 +50,7 @@ import app.knotwork.design.components.pipelineeditor.NodeError
 import app.knotwork.design.components.pipelineeditor.NodePortGeometry
 import app.knotwork.design.icons.AppIcons
 import app.knotwork.design.theme.KnotworkTheme
+import kotlin.math.max
 
 /**
  * Top-level editor canvas. Hosts pan / pinch zoom, all node renderers, the edge layer,
@@ -183,6 +185,7 @@ internal fun EditorCanvas(
                             connections = currentGraph.connections,
                             nodesById = currentNodesById,
                             transform = editor.transform,
+                            measuredCards = editor.measuredCards,
                         )
                         if (edgeId != null) {
                             editor.selectEdge(edgeId)
@@ -208,6 +211,7 @@ internal fun EditorCanvas(
                             connections = currentGraph.connections,
                             nodesById = currentNodesById,
                             transform = editor.transform,
+                            measuredCards = editor.measuredCards,
                         )
                         if (edgeId != null) {
                             onLongPressEdge(edgeId)
@@ -238,6 +242,7 @@ internal fun EditorCanvas(
                             downCanvasY,
                             currentNodesById.values,
                             currentGraph.connections,
+                            editor.measuredCards,
                         ) != null
                     ) {
                         return@awaitEachGesture
@@ -283,7 +288,12 @@ internal fun EditorCanvas(
         val draftDraw = editor.connectionInProgress?.let { draft ->
             val source = nodesByIdLive[draft.sourceNodeId] ?: return@let null
             val ports = portsFor(source, outboundLabelsOf(source.id, graph.connections))
-            val anchor = outboundPortAnchor(source, ports, draft.sourcePortLabel)
+            val anchor = outboundPortAnchor(
+                source,
+                ports,
+                draft.sourcePortLabel,
+                editor.measuredCards[source.id]?.outboundDotLine,
+            )
             // The draft is stored in canvas-space (see ConnectionDraft KDoc); project both
             // anchor and live pointer through `transform` here so the draw layer stays in
             // screen-space and doesn't need to know about CanvasTransform.
@@ -304,6 +314,7 @@ internal fun EditorCanvas(
             transform = editor.transform,
             connectionDraft = draftDraw,
             selectedEdgeId = editor.selectedEdgeId,
+            measuredCards = editor.measuredCards,
         )
 
         // Per-node ports are derived from the decoded NodeConfig (for IntentRouter
@@ -313,6 +324,10 @@ internal fun EditorCanvas(
         val portsByNodeId = remember(graph.nodes, graph.connections) {
             graph.nodes.associate { it.id to portsFor(it, outboundLabelsOf(it.id, graph.connections)) }
         }
+        // A node's card measure goes with the node, so a later node that reuses its id is not read
+        // at the old card's size before it is laid out.
+        val nodeIds = remember(graph.nodes) { graph.nodes.mapTo(HashSet()) { it.id } }
+        LaunchedEffect(nodeIds) { editor.forgetCardsNotIn(nodeIds) }
 
         nodesWithDrag.forEach { node ->
             val originalNode = nodesById[node.id] ?: node
@@ -383,6 +398,7 @@ internal fun EditorCanvas(
                             nodes = nodesByIdLive.values,
                             excludeNodeId = draft.sourceNodeId,
                             connections = graph.connections,
+                            measuredCards = editor.measuredCards,
                         )
                         if (target != null) {
                             // Forward the source-port label so multi-out nodes (IF / Queue /
@@ -406,6 +422,7 @@ internal fun EditorCanvas(
                     editor.connectionInProgress = null
                 },
                 canvasLayoutCoordinatesRef = editor.canvasLayoutCoordinatesRef,
+                onCardMeasured = { measure -> editor.recordCardMeasure(node.id, measure) },
             )
         }
 
@@ -589,6 +606,8 @@ private typealias IntPair = Pair<Int, Int>
  * target's, which would otherwise resolve to a self-drop and be rejected — the exact reason
  * a tightly-stacked pair (e.g. a node directly above the one you're connecting to) refused
  * to connect while every other pair worked.
+ *
+ * A card measured taller than the default box ([measuredCards]) counts at its own height.
  */
 internal fun hitTestInputNode(
     pointerCanvasX: Float,
@@ -596,6 +615,7 @@ internal fun hitTestInputNode(
     nodes: Collection<NodeModel>,
     excludeNodeId: String? = null,
     connections: List<ConnectionModel> = emptyList(),
+    measuredCards: Map<String, CardMeasure> = emptyMap(),
 ): NodeModel? {
     // A canvas unit is a dp, so the padding needs no conversion — and, like the card it
     // pads, it scales with zoom.
@@ -604,7 +624,10 @@ internal fun hitTestInputNode(
     var bestDist = Float.MAX_VALUE
     nodes.forEach { node ->
         if (node.id == excludeNodeId) return@forEach
-        val b = nodeCanvasBounds(node, cardWidthOf(node, connections))
+        // A measured card taller than the default box — a larger font scale — counts at its
+        // own height; a shorter one keeps the default, so the drop area never shrinks.
+        val height = max(measuredCards[node.id]?.height ?: 0f, NodeCardFootprint.MAX_HEIGHT)
+        val b = nodeCanvasBounds(node, cardWidthOf(node, connections), height)
         val inside = pointerCanvasX in (b.left - padCanvas)..(b.right + padCanvas) &&
             pointerCanvasY in (b.top - padCanvas)..(b.bottom + padCanvas)
         if (inside) {
@@ -628,19 +651,22 @@ internal fun hitTestInputNode(
  * The area is the target `EditorNode` places on each port: a [NodePortGeometry.HIT_TARGET]
  * square centred on the dot. The target is drawn inside the card, so it scales with zoom and
  * is the same in canvas units at every zoom — and so is this test. When two targets meet at
- * a shared edge the nearer dot wins.
+ * a shared edge the nearer dot wins. The dots sit on the card's measured dot line from
+ * [measuredCards], or on the shortest card's before the card is measured.
  */
 internal fun hitTestOutboundPort(
     pointerCanvasX: Float,
     pointerCanvasY: Float,
     nodes: Collection<NodeModel>,
     connections: List<ConnectionModel> = emptyList(),
+    measuredCards: Map<String, CardMeasure> = emptyMap(),
 ): OutboundHit? {
     val half = NodePortGeometry.HIT_TARGET / 2f
     var best: OutboundHit? = null
     var bestDist = Float.MAX_VALUE
     nodes.forEach { node ->
-        outboundPortAnchors(node, outboundLabelsOf(node.id, connections)).forEach { (label, anchor) ->
+        val dotLine = measuredCards[node.id]?.outboundDotLine
+        outboundPortAnchors(node, outboundLabelsOf(node.id, connections), dotLine).forEach { (label, anchor) ->
             val dx = kotlin.math.abs(anchor.xCanvas - pointerCanvasX)
             val dy = kotlin.math.abs(anchor.yCanvas - pointerCanvasY)
             val dist = kotlin.math.hypot(dx, dy)
