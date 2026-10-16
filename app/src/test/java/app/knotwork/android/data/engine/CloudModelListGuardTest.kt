@@ -36,10 +36,15 @@ class CloudModelListGuardTest {
     /**
      * The chat constants the app deliberately does not offer, each with its reason. "Retired" is the
      * provider's own deprecation page or a request with a real key answering "not found"; "shutdown
-     * announced" is a date on that page — the app adds no model already scheduled to go.
+     * announced" is a date on that page — the app adds no model already scheduled to go, and a release
+     * drops an offered model whose date falls within a week of it.
      */
     private val notOffered: Map<CloudProvider, Map<LLModel, String>> = mapOf(
         CloudProvider.OPENAI to mapOf(
+            OpenAIModels.Chat.O1 to "shutdown announced for 2026-10-23 (OpenAI deprecations page)",
+            OpenAIModels.Chat.O3Mini to "shutdown announced for 2026-10-23 (OpenAI deprecations page)",
+            OpenAIModels.Chat.O4Mini to "shutdown announced for 2026-10-23 (OpenAI deprecations page)",
+            OpenAIModels.Chat.GPT4_1Nano to "shutdown announced for 2026-10-23 (OpenAI deprecations page)",
             OpenAIModels.Chat.GPT5Codex to "retired 2026-07-23 (OpenAI deprecations page)",
             OpenAIModels.Chat.GPT5_1Codex to "retired 2026-07-23 (OpenAI deprecations page)",
             OpenAIModels.Chat.GPT5_1CodexMax to "retired 2026-07-23 (OpenAI deprecations page)",

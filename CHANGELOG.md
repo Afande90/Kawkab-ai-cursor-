@@ -174,8 +174,9 @@ details.
   Flash and 3.7 Flash; DeepSeek V4 Flash Vision. Models their providers have
   retired are gone: GPT-5 Codex, GPT-5.1 Codex and Codex Max, GPT-5.2 Codex,
   Claude Sonnet 4, Opus 4 and Opus 4.1, and Gemini 2.5 Pro, which Google keeps for
-  earlier users only. A saved choice that left the list runs on the provider's
-  default, and the provider's screen says so.
+  earlier users only. So are o1, o3-mini, o4-mini and GPT-4.1 nano, which OpenAI
+  shuts down on 23 October 2026. A saved choice that left the list runs on the
+  provider's default, and the provider's screen says so.
 - **Anthropic's default model is Claude Sonnet 4.6.** Anthropic retires Sonnet
   4.5, the default until now, on 30 November 2026. A model you chose yourself
   stays as it is.

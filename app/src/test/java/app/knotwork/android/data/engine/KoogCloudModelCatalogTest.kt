@@ -76,6 +76,16 @@ class KoogCloudModelCatalogTest {
     }
 
     @Test
+    fun `given an OpenAI model shut down on 23 October saved then runs use the default and say why`() {
+        listOf("o1", "o3-mini", "o4-mini", "gpt-4.1-nano").forEach { retiring ->
+            assertEquals(
+                CloudModelInUse("gpt-5.4", CloudModelFallback.NoLongerOffered(retiring)),
+                catalog.modelInUse(CloudProvider.OPENAI, retiring),
+            )
+        }
+    }
+
+    @Test
     fun `given Ollama then a typed model is used as it is and nothing typed means its default`() {
         assertEquals(CloudModelInUse("qwen3:8b"), catalog.modelInUse(CloudProvider.OLLAMA, "qwen3:8b"))
         assertEquals(
