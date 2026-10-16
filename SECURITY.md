@@ -781,8 +781,9 @@ install it in a work profile, for example with
 on Android 15 and later. An app in another profile has its own storage and its
 own VPN, and turning the profile off stops it. So PCAPdroid has to run in the
 same profile to see the app's traffic, and the model has to be downloaded again
-inside it. The maintainer has not tested Knotwork in a work profile or in
-Private Space.
+inside it. The maintainer has tested 0.12.0 in a work profile made with Shelter:
+it installs, starts and answers with a model downloaded inside the profile, and
+turning the profile off stops it. Private Space has not been tested.
 
 #### Seeing what a run did
 

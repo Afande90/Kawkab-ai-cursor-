@@ -13,6 +13,14 @@ details.
 
 ## [Unreleased]
 
+### Changed
+
+- **The security notes say the app was tried in a work profile.** `SECURITY.md`
+  said the maintainer had not tested Knotwork in a work profile. 0.12.0 was
+  tested in one made with Shelter: it installs, starts and answers with a model
+  downloaded inside the profile, and turning the profile off stops it. Private
+  Space is still untested.
+
 ## [0.12.0] - 2026-10-16
 
 ### Added
