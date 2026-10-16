@@ -978,9 +978,10 @@ embedding and audio models — and fails when:
   well, or has no reason.
 
 A model is left out when its provider has retired it (the provider's
-deprecation page, or a request with a real key answering "not found"), when a
-shutdown date is already announced, or when no request to it has been measured
-on a path the app has not run before.
+deprecation page, or a request with a real key answering "not found"); when a
+shutdown date is announced before it is first offered, or falls within a week
+of a release; or when no request to it has been measured on a path the app has
+not run before.
 
 **What it cannot see:** whether a model still answers. A retired model stays on
 offer until someone checks; the list is checked again at each release.
