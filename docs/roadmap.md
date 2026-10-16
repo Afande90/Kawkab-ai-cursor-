@@ -15,7 +15,7 @@ release cadence settles.
 
 ## Where the project is today
 
-The current pre-release line (`0.11.x`) already covers the core loop
+The current pre-release line (`0.12.x`) already covers the core loop
 end-to-end:
 
 - On-device LLM inference through LiteRT-LM, with optional
@@ -55,12 +55,6 @@ end-to-end:
   distribution flavours at the current API level and the whole suite again at
   the `minSdk` floor, on every pull request into `main` and nightly (see
   [testing.md](testing.md#the-instrumented-gate)).
-
-### On `main`, in the next release
-
-Merged after the latest release and not in one yet;
-[CHANGELOG.md](../CHANGELOG.md) lists them under *Unreleased*:
-
 - More providers: OpenRouter and Groq with your own key, and any server
   that speaks the OpenAI API — vLLM, LM Studio, llama.cpp — at the
   address you enter.
@@ -82,6 +76,17 @@ Merged after the latest release and not in one yet;
 - Every bundled pipeline replayed through the real engine in the test suite
   and compared with a recorded trace, so a change that alters what a run does
   fails the build until someone records it on purpose.
+- A backup of what you made — chats, memory, pipelines, run history,
+  triggers, settings and files — in one file locked with a password you
+  choose, restored on this phone or a new one. It is also the way to move
+  between Google Play and a release build. The [format](backup-format.md) is
+  public.
+- Downloaded models checked: when Hugging Face names a file's SHA-256, the
+  file must match it before the model is installed, and every model reads
+  *Verified* or *Not verified*.
+- Model lists for OpenAI, Anthropic, Google and DeepSeek held against the
+  client library's own catalogue by a test, so a library upgrade that adds or
+  drops a model fails the build until the list is sorted.
 
 See [README.md](../README.md) for the full feature list and
 [architecture.md](architecture.md) for how the pieces fit together.
