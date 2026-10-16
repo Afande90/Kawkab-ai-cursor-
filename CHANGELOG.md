@@ -13,6 +13,8 @@ details.
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-10-16
+
 ### Added
 
 - **A correction replaces the fact it corrects.** Memory used to drop a newly
@@ -6904,7 +6906,8 @@ that produced the initial 0.1.0 snapshot.
 - **Master key**: `EncryptedSharedPreferences` is rooted in the Android
   Keystore, so the master key is hardware-backed where available.
 
-[Unreleased]: https://github.com/alexeyw/knotwork/compare/v0.11.1...HEAD
+[Unreleased]: https://github.com/alexeyw/knotwork/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/alexeyw/knotwork/compare/v0.11.1...v0.12.0
 [0.11.1]: https://github.com/alexeyw/knotwork/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/alexeyw/knotwork/compare/v0.10.1...v0.11.0
 [0.10.1]: https://github.com/alexeyw/knotwork/compare/v0.10.0...v0.10.1
