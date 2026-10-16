@@ -10,6 +10,7 @@ import app.knotwork.android.domain.engine.AutoProvider
 import app.knotwork.android.domain.engine.CloudErrorSanitizer
 import app.knotwork.android.domain.engine.CloudLlmClientFactory
 import app.knotwork.android.domain.engine.CloudLlmModelResolver
+import app.knotwork.android.domain.engine.CloudStreamEnd
 import app.knotwork.android.domain.engine.retry.CloudRetryListener
 import app.knotwork.android.domain.engine.retry.CollectingCloudRetryListener
 import app.knotwork.android.domain.engine.structured.ReasoningBlockSplitter
@@ -156,7 +157,7 @@ class CloudLlmNodeExecutor @Inject constructor(
         var approximateTokenCount = 0
         // Whether the provider ever said *why* it stopped. A dropped connection ends the
         // stream with no finish reason, which is otherwise indistinguishable from a
-        // complete answer — see [providerReportsFinishReason].
+        // complete answer — see [CloudStreamEnd].
         var finishReason: String? = null
         // Prompt + completion tokens as the provider itself counted them, when it
         // counted them. This is the number a run ceiling should be charged, and the
@@ -227,13 +228,10 @@ class CloudLlmNodeExecutor @Inject constructor(
             return@channelFlow
         }
 
-        // A provider whose connection dies mid-answer does not always raise: the
-        // OpenAI-compatible clients end the stream normally and simply omit the finish
-        // reason, so the half-written answer would otherwise be handed on as a complete
-        // one. Measured on a stub that cut the socket mid-stream: identical frames in both
-        // cases apart from `finishReason` (null when cut, "stop" when complete).
-        if (providerReportsFinishReason(selectedProvider) && finishReason == null) {
-            emitFailure(truncatedResponse(selectedProvider.id))
+        // A provider whose connection dies mid-answer does not always raise; the shared
+        // rule says when a missing finish reason means the answer was cut off.
+        if (CloudStreamEnd.cutOff(selectedProvider, model, finishReason)) {
+            emitFailure(CloudStreamEnd.truncatedMessage(selectedProvider.id))
             return@channelFlow
         }
 
@@ -317,41 +315,7 @@ class CloudLlmNodeExecutor @Inject constructor(
      */
     private suspend fun autoDetectProvider(): CloudProvider? = AutoProvider.resolve(apiKeyRepository)
 
-    /**
-     * Whether an absent finish reason is evidence of a truncated answer for [provider].
-     *
-     * Only true where it was actually measured against a stub, because the inverse
-     * mistake — treating a healthy stream as truncated — fails working runs:
-     *
-     * - `DEEPSEEK` / `OPENAI` — **checked**. Measured on DeepSeek: a socket cut mid-stream
-     *   ends the flow with `End(finishReason = null)` and no exception, while a complete
-     *   stream ends with `End(finishReason = "stop")`. OpenAI shares the same streaming
-     *   implementation (`AbstractOpenAILLMClient`), so the signal is the same one.
-     * - `GOOGLE` — **checked**, and already correct without help: its client throws
-     *   `IncompleteStreamException` on a cut, so the guard below never fires for it.
-     * - `OLLAMA` — **excluded**. Its client never emits a finish reason at all, so absence
-     *   carries no information; enabling the check would fail every healthy Ollama run.
-     * - `ANTHROPIC` — **excluded pending measurement**. The harness could not produce a
-     *   stream its parser accepts, so there is no evidence either way, and a guess here
-     *   is exactly the failure mode this task exists to avoid.
-     * - `OPENROUTER` / `GROQ` / `OPENAI_COMPATIBLE` — **excluded pending measurement**. The
-     *   stream parser is OpenAI's, but the signal is the server's: a server that omits the
-     *   finish reason would have every healthy answer discarded as cut off.
-     */
-    private fun providerReportsFinishReason(provider: CloudProvider): Boolean = when (provider) {
-        CloudProvider.OPENAI, CloudProvider.DEEPSEEK, CloudProvider.GOOGLE -> true
-        CloudProvider.ANTHROPIC, CloudProvider.OLLAMA -> false
-        // Same client as OpenAI, but whether each *server* sends the finish reason is what
-        // matters, and none has been measured yet; off until the device check says otherwise.
-        CloudProvider.OPENROUTER, CloudProvider.GROQ, CloudProvider.OPENAI_COMPATIBLE -> false
-    }
-
     private companion object {
-        /** The provider stopped sending without ever saying the answer was finished. */
-        fun truncatedResponse(providerId: String): String =
-            "The response from '$providerId' was cut off before it finished — the connection " +
-                "ended without a completion signal. The partial answer was discarded; try again."
-
         /** No provider is selected on the node and no configured key could be auto-detected. */
         const val NO_PROVIDER_CONFIGURED: String =
             "No cloud provider is configured. Add a provider API key in Settings, " +

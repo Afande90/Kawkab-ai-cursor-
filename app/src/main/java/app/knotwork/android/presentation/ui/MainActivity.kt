@@ -17,11 +17,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import app.knotwork.android.data.services.AgentForegroundService
 import app.knotwork.android.domain.repositories.AppStateSettings
 import app.knotwork.android.presentation.startup.StartupMaintenance
+import app.knotwork.android.presentation.state.AppRestartRequest
 import app.knotwork.android.presentation.state.ChatEntryRequestRelay
 import app.knotwork.android.presentation.state.TransientMessageRelay
 import app.knotwork.android.presentation.theme.KnotworkAppTheme
@@ -29,6 +31,7 @@ import app.knotwork.android.presentation.ui.navigation.AppNavGraph
 import app.knotwork.android.presentation.ui.navigation.AppShellScaffold
 import app.knotwork.android.presentation.ui.navigation.NavRoutes
 import app.knotwork.android.presentation.ui.navigation.navigateToDeepLink
+import com.jakewharton.processphoenix.ProcessPhoenix
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -50,6 +53,8 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var startupMaintenance: StartupMaintenance
 
     @Inject lateinit var chatEntryRequestRelay: ChatEntryRequestRelay
+
+    @Inject lateinit var appRestartRequest: AppRestartRequest
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -175,6 +180,14 @@ class MainActivity : ComponentActivity() {
                 // real `false` value before the navigation decision.
                 val hasCompletedOnboarding by appStateSettings.hasCompletedOnboarding
                     .collectAsState(initial = false)
+
+                // A committed restore is applied at the next start, so the app restarts as soon as it is asked —
+                // or, asked while in the background, once it is started again. Here and not on the screen that
+                // asked: that screen may have been left while the commit finished.
+                val restartRequested by appRestartRequest.requested.collectAsStateWithLifecycle()
+                LaunchedEffect(restartRequested) {
+                    if (restartRequested) ProcessPhoenix.triggerRebirth(applicationContext)
+                }
 
                 AppShellScaffold(
                     navController = navController,

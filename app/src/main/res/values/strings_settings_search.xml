@@ -121,6 +121,8 @@
     <string name="settings_search_desc_trace_retention_runs_per_session">Recent runs kept per chat session.</string>
     <string name="settings_search_name_trace_retention_max_age_days">Trace retention · age</string>
     <string name="settings_search_desc_trace_retention_max_age_days">Maximum age a run trace is kept.</string>
+    <string name="settings_search_name_link_backup_restore">Backup &amp; restore</string>
+    <string name="settings_search_desc_link_backup_restore">Keep a copy, or move to a new phone.</string>
 
     <!-- About -->
     <string name="settings_search_name_identity">Identity</string>

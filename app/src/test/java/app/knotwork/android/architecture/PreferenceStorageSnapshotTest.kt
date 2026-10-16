@@ -34,7 +34,8 @@ class PreferenceStorageSnapshotTest {
     fun `every preference key is declared with a literal name`() {
         val offenders = ProductionSources.code
             .filter { (_, code) -> KEY_CALL.findAll(code).count() != KEY_DECLARATION.findAll(code).count() }
-            .keys.toSortedSet()
+            .keys.filterNot { path -> REBUILDS_DECLARED_KEYS.keys.any { path.endsWith(it) } }
+            .toSortedSet()
 
         assertEquals(
             "a preference key whose name is not a string literal cannot be checked against the snapshot; " +
@@ -114,6 +115,15 @@ class PreferenceStorageSnapshotTest {
 
     private companion object {
 
+        /**
+         * Files that build keys from names at run time, and why each name is still one the census sees: a
+         * restore writes back only keys `PreferenceBackupPolicy` lists as travelling, each with the type it
+         * records, and `PreferenceBackupPolicyTest` holds that list against the census.
+         */
+        val REBUILDS_DECLARED_KEYS = mapOf(
+            "/data/backup/PreferencesBackupJson.kt" to "rebuilds the travelling keys a restore writes back",
+        )
+
         /** Where a Preferences DataStore file is named: a literal name in group 1, or a constant in 2. */
         val DATA_STORE_FILE = Regex("""\bpreferencesDataStore(?:File)?\s*\(\s*(?:name\s*=\s*)?(?:"([^"]*)"|(\w+))""")
 
@@ -145,6 +155,7 @@ class PreferenceStorageSnapshotTest {
             "cloud_retry_base_delay_ms" to "long",
             "cloud_retry_max_attempts" to "int",
             "console_preferred_tab" to "string",
+            "unfinished_backup_document" to "string",
             "crash_reporting_enabled" to "boolean",
             "current_chat_session_id" to "string",
             "default_pipeline_id" to "string",

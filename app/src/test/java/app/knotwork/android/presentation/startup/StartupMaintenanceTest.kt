@@ -4,6 +4,7 @@ import app.knotwork.android.data.services.AttachmentOrphanCleanupScheduler
 import app.knotwork.android.data.services.MemoryCompactionScheduler
 import app.knotwork.android.data.services.PendingInteractionMaintenanceScheduler
 import app.knotwork.android.data.services.RunRetentionScheduler
+import app.knotwork.android.domain.backup.BackupDocuments
 import app.knotwork.android.domain.models.DbPassphraseUnavailableException
 import app.knotwork.android.domain.services.MemoryReembedScheduler
 import app.knotwork.android.domain.services.ModelFileHashScheduler
@@ -36,8 +37,18 @@ class StartupMaintenanceTest {
     private val orphans = mockk<AttachmentOrphanCleanupScheduler>(relaxed = true)
     private val syncTriggers = mockk<SyncTriggersUseCase>(relaxed = true)
     private val shortcuts = mockk<AppShortcutPublisher>(relaxed = true)
-    private val maintenance =
-        StartupMaintenance(compaction, reembed, modelHash, pendingExpiry, retention, orphans, syncTriggers, shortcuts)
+    private val backupDocuments = mockk<BackupDocuments>(relaxed = true)
+    private val maintenance = StartupMaintenance(
+        compaction,
+        reembed,
+        modelHash,
+        pendingExpiry,
+        retention,
+        orphans,
+        syncTriggers,
+        shortcuts,
+        backupDocuments,
+    )
 
     @Test
     fun `given the database key is lost when the trigger sync throws then the run completes and later steps run`() =
@@ -97,6 +108,10 @@ class StartupMaintenanceTest {
         coEvery { modelHash.rearmIfPending() } answers { calls += MODEL_HASH }
         coEvery { syncTriggers() } answers { calls += TRIGGERS }
         coEvery { shortcuts.refresh() } answers { calls += SHORTCUTS }
+        coEvery { backupDocuments.discardLeftBehind() } answers {
+            calls += BACKUP
+            true
+        }
     }
 
     /** One entry per step: its name and the stub that makes it throw. */
@@ -109,6 +124,7 @@ class StartupMaintenanceTest {
         MODEL_HASH to { coEvery { modelHash.rearmIfPending() } throws IllegalStateException("x") },
         TRIGGERS to { coEvery { syncTriggers() } throws IllegalStateException("x") },
         SHORTCUTS to { coEvery { shortcuts.refresh() } throws IllegalStateException("x") },
+        BACKUP to { coEvery { backupDocuments.discardLeftBehind() } throws IllegalStateException("x") },
     )
 
     private companion object {
@@ -120,6 +136,8 @@ class StartupMaintenanceTest {
         const val MODEL_HASH = "model hash"
         const val TRIGGERS = "triggers"
         const val SHORTCUTS = "shortcuts"
-        val ALL_STEPS = setOf(COMPACTION, EXPIRY, RETENTION, ORPHANS, REEMBED, MODEL_HASH, TRIGGERS, SHORTCUTS)
+        const val BACKUP = "backup"
+        val ALL_STEPS =
+            setOf(COMPACTION, EXPIRY, RETENTION, ORPHANS, REEMBED, MODEL_HASH, TRIGGERS, SHORTCUTS, BACKUP)
     }
 }

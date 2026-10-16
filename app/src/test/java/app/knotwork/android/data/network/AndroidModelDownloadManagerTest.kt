@@ -7,8 +7,12 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import app.knotwork.android.data.services.DownloadForegroundBudget
+import app.knotwork.android.data.services.DownloadInterruptionStore
+import app.knotwork.android.data.services.ModelDownloadOutcomeNotifier
 import app.knotwork.android.data.services.ModelDownloadWorker
 import app.knotwork.android.domain.models.DownloadState
+import app.knotwork.android.domain.models.ModelDownloadFailure
+import app.knotwork.android.domain.repositories.InterruptedDownload
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -35,13 +39,17 @@ class AndroidModelDownloadManagerTest {
 
     private lateinit var workManager: WorkManager
     private lateinit var foregroundBudget: DownloadForegroundBudget
+    private lateinit var interruptions: DownloadInterruptionStore
+    private lateinit var notifier: ModelDownloadOutcomeNotifier
     private lateinit var manager: AndroidModelDownloadManager
 
     @Before
     fun setUp() {
         workManager = mockk(relaxed = true)
         foregroundBudget = mockk(relaxed = true)
-        manager = AndroidModelDownloadManager(workManager, foregroundBudget)
+        interruptions = mockk(relaxed = true)
+        notifier = mockk(relaxed = true)
+        manager = AndroidModelDownloadManager(workManager, foregroundBudget, interruptions, notifier)
     }
 
     @Test
@@ -175,6 +183,45 @@ class AndroidModelDownloadManagerTest {
 
         val error = (states.single() as DownloadState.Error).error as AndroidModelDownloadManager.DownloadError
         assertEquals(null, error.code)
+        assertEquals(ModelDownloadFailure.OTHER, error.failure)
+    }
+
+    @Test
+    fun `given a file that failed its checksum when observed then the failure is named`() = runTest {
+        stubWorkInfos(
+            workInfo(
+                WorkInfo.State.FAILED,
+                output = workDataOf(
+                    ModelDownloadWorker.KEY_ERROR to "did not match",
+                    ModelDownloadWorker.KEY_ERROR_CODE to ModelDownloadWorker.NO_HTTP_CODE,
+                    ModelDownloadWorker.KEY_FAILURE to "CHECKSUM_MISMATCH",
+                ),
+            ),
+        )
+
+        val states = manager.downloadModel("http://example.com/m.bin", "m.bin").toList()
+
+        // A screen words this itself — free text is not something to branch on.
+        val error = (states.single() as DownloadState.Error).error as AndroidModelDownloadManager.DownloadError
+        assertEquals(ModelDownloadFailure.CHECKSUM_MISMATCH, error.failure)
+    }
+
+    @Test
+    fun `given a failure name this build does not know when observed then it reads as any other failure`() = runTest {
+        stubWorkInfos(
+            workInfo(
+                WorkInfo.State.FAILED,
+                output = workDataOf(
+                    ModelDownloadWorker.KEY_ERROR to "x",
+                    ModelDownloadWorker.KEY_FAILURE to "FROM_A_LATER_BUILD",
+                ),
+            ),
+        )
+
+        val states = manager.downloadModel("http://example.com/m.bin", "m.bin").toList()
+
+        val error = (states.single() as DownloadState.Error).error as AndroidModelDownloadManager.DownloadError
+        assertEquals(ModelDownloadFailure.OTHER, error.failure)
     }
 
     @Test
@@ -280,6 +327,46 @@ class AndroidModelDownloadManagerTest {
     }
 
     @Test
+    fun `given a download that stopped when it is started again then why it stopped is dropped first`() = runTest {
+        stubWorkInfos(workInfo(WorkInfo.State.CANCELLED))
+
+        manager.downloadModel("http://example.com/m.bin", "m.bin").toList()
+
+        // Starting it again answers the notice: the pause it continues, the mismatch it downloads past.
+        verifyOrder {
+            interruptions.clear("m.bin")
+            notifier.dismiss("m.bin")
+            workManager.enqueueUniqueWork("model-download-m.bin", any<ExistingWorkPolicy>(), any<OneTimeWorkRequest>())
+        }
+    }
+
+    @Test
+    fun `given a stopped download when it is cancelled then why it stopped and its notice go`() {
+        manager.cancelDownload("m.bin")
+
+        verify(exactly = 1) { interruptions.clear("m.bin") }
+        verify(exactly = 1) { notifier.dismiss("m.bin") }
+    }
+
+    @Test
+    fun `given an interruption a screen showed when acknowledged then its record and notice go`() {
+        manager.acknowledgeInterruption("m.bin")
+
+        verify(exactly = 1) { interruptions.clear("m.bin") }
+        verify(exactly = 1) { notifier.dismiss("m.bin") }
+        verify(exactly = 0) { workManager.cancelUniqueWork(any()) }
+    }
+
+    @Test
+    fun `given recorded interruptions when observed then the store's records come through`() = runTest {
+        val stopped =
+            InterruptedDownload("m.bin", "http://example.com/m.bin", ModelDownloadFailure.PAUSED_TIME_LIMIT, "x")
+        every { interruptions.observe() } returns flowOf(listOf(stopped))
+
+        assertEquals(listOf(listOf(stopped)), manager.observeInterruptedDownloads().toList())
+    }
+
+    @Test
     fun `given a download for a nested name when enqueued then the work name stays unique per file`() = runTest {
         stubWorkInfos(workInfo(WorkInfo.State.CANCELLED))
 
@@ -292,6 +379,23 @@ class AndroidModelDownloadManagerTest {
                 any<OneTimeWorkRequest>(),
             )
         }
+    }
+
+    @Test
+    fun `given an HTTP status when read then only 401 and 403 are refusals for access`() {
+        val refused = listOf(null, 400, 401, 403, 404, 416, 500)
+            .filter { AndroidModelDownloadManager.DownloadError("x", code = it).accessRefused }
+
+        assertEquals(listOf(401, 403), refused)
+    }
+
+    @Test
+    fun `given why a download stopped when read then only a pause and a checksum mismatch were recorded`() {
+        val recorded = ModelDownloadFailure.entries
+            .filter { AndroidModelDownloadManager.DownloadError("x", failure = it).recordedInterruption }
+            .toSet()
+
+        assertEquals(setOf(ModelDownloadFailure.CHECKSUM_MISMATCH, ModelDownloadFailure.PAUSED_TIME_LIMIT), recorded)
     }
 
     private fun stubWorkInfos(vararg infos: WorkInfo) {

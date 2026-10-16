@@ -16,7 +16,7 @@ import kotlin.math.min
  *    until either side touches the mini-map; the unused axis is centred.
  *
  * @property bbox canvas-space bounds enclosing every node (typically
- *   `Bounds.ofNodes(nodes, NODE_W, NODE_H)`).
+ *   `Bounds.ofCards(...)` over the cards, each at its own width).
  * @property miniWidth mini-map body width in pixels.
  * @property miniHeight mini-map body height in pixels.
  */

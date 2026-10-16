@@ -2,6 +2,7 @@ package app.knotwork.android.presentation.ui.settings
 
 import android.content.Context
 import app.knotwork.android.R
+import app.knotwork.android.domain.engine.CloudModelCatalog
 import app.knotwork.android.domain.models.CloudProvider
 import app.knotwork.android.domain.models.ProviderId
 import app.knotwork.android.domain.models.ProviderSummary
@@ -45,6 +46,7 @@ import java.util.Locale
  * @property appContext Application context for probe-result snackbar copy.
  * @property generationSettings Persistence for the backend selection + probe result.
  * @property apiKeyRepository Source of the per-provider key/model/endpoint flows.
+ * @property modelCatalog Which model a run uses for each provider's saved choice — what the row names.
  * @property localModelRepository Source of the active-model card metadata.
  * @property testBackendUseCase Runs the on-device backend smoke probe.
  */
@@ -54,6 +56,7 @@ class ModelsSettingsDelegate(
     private val appContext: Context,
     private val generationSettings: GenerationSettings,
     private val apiKeyRepository: ApiKeyRepository,
+    private val modelCatalog: CloudModelCatalog,
     private val localModelRepository: LocalModelRepository,
     private val testBackendUseCase: TestBackendUseCase,
 ) {
@@ -148,7 +151,9 @@ class ModelsSettingsDelegate(
                 // Only its presence is read for an address-based provider — the row shows the
                 // address itself through `endpointHint`.
                 keyFingerprint = credential?.takeIf { it.isNotBlank() }?.let { maskKey(it) },
-                model = model?.takeIf { it.isNotBlank() },
+                // What a run uses, not only what was saved: a provider with a default names it
+                // when nothing is chosen, and a choice the app no longer offers is not named.
+                model = modelCatalog.modelInUse(provider, model)?.id,
                 isLanLocal = provider.usesBaseUrl,
                 endpointHint = credential?.takeIf { provider.usesBaseUrl && it.isNotBlank() },
                 modelMissing = provider.requiresModel && !credential.isNullOrBlank() && model.isNullOrBlank(),

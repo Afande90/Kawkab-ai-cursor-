@@ -243,6 +243,7 @@ private fun KeyField(state: ProviderKeyUi, onChange: (String) -> Unit) {
 /**
  * The model field: a dropdown over a built-in list, or a typed id that a successful test can fill
  * from the server's list through *Choose* — beside the field, or under it at 150 % and above.
+ * Either kind can carry a note under it.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -292,8 +293,8 @@ private fun ModelField(state: ProviderModelUi, onChange: (String) -> Unit, onCho
                 colors = fieldColors(),
             )
             if (below) choose?.invoke()
-            state.note?.let { FieldNote(text = it, tone = NoteTone.Hint) }
         }
+        state.note?.let { FieldNote(text = it, tone = NoteTone.Hint) }
     }
 }
 

@@ -373,7 +373,7 @@
     <string name="knotwork_tools_cleartext_consent_body">Traffic to %1$s is not encrypted. Anyone on the same network can read what you send, including any token set below. Approve it only if this address is a machine you trust on your own network.</string>
     <string name="knotwork_tools_cleartext_consent_action">Approve unencrypted connection</string>
     <!-- Add-server form placeholder. -->
-    <string name="knotwork_tools_add_form_placeholder">https://mcp.example.com/sse</string>
+    <string name="knotwork_tools_add_form_placeholder">https://mcp.example.com/mcp</string>
     <!-- Add-server address explanation, opened from the field\'s help glyph. -->
     <string name="knotwork_tools_add_form_address_hint">The endpoint your server prints when it starts. Match the transport below it, and an address on your own network is fine.</string>
     <!-- Add-server cancel button label. -->
@@ -520,7 +520,7 @@
     <string name="knotwork_settings_cat_background_title">Background &amp; triggers</string>
     <string name="knotwork_settings_cat_background_summary">Notifications · resume window</string>
     <string name="knotwork_settings_cat_privacy_title">Privacy</string>
-    <string name="knotwork_settings_cat_privacy_summary">Crash reports · trace retention</string>
+    <string name="knotwork_settings_cat_privacy_summary">Crash reports · trace retention · backup</string>
     <string name="knotwork_settings_cat_about_title">About</string>
     <string name="knotwork_settings_cat_about_summary">Version · identity · reset</string>
 
@@ -962,7 +962,6 @@
     <string name="knotwork_node_validation_field_required">This field is required</string>
     <string name="knotwork_node_validation_out_of_range">Value must be within the allowed range</string>
     <string name="knotwork_node_validation_intent_class_count">Provide between 2 and 6 classes</string>
-    <string name="knotwork_node_validation_invalid_json">Provided JSON is invalid</string>
     <string name="knotwork_node_validation_fallback_unknown">Fallback class is no longer declared above</string>
     <string name="knotwork_node_validation_class_duplicate">Class names must be unique</string>
     <string name="knotwork_node_validation_target_pipeline_missing">Choose a pipeline to run</string>
@@ -1173,4 +1172,7 @@
         <item quantity="other">%1$d node types</item>
     </plurals>
 
+    <!-- Password field: the eye toggle, read by TalkBack. -->
+    <string name="knotwork_password_show">Show password</string>
+    <string name="knotwork_password_hide">Hide password</string>
 </resources>

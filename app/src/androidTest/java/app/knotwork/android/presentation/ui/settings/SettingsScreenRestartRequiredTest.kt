@@ -2,7 +2,7 @@ package app.knotwork.android.presentation.ui.settings
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import app.knotwork.android.domain.models.Identity
 import app.knotwork.design.screens.settings.RESTART_BANNER_TEST_TAG

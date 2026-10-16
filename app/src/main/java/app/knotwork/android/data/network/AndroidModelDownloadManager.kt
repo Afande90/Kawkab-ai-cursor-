@@ -8,10 +8,14 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import app.knotwork.android.data.services.DownloadForegroundBudget
+import app.knotwork.android.data.services.DownloadInterruptionStore
+import app.knotwork.android.data.services.ModelDownloadOutcomeNotifier
 import app.knotwork.android.data.services.ModelDownloadWorker
 import app.knotwork.android.domain.models.AppError
 import app.knotwork.android.domain.models.DownloadState
+import app.knotwork.android.domain.models.ModelDownloadFailure
 import app.knotwork.android.domain.repositories.ActiveDownload
+import app.knotwork.android.domain.repositories.InterruptedDownload
 import app.knotwork.android.domain.repositories.ModelDownloadManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -39,10 +43,15 @@ import javax.inject.Inject
  * @property workManager Schedules and observes the download work.
  * @property foregroundBudget Foreground time downloads may spend before they
  *   pause; started over by [downloadModel].
+ * @property interruptions Why a download stopped, kept until a screen shows it;
+ *   starting or cancelling the download drops it.
+ * @property outcomeNotifier The notice that a download stopped, removed with its record.
  */
 class AndroidModelDownloadManager @Inject constructor(
     private val workManager: WorkManager,
     private val foregroundBudget: DownloadForegroundBudget,
+    private val interruptions: DownloadInterruptionStore,
+    private val outcomeNotifier: ModelDownloadOutcomeNotifier,
 ) : ModelDownloadManager {
 
     override fun downloadModel(url: String, fileName: String, useStoredAuth: Boolean): Flow<DownloadState> = flow {
@@ -68,6 +77,9 @@ class AndroidModelDownloadManager @Inject constructor(
         // download's foreground budget starts over here too. This is also how a
         // paused download continues: starting it again lands here.
         foregroundBudget.reset()
+        // Starting it again answers why it stopped: the pause it continues, or the
+        // mismatch it downloads past.
+        forgetInterruption(fileName)
         workManager.enqueueUniqueWork(uniqueWorkName(fileName), ExistingWorkPolicy.KEEP, request)
 
         emitAll(observeUniqueWork(fileName, requireLive = false))
@@ -91,6 +103,17 @@ class AndroidModelDownloadManager @Inject constructor(
 
     override fun cancelDownload(fileName: String) {
         workManager.cancelUniqueWork(uniqueWorkName(fileName))
+        forgetInterruption(fileName)
+    }
+
+    override fun observeInterruptedDownloads(): Flow<List<InterruptedDownload>> = interruptions.observe()
+
+    override fun acknowledgeInterruption(fileName: String) = forgetInterruption(fileName)
+
+    /** Drops why the download of [fileName] stopped, and its notice. */
+    private fun forgetInterruption(fileName: String) {
+        interruptions.clear(fileName)
+        outcomeNotifier.dismiss(fileName)
     }
 
     /**
@@ -168,6 +191,9 @@ class AndroidModelDownloadManager @Inject constructor(
                 code = outputData
                     .getInt(ModelDownloadWorker.KEY_ERROR_CODE, ModelDownloadWorker.NO_HTTP_CODE)
                     .takeIf { it != ModelDownloadWorker.NO_HTTP_CODE },
+                failure = outputData.getString(ModelDownloadWorker.KEY_FAILURE)
+                    .let { name -> ModelDownloadFailure.entries.firstOrNull { it.name == name } }
+                    ?: ModelDownloadFailure.OTHER,
             ),
         )
         WorkInfo.State.CANCELLED -> null
@@ -181,8 +207,42 @@ class AndroidModelDownloadManager @Inject constructor(
      *   response, or `null` for transport/IO failures. Carried as a typed
      *   field so consumers can branch on the status (e.g. an access-gated
      *   401/403) without parsing it back out of [message].
+     * @property failure Why the download ended, where a screen words it on its
+     *   own — a pause or a file that failed its checksum; [ModelDownloadFailure.OTHER]
+     *   for everything [code] and [message] already describe.
      */
-    data class DownloadError(val message: String, val code: Int? = null) : AppError.Network
+    data class DownloadError(
+        val message: String,
+        val code: Int? = null,
+        val failure: ModelDownloadFailure = ModelDownloadFailure.OTHER,
+    ) : AppError.Network {
+
+        /**
+         * Whether the source refused the download for access — HTTP 401 or 403, which is how an
+         * access-gated Hugging Face repository answers a request without a token, or with one whose
+         * account has not accepted the licence. A screen words this as "accept the licence and add a
+         * token" rather than as a connection problem.
+         */
+        val accessRefused: Boolean
+            get() = code == HTTP_UNAUTHORIZED || code == HTTP_FORBIDDEN
+
+        /**
+         * Whether the download worker recorded this stop before failing — a pause at the foreground
+         * time limit, or a file that failed its checksum. A screen shows such a stop from that record,
+         * once, so the screen that watched the download does not word it a second time.
+         */
+        val recordedInterruption: Boolean
+            get() = failure == ModelDownloadFailure.PAUSED_TIME_LIMIT ||
+                failure == ModelDownloadFailure.CHECKSUM_MISMATCH
+
+        private companion object {
+            /** Missing or invalid credentials. */
+            const val HTTP_UNAUTHORIZED = 401
+
+            /** Credentials accepted, access not granted — the licence not accepted. */
+            const val HTTP_FORBIDDEN = 403
+        }
+    }
 
     private companion object {
 

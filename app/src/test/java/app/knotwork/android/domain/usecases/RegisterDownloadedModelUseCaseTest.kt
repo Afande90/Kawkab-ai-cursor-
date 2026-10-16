@@ -68,6 +68,46 @@ class RegisterDownloadedModelUseCaseTest {
     }
 
     @Test
+    fun `given a download with a source when registered then the source is recorded`() = runTest {
+        // Given
+        coEvery { localModelRepository.findByFileName("gemma.litertlm") } returns null
+        coEvery { localModelRepository.findByPath("/data/gemma.litertlm") } returns null
+        val inserted = slot<LocalModel>()
+        coEvery { localModelRepository.insertModel(capture(inserted)) } returns 7L
+
+        // When
+        useCase("gemma.litertlm", "/data/gemma.litertlm", sizeBytes = 2_048L, sourceUrl = SOURCE)
+
+        // Then
+        assertEquals(SOURCE, inserted.captured.sourceUrl)
+    }
+
+    @Test
+    fun `given a row with a source when re-registered then a missing source keeps it and a new one replaces it`() =
+        runTest {
+            // Given — a file found on disk at start-up re-registers without knowing its source.
+            val existing = LocalModel(
+                id = 9L,
+                name = "gemma.litertlm",
+                path = "/data/gemma.litertlm",
+                size = 2_048L,
+                isActive = false,
+                sourceUrl = SOURCE,
+            )
+            coEvery { localModelRepository.findByFileName("gemma.litertlm") } returns existing
+            val updated = mutableListOf<LocalModel>()
+            coEvery { localModelRepository.updateModel(capture(updated)) } returns Unit
+
+            // When
+            useCase("gemma.litertlm", "/data/gemma.litertlm", sizeBytes = 2_048L)
+            useCase("gemma.litertlm", "/data/gemma.litertlm", sizeBytes = 2_048L, sourceUrl = "https://example.com/m")
+
+            // Then
+            assertEquals(SOURCE, updated[0].sourceUrl)
+            assertEquals("https://example.com/m", updated[1].sourceUrl)
+        }
+
+    @Test
     fun `given a hashed row when re-registered then the stored hash is carried, not erased`() = runTest {
         // The stamp decides whether the hash still holds; the registration only
         // rewrites name, path and size, so a file that did not change keeps its hash.
@@ -83,6 +123,56 @@ class RegisterDownloadedModelUseCaseTest {
 
         assertEquals(hash, updated.captured.fileHash)
     }
+
+    @Test
+    fun `given a checked download when registered as new then its source hash and file hash are recorded`() = runTest {
+        coEvery { localModelRepository.findByFileName("gemma.litertlm") } returns null
+        coEvery { localModelRepository.findByPath("/data/gemma.litertlm") } returns null
+        val inserted = slot<LocalModel>()
+        coEvery { localModelRepository.insertModel(capture(inserted)) } returns 7L
+        val hash = ModelFileHash(sha256 = "ab12", fileSizeBytes = 2_048L, fileModifiedAtMs = 99L)
+
+        useCase(
+            "gemma.litertlm",
+            "/data/gemma.litertlm",
+            sizeBytes = 2_048L,
+            sourceUrl = SOURCE,
+            sourceSha256 = "ab12",
+            fileHash = hash,
+        )
+
+        assertEquals("ab12", inserted.captured.sourceSha256)
+        assertEquals(hash, inserted.captured.fileHash)
+    }
+
+    @Test
+    fun `given a checked row when re-registered then a missing source hash keeps it and a new one replaces it`() =
+        runTest {
+            // Whether the kept value still describes the file is decided against the file's
+            // current hash (`LocalModel.matchesPublishedHash`), not here.
+            val oldHash = ModelFileHash(sha256 = "ab12", fileSizeBytes = 2_048L, fileModifiedAtMs = 99L)
+            val newHash = ModelFileHash(sha256 = "cd34", fileSizeBytes = 2_048L, fileModifiedAtMs = 120L)
+            val existing = LocalModel(
+                id = 9L,
+                name = "gemma.litertlm",
+                path = "/data/gemma.litertlm",
+                size = 2_048L,
+                isActive = false,
+                fileHash = oldHash,
+                sourceSha256 = "ab12",
+            )
+            coEvery { localModelRepository.findByFileName("gemma.litertlm") } returns existing
+            val updated = mutableListOf<LocalModel>()
+            coEvery { localModelRepository.updateModel(capture(updated)) } returns Unit
+
+            useCase("gemma.litertlm", "/data/gemma.litertlm", sizeBytes = 2_048L)
+            useCase("gemma.litertlm", "/data/gemma.litertlm", 2_048L, SOURCE, sourceSha256 = "cd34", fileHash = newHash)
+
+            assertEquals("ab12", updated[0].sourceSha256)
+            assertEquals(oldHash, updated[0].fileHash)
+            assertEquals("cd34", updated[1].sourceSha256)
+            assertEquals(newHash, updated[1].fileHash)
+        }
 
     @Test
     fun `given two registrations of one file at once when both run then one row is inserted`() = runTest {
@@ -135,4 +225,8 @@ class RegisterDownloadedModelUseCaseTest {
             assertEquals("q4/model.litertlm", updated.captured.name)
             assertEquals(2_048L, updated.captured.size)
         }
+
+    private companion object {
+        const val SOURCE = "https://huggingface.co/litert-community/gemma/resolve/main/gemma.litertlm"
+    }
 }

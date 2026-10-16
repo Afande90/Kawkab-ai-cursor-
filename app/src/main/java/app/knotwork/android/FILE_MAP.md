@@ -16,12 +16,39 @@ Only Kotlin files appear inside the generated blocks.
   - `audio/` - Voice-input capture.
     - `AudioRecorderImpl.kt` - `AudioRecorder` backed by platform `AudioRecord`: captures 16 kHz mono 16-bit PCM into a WAV inside `AudioCaptureStore`, ticks elapsed seconds into `RecordingState`, and auto-stops at the limit. Mic opened only after the composer permission gate (`@SuppressLint("MissingPermission")`). Excluded from Kover (Android-bound).
     - `WavHeader.kt` - Pure builder for the 44-byte canonical PCM WAV (RIFF) header (16 kHz mono 16-bit), split out from the recorder so the byte layout is JVM-unit-testable.
+  - `backup/` - Backup archive format: Argon2id keys, the authenticated header, AES-256-GCM chunk streams and the entry container.
+    - `Argon2idBackupKeyDerivation.kt` - `BackupKeyDerivation` on Bouncy Castle's Argon2id (RFC 9106, version 0x13).
+    - `BackedUpSecrets.kt` - The entries one owner keeps in a Keystore-backed store, as a backup sees them.
+    - `BackupArchiveReader.kt` - Reads the entries of an archive one by one, after its header has been read and while every chunk is authenticated by `BackupDecryptingInputStream`.
+    - `BackupArchiveWriter.kt` - Writes the content of an archive: a ZIP stream of named entries, encrypted as it is written by `BackupEncryptingOutputStream` (`docs/backup-format.md` § Content).
+    - `BackupChunkFrame.kt` - The frame every encrypted chunk of an archive travels in (`docs/backup-format.md` § Chunks).
+    - `BackupContentCollector.kt` - `BackupContentSource` over the app's database, DataStore, encrypted stores and files.
+    - `BackupDecryptingInputStream.kt` - Reads the content of an archive whose header has been read, checking the header's authentication code first and every chunk as it arrives.
+    - `BackupEncryptingOutputStream.kt` - Writes an archive: the authenticated header first, then everything written to this stream as AES-256-GCM chunks of `BackupHeader.chunkSize` plaintext bytes in `BackupChunkFrame`s.
+    - `BackupEntryNameSet.kt` - The entry names an archive has used so far, kept by the writer and the reader alike: a name may appear once, and may not be a file and a directory at once — `files/a` and `files/a/b` cannot both be unpacked, whichever comes first.
+    - `BackupExporterImpl.kt` - `BackupExporter`: derives the keys, gathers the content, writes the archive.
+    - `BackupFileSource.kt` - The files a backup carries: the agent's workspace and the image attachments, each as an archive entry.
+    - `BackupHeaderCodec.kt` - Writes and reads the open header of a backup archive (`docs/backup-format.md` § Header).
+    - `BackupLocalDataCounter.kt` - `LocalDataCounter` over the same sources an export reads, so a restore's *Will be lost* counts what a backup taken now would hold.
+    - `BackupRestorerImpl.kt` - `BackupRestorer` over the app's own storage: `RestoreStager` checks and stages, the start applies the files (`PendingRestoreApplier`) and `RestoreFinisher` completes the rest.
+    - `PendingRestoreApplier.kt` - Puts the database and the files of a committed restore in place, at the very start of the process — before the app's dependencies exist, so nothing has the database or a file open.
+    - `PreferenceBackupPolicy.kt` - Which settings go into a backup and which stay with the phone.
+    - `PreferencesBackupJson.kt` - The settings entry of an archive (`app.knotwork.android.domain.backup.BackupFormat.PREFERENCES_ENTRY`): every travelling DataStore value with its type, so a restore writes back exactly what was there.
+    - `RestoredPreferencesMigration.kt` - Writes a committed restore's settings into the app's DataStore when it is first opened after the restart — before anything reads a setting.
+    - `RestoreFinisher.kt` - Completes a committed restore once the app is up, after the start put its database and files in place (`PendingRestoreApplier`).
+    - `RestoreLayout.kt` - Where a restore keeps what it has staged, and where what it replaces lives.
+    - `RestoreStagedEntries.kt` - Holds a staged restore's encrypted-store entries — the provider settings, and the secrets when the archive carries them — between the check and the restart, in a Keystore-backed store of their own, so no secret of the archive is ever written to disk as plain text.
+    - `RestoreStager.kt` - Reads an archive with the user's password into the staging area (`RestoreLayout.staging`).
+    - `SafBackupDocuments.kt` - `BackupDocuments` over the Storage Access Framework.
+    - `SqlCipherDatabaseSnapshotter.kt` - `DatabaseSnapshotter` on SQLCipher's `sqlcipher_export()`.
+    - `StagedDatabasePreparer.kt` - Makes a staged database ready to replace the app's own.
   - `engine/` - Core LLM and inference engines.
     - `AndroidRunEnvironment.kt` - `RunEnvironment` read from the build and the device.
     - `CloudClientTimeouts.kt` - Network deadlines applied to every Koog model client the app builds — the chat clients in `KoogClientFactory` and the embedding clients in `app.knotwork.android.data.services.embedding.DefaultKoogEmbedderFactory`.
     - `KoogClientFactory.kt` - Factory for Koog clients; data-layer impl of `domain/engine/CloudLlmClientFactory`. Every constructed client is retry-wrapped via `CloudRetryWrapper` and carries an explicit `ConnectionTimeoutConfig` (60 s socket / 30 s connect / 900 s request) — the per-read socket value bounds provider silence rather than answer length. `createClient` threads a `CloudRetryListener` for console observability; it is the one entry point for every caller, `delegate_task` included.
-    - `KoogCloudLlmModelResolver.kt` - Data-layer impl of `domain/engine/CloudLlmModelResolver`; owns per-provider default model ids and Ollama context-window lookup.
-    - `KoogModelMapper.kt` - Maps string identifiers to Koog LLModel constants.
+    - `KoogCloudLlmModelResolver.kt` - Data-layer impl of `domain/engine/CloudLlmModelResolver`: turns the model `CloudModelCatalog` names for the saved id into the Koog `LLModel` a run sends, with Ollama's context window.
+    - `KoogCloudModelCatalog.kt` - Data-layer implementation of `CloudModelCatalog`: the built-in lists and defaults of `KoogModelMapper`, and Ollama's default.
+    - `KoogModelMapper.kt` - The models offered for each hosted provider Koog lists, and each one's default — Koog's own `LLModel` constants, each written once.
     - `KoogProviderConnectionChecker.kt` - `ProviderConnectionChecker` on the Koog clients a run uses: the model list of each provider, asked once, with the values in the form.
     - `KoogStructuredInferenceClientFactory.kt` - Data-layer impl of `domain/engine/structured/CloudStructuredInferenceClientFactory`; builds a retry-wrapped Koog client and exposes a `StructuredInferenceClient` that collapses the streamed response for the gate; no JSON mode is switched on.
     - `KoogTransportFactory.kt` - The transport every Koog model client the app builds runs on: Koog's own Ktor client, extended to check every hop (first request and each redirect) against `ModelHopRule` and to record the `Retry-After` of each error answer for the retry policy.
@@ -145,6 +172,8 @@ Only Kotlin files appear inside the generated blocks.
       - `Migration67To68.kt` - v67 → v68: adds `model_calls.durationMs` — how long an on-device call's stream took.
       - `Migration68To69.kt` - v68 → v69: lets a newer statement of a memory fact replace the stored one without losing it.
       - `Migration69To70.kt` - v69 → v70: lets a trigger's health be measured from when it was switched on, and remembers which silence the user was told about.
+      - `Migration70To71.kt` - v70 → v71: remembers where each downloaded model came from.
+      - `Migration71To72.kt` - v71 → v72: remembers that a model's file was checked against its source.
       - `Migration9To10.kt` - Migration from version 9 to 10.
     - `models/` - Local DB entity models.
       - `BackgroundPromptEntity.kt` - The prompt of one queued background run, kept in the encrypted database so the background runtime's own store — unencrypted — never holds it.
@@ -274,7 +303,9 @@ Only Kotlin files appear inside the generated blocks.
     - `AttachmentOrphanCleanupScheduler.kt` - Owns the WorkManager scheduling of `AttachmentOrphanCleanupWorker`: a daily charging + device-idle job (unique-name + KEEP), same window as run retention. Wired from `MainActivity.onCreate`.
     - `AttachmentOrphanCleanupWorker.kt` - `@HiltWorker` running the daily file-maintenance pass: `CleanupOrphanAttachmentsUseCase` (backstop for attachments left behind by a failed eager delete), then `TransientCacheSweeper` over the cache's handoff directories.
     - `ChargingTriggerSweepWorker.kt` - One-shot `@HiltWorker` registered by `WorkManagerTriggerScheduler` as a `setRequiresCharging(true)` request, so `JobScheduler` wakes even a closed app within seconds of charging starting; loads the active **charging** triggers and hands each to `FireTriggerUseCase`. No firing logic of its own — the decision stays single-sourced with the periodic poll, which re-arms on unplug and re-enqueues this one-shot for the next charge edge.
+    - `DownloadedModelInstaller.kt` - Turns a finished download into an installed model — or refuses to.
     - `DownloadForegroundBudget.kt` - Keeps model downloads under Android's daily limit for `dataSync` foreground services.
+    - `DownloadInterruptionStore.kt` - Remembers the model downloads that stopped without a model for a reason the user has to be told, until a screen has told them.
     - `embedding/` - `EmbeddingProvider` implementations and the Koog client seam.
       - `CloudEmbeddingProvider.kt` - OpenAI `text-embedding-3-small` provider (1536-d) via Koog; on-device fallback when no key.
       - `KoogEmbedderFactory.kt` - Factory (+ default impl) building Koog OpenAI/Ollama embedding clients; `List<Double> → FloatArray` helper.
@@ -284,6 +315,7 @@ Only Kotlin files appear inside the generated blocks.
     - `MemoryCompactionScheduler.kt` - Owns the WorkManager scheduling of `MemoryCompactionWorker`: a daily periodic job (charging + device-idle) plus an out-of-schedule `startHardLimitWatch` that fires an immediate relaxed-constraint pass when the chunk count crosses `maxMemoryChunks`. Wired from `MainActivity.onCreate`.
     - `MemoryCompactionWorker.kt` - `@HiltWorker` that runs one long-term memory compaction pass. Gates on `MemorySettings.memoryCompactionEnabled` and delegates clustering/consolidation to `MemoryCompactionUseCase`.
     - `MemoryReembedWorker.kt` - `@HiltWorker` that re-embeds memory chunks flagged `needsReembedding` (imported under a different provider) off the hot path, delegating to `RecomputePendingEmbeddingsUseCase`; `Result.retry()` on failure so WorkManager backs off and retries.
+    - `ModelDownloadOutcomeNotifier.kt` - Tells the user, by a notification, that a model download stopped without a model.
     - `ModelDownloadWorker.kt` - `@HiltWorker` owning one model download: promotes itself to a `dataSync` foreground service (best-effort) with a progress + Cancel notification, resumes through `ResumableFileDownloader`, retries transport failures (HTTP statuses fail immediately), reads the Hugging Face token from the encrypted store rather than worker input, and registers the finished file via `RegisterDownloadedModelUseCase`.
     - `ModelFileHashWorker.kt` - Background worker that hashes every installed model file without a current SHA-256.
     - `PendingInteractionMaintenanceScheduler.kt` - Schedules the periodic `PendingInteractionMaintenanceWorker` expiry pass (battery-not-low only — deliberately looser than the compaction window so expiry tracks its window, not the charger). Wired from `MainActivity.onCreate`.
@@ -323,6 +355,7 @@ Only Kotlin files appear inside the generated blocks.
 - `di/` - Dependency Injection configurations (Hilt).
   - `ApplicationScope.kt` - `@Qualifier` for the application-lifetime `CoroutineScope` provided by `CoroutinesModule`.
   - `AppModule.kt` - General app-level DI module.
+  - `BackupModule.kt` - Wires the encrypted backup: the exporter, the key derivation, the database snapshot, the content it gathers, and every owner of encrypted-store entries (`BackedUpSecrets`).
   - `CoroutinesModule.kt` - Provides the `@ApplicationScope` application-lifetime `CoroutineScope` (`SupervisorJob` + `Dispatchers.Default`) for singletons that own fire-and-forget background work (e.g. the voice recorder).
   - `DataModule.kt` - Data layer DI module.
   - `EmbeddingModule.kt` - Hilt multibinding for the `EmbeddingProvider` map (`use` / `openai_3_small` / `ollama`) and the `KoogEmbedderFactory` binding.
@@ -332,6 +365,19 @@ Only Kotlin files appear inside the generated blocks.
   - `PromptTemplateModule.kt` - Hilt multibinding module for prompt variable providers.
   - `SettingsModule.kt` - Hilt bindings of the settings sections and of the transitional `SettingsRepository` composite.
 - `domain/` - Domain layer containing core business logic and Use Cases.
+  - `backup/` - Backup archive format contract: header, key-derivation bounds, read failures, entry-name rule.
+    - `BackupDocuments.kt` - The documents the user picks for a backup, by URI: opened for writing, named, finished, deleted.
+    - `BackupEntryName.kt` - The rule every entry name inside an archive obeys, checked by the writer before it writes an entry and by the reader before it hands one out.
+    - `BackupExporter.kt` - Writes the whole app's data into one archive, encrypted with a password (`docs/backup-format.md`).
+    - `BackupFormat.kt` - The fixed numbers of the backup archive format — the public contract described in `docs/backup-format.md`.
+    - `BackupHeader.kt` - The open header of a backup archive: everything a reader needs before the password, and what the app shows about a file before asking for it.
+    - `BackupKdfParams.kt` - Argon2id cost parameters (RFC 9106) the archive key is derived with.
+    - `BackupKeyDerivation.kt` - Turns the password the user chose into the two keys of an archive.
+    - `BackupManifest.kt` - What an archive holds — the first entry of every archive (`BackupFormat.MANIFEST_ENTRY`), written by the export and read before a restore replaces anything.
+    - `BackupManifestJson.kt` - The JSON of `BackupManifest` — part of the public format (`docs/backup-format.md` § Manifest).
+    - `BackupReadFailure.kt` - Why an archive could not be read.
+    - `BackupRestorer.kt` - Restores the app's data from an archive `BackupExporter` wrote, in three steps.
+    - `LocalDataCounter.kt` - Counts what this phone holds now, in the terms a backup's manifest uses — what a restore would replace.
   - `connection/` - Connection checks (Test connection): what a check found, why it sent nothing, the one address rule a request is held to, and the checker contracts.
     - `ConnectionCheckResult.kt` - What one connection check found: the server answered with its list, a rule kept the request from being sent, or the request was sent and failed.
     - `ConnectionPreconditions.kt` - What stops a connection check before it sends anything, judged from the form and the network settings — the reason the Test button is disabled, and the first thing a check that runs asks.
@@ -347,7 +393,7 @@ Only Kotlin files appear inside the generated blocks.
     - `ModelDiscoveryConstants.kt` - Cross-layer constants for Hugging Face model discovery: Hub base URL, curated `litert-community` author, `.litertlm` extension, default page size, and the `resolve`/model-card URL builders.
     - `NotificationChannels.kt` - Canonical ids of every Android `NotificationChannel` (foreground service status, approval prompts, scheduled-task results).
     - `NotificationIds.kt` - The one place that decides the Android notification id of everything the app posts.
-    - `OnboardingModelCatalog.kt` - Maps the catalog-side `OnboardingLiteRtModel.id` (`gemma_4_e2b` / `gemma_4_e4b`) to the on-disk filename + HuggingFace URL consumed by `OnboardingViewModel.startDownload` and `LocalModelRepository.isInstalled`. The custom URL row's link is checked by `CustomModelLink`.
+    - `OnboardingModelCatalog.kt` - Maps the catalog-side `OnboardingLiteRtModel.id` (`gemma_4_e2b` / `gemma_4_e4b`) to the on-disk filename + HuggingFace URL consumed by `OnboardingViewModel.startDownload` and `LocalModelRepository.findByFileName`. The custom URL row's link is checked by `CustomModelLink`.
     - `OnboardingScenarioCatalog.kt` - Single source of truth wiring each onboarding value-gallery scenario id (`styled_translation` / `share_handler` / `virtual_companion_mood_router`) to its bundled preset, the `EntrySurface` it binds (or none), and the LiteRT model it needs. Consumed by `SetUpScenarioUseCase`; mirrored on the design side by the catalog `OnboardingScenario` enum.
     - `PerformanceConstants.kt` - Tunables for the model performance feature: `SAMPLE_WINDOW` (runs averaged into the Performance card) and `MEMORY_SAMPLE_INTERVAL_MS` (peak-native-heap sampling cadence). Code-level (no Settings UI).
     - `PipelineConstants.kt` - Limits shared by every path that stores a pipeline, so the library, the editor toolbar and the import dialogs see one ceiling rather than one per feature.
@@ -365,6 +411,8 @@ Only Kotlin files appear inside the generated blocks.
     - `CloudErrorSanitizer.kt` - Strips credentials (secret-named query parameters, `Bearer` tokens) out of cloud-provider error text before it reaches the console, the run trace or logcat. Needed because providers that authenticate by query parameter quote the failing URL — key included — in ordinary transport errors.
     - `CloudLlmClientFactory.kt` - Domain interface for constructing cloud LLM clients (data-layer impl: `KoogClientFactory`).
     - `CloudLlmModelResolver.kt` - Domain interface for resolving cloud-LLM model objects (data-layer impl: `KoogCloudLlmModelResolver`).
+    - `CloudModelCatalog.kt` - The cloud models the app offers, and the model a run uses for what the user saved.
+    - `CloudStreamEnd.kt` - Whether a cloud answer that streamed to its end was whole, or was cut off.
     - `DefaultPipelineFactory.kt` - Factory for default pipelines.
     - `executors/` - Per-`NodeType` `NodeExecutor` strategies dispatched by `NodeExecutorFactory`.
       - `ClarificationNodeExecutor.kt` - Executor for `NodeType.CLARIFICATION` that asks the local LLM to generate a question/options JSON, suspends on `ClarificationRepository.requestAnswer`, and forwards the user's reply downstream.
@@ -450,6 +498,7 @@ Only Kotlin files appear inside the generated blocks.
     - `CustomModelLink.kt` - A pasted model link checked before anything downloads: `Accepted` (link + file name = path's last segment without query/fragment), `Blank`, or `NotLitertlm`; shared by the Models screen and onboarding.
     - `DbPassphraseUnavailableException.kt` - Typed exception raised when the SQLCipher passphrase cannot be read (or does not match) while an encrypted DB file exists (`Reason`: PREFS_OPEN_FAILED / PASSPHRASE_MISSING / PASSPHRASE_MALFORMED / KEY_MISMATCH); routes to the splash data-locked recovery screen.
     - `DiscoverableModel.kt` - Domain models for Hugging Face discovery: `DiscoverableModelSummary` (list card — repoId/name/downloads/likes/licence/gated/file-count), `DiscoverableModelDetail` (+ model-card URL and the per-file breakdown) and `DiscoverableModelFile` (`.litertlm` file: name/size/resolve URL/installed).
+    - `DownloadedModelCheck.kt` - What the check of a freshly downloaded model file concluded, before the file is installed.
     - `DownloadState.kt` - Download state model.
     - `DynamicShortcutSpec.kt` - Framework-free description of one dynamic launcher shortcut (id / sessionId / clamped labels / rank), built by `BuildDynamicShortcutsUseCase`.
     - `EngineImageInput.kt` - A run's single image resolved for the engine: absolute JPEG path (for LiteRT-LM `Content.ImageFile`) plus pixel `width`/`height` and on-disk `sizeBytes` (for the `Image input: W×H, N KB` console line). Built by `TaskQueueManagerImpl` from the saved `MessageAttachment` and threaded into `GraphExecutionEngine`.
@@ -482,6 +531,7 @@ Only Kotlin files appear inside the generated blocks.
     - `MemorySummary.kt` - Lightweight memory projection (id/text/timestamp) used by `$MEMORY_SUMMARY`.
     - `MemoryVersion.kt` - One earlier version of a long-term memory chunk: a text the chunk held before a newer statement of the same fact replaced it in place.
     - `MessageAttachment.kt` - Image attached to a user `ChatMessage`: store-relative `path`, `mimeType` (always `image/jpeg` this phase), and downscaled pixel `width`/`height`. Pure-Kotlin value class carried on `ChatMessage` and `AgentTask`.
+    - `ModelDownloadFailure.kt` - Why a model download ended without installing a model, where a screen has to say more than "it failed".
     - `ModelFileHash.kt` - The SHA-256 of an installed model file, with the stamp of the file it was computed from.
     - `ModelFileStatus.kt` - Where an installed model file stands with its checksum, as a check of a past run needs to tell: a run can be repeated only on the file it ran on, and the checksum is how that is known.
     - `ModelPerformanceSample.kt` - One persisted inference measurement (TTFT / decode tok-s / total / peak native heap / `isBenchmark`), keyed by model path; `fromTimings(...)` derives the figures from raw timings (shared by executor + benchmark). Also hosts `ModelPerformanceSummary` (rolling-average fold; excludes degenerate 0-ttft / 0-decode samples from the means, keeps the window count, or `null` when empty).
@@ -684,6 +734,7 @@ Only Kotlin files appear inside the generated blocks.
       - `ExportExternalAutomationJournalUseCase.kt` - Produces the external-automation request journal's export document: reads the whole journal as a snapshot and renders it through `BuildExternalAutomationJournalExportUseCase`.
       - `HandleExternalAutomationRequestUseCase.kt` - The decision path of the external-automation entry point, and the **single write seam** of its journal: parse → the pure authorizer (switch on, surface bound, target allowed) → atomic rate-ceiling admission → `TaskScheduler.scheduleOneTime(origin = EXTERNAL)`. No second execution path exists, which is what makes HITL / risk overrides / the destructive block apply by construction rather than by re-implementation. Every path leaves exactly one journal record. Pins the surface's accumulating chat via `EXTERNAL_AUTOMATION_SESSION_ID`.
       - `ParseExternalAutomationRequestUseCase.kt` - Pure parser/validator from `ExternalAutomationInvocation` to a validated request, returning `ExternalAutomationParseResult` (Parsed / Invalid with a typed reason). Refuses — never repairs — unknown actions, missing/doubled targets, missing/doubled prompts and undecodable base64 (standard alphabet, padding optional). Fixed check order so a multiply-wrong call always reports the same reason.
+    - `BackUpToDocumentUseCase.kt` - Backs the app up into the document the user picked (Settings → Privacy → Backup & restore → Back up).
     - `BuildDynamicShortcutsUseCase.kt` - Pure selection of recent sessions → `DynamicShortcutSpec`s (recency order, count cap, label clamping, blank-name skip).
     - `BuildTriggerJournalExportUseCase.kt` - Pure renderer of a trigger-evaluation journal snapshot into a machine-readable JSON document (schema/local-only header + per-row verdict/skip-reason/run-outcome discriminators and the flat `hitl*` quartet, `schemaVersion = 2`; caller order preserved). Backs the debug soak dump; performs no I/O and no network.
     - `BuildUsageTelemetryExportUseCase.kt` - Pure renderer of the on-device usage statistics into a text + JSON export document (resolves pipeline names supplied by the caller; performs no I/O and no network). The `retention` block ships the window definition and the live pipeline ids alongside the figures so a saved document stays self-explaining and re-derivable.
@@ -703,6 +754,7 @@ Only Kotlin files appear inside the generated blocks.
     - `EstimateCompactionUseCase.kt` - LLM-free preview of a prospective compaction pass: loads the same candidate set as `MemoryCompactionUseCase`, derives the clusterer's `k`, and returns a `CompactionEstimate` (≈ removed chunks / freed bytes / runtime) for the Memory screen's "Compact memory?" confirm dialog.
     - `EvaluateIfConditionUseCase.kt` - Use case for evaluating IF condition nodes.
     - `EvaluateTriggerFiringUseCase.kt` - Pure `Fire`/`ReArm`/`Skip` decision core given a device-state + clock snapshot. Time conditions fire on the clock (interval debounce = half the interval so WorkManager flex can't drop a cycle; daily once per calendar day); event conditions (charging/network) fire on the false→true device-state edge via the `Trigger.armed` latch (fire when satisfied & armed, re-arm when the condition drops). Android-free, exhaustively unit-tested.
+    - `ExportBackupUseCase.kt` - Backs up the whole app into one password-locked file the user picked (Settings → Privacy → Backup & restore → Back up).
     - `ExportChatUseCase.kt` - Serialises one session (active *or* archived) into the transferable `ChatExportDocument` that round-trips through `ChatRepository.importChat`. Lives in `domain` because export is not a property of the *open* chat — the archive exports a conversation it is not showing.
     - `ExportMemoryBaseUseCase.kt` - Serialises the memory table to a portable `schemaVersion: 1` JSON blob via `MemoryJsonSerializer` (stamping the active `embeddingProviderId` + `exportedAt`). SAF-driven from `SettingsScreen` (full table) and from the Memory screen's multi-select "Export selected" action (optional `ids` subset). The import counterpart is `MemoryImportUseCase`.
     - `ExportPipelineBundleUseCase.kt` - Walks the transitive `PIPELINE`-dependency closure of a root pipeline (library-then-preset resolution, visited-set for diamonds/cycles) and serialises it into a self-contained bundle; fails fast on an unresolvable dependency or an over-limit closure.
@@ -717,6 +769,7 @@ Only Kotlin files appear inside the generated blocks.
     - `ImportPipelineBundleUseCase.kt` - Two-step bundle import: `prepare` parses (via `PipelineBundleJsonSerializer`), validates every graph, and detects id collisions without writing; `persist` applies the collision resolution and writes the whole closure atomically (`PipelineRepository.savePipelines`).
     - `ImportPipelineUseCase.kt` - Parses a pipeline JSON document via `PipelineJsonSerializer` and persists clean, non-colliding imports through `SavePipelineUseCase`; defers schema-mismatch persistence to `persistConfirmed` and id-collision persistence to `persistWithResolution` (Replace / Import-as-copy).
     - `InitializeAppUseCase.kt` - First-launch initialiser: persists the default system prompts and materialises the bundled `showcase_full_agent` preset (via `LoadPipelineFromPresetUseCase`) as the seed/default pipeline, falling back to `DefaultPipelineFactory` if the preset asset is unavailable. Idempotent on `isFirstLaunch`. On **every** launch it also runs `SeedBundledSkillsUseCase` (so upgrading users receive the bundled skills) and sweeps orphaned runs.
+    - `InspectBackupDocumentUseCase.kt` - Reads what may be shown about a picked backup before its password is asked for: the file's name and size as its provider tells them, and its open header (Settings → Privacy → Backup & restore → Restore).
     - `InstallDiscoveredModelUseCase.kt` - Streams a chosen `.litertlm` file through `ModelDownloadManager` (asking for the stored Hugging Face token by flag, never by value) and, on success, refreshes the model row with the Hub-reported size (not auto-activated). Reuses the existing download path.
     - `JournalDayGrouper.kt` - The day-bucketing and timestamp arithmetic **shared** by the trigger evaluation journal and the external-automation request journal: generic over the record type (a `recordedAtOf` selector, so domain records need no display-driven supertype), producing per-device-local-day `JournalDaySection`s (`JournalDayHeader` Today/Yesterday/Date) and relative-vs-absolute `JournalTimestamp` (JustNow/MinutesAgo/AbsoluteTime) plus each entry's `ClockTime`. Owns `ClockTime` / `JournalTimestamp` / `JournalDayHeader`. Clock- and locale-free (caller passes `nowMillis` + `zone`); newest-first order preserved. One implementation so the two timelines cannot drift on what "just now" or "Yesterday" means.
     - `LaunchSharePipelineUseCase.kt` - Resolves the share binding, runs the multimodal pre-flight (`CheckImageAttachmentUseCase`) on a shared image before ingesting it via `AttachmentStore`, creates a bound session and enqueues an interactive `RunOrigin.SHARE` run; `ShareLaunchResult` = Launched / NotConfigured / NothingShared / Blocked.
@@ -769,9 +822,11 @@ Only Kotlin files appear inside the generated blocks.
     - `SeedBundledSkillsUseCase.kt` - Idempotently seeds the bundled skills into the `skills` table (delegates the asset I/O to `SkillRepository.seedBundledSkills`). Invoked from `InitializeAppUseCase` on every launch.
     - `SetSurfacePipelineUseCase.kt` - Symmetric write dispatch for an `EntrySurface` binding (exhaustive `when`); single point used by the library menu, the Background picker and the delete-cleanup loop.
     - `SetUpScenarioUseCase.kt` - One-tap onboarding set-up behind the value gallery: materialises a scenario's preset (via `LoadPipelineFromPresetUseCase`), marks it the default pipeline, binds its `EntrySurface` when it declares one (via `SetSurfacePipelineUseCase`), and projects a compact node/edge recap for the "Ready" step. Keyed by `OnboardingScenarioCatalog`.
+    - `StageRestoreFromDocumentUseCase.kt` - Checks a picked backup with its password and stages it, so the user can decide with the summary in front of them.
     - `SubmitApprovalDecisionUseCase.kt` - Single entry point of the user's approve / deny decision, addressed to the request it was given for: the live gate only if it waits on that request, else the parked record of that request — never "whatever the session is waiting on".
     - `SubmitCeilingDecisionUseCase.kt` - Single entry point for the user's continue / stop decision on a run that has spent one of its ceilings.
     - `SubmitClarificationAnswerUseCase.kt` - Single entry point of the user's clarification answer: live deferred first, then the parked record (the resumed node consumes the answer without re-running question inference).
+    - `SummarizeRestoreUseCase.kt` - What the *Ready to restore* summary weighs: what this phone holds now, which a restore replaces, and which of the backup's models this phone would have to download again.
     - `SyncTriggersUseCase.kt` - One-shot reconcile handing the current active-trigger snapshot (`TriggerRepository.observeActiveTriggers`) to `TriggerScheduler.syncAll`. Idempotent; the cold-start entry point (`MainActivity`) and the post-mutation re-sync invoked by `TriggersViewModel` after every save / enable-toggle / delete.
     - `TestBackendUseCase.kt` - Runs a fixed prompt-probe against the active local model (or a caller-supplied path) and persists `TestProbeResult` so the Settings row keeps showing the latest throughput.
     - `TranscribeAudioUseCase.kt` - Voice-input preprocessing: transcribes a recorded/picked audio clip into text **before** any pipeline (audio never travels the graph). Refuses while a run is active (`TaskQueueManager.globalState` busy gate → `EngineBusy`), checks the active model's `supportsAudio` (`NoActiveModel` / `ModelNotAudioCapable`), loads it with `requireAudio`, collects `LlmInferenceEngine.transcribe`, and deletes the ephemeral clip via `AudioCaptureStore` on success and terminal failure (kept only on `EngineBusy` for retry). Returns a `TranscriptionOutcome` sealed result.
@@ -827,6 +882,7 @@ Only Kotlin files appear inside the generated blocks.
     - `StartupMaintenance.kt` - The background upkeep a cold start arms, run by `MainActivity` off the main thread while the splash screen initialises the app.
   - `state/` - State management components.
     - `ActiveSessionTracker.kt` - Tracker for active chat session.
+    - `AppRestartRequest.kt` - Process-wide request to restart the app, set once a restore is committed: the next start applies the restore. `MainActivity` restarts whenever it is started with the request set.
     - `ChatEntryRequestRelay.kt` - `@Singleton` one-shot bus carrying a `ChatEntryRequest` (`OpenThread{id}` / `NewChat`) from a `knotwork://chat…` / `new-chat` shortcut/share/notification to the single chat home, drained by the `CHAT_TAB` composable into `selectThread` / `createNewSessionWithPipeline`. `Channel.CONFLATED` so a cold-launch request buffers until the collector mounts and is consumed exactly once.
     - `TransientMessageRelay.kt` - `@Singleton` one-shot snackbar bus consumed by the activity-level `SnackbarHost` in `AppShellScaffold`. Used by `OnboardingViewModel.skipOnboarding` to surface the "install a model from Settings → Models" hint *after* navigation pops onboarding off the back-stack.
   - `theme/` - Compose theme definitions.
@@ -988,7 +1044,7 @@ Only Kotlin files appear inside the generated blocks.
         - `core/` - Editor mechanics with no Compose surface of their own — auto-layout, edge geometry, undo/redo.
           - `AutoLayout.kt` - Sugiyama-style hierarchical layout (longest-path layering + median crossing reduction + grid-snapped coordinates); pure Kotlin.
           - `BezierEdge.kt` - Cubic-Bezier control-point math, point-evaluation, arc-length approximation, hit-test; pure Kotlin.
-          - `CanvasTransform.kt` - Canvas (dp) ↔ screen (px) projection through zoom and display density; pan / pinch-zoom math + `snapToGrid` + `fitToBounds(bbox, viewport, padding, maxScale)` + `zoomedOneStep(direction, viewport)` + `Bounds` data class with `Bounds.ofNodes(...)`; pure Kotlin.
+          - `CanvasTransform.kt` - Canvas (dp) ↔ screen (px) projection through zoom and display density; pan / pinch-zoom math + `snapToGrid` + `fitToBounds(bbox, viewport, padding, maxScale)` + `zoomedOneStep(direction, viewport)` + `Bounds` data class with `Bounds.ofCards(...)` over `CardRect`s; pure Kotlin.
           - `EditorState.kt` - `@Stable` screen-local state holder (`transform`, `selection`, `multiSelectMode`, `connectionInProgress`, `quickAddAnchor`, `activeRunningNodeId`, `isRunning`, `configuringNodeId`, `workingConfig`, `undoRedo`, `miniMapOpen`, `gridVisible`, `clipboard`, `searchOpen`, `searchQuery`). `requestFit()` / `frameIfNeeded(...)` open-time framing. `rememberEditorState()` factory (seeds the display density).
           - `EditorUndoRedo.kt` - Bounded undo / redo snapshot stack (capacity = 50); pure Kotlin.
           - `MiniMapGeometry.kt` - Pure-Kotlin projection from canvas-space to mini-map pixels (`canvasToMiniX/Y` + inverse + `viewportRect`); used by the `MiniMap` overlay. Unit-tested.
@@ -1007,6 +1063,12 @@ Only Kotlin files appear inside the generated blocks.
     - `settings/` - Settings surface as a nested navigation graph: a category **hub** (inline Basic controls + eight category rows) routing to eight per-category sub-screens, each with an in-category "Advanced — change deliberately" disclosure. Catalog `SettingsHubContent` + `<Category>SettingsContent` render the slices; re-organisation only — every setting keeps its meaning, range, default, validation and gating 1:1.
       - `AboutSettingsDelegate.kt` - About category: read-only identity card load + the Reset-all-settings action.
       - `BackgroundSettingsDelegate.kt` - Background & triggers category: notification toggles, resume / background-approval windows, the three entry-surface pipeline bindings, and the external-automation consent switch. That switch is the one setting here that does not write through: moving it **on** only stages `pendingExternalAutomationConsent` and `confirmExternalAutomationConsent` persists it, while moving it **off** writes immediately — a confirmation on the way out would falsify the consent copy's "one tap turns it off". Also folds the newest external-request journal row (only the newest: that table's write rate is set by a third-party app) into the Background row subtitle.
+      - `backup/` - Settings → Privacy → *Backup & restore*: the screen and its ViewModel.
+        - `AfterRestoreHost.kt` - The after-restore sheet over the chat, while there is a restore report to show (`AfterRestoreViewModel`).
+        - `AfterRestoreViewModel.kt` - What the app tells the user the first time it opens after a restore: a sheet over the chat with the models to download again, the keys to enter again and the tasks that were not carried — or, when nothing is left to do, the snackbar *Restored*.
+        - `BackupScreen.kt` - Settings → Privacy → *Backup & restore*: the screen and its *Back up* route, over `BackupViewModel`.
+        - `BackupViewModel.kt` - Settings → Privacy → *Backup & restore*, and its *Back up* route.
+        - `RestoreViewModel.kt` - Settings → Privacy → *Backup & restore* → *Restore from file…*: the picked file, its password, the check, the summary, the typed confirm, and the commit after which the app restarts.
       - `ExternalAutomationRowSummary.kt` - Composes the Settings row for the external-automation entry point: its binding label, its status word, and the journal one-liner beneath it. Separate from the screen because the "switched on with nothing to run" state has to read as a warning rather than as an untouched default.
       - `GenerationSettingsDelegate.kt` - Generation category: system instructions (+ `$VARIABLE` chip catalog), the four sampling parameters and the voice-input length; resetSamplingDefaults.
       - `MemorySettingsDelegate.kt` - Memory category: live stats, every memory-tuning parameter with range validation, the `$MEMORY_SUMMARY` default limit, embedding-provider selection, verbose memory logging, and the export / import / re-embed / clear data actions.

@@ -32,8 +32,18 @@ class EditorStateFramingTest {
     fun `given an unmeasured viewport when framing then nothing happens and the frame is still owed`() {
         val editor = EditorState(density = 3f)
 
-        assertFalse(editor.frameIfNeeded(translation, viewportW = 0f, viewportH = 0f, paddingPx = 0f))
-        assertTrue(editor.frameIfNeeded(translation, viewportW = 1236f, viewportH = 2400f, paddingPx = 0f))
+        assertFalse(
+            editor.frameIfNeeded(translation, viewportW = 0f, viewportH = 0f, paddingPx = 0f, cardWidth = MIN_CARD),
+        )
+        assertTrue(
+            editor.frameIfNeeded(
+                translation,
+                viewportW = 1236f,
+                viewportH = 2400f,
+                paddingPx = 0f,
+                cardWidth = MIN_CARD,
+            ),
+        )
     }
 
     @Test
@@ -41,19 +51,33 @@ class EditorStateFramingTest {
         // 412 dp phone at density 3 = 1236 px wide.
         val editor = EditorState(density = 3f)
 
-        assertTrue(editor.frameIfNeeded(translation, viewportW = 1236f, viewportH = 2400f, paddingPx = 96f))
+        assertTrue(
+            editor.frameIfNeeded(
+                translation,
+                viewportW = 1236f,
+                viewportH = 2400f,
+                paddingPx = 96f,
+                cardWidth = MIN_CARD,
+            ),
+        )
 
         val t = editor.transform
         assertTrue(t.scale < 1f)
         assertTrue("left card cut off", t.canvasToScreenX(80f) >= 0f)
-        assertTrue("right card cut off", t.canvasToScreenX(560f + NodeCardFootprint.WIDTH) <= 1236f)
+        assertTrue("right card cut off", t.canvasToScreenX(560f + NodeCardFootprint.MIN_WIDTH) <= 1236f)
     }
 
     @Test
     fun `given a graph smaller than the screen when first shown then it is not zoomed past 100 percent`() {
         val editor = EditorState(density = 3f)
 
-        editor.frameIfNeeded(graph("tiny", 0f), viewportW = 1236f, viewportH = 2400f, paddingPx = 0f)
+        editor.frameIfNeeded(
+            graph("tiny", 0f),
+            viewportW = 1236f,
+            viewportH = 2400f,
+            paddingPx = 0f,
+            cardWidth = MIN_CARD,
+        )
 
         assertEquals(1f, editor.transform.scale, 0f)
     }
@@ -61,13 +85,19 @@ class EditorStateFramingTest {
     @Test
     fun `given a pipeline already framed when shown again then the user's pan and zoom are kept`() {
         val editor = EditorState(density = 3f)
-        editor.frameIfNeeded(translation, viewportW = 1236f, viewportH = 2400f, paddingPx = 0f)
+        editor.frameIfNeeded(translation, viewportW = 1236f, viewportH = 2400f, paddingPx = 0f, cardWidth = MIN_CARD)
         val userView = editor.transform.copy(scale = 1.7f, offsetX = -300f)
         editor.transform = userView
 
         // A later edit, IME resize or recomposition re-runs the effect.
         assertFalse(
-            editor.frameIfNeeded(graph("styled", 0f, 999f), viewportW = 1236f, viewportH = 1800f, paddingPx = 0f),
+            editor.frameIfNeeded(
+                graph("styled", 0f, 999f),
+                viewportW = 1236f,
+                viewportH = 1800f,
+                paddingPx = 0f,
+                cardWidth = MIN_CARD,
+            ),
         )
         assertEquals(userView, editor.transform)
     }
@@ -75,21 +105,51 @@ class EditorStateFramingTest {
     @Test
     fun `given an empty pipeline when the first node is added then the view does not jump`() {
         val editor = EditorState(density = 3f)
-        assertFalse(editor.frameIfNeeded(graph("new"), viewportW = 1236f, viewportH = 2400f, paddingPx = 0f))
+        assertFalse(
+            editor.frameIfNeeded(
+                graph("new"),
+                viewportW = 1236f,
+                viewportH = 2400f,
+                paddingPx = 0f,
+                cardWidth = MIN_CARD,
+            ),
+        )
         val before = editor.transform
 
-        assertFalse(editor.frameIfNeeded(graph("new", 5000f), viewportW = 1236f, viewportH = 2400f, paddingPx = 0f))
+        assertFalse(
+            editor.frameIfNeeded(
+                graph("new", 5000f),
+                viewportW = 1236f,
+                viewportH = 2400f,
+                paddingPx = 0f,
+                cardWidth = MIN_CARD,
+            ),
+        )
         assertEquals(before, editor.transform)
     }
 
     @Test
     fun `given a template requested into an empty pipeline when its nodes arrive then they are framed once`() {
         val editor = EditorState(density = 3f)
-        editor.frameIfNeeded(graph("same-id"), viewportW = 1236f, viewportH = 2400f, paddingPx = 0f)
+        editor.frameIfNeeded(
+            graph("same-id"),
+            viewportW = 1236f,
+            viewportH = 2400f,
+            paddingPx = 0f,
+            cardWidth = MIN_CARD,
+        )
 
         editor.requestFit()
         // The request is made before the template has materialised: still empty.
-        assertFalse(editor.frameIfNeeded(graph("same-id"), viewportW = 1236f, viewportH = 2400f, paddingPx = 0f))
+        assertFalse(
+            editor.frameIfNeeded(
+                graph("same-id"),
+                viewportW = 1236f,
+                viewportH = 2400f,
+                paddingPx = 0f,
+                cardWidth = MIN_CARD,
+            ),
+        )
         assertTrue(editor.fitRequested)
 
         assertTrue(
@@ -98,6 +158,7 @@ class EditorStateFramingTest {
                 viewportW = 1236f,
                 viewportH = 2400f,
                 paddingPx = 0f,
+                cardWidth = MIN_CARD,
             ),
         )
         assertFalse(editor.fitRequested)
@@ -107,6 +168,7 @@ class EditorStateFramingTest {
                 viewportW = 1236f,
                 viewportH = 2400f,
                 paddingPx = 0f,
+                cardWidth = MIN_CARD,
             ),
         )
     }
@@ -118,13 +180,40 @@ class EditorStateFramingTest {
         editor.viewportHeightPx = 2400f
         val node = NodeModel(id = "far", type = NodeType.TOOL, x = 900f, y = 1200f)
 
-        editor.focusOn(node)
+        editor.focusOn(node, NodeCardFootprint.MIN_WIDTH)
 
         // Before: centred on a 1x1 "viewport", which pinned the card's corner to the top-left.
         val t = editor.transform
-        assertEquals(618f, t.canvasToScreenX(900f + NodeCardFootprint.WIDTH / 2f), 0.01f)
+        assertEquals(618f, t.canvasToScreenX(900f + NodeCardFootprint.MIN_WIDTH / 2f), 0.01f)
         assertEquals(1200f, t.canvasToScreenY(1200f + NodeCardFootprint.MAX_HEIGHT / 2f), 0.01f)
         assertEquals(setOf("far"), editor.selection)
+    }
+
+    @Test
+    fun `given a card that grew for its ports when focusing it then its middle lands at the centre`() {
+        val editor = EditorState(density = 3f)
+        editor.viewportWidthPx = 1236f
+        editor.viewportHeightPx = 2400f
+        val router = NodeModel(id = "router", type = NodeType.INTENT_ROUTER, x = 900f, y = 1200f)
+
+        editor.focusOn(router, cardWidth = 264f)
+
+        assertEquals(618f, editor.transform.canvasToScreenX(900f + 132f), 0.01f)
+    }
+
+    @Test
+    fun `given a last card that grew for its ports when first shown then its right edge is in view`() {
+        val editor = EditorState(density = 3f)
+
+        editor.frameIfNeeded(
+            translation,
+            viewportW = 1236f,
+            viewportH = 2400f,
+            paddingPx = 96f,
+            cardWidth = { node -> if (node.id == "n2") 344f else NodeCardFootprint.MIN_WIDTH },
+        )
+
+        assertTrue("grown card cut off", editor.transform.canvasToScreenX(560f + 344f) <= 1236f)
     }
 
     @Test
@@ -132,7 +221,7 @@ class EditorStateFramingTest {
         val editor = EditorState(density = 3f)
         val before = editor.transform
 
-        editor.focusOn(NodeModel(id = "n", type = NodeType.TOOL, x = 900f, y = 1200f))
+        editor.focusOn(NodeModel(id = "n", type = NodeType.TOOL, x = 900f, y = 1200f), NodeCardFootprint.MIN_WIDTH)
 
         assertEquals(before, editor.transform)
         assertEquals(setOf("n"), editor.selection)
@@ -141,8 +230,40 @@ class EditorStateFramingTest {
     @Test
     fun `given a different pipeline id when shown then it gets its own opening frame`() {
         val editor = EditorState(density = 3f)
-        editor.frameIfNeeded(graph("placeholder"), viewportW = 1236f, viewportH = 2400f, paddingPx = 0f)
+        editor.frameIfNeeded(
+            graph("placeholder"),
+            viewportW = 1236f,
+            viewportH = 2400f,
+            paddingPx = 0f,
+            cardWidth = MIN_CARD,
+        )
 
-        assertTrue(editor.frameIfNeeded(translation, viewportW = 1236f, viewportH = 2400f, paddingPx = 0f))
+        assertTrue(
+            editor.frameIfNeeded(
+                translation,
+                viewportW = 1236f,
+                viewportH = 2400f,
+                paddingPx = 0f,
+                cardWidth = MIN_CARD,
+            ),
+        )
+    }
+
+    @Test
+    fun `given card measures when nodes leave the graph then only the remaining nodes keep theirs`() {
+        val editor = EditorState()
+        val measure = CardMeasure(height = 94f, outboundDotLine = 70f)
+
+        editor.recordCardMeasure("n0", measure)
+        editor.recordCardMeasure("n0", measure.copy())
+        editor.recordCardMeasure("n1", CardMeasure(height = 101f, outboundDotLine = 77f))
+        editor.forgetCardsNotIn(setOf("n1"))
+
+        assertEquals(mapOf("n1" to CardMeasure(height = 101f, outboundDotLine = 77f)), editor.measuredCards.toMap())
+    }
+
+    private companion object {
+        /** Every node in these graphs has at most three outbound ports: the narrowest card. */
+        val MIN_CARD: (NodeModel) -> Float = { NodeCardFootprint.MIN_WIDTH }
     }
 }

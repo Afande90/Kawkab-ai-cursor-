@@ -72,6 +72,24 @@ class LocalModelMapperTest {
     }
 
     @Test
+    fun `given a source and its published hash when mapped both ways then both round-trip`() {
+        val domain = LocalModel(
+            id = 5L,
+            name = "m",
+            path = "/m",
+            size = 1L,
+            isActive = false,
+            sourceUrl = "https://huggingface.co/o/r/resolve/main/m",
+            sourceSha256 = "ab12",
+        )
+
+        val entity = domain.toEntity()
+
+        assertEquals("ab12", entity.sourceSha256)
+        assertEquals(domain, entity.toDomain())
+    }
+
+    @Test
     fun `given a partly written stamp when mapped to domain then there is no file hash`() {
         // A hash without the stamp of the file it describes could vouch for a
         // replaced file, so a row missing any of the three columns reads as unhashed.

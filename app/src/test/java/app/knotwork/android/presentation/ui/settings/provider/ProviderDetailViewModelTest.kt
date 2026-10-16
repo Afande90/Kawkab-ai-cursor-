@@ -1,10 +1,13 @@
 package app.knotwork.android.presentation.ui.settings.provider
 
+import app.knotwork.android.data.engine.KoogCloudModelCatalog
 import app.knotwork.android.domain.connection.AddressRefusal
 import app.knotwork.android.domain.connection.ConnectionCheckResult
 import app.knotwork.android.domain.connection.ConnectionRefusal
 import app.knotwork.android.domain.connection.ProviderConnectionChecker
 import app.knotwork.android.domain.connection.ProviderConnectionDraft
+import app.knotwork.android.domain.engine.CloudModelFallback
+import app.knotwork.android.domain.engine.CloudModelInUse
 import app.knotwork.android.domain.models.CloudProvider
 import app.knotwork.android.domain.models.ProviderId
 import app.knotwork.android.domain.repositories.ApiKeyRepository
@@ -70,8 +73,13 @@ class ProviderDetailViewModelTest {
     }
 
     /** A ViewModel on the shared mocks; the connection checker is irrelevant outside the Test row tests. */
-    private fun newViewModel(): ProviderDetailViewModel =
-        ProviderDetailViewModel(apiKeyRepository, settingsRepository, mockk(relaxed = true), TestTimeSource())
+    private fun newViewModel(): ProviderDetailViewModel = ProviderDetailViewModel(
+        apiKeyRepository,
+        settingsRepository,
+        mockk(relaxed = true),
+        KoogCloudModelCatalog(),
+        TestTimeSource(),
+    )
 
     @After
     fun tearDown() {
@@ -94,6 +102,36 @@ class ProviderDetailViewModelTest {
             assertEquals("key-${id.name}", vm.uiState.value.apiKey)
             assertEquals("model-${id.name}", vm.uiState.value.model)
         }
+    }
+
+    @Test
+    fun `given the screen before its bind then the offered list is already known for each provider`() {
+        val catalog = KoogCloudModelCatalog()
+
+        ProviderId.entries.forEach { id ->
+            assertEquals("$id", catalog.offeredModels(id.cloudProvider), viewModel.offeredModels(id))
+        }
+        assertTrue(viewModel.offeredModels(ProviderId.OpenAi)!!.isNotEmpty())
+    }
+
+    @Test
+    fun `given a provider with a built-in list when bind then the model runs use flows into state`() = runTest {
+        every { apiKeyRepository.getApiKey(CloudProvider.ANTHROPIC) } returns flowOf("sk-ant")
+        val saved = MutableStateFlow<String?>("claude-3-opus")
+        every { apiKeyRepository.getModel(CloudProvider.ANTHROPIC) } returns saved
+
+        viewModel.bind(ProviderId.Anthropic)
+        advanceUntilIdle()
+
+        assertEquals(
+            CloudModelInUse("claude-sonnet-4-6", CloudModelFallback.NoLongerOffered("claude-3-opus")),
+            viewModel.uiState.value.modelInUse,
+        )
+
+        saved.value = "claude-opus-4-6"
+        advanceUntilIdle()
+
+        assertEquals(CloudModelInUse("claude-opus-4-6"), viewModel.uiState.value.modelInUse)
     }
 
     @Test
@@ -251,7 +289,13 @@ class ProviderDetailViewModelTest {
     ): ProviderDetailViewModel {
         every { settingsRepository.approvedCleartextOrigins } returns MutableStateFlow(approved)
         every { settingsRepository.blockNetworkFromLocalModel } returns MutableStateFlow(false)
-        return ProviderDetailViewModel(apiKeyRepository, settingsRepository, checker, TestTimeSource())
+        return ProviderDetailViewModel(
+            apiKeyRepository,
+            settingsRepository,
+            checker,
+            KoogCloudModelCatalog(),
+            TestTimeSource(),
+        )
     }
 
     private val ollamaUrl = "http://192.168.1.20:11434"
@@ -340,7 +384,14 @@ class ProviderDetailViewModelTest {
         every { apiKeyRepository.getModel(CloudProvider.OPENAI_COMPATIBLE) } returns flowOf(null)
         every { apiKeyRepository.getApiKey(CloudProvider.OPENAI_COMPATIBLE) } returns flowOf(null)
         every { apiKeyRepository.getBaseUrl(CloudProvider.OPENAI_COMPATIBLE) } returns MutableStateFlow(null)
-        val vm = ProviderDetailViewModel(apiKeyRepository, settingsRepository, mockk(relaxed = true), TestTimeSource())
+        val vm =
+            ProviderDetailViewModel(
+                apiKeyRepository,
+                settingsRepository,
+                mockk(relaxed = true),
+                KoogCloudModelCatalog(),
+                TestTimeSource(),
+            )
         vm.bind(ProviderId.OpenAiCompatible)
         advanceUntilIdle()
 

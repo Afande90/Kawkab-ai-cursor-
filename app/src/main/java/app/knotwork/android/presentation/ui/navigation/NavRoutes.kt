@@ -228,6 +228,9 @@ object NavRoutes {
     /** On-device usage-statistics screen, reached from Privacy. */
     const val SETTINGS_PRIVACY_USAGE: String = "settings/privacy/usage"
 
+    /** Settings → Privacy → Backup & restore. */
+    const val SETTINGS_PRIVACY_BACKUP: String = "settings/privacy/backup"
+
     /** About category sub-screen. */
     const val SETTINGS_ABOUT: String = "settings/about"
 

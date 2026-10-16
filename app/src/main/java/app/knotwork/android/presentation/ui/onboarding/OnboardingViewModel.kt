@@ -9,6 +9,7 @@ import app.knotwork.android.domain.models.CustomModelLink
 import app.knotwork.android.domain.models.DownloadState
 import app.knotwork.android.domain.models.OnboardingMilestone
 import app.knotwork.android.domain.repositories.AppStateSettings
+import app.knotwork.android.domain.repositories.InterruptedDownload
 import app.knotwork.android.domain.repositories.LocalModelRepository
 import app.knotwork.android.domain.repositories.ModelDownloadManager
 import app.knotwork.android.domain.repositories.UsageTelemetryRepository
@@ -94,6 +95,21 @@ class OnboardingViewModel @Inject constructor(
     /** Externally-observable view state passed to `OnboardingContent`. */
     val state: StateFlow<OnboardingViewState> = _state.asStateFlow()
 
+    private val _pendingInterruption = MutableStateFlow<InterruptedDownload?>(null)
+
+    /**
+     * Set once setup has shown a stop. Setup shows one per visit; every other stop is left for the
+     * Models screen, which shows them one at a time. Cleared by nothing: a stop held back and shown
+     * after the user's next action would land over that action's own result.
+     */
+    private var shownStopThisVisit = false
+
+    /**
+     * The oldest download that stopped for a reason no screen has shown yet, or `null`. The screen
+     * asks for it to be shown ([showPendingInterruption]) once its Download step is in front.
+     */
+    val pendingInterruption: StateFlow<InterruptedDownload?> = _pendingInterruption.asStateFlow()
+
     /** Active download collection — cancelled when a new pick re-arms the flow. */
     private var downloadJob: Job? = null
 
@@ -132,6 +148,7 @@ class OnboardingViewModel @Inject constructor(
         // the fields a future marker might read are initialised.
         markMilestone(OnboardingMilestone.ONBOARDING_STARTED)
         attachToRunningDownload()
+        observeInterruptions()
     }
 
     /** Advances to the next step. Idempotent at the final step. */
@@ -324,6 +341,56 @@ class OnboardingViewModel @Inject constructor(
     }
 
     /**
+     * Follows the downloads that stopped for a reason not shown yet — a pause at the background
+     * time limit, or a file that failed its checksum — keeping the oldest in [pendingInterruption].
+     *
+     * Nothing is shown or acknowledged here: setup draws a download's message on its Download
+     * step only, and this view model lives on while the app is in the background. Acknowledging
+     * on arrival would take the notification down at once and drop the stop with nothing on
+     * screen. The screen calls [showPendingInterruption] when the Download step is in front.
+     */
+    private fun observeInterruptions() {
+        downloadManager.observeInterruptedDownloads()
+            .onEach { stopped -> _pendingInterruption.value = stopped.firstOrNull() }
+            .launchIn(viewModelScope)
+    }
+
+    /**
+     * Shows the oldest stop no screen has shown yet, when the Download step can draw it: that step
+     * is in front, no download is being followed — a stop that arrives while one is waits for it to
+     * end, so the selection never changes under a followed download — and the picked model is not
+     * installed, which the step would warm up.
+     *
+     * One stop per visit to setup ([shownStopThisVisit]); every other is left for the Models
+     * screen. Showing a stop acknowledges it, and the store then hands over the next at once:
+     * shown too, it would replace the first unread — and held back until the user acts, it would
+     * land over the result of that action.
+     *
+     * The step returns to the model that stopped, so its Download button starts that same download
+     * again — a paused one continues from the bytes it kept — and the stop is acknowledged, which
+     * takes its notification down. The screen calls this only while it is resumed.
+     */
+    fun showPendingInterruption() {
+        val interruption = _pendingInterruption.value ?: return
+        val current = _state.value
+        val stepCanShow = current.step == OnboardingStep.Download && current.downloadProgress == null
+        if (!stepCanShow || current.installedModelId != null || shownStopThisVisit) return
+        val preset = OnboardingModelCatalog.PRESETS.firstOrNull { it.fileName == interruption.fileName }
+        val picked = OnboardingLiteRtModel.entries.firstOrNull { it.id == preset?.id }
+            ?: OnboardingLiteRtModel.CustomUrl
+        if (picked != current.liteRtModel) pickLiteRtModel(picked)
+        _state.update {
+            it.copy(
+                customDownloadUrl = if (preset == null) interruption.url else it.customDownloadUrl,
+                downloadError = interruption.message,
+            )
+        }
+        _pendingInterruption.value = null
+        shownStopThisVisit = true
+        downloadManager.acknowledgeInterruption(interruption.fileName)
+    }
+
+    /**
      * Folds a download state stream into the view state. Shared by the "start
      * one" and "re-attach to one" paths so both behave identically.
      */
@@ -400,11 +467,21 @@ class OnboardingViewModel @Inject constructor(
             is DownloadState.Error -> _state.update {
                 it.copy(
                     downloadProgress = null,
-                    downloadError = extractErrorMessage(downloadState.error),
+                    // A pause or a checksum mismatch was recorded before the download failed and is
+                    // shown from that record, once — this path does not word it a second time.
+                    downloadError = if (downloadState.error.isRecordedInterruption()) {
+                        it.downloadError
+                    } else {
+                        extractErrorMessage(downloadState.error)
+                    },
                 )
             }
         }
     }
+
+    /** Whether the download worker recorded this failure as an interruption before reporting it. */
+    private fun AppError.isRecordedInterruption(): Boolean =
+        (this as? AndroidModelDownloadManager.DownloadError)?.recordedInterruption == true
 
     private fun extractErrorMessage(error: AppError): String {
         val message = (error as? AndroidModelDownloadManager.DownloadError)?.message

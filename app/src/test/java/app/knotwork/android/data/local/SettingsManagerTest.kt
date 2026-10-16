@@ -13,6 +13,8 @@ import app.knotwork.android.data.local.crypto.FakeAeadCipher
 import app.knotwork.android.data.local.crypto.InMemorySharedPreferences
 import app.knotwork.android.data.local.crypto.KeystoreBackedPrefsStore
 import app.knotwork.android.data.local.crypto.SecretStore
+import app.knotwork.android.data.local.settings.GenerationSettingsStore
+import app.knotwork.android.data.local.settings.ToolSettingsStore
 import app.knotwork.android.domain.constants.SettingsDefaults
 import app.knotwork.android.domain.models.LocalBackend
 import app.knotwork.android.domain.models.McpAuth
@@ -1132,6 +1134,108 @@ class SettingsManagerTest {
     }
 
     @Test
+    fun `given a token and an MCP sign-in when backed up then the secrets are their stored entries`() = runTest {
+        val (manager, ds, scope) = freshManagerWithExposedDataStore()
+        try {
+            // Given
+            val url = "https://mcp.example"
+            manager.setHuggingFaceAuthToken("hf_secret_token")
+            manager.addMcpServer(
+                McpServerConfig(
+                    url = url,
+                    name = "S",
+                    auth = McpAuth.Bearer(token = "tok"),
+                    headers = mapOf(
+                        "X-Org" to "a",
+                    ),
+                ),
+            )
+            val generation = GenerationSettingsStore(ds, secretStore)
+            val tool = ToolSettingsStore(ds, secretStore)
+
+            // When
+            val token = generation.secretEntries()
+            val mcp = tool.secretEntries()
+
+            // Then — the store's own entry names and stored payloads; nothing here is "always".
+            assertEquals(mapOf("hugging_face_token" to "hf_secret_token"), token)
+            assertEquals(setOf(mcpAuthSecretKey(url), mcpHeadersSecretKey(url)), mcp.keys)
+            assertTrue(mcp.getValue(mcpAuthSecretKey(url)).contains("tok"))
+            assertEquals(emptyMap<String, String>(), generation.alwaysEntries() + tool.alwaysEntries())
+            assertEquals("secure_settings_secrets", tool.storeName)
+            assertEquals("secure_settings_secrets", generation.storeName)
+        } finally {
+            scope.cancel()
+        }
+    }
+
+    @Test
+    fun `given entries a backup carried when restored then the token and listed servers' sign-ins come back`() =
+        runTest {
+            val (manager, ds, scope) = freshManagerWithExposedDataStore()
+            try {
+                // Given — the entries as a backup took them, then this phone without them.
+                val url = "https://mcp.example"
+                val server = McpServerConfig(url = url, name = "S", auth = McpAuth.Bearer(token = "tok"))
+                manager.addMcpServer(server.copy(headers = mapOf("X-Org" to "a")))
+                val carried = ToolSettingsStore(ds, secretStore).secretEntries() + mapOf(
+                    mcpAuthSecretKey("https://not-in-the-list") to """{"type":"bearer","token":"other"}""",
+                )
+                manager.updateMcpServer(url, server.copy(auth = McpAuth.None))
+                // This instance has read — and cached — the server without its sign-in.
+                val tool = ToolSettingsStore(ds, secretStore)
+                assertEquals(McpAuth.None, tool.mcpServers.first().single().auth)
+                val generation = GenerationSettingsStore(ds, secretStore)
+
+                // When
+                val withToken = carried + mapOf("hugging_face_token" to "hf_restored")
+                assertEquals("provider settings never carry these", 0, tool.restore(withToken, secrets = false))
+                assertEquals(0, generation.restore(withToken, secrets = false))
+                val mcpWritten = tool.restore(withToken, secrets = true)
+                val tokenWritten = generation.restore(withToken, secrets = true)
+
+                // Then — the same instance and a fresh one both read the restored entries.
+                assertEquals(2, mcpWritten)
+                assertEquals(1, tokenWritten)
+                listOf(tool, ToolSettingsStore(ds, secretStore)).forEach { store ->
+                    val restored = store.mcpServers.first().single()
+                    assertEquals(McpAuth.Bearer(token = "tok"), restored.auth)
+                    assertEquals(mapOf("X-Org" to "a"), restored.headers)
+                }
+                assertNull(secretStore.getString(mcpAuthSecretKey("https://not-in-the-list")))
+                assertEquals("hf_restored", generation.huggingFaceAuthToken.first())
+            } finally {
+                scope.cancel()
+            }
+        }
+
+    @Test
+    fun `given a server list with inline secrets when scrubbed for a backup then only the secrets are gone`() =
+        runTest {
+            val (_, ds, scope) = freshManagerWithExposedDataStore()
+            try {
+                // Given — the JSON as an older release wrote it, and one that does not parse.
+                val tool = ToolSettingsStore(ds, secretStore)
+                val inline = """[{"url":"https://m","name":"S","auth":{"type":"bearer","token":"t"},""" +
+                    """"headers":{"X":"h"}}]"""
+
+                // When
+                val scrubbed = tool.scrubbed("mcp_servers_json", inline) as String
+                val broken = tool.scrubbed("mcp_servers_json", "[{")
+                val other = tool.scrubbed("top_k", 40)
+
+                // Then
+                val server = org.json.JSONArray(scrubbed).getJSONObject(0)
+                assertEquals(setOf("url", "name"), server.keys().asSequence().toSet())
+                assertEquals("https://m", server.getString("url"))
+                assertEquals(null, broken)
+                assertEquals(40, other)
+            } finally {
+                scope.cancel()
+            }
+        }
+
+    @Test
     fun `huggingFace token round-trips through the encrypted store across instances`() = runTest {
         val (manager, ds, scope) = freshManagerWithExposedDataStore()
         try {
@@ -1945,6 +2049,8 @@ class SettingsManagerTest {
                 // twice now works.
                 "local_model_backend", "last_init_backend_attempt", "local_backend_failure_streak",
                 "default_pipeline_id", "console_preferred_tab", "last_test_probe_result",
+                // A document a backup was writing when the process died: deleted at the next start.
+                "unfinished_backup_document",
                 "active_embedding_provider_id", "last_reembed_provider_id",
                 // User-granted network permissions, in the same category as
                 // `allowed_http_domains`: a "reset to recommended defaults" that

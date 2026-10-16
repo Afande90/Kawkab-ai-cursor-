@@ -1,5 +1,6 @@
 package app.knotwork.android.presentation.ui.orchestrator
 
+import app.knotwork.android.data.engine.KoogCloudModelCatalog
 import app.knotwork.android.domain.engine.DefaultPipelineFactory
 import app.knotwork.android.domain.models.AgentTool
 import app.knotwork.android.domain.models.CloudProvider
@@ -201,6 +202,7 @@ class OrchestratorViewModelTest {
             compositionValidator = compositionValidator,
             skillRepository = skillRepository,
             apiKeyRepository = apiKeyRepository,
+            modelCatalog = KoogCloudModelCatalog(),
             promptTemplateEngine = promptTemplateEngine,
             promptVariableProviders = setOf(providerDate, providerTime),
         ),
@@ -1570,5 +1572,33 @@ class OrchestratorViewModelTest {
             // OpenRouter has a key but no model, and no default: not usable here, so not listed.
             assertEquals(mapOf(CloudProvider.OPENAI to "gpt-4o-mini"), availability.models)
             assertEquals(CloudProvider.OPENAI, availability.auto)
+        }
+
+    @Test
+    fun `given providers using a model other than the one saved when the node sheet asks then it names the one used`() =
+        runTest {
+            every { apiKeyRepository.getApiKey(any()) } answers {
+                flowOf(
+                    if (firstArg<CloudProvider>() in
+                        setOf(CloudProvider.OPENAI, CloudProvider.ANTHROPIC)
+                    ) {
+                        "k"
+                    } else {
+                        null
+                    },
+                )
+            }
+            every { apiKeyRepository.getBaseUrl(any()) } returns flowOf(null)
+            every { apiKeyRepository.getModel(any()) } answers {
+                flowOf(if (firstArg<CloudProvider>() == CloudProvider.ANTHROPIC) "claude-3-opus" else null)
+            }
+            val vm = buildViewModel()
+
+            val availability = vm.nodeSheet.loadProviderAvailability()
+
+            assertEquals(
+                mapOf(CloudProvider.OPENAI to "gpt-5.4", CloudProvider.ANTHROPIC to "claude-sonnet-4-6"),
+                availability.models,
+            )
         }
 }

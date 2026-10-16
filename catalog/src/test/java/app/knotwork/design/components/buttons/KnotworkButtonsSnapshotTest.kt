@@ -1,6 +1,6 @@
 package app.knotwork.design.components.buttons
 
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.knotwork.design.KnotworkRoborazziOptions

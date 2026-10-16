@@ -14,6 +14,9 @@ Only Kotlin files appear inside the generated blocks.
 <!-- AUTO-GEN:FILE_MAP -->
 - `AppFunctionsEndToEndTest.kt` - End-to-end coverage of the AppFunctions IPC path through the production Hilt graph.
 - `data/` - Instrumented tests for the data layer.
+  - `backup/` - Backup export on a real device: the SQLCipher database snapshot.
+    - `SqlCipherDatabaseSnapshotterTest.kt` - `SqlCipherDatabaseSnapshotter` against real SQLCipher: the copy opens under the archive's key and no other, holds every row and the schema version, is not a plain SQLite file, and the database it was taken from — held open throughout, as Room holds it — stays in write-ahead logging and writable.
+    - `SqlCipherStagedDatabasePreparerTest.kt` - `SqlCipherStagedDatabasePreparer` against real SQLCipher and Room: a database copy from an archive comes out keyed for this phone and at this build's schema — an older one migrated, the rows kept — and one of a later schema, one that is not a database, and one under another key are refused.
   - `local/` - Instrumented tests for the on-device database.
     - `AppDatabaseMigrationHelperTest.kt` - Frozen-schema migration regression suite built on Room's `MigrationTestHelper`.
     - `AppDatabaseMigrationTest.kt` - Regression suite invoking every `MIGRATION_*` declared on `AppDatabase` against a real on-disk SQLite file (per-step + chained v17→v23 run).
@@ -67,6 +70,8 @@ Only Kotlin files appear inside the generated blocks.
         - `PresetCategoryBadgeLayoutTest.kt` - Layout guard for the preset category badge on both preset rows: asserts the badge sits entirely inside its row when the preset name is long. Instrumented rather than JVM because the same assertions under a Robolectric-hosted composition reported nonsense (a 62 dp root for a full-width row) and stayed green with every fix reverted. Measures **position**, not height — a starved badge that has been pushed past the right edge is the same bug one constraint later, and height does not see it.
     - `pipeline/` - Compose tests for the pipeline editor surface.
       - `editor/` - Compose tests for the editor screen.
+        - `canvas/` - Compose tests for the canvas's own composables, measured on a device.
+          - `EditorNodePortTargetTest.kt` - Every outbound port of an `EditorNode` has a touch target centred on the dot the card draws, and no two targets overlap — so a drag that starts on a dot starts a connection from that port.
         - `OrchestratorViewModelMockFactory.kt` - Mocked `OrchestratorViewModel` for editor screen tests, plus the fixtures a config sheet needs — a small palette of `AgentTool`s so `availableTools` is non-empty.
         - `PipelineEditorContentRenderTest.kt` - Surface render coverage for `PipelineEditorContent`, the pure-layout anchor of the editor screen.
         - `PipelineEditorCopyPasteTest.kt` - Covers the copy → paste round-trip from the user's point of view.

@@ -106,6 +106,9 @@ class WorkManagerTaskScheduler @Inject constructor(
         workManager.cancelAllWorkByTag(ScheduledTaskTag.MARKER)
     }
 
+    override suspend fun countScheduled(): Int =
+        workManager.getWorkInfosByTagFlow(ScheduledTaskTag.MARKER).first().count { !it.state.isFinished }
+
     override suspend fun cancelAllBackgroundRuns() {
         // The runtime tags every request with its worker's class name, so this
         // also reaches requests enqueued by a release that added no tag of its own.

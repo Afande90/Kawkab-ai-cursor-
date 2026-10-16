@@ -28,6 +28,7 @@ Three sibling documents, and it is worth knowing which one you want:
 - ["Your data can't be unlocked" appears at startup](#your-data-cant-be-unlocked-appears-at-startup)
 - [Installing over a copy from Google Play fails](#installing-over-a-copy-from-google-play-fails)
 - [A model download paused after five hours](#a-model-download-paused-after-five-hours)
+- [A downloaded model did not match its checksum](#a-downloaded-model-did-not-match-its-checksum)
 
 ---
 
@@ -272,23 +273,49 @@ different keys ([Signing identities by
 channel](release.md#signing-identities-by-channel)), and Android updates an app
 only with a copy from the same signer. To switch channels:
 
-1. Export what you want to keep:
-   [chats](user-guide.md#exporting-and-importing-chat-history),
-   [memory](user-guide.md#exporting-memory), your own
-   [pipelines](user-guide.md#managing-presets) and
-   [prompts](user-guide.md#importing-and-exporting-a-prompt).
+1. Make a backup: Settings → Privacy → **Backup & restore** → **Back up…**
+   ([how](user-guide.md#backup--restore)). Tick **Include API keys and
+   sign-ins** to bring your keys along, and save the file where an uninstall
+   does not reach — Downloads, a memory card or a cloud drive.
 2. Uninstall the app. That deletes everything it keeps on the device,
-   including downloaded models, settings and saved API keys, which have no
-   export.
-3. Install from the other channel, download a model, set up your settings and
-   keys again, and import the files.
+   downloaded models included.
+3. Install from the other channel, open **Backup & restore** → **Restore from
+   file…**, pick the backup, enter its password and confirm. After the app
+   restarts, download the models again from the sheet it shows.
+
+The version you install must be able to read the backup. A backup from a
+newer release restores unless that release changed the backup format or the
+database; then the restore refuses and asks you to update first. Google Play
+can trail the Releases page while an update is in review, so before you
+uninstall, check that the other channel offers the same release or a later
+one.
 
 ## A model download paused after five hours
 
 Android lets an app transfer data in the background for six hours a day, and
 stops the app if a transfer runs longer. A model download therefore pauses on
-its own after five hours of downloading. Nothing is lost: start the same
-download again and it continues from where it stopped.
+its own after five hours of downloading. It posts a notification that it paused
+(if the app may post notifications), and the Models screen says so the next
+time you open it while no other download is running, with a **Continue**
+button — or setup's Download step, or the model's page in Discover, if you
+reach one of those first. Nothing is lost:
+start the same download again and it continues from where it stopped.
+
+## A downloaded model did not match its checksum
+
+Hugging Face publishes a SHA-256 for the model files it hosts, and the app
+compares the downloaded file with it before installing the model. When the two
+differ, the file is deleted, no model is installed, and the app says so the
+same way as for a paused download.
+
+One way this happens: the file changed on Hugging Face while your download was
+interrupted, so the part fetched before and the part fetched after belong to two
+versions of the file. Start the download again — it fetches the current version
+from the beginning.
+
+If a fresh download fails the same way, the file reaching your phone is not the
+one Hugging Face publishes. Try another network, and if it keeps happening,
+open an issue naming the model and the file.
 
 
 ---

@@ -1,6 +1,7 @@
 package app.knotwork.android.presentation.ui.discover
 
 import app.knotwork.android.domain.models.DiscoverableModelDetail
+import app.knotwork.android.domain.repositories.InterruptedDownload
 
 /** Loading branch of the Discover detail screen. */
 enum class DiscoverDetailStatus {
@@ -27,6 +28,9 @@ enum class DiscoverDetailStatus {
  *   shows the confirm dialog.
  * @property tokenInput current Hugging Face token text (for gated repos).
  * @property tokenRevealed whether the token is shown in clear text.
+ * @property interruption the next download of one of this repository's files that stopped for a
+ *   reason not shown yet — a pause at the background time limit or a file that failed its
+ *   checksum; the screen shows it once and reports it shown. `null` when there is none.
  */
 data class DiscoverDetailUiState(
     val status: DiscoverDetailStatus = DiscoverDetailStatus.Loading,
@@ -36,6 +40,7 @@ data class DiscoverDetailUiState(
     val pendingLicenseFileName: String? = null,
     val tokenInput: String = "",
     val tokenRevealed: Boolean = false,
+    val interruption: InterruptedDownload? = null,
 )
 
 /** One-shot result of an install attempt, surfaced to the screen as a snackbar. */
@@ -46,8 +51,24 @@ sealed interface DiscoverInstallEvent {
     /**
      * Install failed.
      *
-     * @property gated `true` when the failure was an access-gated refusal
-     *   (HTTP 401/403) — the screen nudges the user toward a token.
+     * @property reason Why, as far as the screen words it differently.
      */
-    data class Failed(val gated: Boolean) : DiscoverInstallEvent
+    data class Failed(val reason: FailureReason) : DiscoverInstallEvent
+
+    /** Why an install failed, for the sentence the screen shows. */
+    enum class FailureReason {
+
+        /**
+         * An access-gated refusal (HTTP 401/403) — the screen nudges the user toward
+         * accepting the licence and adding a token.
+         */
+        GATED,
+
+        /**
+         * Anything else — the screen suggests checking the connection. A pause and a
+         * checksum mismatch are not reported this way: they reach the screen as an
+         * [DiscoverDetailUiState.interruption], once, whether or not it was watching.
+         */
+        OTHER,
+    }
 }

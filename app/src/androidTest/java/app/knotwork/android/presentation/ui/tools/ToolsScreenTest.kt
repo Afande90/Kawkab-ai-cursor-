@@ -1,7 +1,7 @@
 package app.knotwork.android.presentation.ui.tools
 
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import app.knotwork.android.domain.models.AgentTool
 import app.knotwork.android.domain.models.McpConnectionStatus

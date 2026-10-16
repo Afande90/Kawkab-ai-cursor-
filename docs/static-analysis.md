@@ -35,6 +35,7 @@ means a document is being generated from a rule nobody is checking.
 |-----------------------------------------------|-------------------------------------------------------------------------|
 | `:app:detekt`                                 | Kotlin static analysis. Fails on any unsuppressed finding.              |
 | `:app:detektFullDebug` + `:app:detektFossDebug` | Type-resolution gate (the rules the plain task cannot run, one per flavour). See below. |
+| `:catalog:detektDebug`                        | The same gate over the design system, with two catalog settings layered on top. See below. |
 | `:app:ktlintCheck`                            | Kotlin formatting & idiomatic style rules. Run `ktlintFormat` to fix.  |
 | `:app:lintFullDebug` + `:app:lintFossDebug`   | Android Lint over both distribution flavours + library dependencies. `:catalog:lint` runs too. |
 | `:app:testFullDebugUnitTest`                      | JVM unit tests for the debug variant.                                   |
@@ -65,6 +66,7 @@ means a document is being generated from a rule nobody is checking.
 | `:app:testFullDebugUnitTest` (Konsist suite)      | Architecture guard: Clean-Architecture layer boundaries (see below).        |
 | `:app:testFullDebugUnitTest` (`TopBarInsetGuardTest`) | Fails if a bar at the top of a screen neither applies the status-bar inset nor names the parent that does (see below). |
 | `:app:testFullDebugUnitTest` (`BundledDocumentationRoutingGuardTest`) | Fails if a call that can open a document bundled into the app passes no in-app reader, and so sends it to the browser (see below). |
+| `:app:testFullDebugUnitTest` (`CloudModelListGuardTest`) | Fails if a cloud model the app offers is not one of Koog's chat constants, or a chat constant Koog declares is neither offered nor left out with a reason (see below). |
 | `:app:testFullDebugUnitTest` (`ShippedPipelineLayoutTest`) | Fails if two node cards overlap in a bundled pipeline preset or a cookbook recipe (see below). |
 | `:app:testFullDebugUnitTest` (`GoldenTraceTest`, `GoldenTraceCatalogueTest`) | Fails if running a bundled preset, a cookbook recipe or a test fixture through the real engine produces a trace that differs from its committed golden file, or a pipeline file, a node type or a golden file falls out of the catalogue (see below). |
 | `:catalog:verifyRoborazziDebug`               | Fails if a design-system screenshot differs from its committed baseline (see below). |
@@ -166,6 +168,17 @@ So the plugin-generated type-resolution tasks for each flavour's debug variant
 and added to `check`. Both flavours run so the gate also covers the
 flavour-specific sources (`src/full` / `src/foss`), which the plain task's
 `source` never reached either.
+
+**`:catalog` runs the gate too** (`:catalog:detektDebug`, in `check`), with
+[`config/detekt/detekt-type-resolution-catalog.yml`](../config/detekt/detekt-type-resolution-catalog.yml)
+layered on top. It holds two settings the design system needs and the app does not:
+a defaulted parameter does not count toward `LongParameterList`, because a screen's
+callbacks are one constructor of defaulted lambdas, one per user action; and a
+`@Preview` function is not reported as unused, because only the IDE calls one. Until
+it was wired, the catalog's plain `detekt` task ran in `light` mode and so checked
+none of the four rules. The first run found 104 findings: 63 of them were the two
+patterns above, and the remaining 41 were 39 unused imports and two dead private
+functions, all removed.
 
 | Rule                                    | What it catches                                                        |
 |-----------------------------------------|------------------------------------------------------------------------|
@@ -285,8 +298,10 @@ suppression where the rule never runs is exactly the dead kind.
   configuration edits and are reviewed as such.
 
 **Where `LongParameterList` does not run.** It runs only in the type-resolution
-tasks of `:app`, and their source is `src/main`. It checks nothing in
-`:catalog`, `buildSrc` or any test set, suppressed or not.
+tasks of `:app` and `:catalog` (where a defaulted parameter is not counted), and
+their source is the debug variant's production code (`src/main` plus the
+build-type and flavour directories). It checks nothing in `buildSrc` or any
+test set, suppressed or not.
 
 **Observed failing.** One suppression was added to `NodeContextBuilder.build`
 and one listed suppression was removed from `DefaultPipelineFactory.create`. The
@@ -461,31 +476,49 @@ flag them with spurious, environment-dependent violations.
 | `RepositoryPlacementKonsistTest`   | `*Repository` interfaces reside in `domain`; `*RepositoryImpl` classes reside in `data`.          |
 | `ComposableUseCaseKonsistTest`     | No `@Composable` takes a `*UseCase` parameter (see scope note below).                             |
 | `FirebaseIsolationKonsistTest`     | No file in the shared `main` source set imports the Firebase SDK, so the `foss` build is provably free of it. |
+| `CrashReportingConsentOwnerTest`  | Only `App.kt` switches the crash collector on or off — an observer of the stored consent it installs only in release builds of the `full` flavour, whose manifest keeps collection off until then — so a debug build never collects. The Settings switch and the settings reset once flipped the collector directly, from any build: consent given in a debug build started collection. |
+| `TimberMessageTemplateKonsistTest` | Every `WARN`-or-above Timber message (`w`, `e`, `wtf`, tagged or not) is a string literal without templates and with words of its own; values go in as format arguments. `CrashlyticsTimberTree` sends only that literal, so a value spliced into it, or a message held in a variable, would ship in the crash report: the file screen and the workspace once logged paths, and the tool-failure log whole `JSONException` texts. |
 | `UsageTelemetryNoNetworkKonsistTest` | No file on the local usage-telemetry path imports a network client. The statistics stay on-device. |
 | `PromptPackNoNetworkKonsistTest`   | No file on the prompt-pack path imports a network client — a pack is imported from a file the user picked, never fetched (see below). |
 | `JournalExportNoNetworkKonsistTest` | No file on the journal-export path imports a network client — the trigger and external-request journals leave the device only through the share sheet or a file the user picked (see below). |
 | `RunTraceExportNoNetworkKonsistTest` | No file on the run-trace-export path imports a network client — a run's trace (every prompt the on-device model read, with its answers and hashes) leaves the device only through the share sheet or a file the user picked. Same three instruments as the journal-export rule (see below). |
 | `VerificationToolIsolationKonsistTest` | The check of a finished run cannot run a tool. Every class of `domain/verification/` takes only types on an allowlist — the run record and its trace, the model registry and the pipelines, the generation settings, the model loader, the on-device engine and the package's own use cases — and no file there names a tool, the approval gate, a node executor, the graph engine, the task queue, the MCP connection pool, the AppFunctions manager or the cloud client factory. A tool's recorded output stands, and the tool is never run again. |
 | `LocalInferenceSeamKonsistTest`    | Inside a pipeline run, a node reaches the on-device model only through its `NodeInference`, which runs the call on the run's sampler with a seed derived from the run seed and records it. The direct callers of `generateResponseStream` are an exact list — the two `NodeInference` implementations; chat-history compression, memory compaction, the backend test in Settings and the benchmark on the Models screen; `search_tool`, whose model use is part of the tool's recorded output; and the check of a finished run — and no node executor is on it. A listed caller that disappears fails too. |
+| `HitlDispatchKonsistTest`          | Nothing reaches a tool around the approval gate. Across every production source set the call sites are an exact list: `executeTool` — the gate, and the tool repository's dispatch to an MCP server; `invokeByName`, which runs an AppFunction — the repository; `resumeWithApproval` — only the chain that starts at `SubmitApprovalDecisionUseCase`, which settles only the request an answer names. A built-in tool executor is named only by its own file, the module that binds it and the repository, and a cross-check against Konsist keeps that list of executors complete. A new call site fails, and so does one that disappeared. |
+| `TranscriptJoinKonsistTest`        | No production code joins a speaker label and stored text in one string template (`"${message.role.name}: ${message.content}"`), or renders a numbered or `name — description` list entry from stored text that way. A body holding a line break and `User: …` would read as a real user turn; transcripts are built with `ChatTranscript.turn` and list entries with `ChatTranscript.entry`, which keep stored text from opening a line of its own. Three transcripts, `$MEMORY_SUMMARY`, `$TOOLS` and the tool auto-select list were once built the other way. Only that spelling is matched — a join written differently is left to review. |
 | `NetworkEgressInventoryKonsistTest` | Every shipping file (every production source set of `app` and `:catalog`) that imports a network client is named in an inventory, with either the `PRIVACY.md` section describing what leaves the device along it or the reason it opens nothing — and, for an egress, what the More tab's privacy indicator sees of it (see below). |
 | `KoogClientTimeoutKonsistTest`     | Every construction of a Koog model client passes the shared deadlines (`CloudClientTimeouts.CONFIG`); without them Koog's 900 s request and socket defaults apply, which the embedding clients once did. |
 | `ContentUriReadInventoryTest`      | Every file that opens a URI through `ContentResolver` is inventoried with where the URI comes from; one another app can supply must pass `ForeignContentUri` (another app's `content://` only), since the read runs with this app's identity. |
 | `ImageAttachmentEntryCensusTest`   | Every file that starts runs says whether it can attach an image; one that can must call the multimodal pre-flight (`CheckImageAttachmentUseCase`), and one listed as text-only may not handle an attachment. |
 | `TransientCacheDirectoryGuardTest` | Every directory the app creates under its cache, and every `<cache-path>` the `FileProvider` serves, is an entry of `TransientCacheDirectory` — so the daily sweep removes what its owner misses. |
 | `PathContainmentGuardTest`         | No production file outside `PathContainment` prefix-tests a path string: `absolutePath.startsWith(root)` passes `root/../elsewhere`, so containment is always canonicalise-then-compare. |
-| `PersistentStorageInventoryGuardTest` | Every storage root the production code reaches is inventoried with two decisions — kept out of Android backup and device transfer, and erased or kept by the recovery wipe. Backup is off, both extraction sections exclude every domain, the plain-text directories are also excluded by the names production code uses, and the wipe calls the owner of every root recorded as erased. |
-| `PreferenceStorageSnapshotTest`   | Every preference key keeps its name and value type, and the settings keep their file names: a renamed or retyped key, or a renamed file, loses the user's value on the next read without failing anything. The key census reads the production sources, so a key moving to another file does not matter; every key must be declared with a literal name, and there is one DataStore file. A new key is added to the snapshot in the same change. |
+| `RegexConstructionKonsistTest`     | Every regular expression the production code builds — `Regex(…)`, `Pattern.compile(…)`, `"…".toRegex()` — is a string literal in the source, and runtime text enters it only through `Regex.escape` or `Pattern.quote`. `java.util.regex` backtracks, and no coroutine timeout or interruption stops a match: `find_files` once compiled a glob the model wrote, and about thirty characters held a core for seconds. Untrusted input matched against a pattern a user or the model supplied goes through a matcher that cannot backtrack (`WorkspaceGlob`). |
+| `RawExecSqlGuardTest`              | No production file runs a statement through SQLCipher's `rawExecSQL`. sqlcipher-android steps it and drops the result code, so a statement that fails when stepped — a full disk, a lock — returns as if it had run. The backup's database snapshot once ran its `ATTACH` and export that way: on a device both failed, and only the next statement's compile error reached the caller — a failure later in the export would have left a partial copy reported as whole. The device test `SqlCipherDatabaseSnapshotterTest` pins the library's behaviour. |
+| `PersistentStorageInventoryGuardTest` | Every storage root the production code reaches is inventoried with three decisions — kept out of Android backup and device transfer, erased or kept by the recovery wipe, and written into the app's own encrypted backup or left out with a reason. Backup is off, both extraction sections exclude every domain, the plain-text directories are also excluded by the names production code uses, the wipe calls the owner of every root recorded as erased, every archive entry the format names is claimed by a root, and the backup code names every entry a root claims (that it is written is the exporter's end-to-end test). |
+| `PreferenceStorageSnapshotTest`   | Every preference key keeps its name and value type, and the settings keep their file names: a renamed or retyped key, or a renamed file, loses the user's value on the next read without failing anything. The key census reads the production sources, so a key moving to another file does not matter; every key must be declared with a literal name — the one file that builds keys from names is the restore's, and only for the travelling keys `PreferenceBackupPolicy` lists, which its own test holds against the census — and there is one DataStore file. A new key is added to the snapshot in the same change. |
 | `SettingsCompositeConsumersTest`  | No production file depends on the whole `SettingsRepository` composite unless it is on the list of existing consumers, and a listed file that no longer does fails too — so the list only shrinks. Code depends on the settings section it reads (`MemorySettings`, `ToolSettings`, …); a KDoc mention does not count. |
 | `SettingsSingletonScopeTest`      | Every class that implements a settings section is a class-level `@Singleton`. Each section has its own binding, and a scope on a `@Binds` method caches per binding: with the class unscoped, the generated component built one instance per binding, each with its own in-memory credential cache. The sections are read from `SettingsRepository`'s supertype list. |
 | `TimeLimitedForegroundServiceGuardTest` | The only foreground-service type with an Android time limit that either flavour ships is `dataSync` (read from the merged-manifest expectations, so a library's `dataSync` or `mediaProcessing` counts too; a library's `shortService` has no permission to show), and every file that starts one books against `DownloadForegroundBudget`. A foreground service still running when its time limit runs out takes the app down. |
+| `CloudStreamEndCallersGuardTest` | Every file that turns a cloud model's stream into an answer (every caller of `executeStreaming`, the retry wrapper that forwards frames aside) asks `CloudStreamEnd` whether the stream was cut off, and the list of those files is pinned. An OpenAI-compatible client ends a dropped stream normally, so a reader that keeps only the text deltas passes half an answer on as a whole one, as `delegate_task` and the structured steps once did. |
 | `DownloadStartCallSiteGuardTest` | Only user actions on a screen start a model download. Starting one resets the download's foreground-time budget, which is honest only while the app is on screen, because Android resets its own count at that moment. |
 | `ExportedComponentInventoryTest`   | Every component a source manifest exports (overlays included) is inventoried with the permission it demands; each shipping one that demands none is named in `SECURITY.md`, and the external-automation receiver keeps `enforceIntentFilter`. The manifests outside `src/main` are declared test inputs — without that, an export added to `src/full` left the `foss` suite green from a cached run (observed). |
+| `ExportedEntryExtrasGuardTest`     | Every component the main manifest exports without a permission — the main activity, the share activity, the external-automation receiver — reads its caller's extras only inside a function that catches `RuntimeException`. Any installed app chooses those extras, and a parcel that fails to unmarshal would crash the process, every run in flight with it, before the component's own checks run. A read moved into a helper is held by the helper's own test (`SharedIntentFieldsTest` for the share activity). |
+| `AppFunctionServiceManifestGuardTest` | Every AppFunctions entry point (`@AppFunctionServiceEntryPoint`, in `:app` and the `:tools-probe` debug app) is registered in its own module's manifest exactly as the compiler generates it — the generated service name, exported, guarded by `BIND_APP_FUNCTION_SERVICE`, the `AppFunctionService` action, the `v2` property naming the generated function inventory — and nothing else there is registered as an AppFunctions service. A mismatch builds, installs and runs, and shows only on a device, as a function no caller can find. |
 | `OutboundBroadcastCensusTest`      | `ExternalAutomationCallbackSender` is the app's only `sendBroadcast`, so the two rules it enforces — nothing while external automation is off, nothing over the contract's length ceilings — have no second path around them. |
 | `NotificationLockScreenGuardTest`  | Every notification builder in the production sources is given a version that shows only its title where Android hides sensitive content on the lock screen — one per builder in the file — unless the file is listed with the reason its notifications carry nothing the user or the model wrote (the agent's status line, a model download, a run's limit). A listed file that no longer builds a notification fails too. On a phone set to show all notification content, the full text still appears. |
+| `NotificationIdSourceGuardTest`    | `NotificationIds` is the only place a notification id is decided: every file that posts a notification (`notify`, `startForeground`, `ForegroundInfo`) takes its id from it, and no other file declares an id-shaped constant. The id families each notifier once computed for itself overlapped, so one family's notification could replace or cancel another's — a parked run's ongoing notification included. `NotificationIdsTest` holds the families apart, and this rule keeps every id inside what it checks. An id computed inline in a file that also names the registry is not seen. |
 | `EntrySurfaceLimitsDocumentsTest`  | Every number the public documents quote about the entry surfaces' limits (share ceiling, contract value ceilings, journal value bound) equals the constant that enforces it. |
+| `PolicyDocumentClaimsTest`         | Claims of `PRIVACY.md`, `SECURITY.md` and the bundled FAQ that the code once contradicted stay corrected: each case looks for the false sentence and for the fact that replaced it. A node whose engine is a cloud provider is a cloud path, not only a Cloud node; the trigger-journal export carries a failed run's error message; crash reporting is not the only network path; the `foss` build carries Firebase's encoders but none of the components that send; Crashlytics attaches an installation identifier; attachments never reach a cloud step; the threat model names the browser editor's import guard. |
+| `WorkspaceToolsDocumentedTest`     | The sections of `SECURITY.md`, `docs/architecture.md` and `docs/extending.md` that list the tools able to read or write the agent's workspace name every tool that can — a built-in executor whose constructor takes an `AgentWorkspace`. The threat model and the architecture map once listed six while a seventh, the write tool `append_file`, shipped beside them. A name a section keeps after its tool is gone is not caught. |
 | `RunRateCeilingTest` (census)      | Every `RunOrigin` is bounded by its own `RunRateCeiling` or exempt for a written reason, and the two origins another app can start without a permission (`SHARE`, `EXTERNAL`) have a ceiling. A new origin does not compile until someone decides. |
+| `PipelineBindingCensusTest`        | Every stored pipeline id — a `pipelineId` or `…PipelineId` property of a domain model or of a settings section — is listed with a decision: a binding `FindPipelineBindingsUseCase` counts for the Replace confirmation (the default pipeline, the share, tile and external-automation surfaces, triggers, chats, sub-pipeline calls), or not one, with the reason (run history, usage statistics, a queued run). Replace keeps the id, so everything bound to it runs the imported graph; a new id field fails here until someone decides which side it is on. |
+| `SurfaceBindingReadersTest`        | A share-target or Quick Settings tile binding is an id in settings and can outlive its pipeline. Only the callers that need it afterwards read the raw resolver, `ResolveSurfacePipelineUseCase` — the bindings census, the pipeline library and the resolver built on it; the share and tile launch paths read `ResolveLaunchableSurfacePipelineUseCase`, which checks the pipeline still exists. Reading the raw id once handed a missing pipeline to the run queue, which ran the default one from a surface showing "Not set". |
 | `TabRootEntryGuardTest`            | A bottom-nav tab root is entered as a tab switch, never pushed onto another subtree's back stack. |
+| `SnackbarHostGuardTest`            | Every snackbar in `:app` and `:catalog` renders through `KnotworkSnackbarHost`, never Material3's raw host; every `SnackbarHostState` a file creates is rendered by a host in that file; and every host sits in a `snackbarHost` slot that reaches a `Scaffold` or an aligned container, or aligns itself. Twelve screens once wrote their own host — three looks, four placements, the settings screens' over the top bar — and the Models screen rendered none, so its download failures never appeared. |
+| `ComposeTestRuleV2GuardTest`       | No instrumented test builds its Compose rule with a deprecated v1 factory (`junit4.createComposeRule` and the rest); the v2 ones run the composition's coroutines on a `StandardTestDispatcher`, as `runTest` does. A twin in `:catalog` holds its screenshot tests to the same rule. |
 | `InstrumentedTestExclusionGuardTest` | The roster of device-only instrumented tests, and the annotation the emulator workflow excludes by, stay in step. |
+| `FdroidSigningStripGuardTest`      | The release signing assignment in `app/build.gradle.kts` keeps a shape F-Droid's build server removes whole. Before building, fdroidserver strips signing configuration line by line; the test runs a port of its rules over the real script and fails when a signing assignment survives — F-Droid's release build would come out debug-signed — or when a kept line continues a statement whose first line was removed, as the two-line `findByName("release") ?: getByName("debug")` did, its second half gluing onto the line above. Fixtures show the port reproduces both. |
+| `ArchitectureGuardsDocumentedTest` | Every test class of this suite is named in this guide — as a row of this table or in the heading of its own section — and every row names a test that exists. Seventeen rows were once missing at the same time, each found by hand. |
 
 **Why these rules and not more.** Konsist analyses *declarations*, not the
 data flow inside a function body, so it cannot prove a `@Composable` never
@@ -921,6 +954,167 @@ useful — it checks that a reader is handed over, not where it goes.
 With the onboarding call's reader argument removed, the first test reports
 `OnboardingScreen.kt` opening `[faq]` without a reader. With the settings help
 catalogue pointed at the troubleshooting document, it reports `SettingsScreens.kt`.
+
+---
+
+## Cloud model list guard (`CloudModelListGuardTest`)
+
+The models the app offers for OpenAI, Anthropic, Google and DeepSeek are written
+by hand in `KoogModelMapper`, and the list fell behind without a sound: a Koog
+upgrade brought 22 chat models the app never offered, while models their
+providers had already retired stayed on offer.
+
+The guard reads Koog's chat constants by reflection — every static `LLModel`
+field of `OpenAIModels.Chat`, `AnthropicModels`, `GoogleModels` and
+`DeepSeekModels`, not Koog's own `models` lists, which are kept by hand and mix in
+embedding and audio models — and fails when:
+
+- an offered model is not one of those constants for its provider: a hand-built
+  `LLModel` loses the capabilities Koog routes by;
+- a constant is neither offered nor in the guard's `notOffered` list with a
+  reason — so a Koog upgrade that adds a model fails the build until the model
+  is offered or left out on purpose;
+- an entry in `notOffered` is not a chat constant of its provider, is offered as
+  well, or has no reason.
+
+A model is left out when its provider has retired it (the provider's
+deprecation page, or a request with a real key answering "not found"); when a
+shutdown date is announced before it is first offered, or falls within a week
+of a release; or when no request to it has been measured on a path the app has
+not run before.
+
+**What it cannot see:** whether a model still answers. A retired model stays on
+offer until someone checks; the list is checked again at each release.
+
+### Observed failing
+
+With `gemini-3.7-flash` taken out of the Google list, the test that every
+constant is sorted reports `google: gemini-3.7-flash`. With an embedding model and
+an offered model added to the OpenAI exclusions, the test of the exclusions
+reports `text-embedding-3-small is not a chat constant of it` and `gpt-5.4 is
+offered and left out at once`.
+
+---
+
+## Room migration guard (`MigrationStepGuardTest`)
+
+The database upgrades through `ALL_MIGRATIONS`, one step per schema version.
+`AppDatabaseMigrationChainTest` holds the list's shape — no gap, ends at the
+current version — and the instrumented `AppDatabaseMigrationHelperTest`
+validates the whole chain and the steps someone wrote a test for, on the
+emulator matrix only. Three steps an installed database can still run (33→34,
+35→36, 36→37) were checked nowhere but inside that chain, against its final
+schema.
+
+The guard runs every registered step with Room's `MigrationTestHelper` under
+Robolectric, one test case per step: it creates the database from the schema
+Room exported for the step's start version, runs the step, and validates every
+table, view and index against the exported schema of its target version. It
+fails when:
+
+- a step leaves a schema that differs from its exported target;
+- a step has no exported schema for its start or target version — Room writes
+  `app/schemas/<version>.json` on build, and the file has to be committed;
+- a step listed as unexported now has a starting schema, or the list names a
+  step `ALL_MIGRATIONS` does not register.
+
+**Unexported steps.** Schemas are exported from version 23. The 14 steps that
+start below it (9→10 … 22→23) are listed in the test: no build under this
+application id shipped a schema below 28, so no installed database runs them.
+The list cannot grow.
+
+**Where the schemas come from.** Robolectric reads only the tested variant's
+merged assets, so the schemas are `debug` assets as well as `androidTest`
+assets (`app/build.gradle.kts`). The `test` source set's assets and the
+host-test sources of `androidComponents` were tried and never reach it. Room's
+KSP writes the current schema into the same directory while it compiles, and
+the directory is not a declared output of KSP, so the debug asset merges are
+ordered after it (`mustRunAfter`); without the order, the first build after a
+schema bump merged the assets first and the new version had no exported schema.
+
+**What it cannot see:** whether data survives a step. Data preservation stays
+with the per-migration tests (`AppDatabaseMigrationTest`,
+`AppDatabaseMigrationHelperTest`).
+
+### Observed failing
+
+With the `staleNoticeFor` column dropped from `MIGRATION_69_70`, the case
+`69->70` fails with `Migration didn't properly handle: triggers`, every other
+case passing. With the unexported list widened to start at 8, a case `8->9`
+appears and fails with `UNEXPORTED_STEPS lists 8->9, which ALL_MIGRATIONS does
+not register`; widened to end at 23, the case `23->24` fails with `a schema for
+version 23 exists now`.
+
+On the first schema bump after the guard (v70 → v71), the case `70->71` failed
+with `no exported schema for 70 or 71` while `71.json` sat on disk: the asset
+merge had run before KSP wrote it. With the merge ordered after KSP the same
+build passes; with the order removed, it fails again (both logs kept).
+
+---
+
+## Backup content guards (`PreferenceBackupPolicyTest`, `BackedUpSecretsGuardTest`)
+
+A backup is only as complete as the list of what goes into it, and every new
+setting or encrypted store would otherwise be left out, or carried, without
+anyone deciding. Three guards make the decision a build error:
+
+- `PreferenceBackupPolicyTest` holds `PreferenceBackupPolicy` against the key
+  census: every DataStore key the code declares travels, stays with the phone or
+  is reset by a restore, each one decided once, and a key that does not travel
+  carries its reason. A travelling key also carries the type the code declares it
+  with: a restore writes a value only of that type, since a setting read back as
+  another type fails every read of it.
+- `BackedUpSecretsGuardTest` finds every file that builds a Keystore-backed store
+  or takes one as a dependency. Each must implement `BackedUpSecrets` and be bound
+  into the backup's set in `BackupModule`, or be named with its reason — the
+  database passphrase never leaves the phone, and a staged restore's own store is
+  destroyed once the restore is applied. An owner also writes its entries back on
+  a restore, only under the names it writes. It holds owners, not entries: which
+  of its entries an owner reports is the owner's test. Each owner also settles
+  secrets an older release kept inside a setting, and scrubs them from what a
+  backup writes — MCP sign-ins once lived inside the plain server list.
+- `PersistentStorageInventoryGuardTest` (above) gives every storage root its
+  archive entries or the reason it has none, both ways.
+
+### Observed failing
+
+The storage guard's first run failed `ATTACHMENTS is recorded as archived in
+ATTACHMENTS_PREFIX, but the exporter never writes it`: the prefixes are written by
+the file listing, not the exporter, and the check now reads the whole backup
+package. Review found its first version of the owner check satisfied by any mention
+of `BackedUpSecrets` in the file; it now reads the class header.
+
+---
+
+## Backup format fixture (`BackupFormatV1FixtureTest`)
+
+The backup archive format is public ([backup-format.md](backup-format.md)): a
+file one release writes has to open in every later one. Nothing else in the
+build would notice a change to the header codec, the chunk framing, the
+associated data, the key derivation or the entry rules that breaks files already
+written — the round-trip tests write and read with the same code.
+
+The test reads a committed format-1 archive,
+`app/src/test/resources/backup/format-1.knotwork`, with the reader of the build,
+in both flavours' suites, and checks every header field and every entry's name,
+order, size and SHA-256. The file was written with the app's own key costs and
+the smallest chunk size, so a few kilobytes span many chunks.
+`-PrecordBackupFixture` writes it anew — only before a release has shipped format
+1. After that the file never changes, and a later format version adds its own
+fixture beside it.
+
+**What it cannot see:** a reader that accepts what it should refuse. The tamper
+matrix (`BackupDecryptingInputStreamTest`, `BackupArchiveReaderTest`,
+`BackupHeaderCodecTest`) covers that side.
+
+### Observed failing
+
+With the chunk index left out of the associated data, the fixture fails to open
+and the test that swaps two chunks fails; with one byte of the fixture flipped,
+the fixture test fails alone. Normalising the password to NFD instead of NFC, or
+not at all, fails the test that derives a composed and a decomposed password —
+an earlier version of that test compared the two with each other only, and
+passed under NFD.
 
 ---
 

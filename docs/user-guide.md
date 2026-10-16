@@ -129,11 +129,29 @@ the download **resumes from where it stopped** rather than starting over.
 Until it completes, the bytes live in a temporary `.part` file, so an
 unfinished download never masquerades as an installed model.
 
+A file from Hugging Face is **checked before it becomes a model** when
+Hugging Face names its SHA-256 in the answer to the download — it does for
+the large files it stores in LFS. The bytes that arrived must have that hash.
+A file that does not match is deleted and the app says so (see below); start
+it again. A file
+with no hash named, from another host for instance, is installed without a
+check and marked **Not verified**
+(see [Managing local models](#managing-local-models)).
+
 A long download **pauses after five hours**. Android lets an app transfer
 data out of sight for six hours a day and stops the app if a transfer runs
-longer, so the download stops itself first. The screen you started it from says
-why; if you left it, the model just shows as not downloaded yet. Start the
-download again and it continues from the same byte.
+longer, so the download stops itself first. Start the download again and it
+continues from the same byte.
+
+A pause, and a file that did not match its checksum, usually happen while you
+are elsewhere, so the app tells you twice: a notification (when the app may
+post notifications), and a message, once, on the Models screen the next time
+you open it while no other download is running — or on setup's Download step,
+or the model's page in Discover, if you reach one of those first. On the Models
+screen a paused download's message has a **Continue** button; elsewhere, its
+**Get**, **Install** or **Download** button continues it. After a restore, the
+sheet over the chat also says it under the model, until one of those screens
+shows it or the download starts again.
 
 ### 3. Activate the model
 
@@ -1442,7 +1460,8 @@ sheet lets you grow / shrink the class list: each row has a small
 **−** button to remove it (disabled below the 2-class minimum), and a
 **+ Add class** button under the list creates a new empty class row
 (disabled above the 6-class maximum). The new class shows up as an
-additional outbound port on the node card immediately on Save.
+additional outbound port on the node card immediately on Save. Past three
+classes the card grows wider, so each class keeps its own port dot and label.
 
 #### Why the same question can take a different route
 
@@ -1923,9 +1942,14 @@ from the built-in catalogue. To add one:
    group also offers the same action.)
 2. Paste the endpoint into **Add New MCP Server URL** — the address your
    server prints when it starts, path included, as in
-   `https://mcp.example.com/sse`. There is no separate port field: a
+   `https://mcp.example.com/mcp`. There is no separate port field: a
    non-default port belongs in the URL.
 3. Pick the **transport** to match that endpoint, then tap **Add server**.
+   **Streamable HTTP**, selected for a new server, is the transport the MCP
+   specification defines today. **SSE** is the older HTTP+SSE transport,
+   which the specification has deprecated; pick it for a server that speaks
+   only that — often one whose endpoint ends in `/sse`. A server you saved
+   earlier keeps the transport it was saved with.
 
 The server's tools become available to the agent on the next run.
 Remove a server by tapping the trash icon next to its row.
@@ -2559,6 +2583,7 @@ repeated here.
 | **Crash reporting** | Off, nothing leaves the device. On, crashes plus warning and error log lines go out — never your messages, prompts or keys. |
 | **Trace retention · runs** | How many past runs keep their step-by-step trace in a chat. Older traces are dropped; the messages themselves stay. |
 | **Trace retention · age** | How long a trace is kept before it is dropped, whatever the per-chat count. Bounds what accumulates on disk. |
+| **Backup & restore** | *(no explanation — opens a screen that explains itself)* |
 
 #### About
 
@@ -2617,7 +2642,7 @@ The active on-device model, its backend, and external cloud providers.
   the hosted ones (**OpenAI**, **Anthropic**, **Google**, **DeepSeek**,
   **OpenRouter**, **Groq**), then the servers you run (**Ollama**, an
   **OpenAI-compatible server**). A row shows the masked key fingerprint — or, for
-  a server you run, its address and a **LAN** pill — and the selected model; tap
+  a server you run, its address and a **LAN** pill — and the model its runs use; tap
   it to open the provider's screen. An unset row says what it needs (*tap to add
   API key*, *tap to add the server address*). A row that ends in **no model
   selected** is the one that would fail if a step used it: OpenRouter, Groq and an
@@ -2635,11 +2660,14 @@ A provider's screen shows its fields in the order you fill them, with
 **Test connection** → model.
 
 - **OpenAI, Anthropic, Google, DeepSeek** — an API key, and a model from a
-  built-in list.
+  built-in list. With none chosen, runs use the provider's default, and a note
+  under the list names it. A saved model the list no longer offers — retired by
+  its provider, say — is replaced by the default too, and the note says so.
 - **OpenRouter, Groq** — the address they send to is shown read-only under
   **Sends to**; an API key (**required**) and a **Model id** (**required**) that
   you type or choose from the provider's list.
-- **Ollama** — its base URL, a model name, and the context window.
+- **Ollama** — its base URL, a model name (left empty, runs use `llama3`, as
+  the empty field shows), and the context window.
 - **OpenAI-compatible server** — for vLLM, LM Studio, llama.cpp or any server
   that speaks the OpenAI API. Enter the **Server address** the way the server
   documents it, including **`/v1`** (`http://192.168.1.20:8000/v1`); the paths
@@ -2723,6 +2751,12 @@ missing "I have finished" marker — so a half-written answer can look exactly
 like a complete one. The app checks for that marker and, when it is absent,
 discards the partial text and tells you the reply was cut off, rather than
 handing you an answer that stops mid-sentence as though the model meant it.
+The same check covers every reply a cloud model streams. A Cloud node's answer,
+the steps that must answer in a fixed shape (a Tool node's arguments, a router,
+a plan) when they run on a cloud model, and a task the agent hands to a cloud
+model with `delegate_task` fail with that message. A condition on a cloud model
+treats a cut reply as one it could not classify: the run takes the **False**
+branch and the console says the condition could not classify its input.
 
 Which providers this protection covers was decided by measurement only, because
 the opposite mistake — treating a healthy reply as truncated — would break
@@ -2990,6 +3024,9 @@ Advanced:
   waiting on an approval or clarification are never removed by retention.
 - **Usage statistics** *(link)* — opens a fully on-device usage dashboard (see
   below).
+- **Backup & restore** *(link)* — puts what you made in the app into one file
+  locked with a password, and restores one (see
+  [Backup & restore](#backup--restore)).
 
 #### Usage statistics
 
@@ -3036,6 +3073,94 @@ Controls:
   a file you pick. Neither happens automatically.
 - **Reset statistics** — permanently clears every recorded count (it does not
   change the recording toggle).
+
+#### Backup & restore
+
+**Back up…** writes one file, locked with a password you choose. It holds your
+chats with their images, long-term memory, pipelines, presets, prompts and
+skills, run history, triggers, usage statistics, settings and the files in the
+agent workspace. The model files stay out — they are large and can be
+downloaded again; the backup keeps the list of models you had and where each
+came from. Search settings for *backup*, *export*, *transfer* or *new phone* to
+find the screen.
+
+1. **Password, twice.** At least 12 characters; a few unrelated words make a
+   strong one. Knotwork never stores it (a password manager may offer to): forget
+   it and nobody can open the backup, the developer included.
+2. **Include API keys and sign-ins** — off unless you tick it. Ticked, the file
+   also carries your cloud API keys, the Hugging Face token and MCP sign-ins,
+   and anyone with the file and the password can use them. Left off, they are
+   not in the file: on a new phone you enter them again. Server addresses go in
+   either way, so a token written into a server's address travels with it.
+3. **Choose where to save** opens the system's *Create document* screen with
+   the name `knotwork-backup-<date>.knotwork`. Any place it offers will do — a
+   folder on the phone, a memory card, a cloud drive. Picking an existing file
+   replaces it — if the new backup then does not finish, the old file is gone
+   too. Knotwork itself uploads nothing; a cloud drive you pick uploads the file
+   as it would any other.
+4. **Backing up.** The steps are named as they run: securing the password
+   (about a second on a recent phone), chats, memory and settings, then files
+   and images, with the bytes written so far. Keep Knotwork open until it
+   finishes. **Cancel** — or Back — stops it and deletes the unfinished file.
+5. **Backup saved** shows the file, its size, how many chats, memories,
+   pipelines and files are in it, and whether the keys are. **Done** forgets
+   the password.
+
+When a backup is not saved, the screen says why: the place you chose ran out of
+space (and about how much the file needs), it stopped accepting the file, the
+phone itself has no room for the copy of the database a backup makes on the
+way, or some of the app's data could not be read. **Try again** opens the
+picker again with the password kept.
+
+An unfinished file is deleted when you cancel and when a backup fails. A few
+places do not let apps delete files; then the screen, or the message after a
+cancel, names the file for you to delete. If the app was closed halfway, the
+file is deleted the next time it starts, where the place still allows it —
+nothing is shown then. A workspace file or image whose name a backup cannot
+store is left out, and the result says how many were.
+
+**Restore from file…** puts a backup back — on this phone or a new one. It
+replaces the app's data here — chats, memory, pipelines, run history, triggers,
+settings and files — with the backup's. The model files stay, and so do this
+phone's API keys, Hugging Face token and MCP sign-ins, except those the backup
+carries. MCP servers come from the backup, so a sign-in for a server the backup
+does not list is kept but not used.
+
+1. **Pick the file** in the system's *Open document* screen. Any file can be
+   picked; the backup's own header decides. A file that is not a backup is
+   named and refused, and so is one written in a newer format, or with a newer
+   database, than this phone's Knotwork reads — update the app first.
+2. **Enter its password** and tap **Check**, or *Done* on the keyboard. A wrong
+   password is said in place; nothing counts the tries.
+3. **Checking the backup** reads every part of the file into a copy the app
+   keeps aside — nothing on the phone is replaced yet. A damaged or cut-short
+   file, or too little free space, stops it, and the screen says which;
+   **Cancel** goes back to the password.
+4. **Ready to restore** shows what the backup holds, whether its API keys come
+   in, how many of its models this phone will have to download again, and —
+   under **Will be lost** — everything now on this phone. Tasks the agent
+   scheduled are never in a backup.
+5. **Replace my data** asks you to type **REPLACE**. The app then restarts and
+   applies the backup.
+
+After the restart the chat shows what is left to do: the models to download
+again — **Download** where the backup recorded where a model came from,
+**Discover** where it did not — a reminder to enter your keys, token and
+sign-ins again when the backup was made without them and none is set on this
+phone, and the scheduled tasks that were not carried. Downloads go on after
+the sheet closes. A download sends your Hugging Face token when one is saved
+on this phone. One that stops without a model says why under it: when Hugging
+Face refuses it, a gated model needs its licence accepted there and your token
+in **Models**; anything else says the download didn't finish. A pause or a file
+that failed its checksum shows under its model too, until the download starts
+again or another screen has shown it. A backup made without keys brings no token: unless this phone has one of
+its own, add it before downloading a gated model. With nothing left to do, the
+app just says *Restored*. A
+restored phone takes over the backup's settings and usage statistics. Closing the
+summary, or cancelling the check, deletes the copy kept aside.
+
+The file's layout and cryptography are described in
+[backup-format.md](backup-format.md).
 
 ### About
 
@@ -3118,7 +3243,14 @@ LLMs.
 
 - The top **Active** card highlights the model currently loaded into
   inference memory. Its mono subtitle shows size, accelerator
-  backend, and execution backend.
+  backend, execution backend, and whether the file was checked.
+- Every model's subtitle ends in **Verified** or **Not verified**.
+  **Verified** means a download of this model matched the SHA-256 Hugging
+  Face published, and the file on the phone still has that hash. Otherwise
+  it reads **Not verified** — for instance a model only ever downloaded from
+  another host, a file the app found on its storage with no download behind
+  it, a model installed before this check existed, or one whose file has
+  changed since. Download it again from Hugging Face to have it checked.
 - The **HuggingFace** section lets you paste a personal access token
   (stored encrypted, in the same Keystore-backed store as cloud API
   keys) so gated repositories can be downloaded. The `+ Paste` button

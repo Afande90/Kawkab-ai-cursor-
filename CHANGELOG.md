@@ -13,6 +13,8 @@ details.
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-10-16
+
 ### Added
 
 - **A correction replaces the fact it corrects.** Memory used to drop a newly
@@ -82,11 +84,52 @@ details.
   own sheet, node by node, and says which node diverged first. Each node in
   **Traces** and **Vars** shows its input and output hash; a tap copies it. The
   header says the actions work while the run is kept, and where run history is set.
-- **Each installed model file has a SHA-256.** The app reads a model file once,
-  in the background, after it is downloaded — and once for every model installed
-  before this release — and keeps the checksum with the model. A file replaced on
-  disk afterwards is read again. Groundwork for runs that can be checked later:
-  the checksum names exactly which model file a run used.
+- **Each installed model file has a SHA-256.** The app reads a model file once —
+  while checking it, when the app downloads it; in the background for any other
+  file and for every model installed before this release — and keeps the
+  checksum with the model. A file replaced on disk afterwards is read again.
+  Groundwork for runs that can be checked later: the checksum names exactly which
+  model file a run used.
+- **Back up to one encrypted file.** Settings → Privacy → *Backup & restore* →
+  **Back up…** writes chats with their images, memory, pipelines, presets,
+  prompts and skills, run history, triggers, usage statistics, settings and the
+  workspace's files into one file locked with a password you choose — at least
+  12 characters, never stored — to the place you pick. API keys, the Hugging Face
+  token and MCP sign-ins go in only if you tick the box; server addresses always
+  go in, so a token written into an address travels with it. Model files stay out
+  and are listed instead. The screen names each step as it runs and, when it is
+  done, what the file holds. A cancelled or failed backup deletes its unfinished
+  file, and names it for you to delete where the place you chose does not allow
+  that; a file left by the app being closed halfway is deleted at the next start
+  if the place allows it. Search settings for *backup*, *export*, *transfer* or
+  *new phone* to find it. The [format](docs/backup-format.md) is public.
+- **Restore from a backup, on this phone or a new one.** *Restore from file…*
+  in Settings → Privacy → *Backup & restore* reads a backup you pick, checks its
+  password and every part of it while nothing on the phone changes, and shows
+  what comes in and what this phone loses before you type **REPLACE**; the app
+  then restarts and applies it. The model files stay, and so do the phone's own
+  keys and sign-ins, except those the backup carries; MCP servers come from the
+  backup, so a sign-in for a server it does not list goes unused. A file that is
+  not a backup, one in a newer format or with a newer database, a damaged or
+  cut-short file and too little free space are each told in their own words.
+  After the restart a sheet over the chat lists the models to download again —
+  straight from where each came from, or through Discover — a reminder to enter
+  keys, token and sign-ins again when the backup was made without them and none
+  is set on the phone, and the scheduled tasks that were not carried; with nothing
+  left to do, the app says *Restored*. A download from the sheet sends your
+  Hugging Face token when one is saved. One that stops without a model says why
+  under it: a refusal from Hugging Face points to the model's licence and your
+  token in Models, anything else says the download didn't finish, and a pause or
+  a file that failed its checksum shows there as well as on the Models screen.
+  The reminder names where each secret goes: API keys in Settings, the token in
+  Models, MCP sign-ins in Tools.
+  Moving between Google Play and a release build is now a backup and a restore.
+- **Each downloaded model remembers where it came from.** A model downloaded
+  from a link or from Discover keeps that address with it. A model found on
+  disk at start-up — after *Erase data*, or a file copied into the app's folder
+  — has none. Groundwork for the encrypted backup, which carries the list of
+  models rather than the files: a restored phone can offer each one for
+  download again.
 - **An approval shows what was asked.** The approval card puts the request the
   run started from above the tool call — your message, shared text, a trigger's
   name and prompt, another app's request, or an instruction the agent scheduled
@@ -102,6 +145,49 @@ details.
 
 ### Changed
 
+- **Compose tests run on the v2 test rules.** The v1 `createComposeRule` and
+  `createAndroidComposeRule` are deprecated, and they ran the composition's
+  coroutines at once, which can hide a timing bug. Every instrumented test and
+  every design-system test now uses the v2 rules, whose dispatcher runs such a
+  coroutine when the test lets the clock move. No screenshot baseline changed.
+  A guard in each module fails a test written against v1.
+- **The design system's code is checked for dead code too.** The detekt rules
+  that need resolved types (unused imports, unused private functions, long
+  parameter lists, swallowed cancellation) ran only over the app; over the
+  design-system module they were skipped without a word. They now run there as
+  well, with two settings of its own: previews are not dead code, and a screen's
+  defaulted callbacks do not count as a long parameter list. The first run found
+  39 unused imports and two unused functions, now removed.
+- **A new MCP server starts on Streamable HTTP.** The server form selected SSE
+  and showed `…/sse` as its example address. The MCP specification has
+  deprecated HTTP+SSE in favour of Streamable HTTP, so the form now selects
+  Streamable HTTP and lists it first, and its example address ends in `/mcp`.
+  SSE stays a choice, for a server that speaks only that, and a server saved
+  earlier keeps the transport it was saved with.
+- **Bouncy Castle is bundled, and the licence list names it.** The backup
+  archive's key is derived from its password with Argon2id, which the platform
+  does not provide; the app now carries Bouncy Castle's implementation (MIT,
+  about 10–35 KB once shrunk). `THIRD_PARTY_LICENSES.txt` quotes its notice. The
+  archive format is described in [docs/backup-format.md](docs/backup-format.md).
+- **Current cloud models to choose from.** The model lists of OpenAI, Anthropic,
+  Google and DeepSeek now follow the client library the app is built on: GPT-5.4
+  Mini, GPT-5.5 and GPT-5.6 Sol, Terra and Luna; Claude Sonnet 4.6, Sonnet 5,
+  Opus 4.7, Opus 4.8, Opus 5 and Fable 5; Gemini 3.5 Flash, 3.5 Flash-Lite, 3.6
+  Flash and 3.7 Flash; DeepSeek V4 Flash Vision. Models their providers have
+  retired are gone: GPT-5 Codex, GPT-5.1 Codex and Codex Max, GPT-5.2 Codex,
+  Claude Sonnet 4, Opus 4 and Opus 4.1, and Gemini 2.5 Pro, which Google keeps for
+  earlier users only. So are o1, o3-mini, o4-mini and GPT-4.1 nano, which OpenAI
+  shuts down on 23 October 2026. A saved choice that left the list runs on the
+  provider's default, and the provider's screen says so.
+- **Anthropic's default model is Claude Sonnet 4.6.** Anthropic retires Sonnet
+  4.5, the default until now, on 30 November 2026. A model you chose yourself
+  stays as it is.
+- **A provider's settings name the model your runs use.** With no model chosen
+  for OpenAI, Anthropic, Google or DeepSeek, the list stayed blank while runs
+  used the provider's default, and a saved model the app no longer offers was
+  swapped for that default without a word. A note under the list now names the
+  model runs use, and the provider's row in Settings and the node sheet show the
+  same model. An empty Ollama model field shows `llama3`, the model it asks for.
 - **Adding a node opens a list you can read.** The editor's radial menu is gone:
   on a phone its labels overlapped. The **+** button and a long-press on the
   canvas now open an **Add node** sheet that lists every node type by what it is
@@ -211,6 +297,57 @@ details.
 
 ### Fixed
 
+- **Edges meet the port dots on taller cards and with larger text.** A Pipeline
+  card's body line, a runtime error or a larger font scale makes a node card
+  taller, but edges and port presses still used the shortest card's dot line. At
+  200 % text, an If or Router card's ports also climbed onto the card's text. The
+  editor now measures each card, port labels follow the font scale, and edges and
+  presses meet the dots the card draws.
+- **The provider check's "connection refused" test no longer hangs on macOS.** It
+  took a free port from a socket bound with `SO_REUSEADDR`, and macOS can hand out
+  such a port while another process is listening on it. The check then waited for
+  an answer that never came, and the test failed after 15 seconds. The test now
+  takes a port that nothing listens on and makes sure of it first.
+- **A router with many routes can be connected on a phone.** With four or more
+  classes, a Router card's ports drifted away from where a press grabbed them,
+  and with five or six, two of them were not drawn at all. The card now grows
+  with its outbound ports so each has at least 40 dp, and every port gets its
+  own dot and label. A press on a dot grabs that port, and edges start and end
+  at the dots. Auto-layout and fit-to-screen leave room for a wider card.
+- **A cut-off answer from a cloud model is caught everywhere, not only on a Cloud
+  node.** When the connection drops mid-answer, OpenAI's and DeepSeek's clients
+  end the stream normally, only without the marker that says it finished. A Cloud
+  node already refused such an answer; a task handed to a cloud model with
+  `delegate_task` and the steps that must answer in a fixed shape (a Tool node's
+  arguments, a router, a plan, a condition) on a cloud model took the partial
+  text as the whole answer. They now refuse it by the same per-provider rule:
+  `delegate_task`, Tool arguments, routers and plans fail with the cut-off
+  message, and a condition takes its False branch as one it could not
+  classify.
+- **A paused model download tells you.** A download that paused at Android's
+  background time limit — after five hours out of sight — went quiet: its
+  notification disappeared, and a screen opened afterwards showed nothing. It
+  now posts a notification that it paused (if the app may post notifications),
+  and the Models screen says so once the next time you open it while no other
+  download is running, with **Continue** — or setup's Download step, or the
+  model's page in Discover, if you reach one of those first. A file that did not match its checksum is told
+  the same way. Once a screen has shown it, or the download is started again or
+  cancelled, the notification goes too.
+- **Discover says why an install paused.** A download that paused at its
+  background time limit showed Discover's *Download failed. Check your
+  connection* — wrong, and with no hint that installing again continues it. It
+  now shows the pause message the Models screen shows.
+- **Discover offers a model again when its file is gone.** It marked a file
+  **Installed** whenever the app had the model registered, even after the file
+  was deleted outside the app — and, after a restore, every model the backup
+  listed but did not bring, so the sheet's **Discover** led to a model that
+  could not be installed. It now marks only files that are on the phone.
+- **A cloud model's repair no longer sends a temperature.** When a Tool,
+  Decomposition or other structured step on a cloud model got an answer that did
+  not parse, the second try asked the provider for a low temperature. Claude 4.7
+  and later refuse any temperature but their default, so the try meant to fix the
+  answer would fail instead. The cloud try now uses each provider's default; the
+  on-device model still repairs at a low temperature.
 - **An overdue trigger tells you.** A trigger the phone stops checking — a battery
   saver or deep idle holding the app back — showed only as an *Overdue* badge on
   the Triggers screen. A check that runs every few hours now sends one **Trigger
@@ -244,6 +381,12 @@ details.
   the provider for JSON. A prose answer failed the step at once, or a fixed-tool
   step ran its tool with that prose as the arguments. These steps now get the same
   repairs as on the device's own model.
+- **OpenAI's Codex and Pro models answer again.** Since 0.7.0 a Cloud step on any
+  of them failed every time with "the response … was cut off", and the answer was
+  thrown away. These models reply through OpenAI's Responses API, which ends a
+  complete answer without the finish reason the app looks for to spot a dropped
+  connection. The app now expects it only from models that reply through Chat
+  Completions; an answer cut short on the Responses API still fails the step.
 - **`delegate_task` goes where it says it will.** The tool tells the model that,
   unless it names a provider, the first one set up on the device answers; a call
   that named none went to Anthropic instead — and failed for anyone without an
@@ -316,6 +459,19 @@ details.
 
 ### Security
 
+- **A downloaded model is checked against the hash Hugging Face publishes.**
+  Hugging Face names a file's SHA-256 in its answer to the download; the app
+  reads it from Hugging Face's own answer only — never from the CDN it redirects
+  to, never from another host — and hashes the file before it takes a model's
+  name. A file that does not match is deleted, no model is added, and the app
+  says so as it does for a paused download (see Fixed). This also catches a
+  resumed download that joined two versions of a file changed on Hugging Face
+  in between. A file from another host, or one
+  Hugging Face keeps outside LFS, has no hash to check; on the Models screen
+  every model now reads **Verified** or **Not verified**, and models installed
+  before this release read **Not verified** until downloaded again. A Hugging
+  Face download that stopped after its last byte is checked on the next start
+  instead of being downloaded again.
 - **A model server's redirect is checked hop by hop.** The address of a server
   you run — Ollama — was checked once, before the first request; a server could
   then answer with a redirect, and nothing inside the model client looked where
@@ -356,6 +512,37 @@ details.
   suite now checks that the list has no gap and ends at the current schema, and
   the emulator suite runs the whole list from the oldest saved schema to the
   newest. Each step now sits in a file of its own.
+
+- **Every database upgrade step is checked against its saved schema.** A step
+  was checked on its own only where someone had written a test for it; three
+  steps an installed app can still run were checked only inside the full
+  emulator run, against the final schema. The test suite now runs every step on
+  a real database and compares what it leaves with the schema saved for that
+  version, so a new step is covered as soon as it is added to the list. The
+  steps that start below the oldest saved schema cannot be compared; no
+  installed copy of the app can run them, and they are listed by name.
+  On the first new version the check could not find the schema it had just
+  been given: the build packed the saved schemas before writing the new one.
+  It now writes first.
+
+- **A database statement that fails can no longer read as done.** The database
+  library has a call that runs a statement and drops its error, so a step that
+  failed — a full disk, a lock — returned as if it had run. The test suite now
+  refuses that call in the app's code.
+
+- **The static-analysis guide lists every architecture guard again.** Its table
+  of the architecture rules had fallen behind: seventeen guards were missing at
+  the same time, each found by hand. The fourteen still missing are described
+  now, each from what its test checks rather than from the test's own comment,
+  and a test fails when a guard has no row or a row names a test that no longer
+  exists. See [`docs/static-analysis.md`](docs/static-analysis.md#konsist--architecture-guard).
+
+- **A Windows checkout no longer fails the build checks.** With
+  `core.autocrlf=true`, git checked every text file out with Windows line
+  endings, and the checks that compare a committed file with generated text
+  failed, as did the store-listing length checks: the English description read
+  as 4024 characters against Play's limit of 4000. Every text file is now checked
+  out with Unix line endings on every platform.
 
 ## [0.11.1] - 2026-10-02
 
@@ -6719,7 +6906,8 @@ that produced the initial 0.1.0 snapshot.
 - **Master key**: `EncryptedSharedPreferences` is rooted in the Android
   Keystore, so the master key is hardware-backed where available.
 
-[Unreleased]: https://github.com/alexeyw/knotwork/compare/v0.11.1...HEAD
+[Unreleased]: https://github.com/alexeyw/knotwork/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/alexeyw/knotwork/compare/v0.11.1...v0.12.0
 [0.11.1]: https://github.com/alexeyw/knotwork/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/alexeyw/knotwork/compare/v0.10.1...v0.11.0
 [0.10.1]: https://github.com/alexeyw/knotwork/compare/v0.10.0...v0.10.1

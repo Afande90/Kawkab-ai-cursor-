@@ -687,7 +687,9 @@ The gate validates against one of two shapes:
 On a malformed reply the gate runs a **repair loop**: it hands the model
 back its own invalid output plus the validation error and asks it to
 correct itself, at a lowered, deterministic-leaning sampling temperature
-(`REPAIR_TEMPERATURE`). The number of attempts is the
+(`REPAIR_TEMPERATURE`) on the device. A cloud model gets no temperature on a
+repair, only its provider's default: Claude 4.7 and later answer any other
+temperature with an error, which would fail the repair itself. The number of attempts is the
 **Settings → max repairs** budget (`structuredOutputMaxRepairs`, default 2,
 range 0–4). The loop ends in `GateResult.Success(value, repairs)` or
 `GateResult.Failed(lastRaw, lastError, repairs)`.
@@ -699,7 +701,7 @@ flowchart TD
     Extract --> Validate{Valid shape?}
     Validate -->|yes| Success[GateResult.Success]
     Validate -->|no| Budget{repairs left?}
-    Budget -->|yes| Repair[Repair re-inference<br/>invalid output + error<br/>at REPAIR_TEMPERATURE]
+    Budget -->|yes| Repair[Repair re-inference<br/>invalid output + error<br/>at REPAIR_TEMPERATURE on device]
     Repair -->|RepairListener: console + metric| Infer
     Budget -->|no| Failed[GateResult.Failed]
 ```
@@ -878,7 +880,9 @@ file to the existing download path — no new download mechanism.
    polymorphic `gated` field (`false` vs `"auto"`/`"manual"`), filters to
    engine-compatible `.litertlm` siblings and builds each file's `resolve` URL.
 3. **Enrich + wrap.** `ModelDiscoveryRepositoryImpl` stamps each detail file's
-   "already installed" flag from `LocalModelRepository.isInstalled`, drops repos
+   "already installed" flag from `LocalModelRepository.isInstalled` — a
+   registered model whose file is on disk; a row whose file is gone, as a
+   restore leaves for a model it did not bring, is offered again — drops repos
    with no `.litertlm` file, and converts success/failure into a `Result` (the
    suspend network calls re-throw `CancellationException` from a dedicated first
    catch before mapping other failures — never `runCatching`). `SearchDiscoverableModelsUseCase`
@@ -1410,14 +1414,26 @@ SSE path above, `HttpTimeout` *does* apply here.
 **A dropped stream is a failure, not an answer.** On the OpenAI-compatible
 clients a socket cut mid-answer ends the flow **normally**, with no exception,
 and the frames are byte-identical to a healthy stream apart from
-`End.finishReason` being `null` instead of `"stop"`. `CloudLlmNodeExecutor`
-therefore rejects a stream that ended without a finish reason
-(`NodeExecutionResult(error = …)`) rather than forwarding half an answer. The
-check is enabled **per provider and only where measured**
-(`providerReportsFinishReason`), because the inverse mistake fails working
+`End.finishReason` being `null` instead of `"stop"`. Every caller that turns a
+cloud stream into an answer therefore rejects a stream that ended without a
+finish reason rather than forwarding half an answer: `CloudLlmNodeExecutor`
+(`NodeExecutionResult(error = …)`), the cloud client of the structured-output
+gate (`CloudStreamCutOffException`, which the node's error path shows as a
+provider failure) and `delegate_task` (an `Error:` result). All three ask one
+rule, `domain/engine/CloudStreamEnd`, and `CloudStreamEndCallersGuardTest` keeps
+a new reader of `executeStreaming` from skipping it. The check is enabled **per
+provider and only where measured** (`CloudStreamEnd.reportsFinishReason`),
+because the inverse mistake fails working
 runs: Koog's Ollama client never emits a finish reason at all, and the harness
 could not produce a stream Anthropic's parser accepts, so both are excluded and
-a mid-answer cut on those two still reads as a short but complete reply.
+a mid-answer cut on those two still reads as a short but complete reply. On
+OpenAI the check also depends on the model: Koog streams a model that supports
+only the Responses API (the Codex and Pro lines) through that API, where a
+complete answer ends without a finish reason and a cut one fails inside Koog
+(`requireEndFrame`), so the check applies to Chat Completions models only.
+`OpenAiResponsesStreamEndToEndTest` runs every OpenAI model the app offers
+through Koog's real client against a local server, so a model routed differently
+from that assumption fails the build.
 
 **Error text is scrubbed before it is shown.** Google authenticates by query
 parameter, so an ordinary socket timeout arrives carrying the API key in the
@@ -1590,9 +1606,12 @@ the same buffer and reach storage in the same transaction as the trace rows
 flushed with them (`TraceStepDao.insertBatch`), and the read merges both tables
 back into one ordered trace. The run header (seed, sampler, versions, device)
 sits on the root run's `pipeline_runs` row. The model file's checksum is
-computed once per file in the background and kept in `local_models` with the
-file's size and modification time; a file that changed since reads as not
-hashed.
+computed once per file — by the download's check for a file the app downloads,
+in the background for any other — and kept in `local_models` with the file's
+size and modification time; a file that changed since reads as not hashed.
+`local_models.sourceSha256` (v72) keeps the hash the source published when a
+download matched it; a model is shown as verified only while the file's current
+hash still equals it.
 
 Migration rules:
 
@@ -1605,9 +1624,11 @@ Migration rules:
   development instead of silently dropping tables. Destructive recreation is
   retained only on **downgrade** (`fallbackToDestructiveMigrationOnDowngrade`),
   which forward migrations cannot handle. A JVM test fails when the list has a
-  gap or does not end at the schema version the build exports; a
-  `MigrationTestHelper` suite covers the steps across the exported-schema
-  range and runs the whole list from the oldest exported schema to the newest.
+  gap or does not end at the schema version the build exports; another runs
+  every step from the oldest exported schema (v23) on real SQLite and validates
+  the schema it leaves against the exported one, in the build gate; an
+  emulator `MigrationTestHelper` suite checks data preservation step by step
+  and runs the whole list from the oldest exported schema to the newest.
 - Auto-migrations are allowed for additive changes only.
 - DAO methods returning `Flow<T>` are annotated with `@Query` — no
   ad-hoc reactive wrapping.
@@ -1679,7 +1700,8 @@ The passphrase lifecycle is asymmetric by design
 - The confirmed wipe (`ResetLockedDatabaseUseCase`) deletes the database
   and its passphrase through `DatabaseResetService`, then — only if that
   succeeded — asks `AgentWorkspace`, `AttachmentStore` and
-  `TransientCacheSweeper` to erase their content. Settings and the other
+  `TransientCacheSweeper` to erase their content, and `BackupRestorer` to
+  erase a restore staged from a backup (it holds copies of those files). Settings and the other
   secret stores are kept, and so are downloaded model files: the next
   start's `RediscoverDownloadedModelsUseCase` (a stage of
   `AppInitializationUseCase`) registers every model file in the downloads
@@ -1689,8 +1711,9 @@ The passphrase lifecycle is asymmetric by design
 None of these stores enters Android backup or device transfer
 ([SECURITY.md § Backup and device transfer](../SECURITY.md#backup-and-device-transfer)).
 `PersistentStorageInventoryGuardTest` inventories every storage root the
-code uses, with its backup and wipe decision, and checks the backup rules
-and the wipe against it.
+code uses, with three decisions — Android backup, the wipe, and the app's own
+encrypted backup archive — and checks the backup rules, the wipe and the
+archive's entries against it.
 
 Inside the encrypted database, `memory_chunks.embedding` is stored as a
 **BLOB of little-endian IEEE-754 float32 values** (4 bytes per
@@ -1742,6 +1765,7 @@ explicitly in [`SECURITY.md`](../SECURITY.md) (*Agent file workspace*).
 | **DataStore** (Preferences)   | Non-sensitive settings: sampling params, timeouts, default pipeline id, opt-in flags, `allowed_http_domains`, `app_function_risk_overrides` | **FBE + app sandbox only** (plaintext within the sandbox; no app cipher)   |
 | **Agent workspace** (`files/agent_workspace/`) | Agent-produced and user-imported files (reports, exports, inputs)                                              | **FBE + app sandbox only** — *not* SQLCipher-encrypted (see `SECURITY.md`) |
 | **Attachment store** (`files/attachments/`) | Downscaled JPEG image attachments of chat messages                                                            | **FBE + app sandbox only** — *not* SQLCipher-encrypted (same posture as the workspace) |
+| **Restore staging** (`files/restore/`) | A restore from the app's own backup, checked and unpacked, from the check until the next start applies it; then the report of what it left for the user | Database: **SQLCipher** under this phone's passphrase. Settings and files: **FBE + app sandbox only**. The archive's provider settings and secrets are not here: a Keystore-backed store of their own holds them, destroyed with its key once applied |
 
 **Image attachments.** A user message can carry one image. A picked or shared
 image is read from its content URI — only another app's `content://` provider,
@@ -1777,6 +1801,55 @@ the moment transcription succeeds (§3.10). They never reach the database and
 never enter the pipeline graph, so they appear in no storage tier above — only
 the resulting transcript text does, as an ordinary chat message.
 
+#### The app's own encrypted backup
+
+The one way these stores leave the device together is a backup the user makes:
+Settings → Privacy → *Backup & restore* → *Back up*. The file's layout is in
+[backup-format.md](backup-format.md); what it protects, in
+[SECURITY.md § Backup and device transfer](../SECURITY.md#backup-and-device-transfer).
+
+- **Presentation.** `BackupViewModel` holds the password for the *Back up*
+  route only, asks the screen to open the system *Create document* picker, and
+  maps progress and the outcome onto the catalog's `BackupContent`.
+- **Domain.** `BackUpToDocumentUseCase` owns the picked document. It opens it
+  through `BackupDocuments`, runs `ExportBackupUseCase` (password of at least
+  12 characters, secrets only when asked) and keeps the file only when the
+  export completed: a failure, a cancellation or an unexpected error deletes it.
+- **Data.** `BackupExporterImpl` derives the keys
+  (`Argon2idBackupKeyDerivation`), lets `BackupContentCollector` gather the
+  content — a database copy from `SqlCipherDatabaseSnapshotter` under a key made
+  for this archive, the settings `PreferenceBackupPolicy` lets travel, the
+  `BackedUpSecrets` owners' values when asked, the workspace and attachment
+  files from `BackupFileSource` — and streams it through `BackupArchiveWriter`
+  into AES-GCM chunks. `SafBackupDocuments` is the Storage Access Framework
+  side: it keeps a persistable grant and records the document as unfinished in
+  `AppStateSettings` from the moment it is opened until it is finished or
+  deleted. So `StartupMaintenance` deletes a file a killed process left behind —
+  but never the one a backup in this process is still writing, since the
+  maintenance also runs when the activity is only recreated.
+- **Restore.** `RestoreViewModel` drives *Restore from file…*.
+  `InspectBackupDocumentUseCase` reads the picked file's open header, name and
+  size — a file this build cannot read comes back as an answer, not a failure.
+  `StageRestoreFromDocumentUseCase` hands the document and the password to
+  `BackupRestorer.stage`, which authenticates and unpacks everything into
+  `files/restore/` and readies the database there (`RestoreStager`,
+  `StagedDatabasePreparer`); nothing the app uses changes.
+  `SummarizeRestoreUseCase` weighs the staged manifest against this phone
+  through `LocalDataCounter` (`BackupLocalDataCounter`) and the model registry.
+  After the typed confirm, `BackupRestorer.commit` writes the commit marker and
+  stops background work, and `RestoreViewModel` sets `AppRestartRequest`;
+  `MainActivity`, not the screen, restarts the process with ProcessPhoenix, so
+  leaving the screen while the commit finishes cannot lose the restart. The
+  next start swaps the files in before Hilt exists
+  (`PendingRestoreApplier` in `App.onCreate`, main process only), migrates the
+  settings when DataStore first opens (`RestoredPreferencesMigration`), and
+  `RestoreFinisher` — the first stage of `AppInitializationUseCase` — applies
+  the secrets and the models' paths and writes the report.
+  `AfterRestoreViewModel`, shown over the chat's destination, reads that
+  report once: a sheet with what is left to do, whose downloads are the download worker's
+  as on the Models screen, or the snackbar *Restored* through
+  `TransientMessageRelay`.
+
 ### 5.3. JSON parsing
 
 Pipeline import/export and tool-argument parsing use
@@ -1805,8 +1878,8 @@ idle. Three components coordinate that lifecycle:
 | `PendingInteractionMaintenanceWorker` | Periodic (6 h) expiry pass: fails runs whose parked approval / clarification outlived the approval window; then `NotifyStaleTriggersUseCase` announces each trigger that has gone overdue, once per silence. |
 | `RunRetentionWorker`       | Daily (charging + idle) retention pass over `pipeline_runs` / `trace_steps` **and** the trigger-evaluation journal (age window + hard cap) — see *Run retention* below. |
 | `MemoryCompactionWorker`   | Daily (charging + idle) long-term-memory compaction (see the memory lifecycle section).        |
-| `ModelFileHashWorker`      | One-off SHA-256 pass over every installed model file without a current hash, scheduled when a model is registered and re-armed at start-up while a file is still unhashed (`ModelFileHashScheduler`; passes chain with `APPEND_OR_REPLACE`). The hash is kept with the model and its file stamp (size + modification time), so a run can name the exact file it used without reading gigabytes per run, and a file replaced on disk is hashed again. |
-| `ModelDownloadWorker`      | Unique-per-file model download promoted to a `dataSync` foreground service, so a multi-gigabyte transfer survives leaving the screen or the app. Resumes a partial file over HTTP `Range` (`ResumableFileDownloader`), retries transport failures, and registers the finished file itself — the observing ViewModel may be long gone by then. Spends at most `DownloadForegroundBudget` (five hours of foreground time, one under Android's daily `dataSync` limit) and then pauses with a failure; starting the download again resets the budget and resumes. |
+| `ModelFileHashWorker`      | One-off SHA-256 pass over every installed model file without a current hash (a download's check records the hash it read, so a checked download leaves it nothing to read), scheduled when a model is registered and re-armed at start-up while a file is still unhashed (`ModelFileHashScheduler`; passes chain with `APPEND_OR_REPLACE`). The hash is kept with the model and its file stamp (size + modification time), so a run can name the exact file it used without reading gigabytes per run, and a file replaced on disk is hashed again. |
+| `ModelDownloadWorker`      | Unique-per-file model download promoted to a `dataSync` foreground service, so a multi-gigabyte transfer survives leaving the screen or the app. Resumes a partial file over HTTP `Range` (`ResumableFileDownloader`), retries transport failures, and installs the finished file itself — the observing ViewModel may be long gone by then. `DownloadedModelInstaller` hashes the complete `.part` file, compares it with the SHA-256 Hugging Face published in its answer to the download (`X-Linked-Etag`, read only from Hugging Face's own hops), and only then renames and registers it; a mismatch deletes the file and fails the work with `CHECKSUM_MISMATCH`. A part already as long as the published file is checked again instead of downloaded again. Spends at most `DownloadForegroundBudget` (five hours of foreground time, one under Android's daily `dataSync` limit) and then pauses with a failure; starting the download again resets the budget and resumes. A pause or a checksum mismatch is recorded (`DownloadInterruptionStore`, a preferences file of its own) before the work fails, and announced by a notification (`ModelDownloadOutcomeNotifier`, family `MODEL_DOWNLOAD_OUTCOME`, keyed by file name); the Models screen (while no download runs), setup (on its Download step, while resumed, with no download followed and the picked model not installed — one per visit) and Discover (for its repository's files) show a record once and acknowledge it, and starting or cancelling the download drops it. |
 
 A scheduled task is not a separate execution path: `AgentWorker`
 enqueues the stored prompt through the same `TaskQueueManager` →

@@ -4,6 +4,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -20,9 +21,11 @@ import app.knotwork.android.presentation.ui.pipeline.editor.config.NodeConfigCod
 import app.knotwork.android.presentation.ui.pipeline.editor.config.NodeTypeMapper
 import app.knotwork.android.presentation.ui.pipeline.editor.core.BezierEdge
 import app.knotwork.android.presentation.ui.pipeline.editor.core.CanvasTransform
+import app.knotwork.android.presentation.ui.pipeline.editor.core.CardMeasure
 import app.knotwork.android.presentation.ui.pipeline.editor.core.NodeCardFootprint
 import app.knotwork.design.components.pipelineeditor.EvaluationConfig
 import app.knotwork.design.components.pipelineeditor.IntentRouterConfig
+import app.knotwork.design.components.pipelineeditor.NodePortGeometry
 import app.knotwork.design.components.pipelineeditor.NodePorts
 import app.knotwork.design.components.pipelineeditor.OutboundPort
 import app.knotwork.design.theme.KnotworkTheme
@@ -37,34 +40,28 @@ import app.knotwork.design.theme.KnotworkTheme
 internal data class PortAnchor(val xCanvas: Float, val yCanvas: Float)
 
 /**
- * Per-port horizontal spacing in dp. Picked to match the catalog NodeCard's outbound
- * port row visually: each column has the 12 dp port dot plus an optional `LabelSm`
- * label that measures ~28–32 dp wide for the canonical labels (`True`, `False`,
- * `Item`, `Done`, `Pass`, `Retry`, `Fail`); the row arrangement adds an 8 dp gap, so
- * the visible centre-to-centre distance lands around 40 dp. Used by both
- * [outboundPortAnchor] (for edge rendering) AND `EditorNode` (for per-port hit
- * targets), so the two stay in lockstep.
+ * Width of [node]'s card on the canvas: one slot per outbound port ([NodePortGeometry.cardWidth]).
+ * On an Intent Router that is one per class and one per edge label no class names, so the edges
+ * leaving the node count — the same ports [portsFor] gives the card.
+ *
+ * @param node the node.
+ * @param connections the graph's edges.
+ * @return the card width in canvas units (dp).
  */
-internal const val PORT_SPACING_DP = 40f
-
-/** Inner card width available for the outbound port row (NodeCard width − 2 × sp3 padding). */
-private const val NODE_INNER_WIDTH_DP = NodeCardFootprint.WIDTH - 24f
+internal fun cardWidthOf(node: NodeModel, connections: List<ConnectionModel>): Float =
+    NodePortGeometry.cardWidth(portsFor(node, outboundLabelsOf(node.id, connections)).outbound.size)
 
 /**
- * Returns the canvas-space horizontal offset (relative to the node's centre) of outbound
- * port [index] given [count] total ports. Symmetric around centre; clamped so an
- * IntentRouter with 6 classes still fits inside the card.
+ * Inbound port anchor — the centre of the single dot on the top edge.
+ *
+ * @param node the node.
+ * @param ports the node's ports, which set its card's width.
+ * @return the anchor in canvas space.
  */
-internal fun outboundPortOffsetDp(index: Int, count: Int): Float {
-    if (count <= 1) return 0f
-    val maxSpacing = NODE_INNER_WIDTH_DP / count
-    val spacing = minOf(PORT_SPACING_DP, maxSpacing)
-    return (index - (count - 1) / 2f) * spacing
-}
-
-/** Inbound port anchor — single dot centred on the top edge. */
-internal fun inboundPortAnchor(node: NodeModel): PortAnchor =
-    PortAnchor(xCanvas = node.x + NodeCardFootprint.WIDTH / 2f, yCanvas = node.y)
+internal fun inboundPortAnchor(node: NodeModel, ports: NodePorts): PortAnchor = PortAnchor(
+    xCanvas = node.x + NodePortGeometry.cardWidth(ports.outbound.size) / 2f,
+    yCanvas = node.y + NodePortGeometry.INBOUND_DOT_Y,
+)
 
 /**
  * Outbound port anchor for the port with [portLabel] on [node] (using [ports] to enumerate).
@@ -76,48 +73,68 @@ internal fun inboundPortAnchor(node: NodeModel): PortAnchor =
  * needs, and the importer spells fixed branch labels as their ports do. What still falls
  * back to index 0 is an unlabelled edge on a node with only labelled ports — the engine's
  * lone default way out of an IF_CONDITION.
+ *
+ * [dotLine] is where the card was measured to draw its outbound dots; without it the anchor sits
+ * on the shortest card's dot line, which a card with a body line, a runtime error or a larger
+ * font scale draws lower.
  */
-internal fun outboundPortAnchor(node: NodeModel, ports: NodePorts, portLabel: String?): PortAnchor {
-    val centreX = node.x + NodeCardFootprint.WIDTH / 2f
-    val outY = node.y + NodeCardFootprint.BASE_HEIGHT
+internal fun outboundPortAnchor(
+    node: NodeModel,
+    ports: NodePorts,
+    portLabel: String?,
+    dotLine: Float? = null,
+): PortAnchor {
     val outbound = ports.outbound
+    val centreX = node.x + NodePortGeometry.cardWidth(outbound.size) / 2f
+    val outY = node.y + (dotLine ?: NodePortGeometry.outboundDotY(hasInbound = ports.inbound > 0))
     if (outbound.isEmpty()) return PortAnchor(centreX, outY)
     val matched = outbound.indexOfFirst { matchesPort(it, portLabel) }
     val index = if (matched >= 0) matched else 0
-    return PortAnchor(xCanvas = centreX + outboundPortOffsetDp(index, outbound.size), yCanvas = outY)
+    return PortAnchor(xCanvas = centreX + NodePortGeometry.outboundOffset(index, outbound.size), yCanvas = outY)
 }
 
 /**
  * Canvas-space axis-aligned bounds of [node]'s card: top-left `(node.x, node.y)` to
- * bottom-right `(node.x + width, node.y + height)`. Uses the **max** card height so the
- * rectangle covers a node that renders a runtime-error line. Used by the canvas to decide
- * which node a connection drag was released onto (whole-card target, not a tiny anchor).
+ * bottom-right `(node.x + width, node.y + height)`. The height defaults to the **max** card
+ * height so the rectangle covers a node that renders a runtime-error line; a measured card
+ * taller than that passes its own. Used by the canvas to decide which node a connection drag
+ * was released onto (whole-card target, not a tiny anchor).
  */
 internal data class NodeBounds(val left: Float, val top: Float, val right: Float, val bottom: Float)
 
-internal fun nodeCanvasBounds(node: NodeModel): NodeBounds = NodeBounds(
+internal fun nodeCanvasBounds(
+    node: NodeModel,
+    width: Float,
+    height: Float = NodeCardFootprint.MAX_HEIGHT,
+): NodeBounds = NodeBounds(
     left = node.x,
     top = node.y,
-    right = node.x + NodeCardFootprint.WIDTH,
-    bottom = node.y + NodeCardFootprint.MAX_HEIGHT,
+    right = node.x + width,
+    bottom = node.y + height,
 )
 
 /**
  * Canvas-space anchor of every outbound port on [node], paired with its label (`""` for the
  * single default port). Mirrors [outboundPortAnchor]'s geometry but enumerates all ports, so
  * the canvas gesture handler can decide whether a press landed on a port (→ start a
- * connection) instead of panning.
+ * connection) instead of panning. [dotLine] is the card's measured dot line, as in
+ * [outboundPortAnchor].
  */
 internal fun outboundPortAnchors(
     node: NodeModel,
     outboundLabels: List<String?> = emptyList(),
+    dotLine: Float? = null,
 ): List<Pair<String, PortAnchor>> {
-    val outbound = portsFor(node, outboundLabels).outbound
+    val ports = portsFor(node, outboundLabels)
+    val outbound = ports.outbound
     if (outbound.isEmpty()) return emptyList()
-    val centreX = node.x + NodeCardFootprint.WIDTH / 2f
-    val outY = node.y + NodeCardFootprint.BASE_HEIGHT
+    val centreX = node.x + NodePortGeometry.cardWidth(outbound.size) / 2f
+    val outY = node.y + (dotLine ?: NodePortGeometry.outboundDotY(hasInbound = ports.inbound > 0))
     return outbound.mapIndexed { index, port ->
-        port.label to PortAnchor(xCanvas = centreX + outboundPortOffsetDp(index, outbound.size), yCanvas = outY)
+        port.label to PortAnchor(
+            xCanvas = centreX + NodePortGeometry.outboundOffset(index, outbound.size),
+            yCanvas = outY,
+        )
     }
 }
 
@@ -190,6 +207,8 @@ internal fun portsFor(node: NodeModel, outboundLabels: List<String?> = emptyList
  * @param connectionDraft optional in-flight connection (drag from a port to the pointer).
  * If present, an extra preview edge is drawn between the source port and the live pointer
  * in dashed style.
+ * @param measuredCards each card as it was laid out, by node id; an edge leaves its source's
+ * measured dot line, or the shortest card's before the card is measured.
  */
 @Composable
 internal fun EditorEdges(
@@ -199,11 +218,17 @@ internal fun EditorEdges(
     connectionDraft: ConnectionDraftDrawData?,
     selectedEdgeId: String?,
     modifier: Modifier = Modifier,
+    measuredCards: Map<String, CardMeasure> = emptyMap(),
 ) {
     val density = LocalDensity.current
     val edgeColor = KnotworkTheme.extended.divider
     val accentColor = KnotworkTheme.extended.outlineStrong
     val strokeWidth = with(density) { 2.dp.toPx() }
+    // A node's ports come from its decoded config and its edges. Work them out once per graph
+    // change rather than for both ends of every edge on every frame of the run-trace animation.
+    val portsById = remember(nodesById, connections) {
+        nodesById.mapValues { (id, node) -> portsFor(node, outboundLabelsOf(id, connections)) }
+    }
 
     Canvas(modifier = modifier.fillMaxSize()) {
         connections.forEach { c ->
@@ -211,9 +236,13 @@ internal fun EditorEdges(
             val target = nodesById[c.targetNodeId] ?: return@forEach
             // Per-port anchors: edges originate at the dot matching the connection label
             // (e.g. Item / Done on QUEUE, True / False on IF) rather than the node centre.
-            val srcAnchor =
-                outboundPortAnchor(source, portsFor(source, outboundLabelsOf(source.id, connections)), c.label)
-            val tgtAnchor = inboundPortAnchor(target)
+            val srcAnchor = outboundPortAnchor(
+                source,
+                portsById.getValue(source.id),
+                c.label,
+                measuredCards[source.id]?.outboundDotLine,
+            )
+            val tgtAnchor = inboundPortAnchor(target, portsById.getValue(target.id))
             val sx = transform.canvasToScreenX(srcAnchor.xCanvas)
             val sy = transform.canvasToScreenY(srcAnchor.yCanvas)
             val tx = transform.canvasToScreenX(tgtAnchor.xCanvas)
@@ -267,6 +296,7 @@ internal fun hitTestEdge(
     nodesById: Map<String, NodeModel>,
     transform: CanvasTransform,
     toleranceDp: Float = EDGE_HIT_TOLERANCE_DP,
+    measuredCards: Map<String, CardMeasure> = emptyMap(),
 ): String? {
     val toleranceCanvas = toleranceDp / transform.scale
     var bestId: String? = null
@@ -274,8 +304,13 @@ internal fun hitTestEdge(
     connections.forEach { c ->
         val src = nodesById[c.sourceNodeId] ?: return@forEach
         val tgt = nodesById[c.targetNodeId] ?: return@forEach
-        val srcAnchor = outboundPortAnchor(src, portsFor(src, outboundLabelsOf(src.id, connections)), c.label)
-        val tgtAnchor = inboundPortAnchor(tgt)
+        val srcAnchor = outboundPortAnchor(
+            src,
+            portsFor(src, outboundLabelsOf(src.id, connections)),
+            c.label,
+            measuredCards[src.id]?.outboundDotLine,
+        )
+        val tgtAnchor = inboundPortAnchor(tgt, portsFor(tgt, outboundLabelsOf(tgt.id, connections)))
         val (cp0, cp1) = BezierEdge.controlPoints(
             srcAnchor.xCanvas,
             srcAnchor.yCanvas,

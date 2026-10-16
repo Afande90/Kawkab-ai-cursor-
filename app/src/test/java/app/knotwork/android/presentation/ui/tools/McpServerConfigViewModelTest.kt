@@ -84,6 +84,45 @@ class McpServerConfigViewModelTest {
     }
 
     @Test
+    fun `given a new server when saved without touching the transport then it uses Streamable HTTP`() = runTest {
+        // The specification's current transport; HTTP+SSE is deprecated and stays a choice.
+        val viewModel = vm()
+        advanceUntilIdle()
+        assertEquals(McpTransportOption.StreamableHttp, viewModel.form.value.transport)
+        viewModel.onUrlChange(value = "https://added.example/mcp")
+
+        viewModel.onSubmit()
+        advanceUntilIdle()
+
+        coVerify {
+            settings.addMcpServer(
+                config = McpServerConfig(url = "https://added.example/mcp", transport = McpTransport.STREAMABLE_HTTP),
+            )
+        }
+    }
+
+    @Test
+    fun `given a saved SSE server when edited and saved then it keeps SSE`() = runTest {
+        // A server saved before the default changed must not be moved to another transport by an edit.
+        val url = "https://sse.example/sse"
+        mcpServersFlow.value = listOf(McpServerConfig(url = url, transport = McpTransport.SSE))
+        val viewModel = vm(originalUrl = url)
+        advanceUntilIdle()
+        assertEquals(McpTransportOption.SSE, viewModel.form.value.transport)
+
+        viewModel.onNameChange(value = "Renamed")
+        viewModel.onSubmit()
+        advanceUntilIdle()
+
+        coVerify {
+            settings.updateMcpServer(
+                originalUrl = url,
+                updated = match { it.url == url && it.transport == McpTransport.SSE },
+            )
+        }
+    }
+
+    @Test
     fun `edit mode pre-fills the form from settingsRepository`() = runTest {
         val url = "https://prefill.example/mcp"
         mcpServersFlow.value = listOf(
@@ -113,7 +152,8 @@ class McpServerConfigViewModelTest {
         viewModel.onNameChange(value = "Added")
         viewModel.onHeaderAdd()
         viewModel.onHeaderChange(index = 0, key = "Authorization", value = "Bearer x")
-        viewModel.onTransportSelect(option = McpTransportOption.StreamableHttp)
+        // Away from the default: a server that speaks only the older transport.
+        viewModel.onTransportSelect(option = McpTransportOption.SSE)
 
         viewModel.onSubmit()
         advanceUntilIdle()
@@ -123,7 +163,7 @@ class McpServerConfigViewModelTest {
                 config = McpServerConfig(
                     url = "https://added.example/mcp",
                     name = "Added",
-                    transport = McpTransport.STREAMABLE_HTTP,
+                    transport = McpTransport.SSE,
                     headers = mapOf("Authorization" to "Bearer x"),
                 ),
             )
@@ -205,6 +245,7 @@ class McpServerConfigViewModelTest {
             settings.addMcpServer(
                 config = McpServerConfig(
                     url = "https://api.example/mcp",
+                    transport = McpTransport.STREAMABLE_HTTP,
                     auth = McpAuth.ApiKey(headerName = "X-API-Key", value = "v1"),
                 ),
             )

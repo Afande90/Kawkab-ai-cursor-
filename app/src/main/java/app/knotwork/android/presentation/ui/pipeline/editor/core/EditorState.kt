@@ -3,9 +3,11 @@ package app.knotwork.android.presentation.ui.pipeline.editor.core
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.platform.LocalDensity
 import app.knotwork.android.domain.models.NodeContextConfig
@@ -76,6 +78,35 @@ class EditorState(undoCapacity: Int = EditorUndoRedo.DEFAULT_CAPACITY, density: 
 
     /** In-flight connection draft; `null` while the canvas is idle. */
     var connectionInProgress: ConnectionDraft? by mutableStateOf(null)
+
+    /**
+     * Each node card as it was laid out, by node id: how tall it is and where its outbound dots
+     * sit, in canvas units. A card is taller than the shortest one when it shows a body line or a
+     * runtime error, or when the font scale is above 1. Edges and hit tests read this so they meet
+     * the dots the card draws; a node not measured yet falls back to the shortest card.
+     */
+    val measuredCards: SnapshotStateMap<String, CardMeasure> = mutableStateMapOf()
+
+    /**
+     * Records how [nodeId]'s card was laid out. Writes only a changed value, so a card laid out
+     * again at the same size does not redraw what reads [measuredCards].
+     *
+     * @param nodeId the node whose card was measured.
+     * @param measure the card's height and outbound dot line, in canvas units.
+     */
+    fun recordCardMeasure(nodeId: String, measure: CardMeasure) {
+        if (measuredCards[nodeId] != measure) measuredCards[nodeId] = measure
+    }
+
+    /**
+     * Drops the measures of nodes no longer in the graph, so a later node that reuses an id is not
+     * read at an old card's size before it is laid out.
+     *
+     * @param nodeIds the ids of the graph's nodes.
+     */
+    fun forgetCardsNotIn(nodeIds: Set<String>) {
+        measuredCards.keys.filterNot { it in nodeIds }.forEach { measuredCards.remove(it) }
+    }
 
     /**
      * Where a node picked in the "Add node" sheet will land, in canvas-local screen
@@ -196,13 +227,14 @@ class EditorState(undoCapacity: Int = EditorUndoRedo.DEFAULT_CAPACITY, density: 
      * stays where it is.
      *
      * @param node the node to bring into view.
+     * @param cardWidth the width of [node]'s card, which grows with its outbound ports.
      */
-    fun focusOn(node: NodeModel) {
+    fun focusOn(node: NodeModel, cardWidth: Float) {
         selection = setOf(node.id)
         multiSelectMode = false
         if (viewportWidthPx <= 0f || viewportHeightPx <= 0f) return
         transform = transform.centeredOn(
-            x = node.x + NodeCardFootprint.WIDTH / 2f,
+            x = node.x + cardWidth / 2f,
             y = node.y + NodeCardFootprint.MAX_HEIGHT / 2f,
             viewportW = viewportWidthPx,
             viewportH = viewportHeightPx,
@@ -236,17 +268,22 @@ class EditorState(undoCapacity: Int = EditorUndoRedo.DEFAULT_CAPACITY, density: 
      * @param viewportW measured viewport width in pixels; `0` means not measured yet.
      * @param viewportH measured viewport height in pixels.
      * @param paddingPx screen-space padding to leave around the framed graph.
+     * @param cardWidth the width of a node's card, which grows with its outbound ports.
      * @return `true` when [transform] was changed.
      */
-    fun frameIfNeeded(graph: PipelineGraph, viewportW: Float, viewportH: Float, paddingPx: Float): Boolean {
+    fun frameIfNeeded(
+        graph: PipelineGraph,
+        viewportW: Float,
+        viewportH: Float,
+        paddingPx: Float,
+        cardWidth: (NodeModel) -> Float,
+    ): Boolean {
         if (viewportW <= 0f || viewportH <= 0f) return false
         val firstView = framedPipelineId != graph.id
         if (!firstView && !fitRequested) return false
         framedPipelineId = graph.id
-        val bbox = Bounds.ofNodes(
-            positions = graph.nodes.map { it.x to it.y },
-            nodeWidth = NodeCardFootprint.WIDTH,
-            nodeHeight = NodeCardFootprint.MAX_HEIGHT,
+        val bbox = Bounds.ofCards(
+            cards = graph.nodes.map { CardRect(it.x, it.y, cardWidth(it), NodeCardFootprint.MAX_HEIGHT) },
         ) ?: return false
         fitRequested = false
         transform = transform.fitToBounds(
@@ -293,6 +330,15 @@ fun rememberEditorState(): EditorState {
     val density = LocalDensity.current.density
     return remember { EditorState(density = density) }
 }
+
+/**
+ * A node card as it was laid out, in canvas units (dp).
+ *
+ * @property height the card's layout height: from the top of its inbound dot to the bottom of its
+ *   port labels.
+ * @property outboundDotLine distance from the card's top to its outbound dots' centres.
+ */
+data class CardMeasure(val height: Float, val outboundDotLine: Float)
 
 /**
  * Mutable non-state container for a [LayoutCoordinates] reference. Writes don't notify

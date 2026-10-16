@@ -4,6 +4,8 @@ import app.knotwork.android.data.network.AndroidModelDownloadManager.DownloadErr
 import app.knotwork.android.domain.models.DiscoverableModelDetail
 import app.knotwork.android.domain.models.DiscoverableModelFile
 import app.knotwork.android.domain.models.DownloadState
+import app.knotwork.android.domain.models.ModelDownloadFailure
+import app.knotwork.android.domain.repositories.InterruptedDownload
 import app.knotwork.android.domain.repositories.ModelDownloadManager
 import app.knotwork.android.domain.repositories.SettingsRepository
 import app.knotwork.android.domain.usecases.GetDiscoverableModelDetailUseCase
@@ -21,6 +23,8 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -153,7 +157,7 @@ class DiscoverDetailViewModelTest {
         advanceUntilIdle()
 
         val event = eventDeferred.await()
-        assertTrue(event is DiscoverInstallEvent.Failed && event.gated)
+        assertEquals(DiscoverInstallEvent.Failed(DiscoverInstallEvent.FailureReason.GATED), event)
     }
 
     @Test
@@ -174,7 +178,59 @@ class DiscoverDetailViewModelTest {
         advanceUntilIdle()
 
         val event = eventDeferred.await()
-        assertTrue(event is DiscoverInstallEvent.Failed && !event.gated)
+        assertEquals(DiscoverInstallEvent.Failed(DiscoverInstallEvent.FailureReason.OTHER), event)
+    }
+
+    @Test
+    fun `given a pause or a checksum mismatch when install fails then no failure event is sent`() = runTest {
+        // Both are recorded before the download fails and reach the screen as an interruption —
+        // reported as an event too, they would show twice ("check your connection" besides).
+        for (failure in listOf(ModelDownloadFailure.PAUSED_TIME_LIMIT, ModelDownloadFailure.CHECKSUM_MISMATCH)) {
+            coEvery { getDetail(any()) } returns Result.success(detail())
+            every { installModel(any()) } returns
+                flowOf(DownloadState.Pending, DownloadState.Error(DownloadError("stopped", failure = failure)))
+            val vm = createBound()
+            advanceUntilIdle()
+            val events = mutableListOf<DiscoverInstallEvent>()
+            val collector = launch { vm.installEvents.toList(events) }
+            runCurrent()
+
+            vm.onLicenseConfirm("gemma.litertlm")
+            advanceUntilIdle()
+
+            assertEquals("$failure", emptyList<DiscoverInstallEvent>(), events)
+            assertEquals(emptyMap<String, Int>(), vm.uiState.value.progress)
+            collector.cancel()
+        }
+    }
+
+    @Test
+    fun `given a stop of one of this repository's files when shown then it is acknowledged`() = runTest {
+        val stopped =
+            InterruptedDownload("gemma.litertlm", file.resolveUrl, ModelDownloadFailure.PAUSED_TIME_LIMIT, "x")
+        coEvery { getDetail(any()) } returns Result.success(detail())
+        every { downloadManager.observeInterruptedDownloads() } returns flowOf(listOf(stopped))
+        val vm = createBound()
+        advanceUntilIdle()
+
+        assertEquals(stopped, vm.uiState.value.interruption)
+        vm.onInterruptionShown(stopped)
+
+        verify(exactly = 1) { downloadManager.acknowledgeInterruption("gemma.litertlm") }
+    }
+
+    @Test
+    fun `given a stop of another repository's file when observed then this screen leaves it alone`() = runTest {
+        // The Models screen shows it; acknowledging it here would hide it from there unseen.
+        val elsewhere =
+            InterruptedDownload("other.litertlm", "https://x/other", ModelDownloadFailure.PAUSED_TIME_LIMIT, "x")
+        coEvery { getDetail(any()) } returns Result.success(detail())
+        every { downloadManager.observeInterruptedDownloads() } returns flowOf(listOf(elsewhere))
+        val vm = createBound()
+        advanceUntilIdle()
+
+        assertEquals(null, vm.uiState.value.interruption)
+        verify(exactly = 0) { downloadManager.acknowledgeInterruption(any()) }
     }
 
     @Test
@@ -305,7 +361,14 @@ class DiscoverDetailViewModelTest {
         assertEquals(DiscoverInstallEvent.Success("gemma.litertlm"), announced.await())
         // The row the worker wrote is refreshed with the size the Hub reported, as
         // for a download this screen started.
-        coVerify { registerDownloadedModel("gemma.litertlm", "/data/gemma.litertlm", 2_048L) }
+        coVerify {
+            registerDownloadedModel(
+                "gemma.litertlm",
+                "/data/gemma.litertlm",
+                2_048L,
+                "https://huggingface.co/litert-community/gemma/resolve/main/gemma.litertlm",
+            )
+        }
     }
 
     @Test

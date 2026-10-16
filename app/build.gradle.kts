@@ -201,8 +201,8 @@ android {
         applicationId = "app.knotwork.android"
         minSdk = 34
         targetSdk = 37
-        versionCode = 16
-        versionName = "0.11.1"
+        versionCode = 17
+        versionName = "0.12.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -432,8 +432,17 @@ android {
     // androidTest classpath so `MigrationTestHelper` (which reads them from
     // `assets/`) can validate every migration step against the frozen
     // snapshots in `app/schemas/`.
+    //
+    // The JVM suite needs them too (`MigrationStepGuardTest` validates every
+    // step in `check`), and Robolectric reads only the tested variant's merged
+    // assets: schemas put in the `test` source set's assets, or added to the
+    // unit test through `androidComponents` host-test sources, never reach it
+    // (47 of 47 steps failed to find their schema, measured). So they are
+    // `debug` assets as well — the debug APK carries ~1.9 MB of schema JSON,
+    // the release APK none.
     sourceSets {
         getByName("androidTest").assets.srcDir("$projectDir/schemas")
+        getByName("debug").assets.srcDir("$projectDir/schemas")
     }
 
     packaging {
@@ -449,6 +458,10 @@ android {
             excludes += "org/fusesource/jansi/internal/native/Linux/**"
             excludes += "org/fusesource/jansi/internal/native/FreeBSD/**"
             excludes += "META-INF/native-image/jansi/**"
+            // Bouncy Castle's jar carries the X.509 path reviewer's message
+            // bundles (~96 KB uncompressed); the app uses only its Argon2id
+            // generator, which never reads them.
+            excludes += "org/bouncycastle/x509/CertPathReviewerMessages*.properties"
         }
         jniLibs {
             // MediaPipe `tasks-text` 1.0.0 added `TextSummarizer` and `TextProofreader`,
@@ -711,8 +724,11 @@ kover {
                     "*_Provide*Factory$*",
                     "dagger.hilt.internal.*",
                     "hilt_aggregated_deps.*",
-                    // Room-generated DAO implementations and the database impl.
-                    // The schema migrations (`data.local.migrations`) are measured.
+                    // Room-generated DAO implementations, and the abstract database class:
+                    // Room wiring with one counted line, its constructor; its companion holds
+                    // only constants. The schema migrations live in `data.local.migrations` and
+                    // are measured (nested in the companion, as they once were, the exact name
+                    // never matched them either).
                     "*_Impl",
                     "*_Impl$*",
                     "app.knotwork.android.data.local.AppDatabase",
@@ -1986,6 +2002,11 @@ tasks.withType<Test>().configureEach {
     inputs.file(rootProject.file("docs/external-automation.md"))
         .withPropertyName("externalAutomationContract")
         .withPathSensitivity(PathSensitivity.RELATIVE)
+    // `ArchitectureGuardsDocumentedTest` holds the Konsist table of the static-analysis
+    // guide to the suite; the suite is compiled test code, the guide is not.
+    inputs.file(rootProject.file("docs/static-analysis.md"))
+        .withPropertyName("staticAnalysisGuide")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
     // `FdroidSigningStripGuardTest` reads this very script. Editing it reconfigures
     // the project but leaves this task's inputs as they were: measured, the signing
     // assignment put back on two lines left the task UP-TO-DATE and green.
@@ -2002,6 +2023,27 @@ tasks.withType<Test>().configureEach {
         .withPathSensitivity(PathSensitivity.RELATIVE)
     if (providers.gradleProperty("recordGoldenTraces").isPresent) {
         systemProperty("knotwork.goldenTraces.record", "true")
+    }
+    // `BackupFormatV1FixtureTest` reads the committed format-1 archive from the test
+    // classpath (`src/test/resources/backup/`), so it is an input already.
+    // `-PrecordBackupFixture` writes it anew — only before a release has shipped format 1;
+    // afterwards the file is the regression anchor every later reader must open.
+    if (providers.gradleProperty("recordBackupFixture").isPresent) {
+        systemProperty("knotwork.backupFixture.record", "true")
+    }
+}
+
+// Room's KSP writes the current schema into `app/schemas/` while it compiles, and the
+// debug asset merges read that directory (`MigrationStepGuardTest` reads the merged
+// assets; the instrumented suite packs them). The directory is not a declared output of
+// KSP, so nothing orders the two: on the first build after a schema bump the merge ran
+// first, and the guard reported the new version as having no exported schema (observed,
+// v70 -> v71). Merging after KSP gives every build the schema it just wrote.
+listOf("Full", "Foss").forEach { flavor ->
+    tasks.matching {
+        it.name == "merge${flavor}DebugAssets" || it.name == "merge${flavor}DebugAndroidTestAssets"
+    }.configureEach {
+        mustRunAfter("ksp${flavor}DebugKotlin")
     }
 }
 
@@ -2131,6 +2173,12 @@ dependencies {
     // SQLCipher for Android (encrypted Room database)
     implementation(libs.sqlcipher.android)
 
+    // Bouncy Castle (MIT): Argon2id for the backup archive's password key
+    // (RFC 9106). Only the lightweight generator is reached; R8 keeps ~10–35 KB
+    // of DEX. Pinned at 1.85 or later: CVE-2026-59648 (OpenPGP Argon2 S2K)
+    // predates it.
+    implementation(libs.bouncycastle.bcprov)
+
     // AppFunctions
     implementation(libs.androidx.appfunctions)
     ksp(libs.androidx.appfunctions.compiler)
@@ -2175,6 +2223,9 @@ dependencies {
     // notification builder, and Doze (`ShadowPowerManager`) paths under
     // `data.services`. The version is pinned in `gradle/libs.versions.toml`.
     testImplementation(libs.robolectric)
+    // Room's `MigrationTestHelper` for `MigrationStepGuardTest`, the JVM
+    // guard that validates every migration step against its exported schema.
+    testImplementation(libs.room.testing)
     // Konsist (Apache-2.0) backs the architecture guard suite under
     // `app/src/test/.../architecture/`: JVM JUnit tests that fail `check`
     // when Clean Architecture layer boundaries regress (e.g. a `domain`

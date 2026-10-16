@@ -8,7 +8,7 @@ import androidx.compose.ui.platform.InterceptPlatformTextInput
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.hasSetTextAction
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.knotwork.design.screens.discover.DiscoverDetailContent
@@ -17,6 +17,10 @@ import app.knotwork.design.screens.models.ModelsContent
 import app.knotwork.design.screens.models.ModelsPreview
 import app.knotwork.design.screens.settings.ProviderDetailContent
 import app.knotwork.design.screens.settings.ProviderPreview
+import app.knotwork.design.screens.settings.backup.BackupCallbacks
+import app.knotwork.design.screens.settings.backup.BackupContent
+import app.knotwork.design.screens.settings.backup.BackupForm
+import app.knotwork.design.screens.settings.backup.BackupViewState
 import app.knotwork.design.screens.tools.AddMcpServerForm
 import app.knotwork.design.screens.tools.McpAuthSelector
 import app.knotwork.design.screens.tools.McpHeaderRow
@@ -154,5 +158,12 @@ class SecretFieldImeTest {
 
         // The token field, then the custom-model URL.
         assertEquals(listOf(true, false), passwordFieldsAmong(fields()))
+    }
+
+    @Test
+    fun `given the backup password form when focused then both fields ask for a password`() {
+        render { BackupContent(BackupViewState(route = BackupForm(password = "brass")), BackupCallbacks()) }
+
+        assertEquals(listOf(true, true), passwordFieldsAmong(fields()))
     }
 }

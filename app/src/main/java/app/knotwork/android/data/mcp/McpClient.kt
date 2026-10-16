@@ -14,9 +14,9 @@ interface McpClient {
      * [McpServerConfig.headers] (typically `Authorization: Bearer …`) and the
      * declared transport.
      *
-     * Implementations may downgrade an unsupported transport to a viable default
-     * (Koog 0.8 only ships SSE, so `STREAMABLE_HTTP` falls back to SSE today),
-     * but must never silently drop auth headers.
+     * Implementations may downgrade an unsupported transport to a viable default,
+     * but must never silently drop auth headers. The one implementation connects
+     * with the transport the config names, both SSE and Streamable HTTP.
      */
     suspend fun connect(config: McpServerConfig)
 

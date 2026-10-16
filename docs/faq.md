@@ -82,6 +82,16 @@ that host carries it as an `Authorization` header; a link to any other host
 downloads without it. There is no OAuth flow, and no other auth scheme. See
 [Download a model](user-guide.md#2-download-a-model).
 
+### Does the app check a downloaded model?
+
+When Hugging Face names the file's SHA-256 in its answer to the download — it
+does for the large files it stores in LFS, as model files usually are — yes: a
+file that does not match is deleted instead of installed. A link to any other
+host names no hash, so its file is installed unchecked. The Models screen marks
+each model **Verified** or **Not verified**. The check proves the file is the one
+Hugging Face publishes, not that its publisher is trustworthy. See
+[Download a model](user-guide.md#2-download-a-model).
+
 ### Can I browse and install models from Hugging Face?
 
 Yes, including gated repositories once you have stored an access token. See
@@ -121,7 +131,8 @@ the tool is read-only, so it does not ask first. Turn it off with its switch on
 the **Tools** screen, or with **Block network from local model**, which
 withholds it along with the cloud paths.
 
-Nothing else has a way out. See [PRIVACY §
+Nothing else has a way out — apart from files you export yourself, such as a
+journal, a run trace or a backup, which go where you send them. See [PRIVACY §
 What can leave your device](../PRIVACY.md#3-what-can-leave-your-device),
 and [SECURITY § Outbound HTTP and the exfiltration
 chain](../SECURITY.md#outbound-http-and-the-exfiltration-chain) for the layered
@@ -130,9 +141,22 @@ restrictions on the tool path.
 ### Where are my API keys stored?
 
 In an encrypted store sealed under a non-exportable Android Keystore key — never
-in plain settings, never in exported pipelines, never in logs. Same for MCP
-credentials and the Hugging Face token. See [SECURITY § API keys for cloud
+in plain settings, never in exported pipelines, never in logs, and in a backup
+only if you tick **Include API keys and sign-ins**. Same for MCP credentials and
+the Hugging Face token. See [SECURITY § API keys for cloud
 providers](../SECURITY.md#api-keys-for-cloud-providers).
+
+### Can I back up everything?
+
+Yes, into one file locked with a password you choose: Settings → Privacy →
+**Backup & restore** → **Back up…**. It holds chats, memory, pipelines, run
+history, triggers, settings and files — not the model files, and not your API
+keys unless you tick the box (a token written into a server's address travels
+with the address). The file goes only where you save it. **Restore from file…**
+puts it back — on this phone or a new one — and replaces the app's data there;
+the model files stay, and so do the phone's own keys, except those the backup
+carries. See
+[Backup & restore](user-guide.md#backup--restore).
 
 ### Is there telemetry?
 
@@ -266,9 +290,10 @@ doing](user-guide.md#checking-what-a-trigger-has-been-doing).
 ### What address does my MCP server need?
 
 The endpoint your server prints when it starts, path included — the form's own
-example is `https://mcp.example.com/sse`. There is no separate port field: a
+example is `https://mcp.example.com/mcp`. There is no separate port field: a
 non-default port belongs in the URL, and the transport selector below the field
-has to match the endpoint. See [Adding an MCP
+has to match the endpoint: **Streamable HTTP**, selected for a new server, or
+**SSE** for a server that speaks only the older transport. See [Adding an MCP
 server](user-guide.md#adding-an-mcp-server).
 
 ### Which authentication methods do MCP servers support?
@@ -414,8 +439,10 @@ memory](user-guide.md#browsing-long-term-memory).
 
 ### Does memory move to a new phone?
 
-Export and import move it, and the export is a file you hold. See [Moving memory
-to another
+With everything else, in a backup you restore there: Settings → Privacy →
+**Backup & restore**. Memory alone also moves by export and import, and the
+export is a file you hold. See [Backup & restore](user-guide.md#backup--restore)
+and [Moving memory to another
 device](user-guide.md#moving-memory-to-another-device-export--import).
 
 ### Why doesn't a memory I know exists come back?

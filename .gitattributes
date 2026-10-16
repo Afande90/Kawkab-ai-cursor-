@@ -1,3 +1,12 @@
-# Golden run traces and their fixtures are compared byte for byte by GoldenTraceTest
-# (docs/testing.md, "Golden run traces"): a checkout must not rewrite their line endings.
-app/src/test/golden/** text eol=lf
+# Every text file is checked out with LF line endings on every platform, whatever
+# core.autocrlf says; git still decides which files are binary. Several gates of
+# `./gradlew check` compare a committed file with freshly generated text character
+# for character — the file maps, the browser editor's constants, the bundled
+# documents, the cookbook, the external-automation and settings-help references,
+# the golden run traces — and the store-listing gates count every character Play
+# receives. A CRLF checkout fails all of them: with core.autocrlf=true the English
+# full description reads as 4024 characters against Play's limit of 4000.
+* text=auto eol=lf
+
+# Windows scripts keep Windows line endings.
+*.bat text eol=crlf

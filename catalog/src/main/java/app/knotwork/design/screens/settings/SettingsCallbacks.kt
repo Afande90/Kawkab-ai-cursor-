@@ -120,6 +120,8 @@ class SettingsCallbacks(
     val onPrivacySliderChange: (id: String, value: Float) -> Unit = { _, _ -> },
     /** Open the on-device Usage statistics sub-screen. */
     val onOpenUsageStatistics: () -> Unit = {},
+    /** Open the Backup & restore sub-screen. */
+    val onOpenBackup: () -> Unit = {},
 
     // ─── About ───────────────────────────────────────────────────────────────
     /** Stage the reset-all-settings destructive action. */

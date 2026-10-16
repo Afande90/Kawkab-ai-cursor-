@@ -234,29 +234,32 @@ data class Bounds(val minX: Float, val minY: Float, val maxX: Float, val maxY: F
         }
 
         /**
-         * Builds the [Bounds] of every node card, treating each node as a rectangle
-         * of `nodeWidth × nodeHeight` rooted at its top-left position. This matches
-         * how [app.knotwork.design.components.pipelineeditor.NodeCard] is laid out
-         * on canvas — `NodeModel.x / y` is the card's top-left.
+         * Builds the [Bounds] of every node card, each a [CardRect] rooted at its top-left
+         * position. This matches how [app.knotwork.design.components.pipelineeditor.NodeCard]
+         * is laid out on canvas — `NodeModel.x / y` is the card's top-left — and lets a card
+         * that grew for its ports count at its own width.
+         *
+         * @param cards the cards, in any order.
+         * @return the smallest [Bounds] containing every card, or `null` when there are none.
          */
-        fun ofNodes(positions: Iterable<Pair<Float, Float>>, nodeWidth: Float, nodeHeight: Float): Bounds? {
+        fun ofCards(cards: Iterable<CardRect>): Bounds? {
             var first = true
             var minX = 0f
             var minY = 0f
             var maxX = 0f
             var maxY = 0f
-            for ((x, y) in positions) {
-                val right = x + nodeWidth
-                val bottom = y + nodeHeight
+            for (card in cards) {
+                val right = card.x + card.width
+                val bottom = card.y + card.height
                 if (first) {
-                    minX = x
-                    minY = y
+                    minX = card.x
+                    minY = card.y
                     maxX = right
                     maxY = bottom
                     first = false
                 } else {
-                    if (x < minX) minX = x
-                    if (y < minY) minY = y
+                    if (card.x < minX) minX = card.x
+                    if (card.y < minY) minY = card.y
                     if (right > maxX) maxX = right
                     if (bottom > maxY) maxY = bottom
                 }
@@ -265,3 +268,13 @@ data class Bounds(val minX: Float, val minY: Float, val maxX: Float, val maxY: F
         }
     }
 }
+
+/**
+ * A node card's rectangle on the canvas, in canvas units (dp).
+ *
+ * @property x the card's left edge (`NodeModel.x`).
+ * @property y the card's top edge (`NodeModel.y`).
+ * @property width the card's width — wider than the minimum when it has many outbound ports.
+ * @property height the card's height.
+ */
+data class CardRect(val x: Float, val y: Float, val width: Float, val height: Float)

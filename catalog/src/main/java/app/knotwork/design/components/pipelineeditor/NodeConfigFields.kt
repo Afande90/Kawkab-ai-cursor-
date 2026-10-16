@@ -11,8 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.outlined.BookmarkAdd
-import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -226,27 +224,6 @@ internal fun TextField(
  * `IconButton` (which would otherwise inflate the row to fit the touch area).
  */
 private const val LIBRARY_BUTTON_TARGET_DP: Float = 32f
-
-/** Float field rendered as a slider plus the resolved numeric value. */
-@Composable
-private fun FloatSliderField(
-    label: String,
-    value: Float,
-    range: ClosedFloatingPointRange<Float>,
-    error: ValidationFailure?,
-    steps: Int = 0,
-    onChange: (Float) -> Unit,
-) {
-    KnotworkParamSlider(
-        label = label,
-        valueLabel = "%.2f".format(value),
-        value = value,
-        onValueChange = onChange,
-        valueRange = range,
-        steps = steps,
-        errorText = error?.let { stringResource(it.stringRes) },
-    )
-}
 
 /** Integer field rendered as a slider over an `IntRange`. */
 @Composable

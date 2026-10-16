@@ -1,11 +1,8 @@
 package app.knotwork.android.data.services
 
-import android.app.NotificationManager
 import android.content.Context
 import android.content.pm.ServiceInfo
-import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
@@ -17,15 +14,14 @@ import app.knotwork.android.R
 import app.knotwork.android.data.network.ResumableFileDownloader
 import app.knotwork.android.domain.constants.NotificationChannels
 import app.knotwork.android.domain.constants.NotificationIds
+import app.knotwork.android.domain.models.ModelDownloadFailure
 import app.knotwork.android.domain.repositories.GenerationSettings
-import app.knotwork.android.domain.usecases.RegisterDownloadedModelUseCase
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
-import java.io.File
 
 /**
  * Downloads one model file, outside the lifetime of whatever screen asked for
@@ -49,9 +45,11 @@ import java.io.File
  * Keystore-backed store, so the worker is told only *whether* to authenticate
  * and reads the secret itself.
  *
- * Registration happens here too, for the same reason the transfer does: a
+ * Installation happens here too, for the same reason the transfer does: a
  * download that survives the screen must leave behind a model the app knows
- * about, not an anonymous file on disk.
+ * about, not an anonymous file on disk. [DownloadedModelInstaller] checks the
+ * finished file against the SHA-256 its source published first; a file that
+ * fails is deleted, never registered, and the failure says why.
  *
  * **Android's daily limit.** A `dataSync` foreground service may run six hours
  * a day while the app is out of sight, and one still running when that ends
@@ -59,12 +57,20 @@ import java.io.File
  * [DownloadForegroundBudget] allows and then pauses, reporting a failure the
  * screen shows; starting the download again resumes it from the partial file.
  *
+ * **Telling a stop nobody watched.** A pause comes after hours out of sight, and
+ * a checksum mismatch at the end of a transfer the user has usually left. For
+ * both, the worker records why it stopped ([DownloadInterruptionStore]) — a
+ * screen opened later shows it — and posts a notice
+ * ([ModelDownloadOutcomeNotifier]) before it returns.
+ *
  * @property downloader Performs the resumable transfer.
  * @property generationSettings Source of the stored Hugging Face token.
- * @property registerDownloadedModel Records the finished file in the local
- *   model store.
+ * @property installer Checks the finished file against its source's hash and
+ *   installs it in the local model store.
  * @property foregroundBudget Foreground time the download may still spend
  *   before it pauses, so it never reaches Android's `dataSync` limit.
+ * @property interruptions Keeps why a download stopped until a screen shows it.
+ * @property outcomeNotifier Posts the notice that a download stopped.
  */
 @HiltWorker
 class ModelDownloadWorker @AssistedInject constructor(
@@ -72,8 +78,10 @@ class ModelDownloadWorker @AssistedInject constructor(
     @Assisted workerParams: WorkerParameters,
     private val downloader: ResumableFileDownloader,
     private val generationSettings: GenerationSettings,
-    private val registerDownloadedModel: RegisterDownloadedModelUseCase,
+    private val installer: DownloadedModelInstaller,
     private val foregroundBudget: DownloadForegroundBudget,
+    private val interruptions: DownloadInterruptionStore,
+    private val outcomeNotifier: ModelDownloadOutcomeNotifier,
 ) : CoroutineWorker(appContext, workerParams) {
 
     /**
@@ -88,7 +96,8 @@ class ModelDownloadWorker @AssistedInject constructor(
      *
      * @return [Result.success] carrying the final path, [Result.retry] for a
      *   transport failure that resuming can still recover from, or
-     *   [Result.failure] carrying the message the UI shows — including the pause.
+     *   [Result.failure] carrying the message the UI shows — including the pause
+     *   and a file that failed its checksum.
      */
     override suspend fun doWork(): Result {
         val url = inputData.getString(KEY_URL)
@@ -97,7 +106,7 @@ class ModelDownloadWorker @AssistedInject constructor(
             return Result.failure(workDataOf(KEY_ERROR to "Download request was missing its URL or file name."))
         }
         if (foregroundBudget.isExhausted()) {
-            return pausedByTimeLimit()
+            return pausedByTimeLimit(url, fileName)
         }
 
         val meter = foregroundBudget.startMeter()
@@ -116,8 +125,13 @@ class ModelDownloadWorker @AssistedInject constructor(
     }
 
     /**
-     * Promotes the worker to the foreground and transfers the file, booking the
-     * foreground time on [meter] as progress arrives.
+     * Promotes the worker to the foreground, transfers the file and installs it,
+     * booking the foreground time on [meter] as progress arrives.
+     *
+     * The budget bounds the transfer only. The check that follows reads the file
+     * once — seconds — and its time is booked by the caller's last reading of
+     * [meter]; stopping it at the budget would leave a complete file that the
+     * next attempt has to read again anyway.
      *
      * @param url Direct URL of the model file.
      * @param fileName Target file name.
@@ -138,20 +152,52 @@ class ModelDownloadWorker @AssistedInject constructor(
                 setProgress(workDataOf(KEY_PROGRESS to percent))
                 promoteToForeground(fileName, percent)
             }
-        } ?: return pausedByTimeLimit()
+        } ?: return pausedByTimeLimit(url, fileName)
 
         return when (outcome) {
-            is ResumableFileDownloader.Outcome.Success -> {
-                registerDownloadedModel(
-                    fileName = fileName,
-                    path = outcome.path,
-                    sizeBytes = File(outcome.path).length(),
-                )
-                Result.success(workDataOf(KEY_OUTPUT_PATH to outcome.path))
-            }
-
+            is ResumableFileDownloader.Outcome.Downloaded -> install(outcome, fileName, url)
             is ResumableFileDownloader.Outcome.Failure -> failOrRetry(outcome)
         }
+    }
+
+    /**
+     * Installs a complete download, or reports why it was not installed.
+     *
+     * A file that failed its checksum is final: it was deleted, and downloading
+     * it again from the same source is the user's call. A file that could not be
+     * read or moved is still on disk and gets another attempt: from Hugging Face
+     * that attempt finds it complete and only repeats the check; from a host that
+     * names no length it downloads the file again. That attempt is decided by the
+     * same rule as a transport failure. A failed check counts the bytes this
+     * attempt fetched — a transfer that just finished is never given up on its
+     * first failed check, however many runs the transfer took, and the attempt
+     * after it finds the part complete and fetches nothing. A failed rename counts
+     * none: from a host that names no length every attempt downloads the file
+     * again, and crediting those bytes would repeat a multi-gigabyte download for
+     * as long as the rename keeps failing.
+     */
+    private suspend fun install(
+        downloaded: ResumableFileDownloader.Outcome.Downloaded,
+        fileName: String,
+        url: String,
+    ): Result = when (val installed = installer.install(downloaded, fileName = fileName, sourceUrl = url)) {
+        is DownloadedModelInstaller.Result.Installed -> Result.success(workDataOf(KEY_OUTPUT_PATH to installed.path))
+        is DownloadedModelInstaller.Result.Rejected -> stopped(
+            url = url,
+            fileName = fileName,
+            failure = ModelDownloadFailure.CHECKSUM_MISMATCH,
+            message = applicationContext.getString(R.string.model_download_checksum_mismatch),
+        )
+        is DownloadedModelInstaller.Result.NotInstalled ->
+            failOrRetry(
+                ResumableFileDownloader.Outcome.Failure(
+                    message = installed.message,
+                    bytesTransferred = when (installed.cause) {
+                        DownloadedModelInstaller.Result.Cause.UNREADABLE -> downloaded.bytesTransferred
+                        DownloadedModelInstaller.Result.Cause.NOT_MOVED -> 0L
+                    },
+                ),
+            )
     }
 
     /**
@@ -191,14 +237,41 @@ class ModelDownloadWorker @AssistedInject constructor(
      * as a failure so the screen shows why the download stopped; starting it
      * again resets the budget and resumes from the partial file.
      *
+     * @param url Direct URL of the model file, which starting it again needs.
+     * @param fileName Target file name.
      * @return A failure carrying the pause message and no HTTP status.
      */
-    private fun pausedByTimeLimit(): Result {
+    private fun pausedByTimeLimit(url: String, fileName: String): Result {
         Timber.i("Model download paused: foreground time budget spent")
+        return stopped(
+            url = url,
+            fileName = fileName,
+            failure = ModelDownloadFailure.PAUSED_TIME_LIMIT,
+            message = applicationContext.getString(R.string.model_download_paused_time_limit),
+        )
+    }
+
+    /**
+     * Ends the attempt for a reason the user has to be told even if no screen watches: records
+     * it for the screen opened next, posts the notice, and fails with it.
+     *
+     * Recorded before the failure is returned, so a screen that is watching finds the record by
+     * the time it sees the failure.
+     *
+     * @param url Direct URL of the model file.
+     * @param fileName Target file name.
+     * @param failure Why the download stopped.
+     * @param message The sentence a screen that words no failure of its own shows.
+     * @return A failure carrying [message], [failure] and no HTTP status.
+     */
+    private fun stopped(url: String, fileName: String, failure: ModelDownloadFailure, message: String): Result {
+        interruptions.record(fileName = fileName, url = url, failure = failure, message = message)
+        outcomeNotifier.notifyStopped(fileName, failure)
         return Result.failure(
             workDataOf(
-                KEY_ERROR to applicationContext.getString(R.string.model_download_paused_time_limit),
+                KEY_ERROR to message,
                 KEY_ERROR_CODE to NO_HTTP_CODE,
+                KEY_FAILURE to failure.name,
             ),
         )
     }
@@ -236,7 +309,7 @@ class ModelDownloadWorker @AssistedInject constructor(
      * service type — the type the platform defines for exactly this work.
      */
     private fun foregroundInfo(fileName: String, progress: Int): ForegroundInfo {
-        ensureChannel()
+        ModelDownloadChannel.ensure(applicationContext)
         val cancelIntent = WorkManager.getInstance(applicationContext).createCancelPendingIntent(id)
         val notification = NotificationCompat.Builder(applicationContext, NotificationChannels.MODEL_DOWNLOAD)
             .setContentTitle(applicationContext.getString(R.string.notifications_model_download_title))
@@ -257,17 +330,6 @@ class ModelDownloadWorker @AssistedInject constructor(
             notification,
             ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
         )
-    }
-
-    /** Registers the download channel; `createNotificationChannel` is idempotent. */
-    private fun ensureChannel() {
-        val channel = NotificationChannelCompat.Builder(
-            NotificationChannels.MODEL_DOWNLOAD,
-            NotificationManager.IMPORTANCE_LOW,
-        )
-            .setName(applicationContext.getString(R.string.notifications_model_download_channel_name))
-            .build()
-        NotificationManagerCompat.from(applicationContext).createNotificationChannel(channel)
     }
 
     companion object {
@@ -294,6 +356,12 @@ class ModelDownloadWorker @AssistedInject constructor(
 
         /** Output: HTTP status behind the failure, or [NO_HTTP_CODE]. */
         const val KEY_ERROR_CODE = "error_code"
+
+        /**
+         * Output: the [ModelDownloadFailure] name of a failure a screen words on its
+         * own (a pause, a checksum mismatch); absent for any other failure.
+         */
+        const val KEY_FAILURE = "failure"
 
         /** Sentinel for "the failure carried no HTTP status" (a transport error). */
         const val NO_HTTP_CODE = -1

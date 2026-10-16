@@ -31,6 +31,8 @@ import app.knotwork.android.data.local.migrations.MIGRATION_66_67
 import app.knotwork.android.data.local.migrations.MIGRATION_67_68
 import app.knotwork.android.data.local.migrations.MIGRATION_68_69
 import app.knotwork.android.data.local.migrations.MIGRATION_69_70
+import app.knotwork.android.data.local.migrations.MIGRATION_70_71
+import app.knotwork.android.data.local.migrations.MIGRATION_71_72
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -1010,6 +1012,45 @@ class AppDatabaseMigrationHelperTest {
                 assertEquals("Morning brief", c.getString(0))
                 assertTrue("a pre-existing trigger has no recorded activation", c.isNull(1))
                 assertTrue("no overdue notice is recorded as sent", c.isNull(2))
+            }
+        }
+    }
+
+    @Test
+    fun migrate70to71_leavesExistingModelsWithoutASource() {
+        helper.createDatabase(TEST_DB, 70).use { db ->
+            db.execSQL(
+                "INSERT INTO local_models(id, name, path, size, isActive, supportsVision, supportsAudio) " +
+                    "VALUES(1, 'gemma.litertlm', '/data/gemma.litertlm', 2048, 1, 0, 0)",
+            )
+        }
+
+        helper.runMigrationsAndValidate(TEST_DB, 71, true, MIGRATION_70_71).use { db ->
+            db.query("SELECT name, isActive, sourceUrl FROM local_models WHERE id = 1").use { c ->
+                assertTrue("the pre-existing model must survive the migration", c.moveToFirst())
+                assertEquals("gemma.litertlm", c.getString(0))
+                assertEquals(1, c.getInt(1))
+                assertTrue("a model registered before has no recorded source", c.isNull(2))
+            }
+        }
+    }
+
+    @Test
+    fun migrate71to72_leavesExistingModelsUnchecked() {
+        helper.createDatabase(TEST_DB, 71).use { db ->
+            db.execSQL(
+                "INSERT INTO local_models(id, name, path, size, isActive, supportsVision, supportsAudio, sourceUrl) " +
+                    "VALUES(1, 'gemma.litertlm', '/data/gemma.litertlm', 2048, 1, 0, 0, 'https://huggingface.co/m')",
+            )
+        }
+
+        helper.runMigrationsAndValidate(TEST_DB, 72, true, MIGRATION_71_72).use { db ->
+            db.query("SELECT name, isActive, sourceUrl, sourceSha256 FROM local_models WHERE id = 1").use { c ->
+                assertTrue("the pre-existing model must survive the migration", c.moveToFirst())
+                assertEquals("gemma.litertlm", c.getString(0))
+                assertEquals(1, c.getInt(1))
+                assertEquals("https://huggingface.co/m", c.getString(2))
+                assertTrue("no download of a model registered before was checked", c.isNull(3))
             }
         }
     }

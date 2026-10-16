@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -53,15 +54,30 @@ fun DiscoverDetailScreen(
     val installedTemplate = stringResource(R.string.discover_install_success)
     val gatedError = stringResource(R.string.discover_install_gated)
     val genericError = stringResource(R.string.discover_install_failed)
+    val interruptedFormat = stringResource(R.string.model_download_interrupted_format)
     val detailLoadError = stringResource(R.string.discover_detail_load_error)
 
     LaunchedEffect(Unit) {
         viewModel.installEvents.collect { event ->
             val message = when (event) {
                 is DiscoverInstallEvent.Success -> installedTemplate.format(event.fileName)
-                is DiscoverInstallEvent.Failed -> if (event.gated) gatedError else genericError
+                is DiscoverInstallEvent.Failed -> when (event.reason) {
+                    DiscoverInstallEvent.FailureReason.GATED -> gatedError
+                    DiscoverInstallEvent.FailureReason.OTHER -> genericError
+                }
             }
             snackbarHostState.showSnackbar(message)
+        }
+    }
+
+    LaunchedEffect(uiState.interruption) {
+        uiState.interruption?.let { interruption ->
+            // Installing the file again continues a paused download, so the button is the action.
+            snackbarHostState.showSnackbar(
+                message = interruptedFormat.format(interruption.fileName, interruption.message),
+                duration = SnackbarDuration.Long,
+            )
+            viewModel.onInterruptionShown(interruption)
         }
     }
 

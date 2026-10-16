@@ -4,10 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.knotwork.android.data.network.AndroidModelDownloadManager
 import app.knotwork.android.domain.engine.TaskQueueManager
+import app.knotwork.android.domain.models.AppError
 import app.knotwork.android.domain.models.CustomModelLink
 import app.knotwork.android.domain.models.DownloadState
+import app.knotwork.android.domain.models.LocalModel
 import app.knotwork.android.domain.models.isBusy
 import app.knotwork.android.domain.repositories.GenerationSettings
+import app.knotwork.android.domain.repositories.InterruptedDownload
 import app.knotwork.android.domain.repositories.LocalModelRepository
 import app.knotwork.android.domain.repositories.ModelDownloadManager
 import app.knotwork.android.domain.usecases.BenchmarkOutcome
@@ -112,6 +115,33 @@ class ModelsViewModel @Inject constructor(
         observeActiveModelPerformance()
         observeEngineBusy()
         observeRunningDownload()
+        observeInterruptions()
+    }
+
+    /**
+     * Follows the downloads that stopped for a reason not shown yet, so the screen shows the
+     * oldest — including one that stopped while the screen was closed, which no download
+     * stream reports any more.
+     */
+    private fun observeInterruptions() {
+        downloadManager.observeInterruptedDownloads()
+            .onEach { stopped -> _uiState.update { it.copy(interruption = stopped.firstOrNull()) } }
+            .launchIn(viewModelScope)
+    }
+
+    /**
+     * The screen has shown why a download stopped: it is not shown again, anywhere.
+     *
+     * @param interruption What was shown.
+     * @param continueDownload `true` when the user chose to start it again — a paused download
+     *   then continues from the bytes it kept.
+     */
+    fun onInterruptionShown(interruption: InterruptedDownload, continueDownload: Boolean) {
+        // Starting a second download while one runs does nothing here; acknowledging anyway would
+        // lose the pause and its notice. Kept, it is shown again once the running download ends.
+        if (continueDownload && _uiState.value.isDownloading) return
+        downloadManager.acknowledgeInterruption(interruption.fileName)
+        if (continueDownload) startDownload(interruption.url, interruption.fileName)
     }
 
     /**
@@ -148,17 +178,31 @@ class ModelsViewModel @Inject constructor(
 
     private fun observeDownloadedModels() {
         localModelRepository.getAllModels()
-            .onEach { models ->
+            .map { models -> models to verifiedIds(models) }
+            .onEach { (models, verified) ->
                 val active = models.find { it.isActive }
                 _uiState.update { state ->
                     state.copy(
                         downloadedModels = models,
                         activeModel = active,
+                        verifiedModelIds = verified,
                     )
                 }
             }
             .launchIn(viewModelScope)
     }
+
+    /**
+     * Ids of the [models] whose file on disk is the one their source published.
+     *
+     * Asked of the file's *current* hash, which the repository answers only while
+     * the stored hash still describes the file — a model replaced on disk since its
+     * download was checked is not vouched for. Models never checked skip the lookup.
+     */
+    private suspend fun verifiedIds(models: List<LocalModel>): Set<Long> = models
+        .filter { it.sourceSha256 != null }
+        .filter { it.matchesPublishedHash(localModelRepository.currentFileHash(it.path)) }
+        .mapTo(mutableSetOf()) { it.id }
 
     private fun observeAuthToken() {
         generationSettings.huggingFaceAuthToken
@@ -295,7 +339,10 @@ class ModelsViewModel @Inject constructor(
                             it.copy(
                                 isDownloading = false,
                                 downloadProgress = null,
-                                downloadError = state.error,
+                                // A pause or a checksum mismatch is recorded as an interruption
+                                // before the download fails, and shown from there — once, whether
+                                // or not this screen was watching.
+                                downloadError = state.error.takeUnless { error -> error.isRecordedInterruption() },
                                 activeDownloadFileName = null,
                             )
                         }
@@ -324,6 +371,10 @@ class ModelsViewModel @Inject constructor(
             }
             .launchIn(viewModelScope)
     }
+
+    /** Whether the download worker records this failure as an interruption rather than only reporting it. */
+    private fun AppError.isRecordedInterruption(): Boolean =
+        (this as? AndroidModelDownloadManager.DownloadError)?.recordedInterruption == true
 
     /**
      * Sets the specified model as the active one for the application.

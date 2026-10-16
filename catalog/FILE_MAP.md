@@ -137,6 +137,7 @@ Paths below are relative to `src/main/java/app/knotwork/design/`.
     - `NodeConfigValidation.kt` - pure-Kotlin validator for `NodeConfig` rules (title uniqueness, range bounds, JSON parsing) → field-keyed error map.
     - `NodeError.kt` - sealed `Validation` / `Runtime` error states surfaced on `NodeCard` borders and bodies.
     - `NodeIcons.kt` - `NodeType` → header glyph extension over `AppIcons`.
+    - `NodePortGeometry.kt` - Where a `NodeCard`'s ports sit, in dp — the one source the card draws from and the editor canvas places its edges and touch targets by.
     - `NodePorts.kt` - `OutboundPort` sealed class + `NodePorts` descriptor of inbound/outbound port topology per node type.
     - `NodeType.kt` - enum of the 12 editor node types (Input, Output, LiteRT, Cloud, IntentRouter, IfCondition, Clarification, Tool, Decomposition, QueueProcessor, Evaluation, Summary).
     - `NodeTypeColors.kt` - composables mapping `NodeType` to header tint, luminance-banded foreground, and display label.
@@ -348,6 +349,13 @@ Paths below are relative to `src/main/java/app/knotwork/design/`.
   - `settings/` - the settings hub plus one content composable per category sub-screen (the flat single-screen `SettingsContent` was split into this stack).
     - `AboutSettingsContent.kt` - identity card, build info, licenses and the reset actions.
     - `BackgroundSettingsContent.kt` - background work, triggers, notifications and entry-surface bindings.
+    - `backup/` - The *Backup & restore* screen: its content, route bodies, parts and view states.
+      - `AfterRestoreSheet.kt` - The after-restore sheet over the chat: the models to download again, and what was not carried.
+      - `BackupContent.kt` - Settings → Privacy → *Backup & restore*, and the *Back up* route over it.
+      - `BackupParts.kt` - The pieces the backup screens share: notes, action rows, the checkbox row, the file row, steps, the result head, counts and the bottom action.
+      - `BackupRouteBody.kt` - The scrolling body of the *Backup & restore* screen for what is in front: the screen itself, or a route.
+      - `BackupViewState.kt` - What the Settings → Privacy → *Backup & restore* screen shows: the screen itself, or one of its full-screen routes over it.
+      - `RestoreRouteBody.kt` - The scrolling body of a *Restore* route: a problem with the file, the password, the check, or the summary.
     - `GenerationSettingsContent.kt` - system instructions, restrictions and the LLM generation parameters.
     - `KnotworkMonoTextArea.kt` - multi-line monospace textarea (brand outline) for system instructions.
     - `KnotworkParamSlider.kt` - labelled numeric-parameter slider with value label, optional validation error, and (inside a settings screen) its own help glyph and explanation panel under the track.
@@ -459,6 +467,8 @@ matters.
     - `ConsoleSnapTest.kt` - Documents the discrete `ConsoleSnap` heights as preview-only fixtures.
     - `FullHashLayoutTest.kt` - `FullHash` keeps every group of eight whole: when four groups do not fit on a line, fewer go on it, and no group breaks across lines character by character.
     - `RunHeaderAffordanceTest.kt` - What the run strip, the hash chips and the check's sheet do when used: the line toggles, each copy button hands over the whole value, a disabled action does nothing yet stays readable, and a mismatch's button names where it is fixed.
+  - `controls/` - Behaviour tests for the input controls.
+    - `KnotworkPasswordFieldTest.kt` - `KnotworkPasswordField`: TalkBack hears what the eye does, and a password manager hears a password — a new one where the caller says one is being chosen.
   - `dialogs/` - the shared dialog shapes, currently the outcome family.
     - `DialogsSnapshotTest.kt` - Roborazzi baselines for the two field-free dialogs that moved out of the settings screen.
     - `OutcomeDialogSnapshotTest.kt` - Roborazzi baselines for the `OutcomeDialog` family — the four import outcomes and the re-import question, in one shape.
@@ -473,8 +483,10 @@ matters.
   - `pipelineeditor/` - the node canvas and its configuration sheets — ports, validation rules, the toolbar roster, and the baselines for each.
     - `EditorToolbarTest.kt` - Pins the editor toolbar's action roster.
     - `HeroSnapshotTest.kt` - Roborazzi baseline of the editor's node-card surface at the canonical 1080 × 2400 resolution, in both themes.
+    - `NodeCardPortLayoutTest.kt` - `NodeCard` draws every outbound port where `NodePortGeometry` says it is — the positions the editor canvas starts its edges from and places its touch targets at.
     - `NodeConfigSheetSnapshotTest.kt` - Visual baselines for the node configuration sheets.
     - `NodeConfigValidationTest.kt` - Tests for `NodeConfigValidation` — covers happy path + every failure mode listed in `node-specs.md` §Validation rules.
+    - `NodePortGeometryTest.kt` - `NodePortGeometry`: the card grows so every outbound port keeps a slot of at least 40 dp, the slots share the inner width evenly and stay inside the card, and the dot lines sit where the card draws them.
     - `NodePortsTest.kt` - Pure-JVM tests for `NodePorts.forType` — the single source for the outbound-port enumeration per node type.
     - `NodeTypePickerSheetBodyTest.kt` - Behaviour of `NodeTypePickerSheetBody`: what a search keeps, what a tap returns, and what TalkBack is given.
     - `NodeTypePickerSnapshotTest.kt` - Roborazzi baselines for the "Add node" sheet's body, one per state the design draws: the sheet as opened, a search that keeps several groups, one that keeps a single type, a search nothing matches, and the opened and searching sheets at 200 % font scale, where nothing may be cut.
@@ -485,6 +497,7 @@ matters.
     - `PromptPreviewSheetSnapshotTest.kt` - Roborazzi baselines for the prompt-preview sheet.
   - `topbar/` - top-bar actions whose behaviour outruns their appearance.
     - `JournalExportActionsBehaviourTest.kt` - Behaviour of the journal-export actions on both journal surfaces — the parts a Roborazzi baseline cannot show.
+- `ComposeTestRuleV2GuardTest.kt` - Keeps the design system's tests on the v2 Compose test APIs.
 - `foundations/` - the foundations catalog page — the surface that renders the tokens themselves.
   - `FoundationsCatalogPageSnapshotTest.kt` - Roborazzi snapshot baseline for the `FoundationsCatalogPage` in both Knotwork themes.
 - `icons/` - the `AppIcons` registry: a cheap correctness gate over every entry, plus the catalog page baseline.
@@ -545,6 +558,10 @@ matters.
     - `SavePromptAsPresetSnapshotTest.kt` - Roborazzi baselines for the save-prompt-as-preset form.
   - `SecretFieldImeTest.kt` - Every field that takes a credential tells the keyboard it is a password.
   - `settings/` - the settings hub and its category sub-screens, including the hint affordance, the search surface, and the provider / run-limits details.
+    - `backup/` - Roborazzi baselines for the *Backup & restore* screen.
+      - `BackupContentSemanticsTest.kt` - What the *Back up* route puts in the semantics tree for TalkBack: the working steps are one polite live region whose text is the current step, so the step's name changes as the work moves on — the content change a live region is announced on.
+      - `BackupSnapshotTest.kt` - Roborazzi baseline for Settings → Privacy → *Backup & restore* and its *Back up* route: the screen, the password form (empty, flagged, ready, 200 %), the work (key derivation, files), the saved result (also at 200 %, where the counts fall into one column) and two failures — light, and dark for every state the user reads a result in.
+      - `RestoreSnapshotTest.kt` - Roborazzi baseline for the *Restore* route of Settings → Privacy → *Backup & restore* and the sheet over the chat after a restore: the password (also refused, and at 200 %), the check (both steps), every problem the user is told, the summary (also with nothing on the phone, and at 200 %), *Restoring…*, and the sheet (also with a download running, and at 200 %) — light, and dark for the states read most.
     - `HeroSnapshotTest.kt` - Roborazzi baseline for the README "Settings" hero shot at the canonical 1080 × 2400 resolution.
     - `ModelPickerSheetTest.kt` - Behaviour of `ModelPickerSheetContent`: what a server's list becomes, and what a pick returns.
     - `ProviderDetailSnapshotTest.kt` - Roborazzi baselines for the provider detail screen.

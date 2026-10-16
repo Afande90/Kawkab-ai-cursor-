@@ -3,7 +3,7 @@ package app.knotwork.design.screens.tools
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.Density
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -621,7 +621,7 @@ internal object ToolsPreview {
      * and refuses to save until it is resolved.
      */
     fun addMcpNeedingCleartextConsent(): AddMcpServerForm = AddMcpServerForm(
-        url = "http://192.168.1.42:8080/sse",
+        url = "http://192.168.1.42:8080/mcp",
         cleartextConsentOrigin = "http://192.168.1.42:8080",
     )
 

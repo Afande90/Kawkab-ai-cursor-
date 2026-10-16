@@ -27,6 +27,9 @@ internal fun mockOnboardingViewModel(
     val stateFlow = MutableStateFlow(initialState)
     val vm = mockk<OnboardingViewModel>(relaxed = true)
     every { vm.state } returns stateFlow
+    // The screen collects it; left to the relaxed mock, its value is a mock of Any that the screen
+    // casts to an interruption and crashes on.
+    every { vm.pendingInterruption } returns MutableStateFlow(null)
     val handles = OnboardingMockHandles(stateFlow = stateFlow)
     return vm to handles
 }

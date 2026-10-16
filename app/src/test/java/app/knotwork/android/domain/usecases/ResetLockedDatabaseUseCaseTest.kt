@@ -1,5 +1,6 @@
 package app.knotwork.android.domain.usecases
 
+import app.knotwork.android.domain.backup.BackupRestorer
 import app.knotwork.android.domain.services.AgentWorkspace
 import app.knotwork.android.domain.services.AttachmentStore
 import app.knotwork.android.domain.services.DatabaseResetService
@@ -31,9 +32,10 @@ class ResetLockedDatabaseUseCaseTest {
     private val attachments = mockk<AttachmentStore>()
     private val caches = mockk<TransientCacheSweeper>()
     private val taskScheduler = mockk<TaskScheduler>()
+    private val restorer = mockk<BackupRestorer>()
 
     private val useCase =
-        ResetLockedDatabaseUseCase(databaseResetService, workspace, attachments, caches, taskScheduler)
+        ResetLockedDatabaseUseCase(databaseResetService, workspace, attachments, caches, taskScheduler, restorer)
 
     @Before
     fun setup() {
@@ -42,6 +44,7 @@ class ResetLockedDatabaseUseCaseTest {
         coEvery { attachments.deleteAll() } returns true
         coEvery { caches.sweepAll() } returns true
         coEvery { taskScheduler.cancelAllBackgroundRuns() } just runs
+        coEvery { restorer.erase() } returns true
     }
 
     @Test
@@ -56,7 +59,17 @@ class ResetLockedDatabaseUseCaseTest {
             // The runtime keeps queued runs in a store the database wipe cannot
             // reach; a recurring task would fire again and re-create its chat.
             taskScheduler.cancelAllBackgroundRuns()
+            // A staged restore holds copies of the user's files, and a confirmed one would put its
+            // database back at the next start.
+            restorer.erase()
         }
+    }
+
+    @Test
+    fun `given a staged restore cannot be erased when invoked then the result says something was kept`() = runTest {
+        coEvery { restorer.erase() } returns false
+
+        assertFalse(useCase())
     }
 
     @Test
@@ -85,6 +98,7 @@ class ResetLockedDatabaseUseCaseTest {
         coVerify(exactly = 0) { attachments.deleteAll() }
         coVerify(exactly = 0) { caches.sweepAll() }
         coVerify(exactly = 0) { taskScheduler.cancelAllBackgroundRuns() }
+        coVerify(exactly = 0) { restorer.erase() }
     }
 
     @Test

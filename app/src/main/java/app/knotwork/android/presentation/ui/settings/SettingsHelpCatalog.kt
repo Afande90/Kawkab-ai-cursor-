@@ -152,6 +152,7 @@ object SettingsHelpCatalog {
         "CRASH_REPORTING_ENABLED" to text(R.string.settings_help_crash_reporting_enabled),
         "TRACE_RETENTION_RUNS_PER_SESSION" to text(R.string.settings_help_trace_retention_runs_per_session),
         "TRACE_RETENTION_MAX_AGE_DAYS" to text(R.string.settings_help_trace_retention_max_age_days),
+        "LINK_BACKUP_RESTORE" to none(NoHint.LINK_ROW),
         "IDENTITY" to none(NoHint.DISPLAY_ROW),
         "LINK_LICENSES" to none(NoHint.LINK_ROW),
         "RESET" to none(NoHint.SELF_EVIDENT),

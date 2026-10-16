@@ -1,13 +1,10 @@
 package app.knotwork.android.data.engine
 
-import ai.koog.prompt.executor.clients.anthropic.AnthropicModels
-import ai.koog.prompt.executor.clients.deepseek.DeepSeekModels
-import ai.koog.prompt.executor.clients.google.GoogleModels
-import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.llm.LLMCapability
 import ai.koog.prompt.llm.LLMProvider
 import ai.koog.prompt.llm.LLModel
 import app.knotwork.android.domain.engine.CloudLlmModelResolver
+import app.knotwork.android.domain.engine.CloudModelCatalog
 import app.knotwork.android.domain.models.CloudProvider
 import app.knotwork.android.domain.repositories.ApiKeyRepository
 import kotlinx.coroutines.flow.first
@@ -17,14 +14,17 @@ import javax.inject.Singleton
 /**
  * Data-layer implementation of [CloudLlmModelResolver].
  *
- * Reads the user-configured model id for each provider from [ApiKeyRepository] and
- * substitutes a per-provider default when nothing is set. Centralising this here keeps
- * `CloudLlmNodeExecutor` free of both data-layer constants (`KoogModelMapper`,
- * `OpenAIModels`, …) and the per-provider model lookup.
+ * Reads the user-configured model id for each provider from [ApiKeyRepository] and asks
+ * [CloudModelCatalog] which model that means — the same answer the provider's screen, its row in
+ * Settings and the node sheet show. Centralising this here keeps `CloudLlmNodeExecutor` free of
+ * both data-layer constants (`KoogModelMapper`, `OpenAIModels`, …) and the per-provider model
+ * lookup.
  */
 @Singleton
-class KoogCloudLlmModelResolver @Inject constructor(private val apiKeyRepository: ApiKeyRepository) :
-    CloudLlmModelResolver {
+class KoogCloudLlmModelResolver @Inject constructor(
+    private val apiKeyRepository: ApiKeyRepository,
+    private val modelCatalog: CloudModelCatalog,
+) : CloudLlmModelResolver {
 
     /**
      * Resolves the Koog [LLModel] to use for a given provider. Exhaustive on
@@ -34,24 +34,31 @@ class KoogCloudLlmModelResolver @Inject constructor(private val apiKeyRepository
      * @return The Koog [LLModel] cast to [Any] for the domain boundary.
      */
     override suspend fun resolveModel(provider: CloudProvider): Any {
-        val chosen = apiKeyRepository.getModel(provider).first()
+        val inUse = modelCatalog.modelInUse(provider, apiKeyRepository.getModel(provider).first())
         return when (provider) {
-            CloudProvider.OPENAI -> KoogModelMapper.getOpenAIModel(chosen ?: OpenAIModels.Chat.GPT5_4.id)
-            CloudProvider.ANTHROPIC -> KoogModelMapper.getAnthropicModel(chosen ?: AnthropicModels.Sonnet_4_5.id)
-            CloudProvider.GOOGLE -> KoogModelMapper.getGoogleModel(chosen ?: GoogleModels.Gemini3_Flash_Preview.id)
-            CloudProvider.DEEPSEEK -> KoogModelMapper.getDeepSeekModel(chosen ?: DeepSeekModels.DeepSeekV4Flash.id)
+            CloudProvider.OPENAI, CloudProvider.ANTHROPIC, CloudProvider.GOOGLE, CloudProvider.DEEPSEEK ->
+                builtInModel(provider, checkNotNull(inUse) { "No default model for '${provider.id}'" }.id)
             CloudProvider.OLLAMA -> LLModel(
                 provider = LLMProvider.Ollama,
-                id = chosen ?: "llama3",
+                id = checkNotNull(inUse) { "No default model for '${provider.id}'" }.id,
                 capabilities = listOf(LLMCapability.Completion),
                 contextLength = apiKeyRepository.getOllamaContextWindowSize().first().toLong(),
             )
             // No default: the factory refuses a client while no model is chosen
             // (`MissingModel`), so reaching here without one means it was cleared in between.
             CloudProvider.OPENROUTER, CloudProvider.GROQ, CloudProvider.OPENAI_COMPATIBLE ->
-                openAiCompatibleModel(checkNotNull(chosen) { "No model is selected for '${provider.id}'" })
+                openAiCompatibleModel(checkNotNull(inUse) { "No model is selected for '${provider.id}'" }.id)
         }
     }
+
+    /**
+     * Koog's constant for [modelId] among the models offered for [provider]. The catalog only
+     * answers with an offered id for these providers, so a miss is a broken invariant.
+     */
+    private fun builtInModel(provider: CloudProvider, modelId: String): LLModel =
+        checkNotNull(KoogModelMapper.offeredModels(provider)?.firstOrNull { it.id == modelId }) {
+            "'$modelId' is not offered for '${provider.id}'"
+        }
 
     /**
      * A model asked for through the OpenAI API by an id the app has no catalogue entry for,

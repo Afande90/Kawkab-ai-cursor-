@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -17,7 +18,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.currentStateAsState
 import app.knotwork.android.domain.constants.DocumentationLinks
 import app.knotwork.android.presentation.ui.common.openDocumentation
 import app.knotwork.design.R
@@ -76,6 +80,15 @@ fun OnboardingScreen(
     viewModel: OnboardingViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val pendingInterruption by viewModel.pendingInterruption.collectAsStateWithLifecycle()
+    val lifecycleState by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
+    val resumed = lifecycleState.isAtLeast(Lifecycle.State.RESUMED)
+    // A download that stopped while the user was away is shown where setup draws a download's
+    // message — its Download step — and only while the user can see it: the view model outlives
+    // the screen in the background, and showing it acknowledges it.
+    LaunchedEffect(pendingInterruption, state.step, state.downloadProgress == null, resumed) {
+        if (resumed && pendingInterruption != null) viewModel.showPendingInterruption()
+    }
     val activity = LocalActivity.current
     var exitConfirmVisible by rememberSaveable { mutableStateOf(value = false) }
 

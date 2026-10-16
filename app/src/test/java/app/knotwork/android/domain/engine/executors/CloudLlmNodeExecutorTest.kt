@@ -3,6 +3,7 @@ package app.knotwork.android.domain.engine.executors
 import ai.koog.prompt.Prompt
 import ai.koog.prompt.executor.clients.LLMClient
 import ai.koog.prompt.executor.clients.anthropic.AnthropicModels
+import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.message.ResponseMetaInfo
 import ai.koog.prompt.streaming.StreamFrame
@@ -416,6 +417,45 @@ class CloudLlmNodeExecutorTest {
 
         assertEquals("Local answer", result.outputText)
         assertNull(result.error)
+    }
+
+    @Test
+    fun `given an OpenAI model on the Responses API then an end without a finish reason is not called cut off`() =
+        runTest {
+            // Koog streams a Responses-only model through the Responses API, whose completion
+            // event carries no finish reason: every healthy answer ends this way there.
+            val node = NodeModel("1", NodeType.CLOUD, 0f, 0f, cloudProvider = "openai")
+            val client: LLMClient = mockk(relaxed = true)
+            coEvery { client.executeStreaming(any(), any<LLModel>()) } returns flowOf(
+                StreamFrame.TextDelta("Codex answer"),
+                StreamFrame.End(finishReason = null, metaInfo = ResponseMetaInfo.Empty),
+            )
+            coEvery { clientFactory.createClient(CloudProvider.OPENAI, any()) } returns client
+            coEvery { modelResolver.resolveModel(CloudProvider.OPENAI) } returns OpenAIModels.Chat.GPT5_2Codex
+
+            val result = executor.execute(node, "input", "s1", "Q").toList()
+                .filterIsInstance<NodeOutput.Result>().single().result
+
+            assertEquals("Codex answer", result.outputText)
+            assertNull(result.error)
+        }
+
+    @Test
+    fun `given an OpenAI model on Chat Completions then an end without a finish reason is called cut off`() = runTest {
+        val node = NodeModel("1", NodeType.CLOUD, 0f, 0f, cloudProvider = "openai")
+        val client: LLMClient = mockk(relaxed = true)
+        coEvery { client.executeStreaming(any(), any<LLModel>()) } returns flowOf(
+            StreamFrame.TextDelta("Half an answer"),
+            StreamFrame.End(finishReason = null, metaInfo = ResponseMetaInfo.Empty),
+        )
+        coEvery { clientFactory.createClient(CloudProvider.OPENAI, any()) } returns client
+        coEvery { modelResolver.resolveModel(CloudProvider.OPENAI) } returns OpenAIModels.Chat.GPT5_4
+
+        val result = executor.execute(node, "input", "s1", "Q").toList()
+            .filterIsInstance<NodeOutput.Result>().single().result
+
+        assertNull("the truncated text must not become node output", result.outputText)
+        assertTrue(result.error!!.contains("cut off"))
     }
 
     @Test

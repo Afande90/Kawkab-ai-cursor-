@@ -1,0 +1,19 @@
+# Catalog settings for the type-resolution gate.
+#
+# `:catalog:detektDebug` runs `detekt-type-resolution.yml` — the same four rules as
+# `:app:detektFullDebug` / `:app:detektFossDebug` — with this file layered on top. It holds only
+# what the design system needs and the app does not, so the app's gate stays as strict as it was.
+# Measured on the catalog before these two settings: 104 findings, 63 of them the two kinds below.
+
+complexity:
+  LongParameterList:
+    # A screen's callbacks are one constructor of defaulted lambdas, one per user action; ten of
+    # them are over the 14-parameter limit (`ChatHomeCallbacks` has 54, `SettingsCallbacks` 51). A
+    # default is how a preview or a test leaves out the actions it does not exercise, so counting
+    # defaulted parameters reports the pattern itself.
+    ignoreDefaultParameters: true
+
+style:
+  UnusedPrivateFunction:
+    # Compose previews are private and called only by the IDE's tooling.
+    ignoreAnnotated: ['Preview']

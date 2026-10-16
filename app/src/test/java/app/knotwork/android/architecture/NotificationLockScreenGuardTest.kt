@@ -78,6 +78,7 @@ class NotificationLockScreenGuardTest {
             "AgentForegroundNotification.kt" to
                 "the agent's status line: fixed app strings, at most the name of the tool in use",
             "ModelDownloadWorker.kt" to "the model file being downloaded and its progress",
+            "ModelDownloadOutcomeNotifier.kt" to "the model file whose download stopped and a fixed sentence on why",
             "CeilingNotificationManager.kt" to "how many steps or tokens a run spent against its limit",
         )
 

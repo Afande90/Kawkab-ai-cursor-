@@ -1,5 +1,6 @@
 package app.knotwork.android.domain.usecases
 
+import app.knotwork.android.domain.backup.BackupRestorer
 import app.knotwork.android.domain.services.AgentWorkspace
 import app.knotwork.android.domain.services.AttachmentStore
 import app.knotwork.android.domain.services.DatabaseResetService
@@ -21,7 +22,9 @@ import javax.inject.Inject
  * exports, camera captures, voice clips — and every queued background run
  * ([TaskScheduler.cancelAllBackgroundRuns]). The runtime keeps those in a store of
  * its own the database wipe cannot reach; a recurring task would otherwise fire on
- * after the wipe and re-create its chat.
+ * after the wipe and re-create its chat. And a restore staged from a backup
+ * ([BackupRestorer.erase]): it holds copies of the user's files, and a confirmed one
+ * would put its database back at the next start.
  *
  * **What it keeps, deliberately.** Settings, saved cloud API keys, the Hugging Face token
  * and MCP credentials. The wipe exists to escape a database that cannot be opened; on the
@@ -29,7 +32,7 @@ import javax.inject.Inject
  * device the data was restored to they are unreadable anyway and read as unset.
  *
  * A failed database wipe throws and leaves every file untouched, so a retry still finds
- * the data a recovered key could open. The three file steps are independent — one that
+ * the data a recovered key could open. The four file steps are independent — one that
  * cannot delete something does not stop the next — and report only how many fell short,
  * never a path.
  *
@@ -38,6 +41,7 @@ import javax.inject.Inject
  * @property attachmentStore Owner of the stored image attachments.
  * @property transientCacheSweeper Owner of the transient cache directories.
  * @property taskScheduler Owner of the queued background runs.
+ * @property backupRestorer Owner of a staged restore, which holds copies of the user's files.
  */
 class ResetLockedDatabaseUseCase @Inject constructor(
     private val databaseResetService: DatabaseResetService,
@@ -45,6 +49,7 @@ class ResetLockedDatabaseUseCase @Inject constructor(
     private val attachmentStore: AttachmentStore,
     private val transientCacheSweeper: TransientCacheSweeper,
     private val taskScheduler: TaskScheduler,
+    private val backupRestorer: BackupRestorer,
 ) {
 
     /**
@@ -63,6 +68,7 @@ class ResetLockedDatabaseUseCase @Inject constructor(
             attachmentStore.deleteAll(),
             transientCacheSweeper.sweepAll(),
             cancelBackgroundRuns(),
+            backupRestorer.erase(),
         )
         val shortfall = erased.count { !it }
         if (shortfall > 0) {

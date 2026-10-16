@@ -5,7 +5,7 @@ agent for Android: what data the app handles, how it is protected, what is sent
 off-device when the user opts in to crash reporting, and how to report a
 vulnerability you discover.
 
-The project is currently a **pre-release (0.11.1)** and is published primarily
+The project is currently a **pre-release (0.12.0)** and is published primarily
 for review and experimentation. There are no stability guarantees for storage
 formats, APIs, or persisted data across versions.
 
@@ -15,12 +15,12 @@ formats, APIs, or persisted data across versions.
 
 Only the latest release line is supported. As a solo pre-release project there
 are no maintained back-release branches or long-term-support tags; fixes land on
-the current `0.11.x` line and on the latest commit on `main`.
+the current `0.12.x` line and on the latest commit on `main`.
 
 | Version            | Supported          |
 |--------------------|--------------------|
-| `0.11.x` (latest)  | :white_check_mark: |
-| `< 0.11.1`         | :x:                |
+| `0.12.x` (latest)  | :white_check_mark: |
+| `< 0.12.0`         | :x:                |
 
 ---
 
@@ -111,9 +111,10 @@ storage and credentials:
   `chat_sessions`), long-term memory (`memory_chunks`), pipeline run traces
   (`trace_steps`, `model_calls`), **custom pipelines** (`pipelines`, `pipeline_nodes`,
   `pipeline_connections`), and **saved presets and prompt templates**
-  (`pipeline_presets`, `prompt_presets`, `prompt_templates`). The migrations
-  across the exported-schema baseline range are covered by a `MigrationTestHelper`
-  regression suite that validates the resulting schema and data preservation.
+  (`pipeline_presets`, `prompt_presets`, `prompt_templates`). Every migration
+  step from the oldest exported schema (v23) on is validated against the schema
+  exported for its target version in the build gate, and a `MigrationTestHelper`
+  regression suite on the emulator checks data preservation and the whole chain.
 - **Residual pre-1.0 caveats.**
   - *Downgrade.* Installing an **older** build over a newer database recreates
     it empty (`fallbackToDestructiveMigrationOnDowngrade`), since forward
@@ -143,7 +144,53 @@ stores are sealed under Keystore keys that never leave the device, so a copy
 only lands the new install on the recovery screen, and the model files are
 found through the database. What is readable as is — attachments, the agent
 workspace, settings — is what must stay on the device; those three
-directories are also excluded by name. A new device starts empty.
+directories are also excluded by name. A new device starts empty, unless you
+restore a backup you made yourself (below).
+
+The one way the data leaves is a backup you make yourself: Settings → Privacy
+→ *Backup & restore* → **Back up** writes one file to a place you pick in the
+system's *Create document* screen. The app opens no connection to do it; a
+cloud drive you pick uploads the file as it would any other.
+
+- **Locked with your password.** Argon2id (64 MiB, 3 passes) derives the keys
+  from it, and AES-256-GCM seals the content in authenticated chunks — the
+  [format](docs/backup-format.md) is public. The password must be at least 12
+  characters. The app keeps it only while the *Back up* or *Restore* screen is
+  open, never writes it to storage or a log, and it cannot be recovered. The
+  fields are marked as a password, so a password manager may offer to keep it
+  and to fill it in.
+- **The database travels under a key of its own.** The archive carries a copy
+  of the database encrypted with 32 random bytes made for that archive alone,
+  stored inside the encrypted content. The phone's own database key never goes
+  into a backup.
+- **Secrets only when you ask.** Cloud API keys, the Hugging Face token and MCP
+  sign-ins and headers go in only when *Include API keys and sign-ins* is
+  ticked; it starts unticked every time. Anyone holding the file and the
+  password can then use them, and the result screen says so. Server addresses —
+  cloud providers' and MCP servers' — always travel, so a token written into an
+  address goes with it whether the box is ticked or not.
+- **What the format does not hide.** The open header names the app version
+  that wrote the file, its flavour, the database schema version, when it was
+  written, the estimated content size and the key costs, and the file's length
+  gives away the size of the content
+  ([details](docs/backup-format.md#what-the-format-does-not-hide)).
+- **Unfinished files are deleted where the place allows it.** A cancelled or
+  failed backup deletes its file; where the place you picked refuses, the screen
+  names the file for you to delete. A file cut short by the app being closed is
+  deleted at the next start — silently, and only if the place still lets the
+  app delete it.
+- **A restore changes nothing until you confirm.** *Restore from file…* reads
+  the whole file with its password into a staging folder inside the app's
+  private storage: every chunk is authenticated, the database is checked, keyed
+  to this phone's own database key and brought to this build's schema there. Its
+  secrets — when it carries any — wait in a Keystore-backed store of their own,
+  never in plain text. The summary then says what comes in and what this phone
+  loses, and only typing the confirm word replaces anything; the app restarts to
+  finish. A check you cancel or a summary you close deletes the staged copy, and
+  one left by leaving the screen is deleted at the next start. Once applied, the
+  backup's secrets replace this phone's entries of the same name — the phone's
+  other keys and sign-ins stay, so a restore does not clear them — and the
+  staging store is destroyed.
 
 ### Agent file workspace (at-rest)
 
@@ -562,13 +609,44 @@ only for gated repositories) is handled exactly like a cloud-provider key:
 
 - Stored exclusively in the **Keystore-backed encrypted store** (AES-256-GCM
   under a dedicated Android Keystore key) — never in plain DataStore, log files,
-  exported archives, or anything committed to the repository. An earlier
+  exported chat archives, or anything committed to the repository, and in a
+  backup only when you tick *Include API keys and sign-ins* (see *Backup and
+  device transfer*). An earlier
   development build kept it in plain DataStore; a **one-time migration moves any
   legacy value into the Keystore store and removes the plaintext entry**.
 - **Sent only to `huggingface.co`, over HTTPS, on a model-file download.** The
   download code attaches it from the request's own address, so a link the user
   pastes, a mirror, or the CDN a Hub download redirects to never receives it.
   Browsing and metadata calls are public and carry **no token**.
+
+### Downloaded model files
+
+A model file downloaded from Hugging Face is checked before it becomes a model.
+
+- **The hash comes from Hugging Face's own answer.** Its reply to the download
+  names the file's SHA-256 (for a file stored in LFS, as model files usually
+  are). The
+  app reads it only from a request to `https://huggingface.co` and only from the
+  hops Hugging Face itself answered — never from the CDN the download is
+  redirected to, which is what the hash is checked against, and never from
+  another host.
+- **The file is hashed before it reaches its final name.** A file whose hash
+  differs is deleted and never added to the model list. A notification says the
+  file did not match (if the app may post notifications), and so does the Models
+  screen the next time it is opened while no other download runs — or setup's
+  Download step, or the model's page in Discover, if one of those comes first. A transfer corrupted on the way, or a resume that joined two versions
+  of a file, ends here.
+- **The Models screen says which files were checked.** A model reads
+  **Verified** only while its file's current SHA-256 equals the one Hugging Face
+  published at a download that matched; the app knows a file's hash only while
+  the file keeps the size and modification time it was read at. Anything else reads
+  **Not verified** — a file from a source that names no hash (another host, a
+  file outside LFS), a model installed before this check existed, a file the app
+  found on its storage with no download behind it, or a file whose content
+  changed after its check.
+- **What it does not cover.** The check proves the file is the one Hugging Face
+  publishes under that name, not that the publisher can be trusted: a repository
+  that publishes a harmful file publishes its hash too.
 
 ### API keys for cloud providers
 
@@ -580,7 +658,9 @@ only for gated repositories) is handled exactly like a cloud-provider key:
 - A server you run may need no key. Then no `Authorization` header is sent at
   all, rather than an empty one.
 - Keys are never written to plain `SharedPreferences`, DataStore, log files,
-  exported chat archives, or any artifact checked into the repository.
+  exported chat archives, or any artifact checked into the repository. A backup
+  carries them only when you tick *Include API keys and sign-ins*, sealed under
+  the backup's password (see *Backup and device transfer*).
 - A provider error can quote the failing request, key included (Google
   authenticates by query parameter). Such text is scrubbed before it becomes a
   run's error, a console line or a crash report, so it cannot reach an export,

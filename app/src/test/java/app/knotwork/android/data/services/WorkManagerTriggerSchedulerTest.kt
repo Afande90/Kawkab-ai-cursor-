@@ -4,14 +4,19 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequest
+import androidx.work.Operation
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import app.knotwork.android.domain.models.Trigger
 import app.knotwork.android.domain.models.TriggerCondition
+import com.google.common.util.concurrent.ListenableFuture
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -203,5 +208,39 @@ class WorkManagerTriggerSchedulerTest {
                 any<PeriodicWorkRequest>(),
             )
         }
+    }
+
+    @Test
+    fun `given triggers to stop when stopped then it returns only once every cancellation is recorded`() = runTest {
+        // Given — cancellations the runtime has not recorded yet.
+        val listeners = mutableListOf<Runnable>()
+        var recorded = false
+        val names = mutableListOf<String>()
+        every { workManager.cancelUniqueWork(any()) } answers {
+            names += firstArg<String>()
+            pendingOperation(listeners) { recorded }
+        }
+
+        // When
+        val stopping = launch(UnconfinedTestDispatcher(testScheduler)) { scheduler.stopWatching(listOf("a", "b")) }
+
+        // Then — the caller ends the process right after, so it waits for every one.
+        assertEquals(listOf("trigger-watch-a", "trigger-watch-b", "trigger-charging-watch"), names)
+        assertFalse(stopping.isCompleted)
+        recorded = true
+        listeners.toList().forEach { it.run() }
+        assertTrue(stopping.isCompleted)
+    }
+
+    /** An operation the runtime finishes when [done] says so and its listeners are run. */
+    private fun pendingOperation(listeners: MutableList<Runnable>, done: () -> Boolean): Operation {
+        val future = mockk<ListenableFuture<Operation.State.SUCCESS>> {
+            every { isDone } answers { done() }
+            every { get() } returns Operation.SUCCESS
+            every { addListener(any(), any()) } answers { listeners += firstArg<Runnable>() }
+            every { isCancelled } returns false
+            every { cancel(any()) } returns true
+        }
+        return mockk { every { result } returns future }
     }
 }

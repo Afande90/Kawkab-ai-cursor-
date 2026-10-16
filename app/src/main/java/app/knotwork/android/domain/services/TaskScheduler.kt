@@ -118,6 +118,15 @@ interface TaskScheduler {
     fun cancelAllScheduled()
 
     /**
+     * Counts the tasks created by the scheduling tool that are still to run (matched by
+     * [ScheduledTaskTag.MARKER]). A backup records the number: the tasks live in the background
+     * runtime's own store, not in the database, and are never carried to another phone.
+     *
+     * @return How many such tasks are queued, waiting or running.
+     */
+    suspend fun countScheduled(): Int
+
+    /**
      * Cancels every queued or running background run, whatever started it, and
      * clears the runtime's record of finished ones — the part of *Erase data*
      * the database wipe cannot reach, because the runtime keeps its own store.

@@ -3,7 +3,7 @@
 [![Check](https://github.com/alexeyw/knotwork/actions/workflows/check.yml/badge.svg)](https://github.com/alexeyw/knotwork/actions/workflows/check.yml)
 [![Instrumented](https://github.com/alexeyw/knotwork/actions/workflows/instrumented.yml/badge.svg?branch=main)](https://github.com/alexeyw/knotwork/actions/workflows/instrumented.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-0.11.1-orange.svg)
+![Version](https://img.shields.io/badge/version-0.12.0-orange.svg)
 ![Android API](https://img.shields.io/badge/Android-API%2034%2B-3DDC84.svg?logo=android)
 [![Google Play](https://img.shields.io/badge/Google%20Play-available-3DDC84.svg?logo=googleplay&logoColor=white)](https://play.google.com/store/apps/details?id=app.knotwork.android)
 
@@ -131,6 +131,11 @@ https://github.com/user-attachments/assets/2ea06de5-6832-4e0c-ad48-430f375d8b72
   [Known limitations](docs/faq.md#known-limitations).
 - Archiving a chat takes it out of the drawer without deleting it. It stays
   readable and exportable on its own screen until you restore it.
+- **Back up and restore** what you made — chats, memory, pipelines, run history,
+  triggers, settings and files — as one file locked with a password you choose,
+  saved wherever you pick; restore it on this phone or a new one. API keys go in
+  only if you tick the box; model files stay out, and the restored app offers to
+  download them again. The [format](docs/backup-format.md) is public.
 - Settings with a number, a borrowed term or a side effect explain themselves in
   one sentence behind the **ⓘ** next to the label. The reference table in the
   user guide is generated from the same strings.
@@ -219,8 +224,8 @@ browser's `prefers-color-scheme`.
 The Play build is the `full` flavour described below. Google Play signs the
 copies it delivers with its own key; the APKs on the Releases page carry this
 project's key. Android will not update one with the other, so moving between
-Google Play and a release APK means exporting what you want to keep,
-uninstalling, and installing from the other channel. Which channel is signed by
+Google Play and a release APK means making a backup, uninstalling, installing
+from the other channel and restoring the backup. Which channel is signed by
 which key is set out in
 [docs/release.md](docs/release.md#signing-identities-by-channel).
 
@@ -281,6 +286,7 @@ at all? [docs/faq.md](docs/faq.md) answers both, briefly.
 | Network          | OkHttp + Ktor (via Koog)                                |
 | Image loading    | Coil 3 (attachment thumbnails / viewer)                 |
 | Local storage    | Room + DataStore                                        |
+| Backup archive   | Argon2id (Bouncy Castle, MIT) + AES-256-GCM; [format](docs/backup-format.md) |
 | Crash reporting  | Firebase Crashlytics (`full` flavour) / none (`foss`)   |
 | Distribution     | `full` (Play / direct APK) + `foss` (F-Droid, no Google)|
 | Testing          | JUnit + MockK; instrumented suite on an emulator matrix in CI |
@@ -314,6 +320,10 @@ to log into, and nothing is uploaded for the app to work.
   memory, run traces — is SQLCipher-encrypted, and API keys, the Hugging Face
   token, and MCP credentials are sealed with AES-GCM under a dedicated Android
   Keystore key.
+- **Downloaded models are checked.** When Hugging Face names a model file's
+  SHA-256 in its answer to the download, the file must match it or it is
+  deleted. A file with no hash named — from another host, for instance — is
+  installed but marked *Not verified*.
 - **The agent asks before it acts.** By default, destructive and sensitive tool
   calls stop at a confirmation, including when a pipeline runs in the background
   from a trigger. A destructive call asks under every setting.
@@ -359,7 +369,7 @@ open in a browser.
 
 ## Pre-release notice
 
-This project is currently at **version 0.11.1** and is published for review and
+This project is currently at **version 0.12.0** and is published for review and
 experimentation. Expect rough edges:
 
 - There are no stability guarantees for the public surface (Kotlin APIs,

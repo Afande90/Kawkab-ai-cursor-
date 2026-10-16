@@ -666,8 +666,9 @@ class AgentWorkspaceImpl internal constructor(
          * Suffix of the sibling scratch file used to stage an atomic write before
          * the rename. Reserved: files ending in it are hidden from listings and
          * quota accounting, so the agent is never expected to create one itself.
+         * Internal so a backup leaves an unfinished write out as well.
          */
-        private const val RESERVED_TMP_SUFFIX = ".knotwork-tmp"
+        internal const val RESERVED_TMP_SUFFIX = ".knotwork-tmp"
 
         /** Number of leading bytes sampled to classify a file as text or binary. */
         private const val TEXT_SNIFF_BYTES = 8 * 1024

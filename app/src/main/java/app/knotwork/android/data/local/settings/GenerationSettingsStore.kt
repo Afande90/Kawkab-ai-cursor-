@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import app.knotwork.android.data.backup.BackedUpSecrets
 import app.knotwork.android.data.local.crypto.SecretStore
 import app.knotwork.android.data.local.crypto.SecureValueUnreadableException
 import app.knotwork.android.domain.constants.DefaultPrompts
@@ -51,7 +52,8 @@ import javax.inject.Singleton
 class GenerationSettingsStore @Inject constructor(
     private val dataStore: DataStore<Preferences>,
     private val secretsStore: SecretStore,
-) : GenerationSettings {
+) : GenerationSettings,
+    BackedUpSecrets {
 
     private object Keys {
         val HUGGING_FACE_TOKEN = stringPreferencesKey("hugging_face_token")
@@ -100,6 +102,41 @@ class GenerationSettingsStore @Inject constructor(
     /** Serializes the legacy-DataStore migration so concurrent collectors run it once. */
     private val huggingFaceMigrationMutex = Mutex()
     private var huggingFaceMigrationDone = false
+
+    override val storeName: String = BackedUpSecrets.SETTINGS_SECRETS_STORE
+
+    /** Nothing in the settings-secrets store is anything but a secret. */
+    override suspend fun alwaysEntries(): Map<String, String> = emptyMap()
+
+    /** Moves a Hugging Face token an older release kept in plain DataStore to the encrypted store. */
+    override suspend fun settle() {
+        migrateLegacyHuggingFaceToken()
+    }
+
+    /**
+     * The Hugging Face token. Read without the recovery policy of the token's own reads: an entry the
+     * Keystore cannot decrypt for now is left out of the backup and left in place.
+     */
+    override suspend fun secretEntries(): Map<String, String> {
+        val token = try {
+            secretsStore.getString(SecretKeys.HUGGING_FACE_TOKEN)
+        } catch (e: SecureValueUnreadableException) {
+            Timber.w(e, "Hugging Face token left out of a backup: unreadable for now")
+            null
+        }
+        return token?.let { mapOf(SecretKeys.HUGGING_FACE_TOKEN to it) }.orEmpty()
+    }
+
+    /**
+     * The Hugging Face token, only with [secrets]: written synchronously, as the restore's own copy is
+     * destroyed right after, and with any legacy plain copy dropped as the settings screen drops it.
+     */
+    override suspend fun restore(entries: Map<String, String>, secrets: Boolean): Int {
+        val token = entries[SecretKeys.HUGGING_FACE_TOKEN]?.takeIf { secrets } ?: return 0
+        secretsStore.putString(SecretKeys.HUGGING_FACE_TOKEN, token, synchronous = true)
+        setHuggingFaceAuthToken(token)
+        return 1
+    }
 
     override val huggingFaceAuthToken: Flow<String?> = flow {
         migrateLegacyHuggingFaceToken()

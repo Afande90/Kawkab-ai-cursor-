@@ -7,9 +7,9 @@ import org.junit.Test
  * Only the app's release-only observer turns the crash collector on or off.
  *
  * `App.observeCrashReportingOptIn` mirrors the persisted consent into the
- * collector, and is installed only in release builds of the `full` flavour — which
- * is what the privacy policy's "debug builds never enable crash reporting" rests
- * on. The Settings switch and the settings reset used to flip the collector
+ * collector, and is installed only in release builds of the `full` flavour, whose
+ * manifest keeps collection off until it runs — which is why a debug build never
+ * collects. The Settings switch and the settings reset used to flip the collector
  * directly as well, from any build: switching consent on in a debug build started
  * Crashlytics collection (a capture on a debug build saw its traffic). Every other
  * caller of `setEnabled` on the repository is refused here, by file.

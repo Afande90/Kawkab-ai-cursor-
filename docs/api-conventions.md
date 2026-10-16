@@ -257,10 +257,18 @@ interface Tool {
 - **A stream that ends without a finish reason is a failure, not an answer.** The
   OpenAI-compatible clients end a dropped stream normally and simply omit the
   finish reason, so the only signal that a reply was truncated is the absent
-  `StreamFrame.End.finishReason`. `CloudLlmNodeExecutor` rejects such a response
-  instead of forwarding a half-written answer. The check is per provider and
+  `StreamFrame.End.finishReason`. Every caller that turns a cloud stream into an
+  answer — the Cloud node, a structured step on a cloud model, `delegate_task` —
+  asks one rule, `CloudStreamEnd` in the domain layer, and rejects such a
+  response instead of forwarding a half-written answer;
+  `CloudStreamEndCallersGuardTest` fails a new reader of `executeStreaming` that
+  does not. The check is per provider and
   enabled only where the behaviour was measured — Koog's Ollama client never
   emits a finish reason at all, so enabling it there would fail healthy runs.
+  On OpenAI it also depends on the model: Koog sends a model that supports only
+  the Responses API (the Codex and Pro lines) through that API, whose complete
+  answers end without a finish reason, and fails a cut Responses stream itself.
+  The check applies there to Chat Completions models only.
 - **Provider error text is scrubbed before it is shown, logged or stored**
   (`CloudErrorSanitizer`). Google authenticates by query parameter, so its
   transport errors arrive carrying the API key; credentials must never reach the
@@ -288,6 +296,12 @@ interface Tool {
   `ALL_MIGRATIONS` — the only list the database builder registers.
   `AppDatabaseMigrationChainTest` fails on a gap in the list or a list that
   does not end at the schema version.
+- Commit the schema Room exports for the new version (`app/schemas/`).
+  `MigrationStepGuardTest` runs every step of the list on real SQLite and
+  validates what it leaves against the exported schema of its target
+  version, so a new step is covered as soon as it is listed — and fails the
+  build without its schema. Data preservation is a test of its own per
+  migration.
 - Always inject a `CoroutineDispatcher` into `DataSource` classes so they
   remain testable.
 

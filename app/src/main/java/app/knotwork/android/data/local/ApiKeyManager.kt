@@ -1,6 +1,7 @@
 package app.knotwork.android.data.local
 
 import android.content.Context
+import app.knotwork.android.data.backup.BackedUpSecrets
 import app.knotwork.android.data.local.crypto.AeadCipher
 import app.knotwork.android.data.local.crypto.KeystoreBackedPrefsStore
 import app.knotwork.android.data.local.crypto.SecureValueUnreadableException
@@ -39,7 +40,8 @@ import javax.inject.Singleton
  */
 @Singleton
 class ApiKeyManager @Inject constructor(@ApplicationContext private val context: Context, cipher: AeadCipher) :
-    ApiKeyRepository {
+    ApiKeyRepository,
+    BackedUpSecrets {
 
     private val store = KeystoreBackedPrefsStore(
         context = context,
@@ -59,6 +61,61 @@ class ApiKeyManager @Inject constructor(@ApplicationContext private val context:
         MutableStateFlow(
             readOrNull(OLLAMA_CONTEXT_ENTRY)?.toIntOrNull() ?: SettingsDefaults.OLLAMA_CONTEXT_WINDOW_DEFAULT,
         )
+    }
+
+    override val storeName: String = PREFS_NAME
+
+    /** Each provider's chosen model and server address, and the Ollama context window — not secrets. */
+    override suspend fun alwaysEntries(): Map<String, String> = buildMap {
+        CloudProvider.entries.forEach { provider ->
+            listOf(modelEntry(provider), baseUrlEntry(provider)).forEach { name ->
+                peek(name)?.let { put(name, it) }
+            }
+        }
+        peek(OLLAMA_CONTEXT_ENTRY)?.let { put(OLLAMA_CONTEXT_ENTRY, it) }
+    }
+
+    /** Each provider's API key. */
+    override suspend fun secretEntries(): Map<String, String> = buildMap {
+        CloudProvider.entries.forEach { provider ->
+            peek(apiKeyEntry(provider))?.let { put(apiKeyEntry(provider), it) }
+        }
+    }
+
+    /**
+     * Reads an entry for a backup without the recovery policy of [readOrNull]: an entry the Keystore cannot
+     * decrypt for now is left out of the backup and left in place, never dropped because a backup ran.
+     */
+    private fun peek(name: String): String? = entries[name]?.value ?: try {
+        store.getString(name)
+    } catch (e: SecureValueUnreadableException) {
+        Timber.w(e, "Stored API-key entry '%s' left out of a backup: unreadable for now.", name)
+        null
+    }
+
+    /**
+     * Each provider's model and server address and the Ollama context window; each provider's API key only
+     * with [secrets]. Written synchronously: the restore's own copy is destroyed right after.
+     */
+    override suspend fun restore(entries: Map<String, String>, secrets: Boolean): Int {
+        var written = 0
+        CloudProvider.entries.forEach { provider ->
+            val names = listOf(modelEntry(provider), baseUrlEntry(provider)) +
+                listOfNotNull(apiKeyEntry(provider).takeIf { secrets })
+            names.forEach { name ->
+                entries[name]?.let {
+                    store.putString(name, it, synchronous = true)
+                    entry(name).value = it
+                    written++
+                }
+            }
+        }
+        entries[OLLAMA_CONTEXT_ENTRY]?.toIntOrNull()?.let {
+            store.putString(OLLAMA_CONTEXT_ENTRY, it.toString(), synchronous = true)
+            ollamaContextFlow.value = it
+            written++
+        }
+        return written
     }
 
     override fun getApiKey(provider: CloudProvider): Flow<String?> = entry(apiKeyEntry(provider)).asStateFlow()
@@ -112,7 +169,7 @@ class ApiKeyManager @Inject constructor(@ApplicationContext private val context:
 
     private companion object {
         /** Name of the [KeystoreBackedPrefsStore] preferences file holding the API keys. */
-        const val PREFS_NAME = "secure_api_keys_v2"
+        const val PREFS_NAME = BackedUpSecrets.API_KEYS_STORE
 
         /** Android Keystore alias of the AEAD key dedicated to the API-key store. */
         const val KEY_ALIAS = "knotwork.api_keys"
