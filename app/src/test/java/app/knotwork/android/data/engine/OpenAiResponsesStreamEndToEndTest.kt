@@ -19,8 +19,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.test.runTest
 import mockwebserver3.Dispatcher
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
@@ -144,12 +143,19 @@ class OpenAiResponsesStreamEndToEndTest {
     /**
      * Runs one CLOUD node set to OpenAI on [client], with [modelId] saved as the provider's model.
      *
+     * On virtual time: the executor waits `NODE_RESULT_EMIT_DELAY_MS` (a second) before it hands its
+     * result on, and in real time that wait was nineteen of the class's twenty-four seconds, one per
+     * offered model. The server and the client still run on real threads. [runTest]'s timeout is
+     * wall-clock, so a stuck request still ends the test at [NODE_DEADLINE]; a `withTimeout` inside
+     * the body would count virtual time and fire while the request is in flight.
+     *
      * @param modelId The saved model id.
      * @param client The Koog client the node's factory hands out.
      * @return The node's result.
      */
-    private fun runNode(modelId: String, client: OpenAILLMClient): NodeExecutionResult = runBlocking {
-        withTimeout(NODE_DEADLINE) {
+    private fun runNode(modelId: String, client: OpenAILLMClient): NodeExecutionResult {
+        var result: NodeExecutionResult? = null
+        runTest(timeout = NODE_DEADLINE) {
             val keys = mockk<ApiKeyRepository> {
                 every { getModel(CloudProvider.OPENAI) } returns flowOf(modelId)
             }
@@ -168,9 +174,10 @@ class OpenAiResponsesStreamEndToEndTest {
                 mockk(relaxed = true),
             )
             val node = NodeModel("1", NodeType.CLOUD, 0f, 0f, cloudProvider = CloudProvider.OPENAI.id)
-            executor.execute(node, "input", "s1", "Q").toList()
+            result = executor.execute(node, "input", "s1", "Q").toList()
                 .filterIsInstance<NodeOutput.Result>().single().result
         }
+        return checkNotNull(result) { "the node produced no result" }
     }
 
     /** Koog's OpenAI client, sending to the local server, with deadlines that end a stuck test. */
