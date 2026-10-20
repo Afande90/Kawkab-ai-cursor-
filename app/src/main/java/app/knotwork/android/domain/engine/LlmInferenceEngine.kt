@@ -139,9 +139,11 @@ interface LlmInferenceEngine {
     ): Flow<String>
 
     /**
-     * Closes the engine and releases any underlying resources.
+     * Releases the loaded model from a caller that cannot suspend, such as a lifecycle
+     * callback.
      *
-     * Should be called when the engine is no longer needed to prevent memory leaks.
+     * The engine stays usable: one instance serves the whole process, so a later [initialize]
+     * loads a model into it again, and it keeps doing what it does under memory pressure.
      */
     fun close()
 

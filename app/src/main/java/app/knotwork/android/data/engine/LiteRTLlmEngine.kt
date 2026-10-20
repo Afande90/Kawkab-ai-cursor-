@@ -166,6 +166,7 @@ class LiteRTLlmEngine @Inject constructor(
     override val activeContextLength: Int? get() = _activeContextLength
 
     init {
+        // Once for the process: [close] leaves the callbacks registered.
         context.registerComponentCallbacks(this)
     }
 
@@ -634,16 +635,22 @@ class LiteRTLlmEngine @Inject constructor(
     }
 
     /**
-     * Closes the engine and removes the callbacks to prevent leaks.
+     * Releases the loaded model.
      *
-     * Invoked from synchronous Android lifecycle callbacks (e.g. the foreground
-     * service's `onDestroy`), so the mutex-guarded [unload] is dispatched on the
-     * application scope rather than blocked on; the callback de-registration runs
-     * immediately to stop further trim callbacks.
+     * Invoked from synchronous Android lifecycle callbacks (the foreground service's
+     * `onDestroy`), so the mutex-guarded [unload] is dispatched on the application
+     * scope rather than blocked on.
+     *
+     * The memory callbacks stay registered. This engine is a process-wide singleton,
+     * registered once in `init`; the service that closes it is started again while
+     * the process lives, and the same instance loads the next model. Taking the
+     * callbacks off here left every later load deaf to [onTrimMemory] and
+     * [onLowMemory]: under memory pressure the system had to kill the process instead
+     * of the engine freeing the model. Registered on the application context, the
+     * callbacks cannot leak — both live as long as the process.
      */
     override fun close() {
         appScope.launch { unload() }
-        context.unregisterComponentCallbacks(this)
     }
 
     /**

@@ -1,5 +1,6 @@
 package app.knotwork.android.data.engine
 
+import android.content.ComponentCallbacks
 import android.content.ComponentCallbacks2
 import android.content.Context
 import app.knotwork.android.domain.models.LocalBackend
@@ -260,10 +261,37 @@ class LiteRTLlmEngineTest {
 
         assertTrue(!engine.isInitialized)
         verify { anyConstructed<Engine>().close() }
-
-        engine.close()
-        verify { context.unregisterComponentCallbacks(engine) }
     }
+
+    @Test
+    fun `given the engine is closed when asked then its memory callbacks stay registered`() {
+        engine.close()
+
+        verify(exactly = 0) { context.unregisterComponentCallbacks(any()) }
+    }
+
+    @Test
+    fun `given the service closed the engine when a later load meets memory pressure then the model is freed`() =
+        runTest {
+            // The platform's registry, as Application keeps it: a list that register adds to and
+            // unregister removes from. The system calls whatever is on it.
+            val registered = mutableListOf<ComponentCallbacks>()
+            every { context.registerComponentCallbacks(any()) } answers { registered += firstArg<ComponentCallbacks>() }
+            every { context.unregisterComponentCallbacks(any()) } answers {
+                registered -= firstArg<ComponentCallbacks>()
+            }
+            val subject = LiteRTLlmEngine(context, settingsRepository, appScope, Dispatchers.IO)
+            val model = File.createTempFile("model", ".tflite").apply { deleteOnExit() }
+
+            // First service life: a model is loaded, then the service's onDestroy closes the engine.
+            subject.initialize(model.absolutePath)
+            subject.close()
+            // The service is started again while the process lives; the same singleton loads a model.
+            subject.initialize(model.absolutePath)
+            registered.forEach { (it as ComponentCallbacks2).onTrimMemory(ComponentCallbacks2.TRIM_MEMORY_MODERATE) }
+
+            assertTrue("a closed engine must still hear memory pressure", !subject.isInitialized)
+        }
 
     @Test
     fun `given an unload queued for an older engine when a newer one is loaded then it survives`() = runTest {
