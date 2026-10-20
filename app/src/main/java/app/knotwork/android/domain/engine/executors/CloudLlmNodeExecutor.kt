@@ -5,7 +5,6 @@ import ai.koog.prompt.executor.clients.LLMClient
 import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.streaming.StreamFrame
 import app.knotwork.android.domain.constants.DefaultPrompts
-import app.knotwork.android.domain.constants.PipelineExecutionDefaults
 import app.knotwork.android.domain.engine.AutoProvider
 import app.knotwork.android.domain.engine.CloudErrorSanitizer
 import app.knotwork.android.domain.engine.CloudLlmClientFactory
@@ -278,8 +277,6 @@ class CloudLlmNodeExecutor @Inject constructor(
                 localModelPath = null
             }
         }
-
-        kotlinx.coroutines.delay(PipelineExecutionDefaults.NODE_RESULT_EMIT_DELAY_MS)
 
         send(
             NodeOutput.Result(
