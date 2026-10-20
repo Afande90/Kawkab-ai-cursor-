@@ -32,9 +32,9 @@ import javax.inject.Singleton
  * nothing a fresh secret could orphan.
  *
  * This is deliberately the **opposite** recovery semantics of [ApiKeyManager]: API keys can be
- * re-entered by the user at any time, so that store treats unreadable values as absent. The
- * database passphrase cannot be re-derived from anything, so this provider never does while a
- * database exists.
+ * re-entered by the user at any time, so that store drops a value that can never be read again
+ * (and keeps one the Keystore cannot open for now). The database passphrase cannot be
+ * re-derived from anything, so this provider never drops it while a database exists.
  *
  * **Legacy store.** Earlier releases kept the passphrase in `EncryptedSharedPreferences`
  * (deprecated upstream and removed from this project without a data migration, as permitted by

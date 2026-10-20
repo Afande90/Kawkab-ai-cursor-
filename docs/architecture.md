@@ -1699,9 +1699,14 @@ The passphrase lifecycle is asymmetric by design
   the database while the splash is still finding out whether it opens, and
   an uncaught throw there once killed the process before the recovery
   screen could appear.
-- The API-key store applies the opposite, availability-first policy: a
-  value that no longer decrypts is dropped and reported as unset — keys
-  are user re-enterable, so availability wins there.
+- The API-key store (and the Hugging Face token) applies the opposite,
+  availability-first policy: a value that can never be decrypted again
+  is dropped and reported as unset — keys are user re-enterable, so
+  availability wins there. `KeystoreBackedPrefsStore` marks each read
+  failure lasting or passing (`SecretReadFailure`): lasting only when the
+  tag does not verify, the key is gone, corrupted or invalidated, or the
+  framing is broken. A passing failure drops nothing; the value reads as unset and
+  is read again on its next use.
 - The confirmed wipe (`ResetLockedDatabaseUseCase`) deletes the database
   and its passphrase through `DatabaseResetService`, then — only if that
   succeeded — asks `AgentWorkspace`, `AttachmentStore` and

@@ -99,6 +99,13 @@ class GenerationSettingsStore @Inject constructor(
      */
     private val huggingFaceTokenFlow by lazy { MutableStateFlow(readHuggingFaceTokenOrNull()) }
 
+    /**
+     * Whether the token's last read failed in a way that may pass: the entry is kept, the mirror
+     * holds `null`, and each new collection of [huggingFaceAuthToken] reads it again.
+     */
+    @Volatile
+    private var huggingFaceTokenUnreadForNow = false
+
     /** Serializes the legacy-DataStore migration so concurrent collectors run it once. */
     private val huggingFaceMigrationMutex = Mutex()
     private var huggingFaceMigrationDone = false
@@ -140,6 +147,10 @@ class GenerationSettingsStore @Inject constructor(
 
     override val huggingFaceAuthToken: Flow<String?> = flow {
         migrateLegacyHuggingFaceToken()
+        if (huggingFaceTokenUnreadForNow) {
+            val token = readHuggingFaceTokenOrNull()
+            if (!huggingFaceTokenUnreadForNow) huggingFaceTokenFlow.value = token
+        }
         emitAll(huggingFaceTokenFlow)
     }
 
@@ -150,6 +161,8 @@ class GenerationSettingsStore @Inject constructor(
             secretsStore.putString(SecretKeys.HUGGING_FACE_TOKEN, token)
         }
         huggingFaceTokenFlow.value = token
+        // After the mirror: its first access reads the store, and may mark a failure this write settles.
+        huggingFaceTokenUnreadForNow = false
         // Any explicit write supersedes whatever a pre-migration release left in DataStore;
         // dropping the legacy key here also makes the one-time migration a no-op.
         dataStore.edit { preferences ->
@@ -158,15 +171,22 @@ class GenerationSettingsStore @Inject constructor(
     }
 
     /**
-     * Reads the encrypted token entry, applying the re-enterable-secret recovery policy:
-     * an entry that cannot be decrypted is dropped and reported as absent (the user pastes
-     * the token again), never propagated as an error.
+     * Reads the encrypted token entry, applying the re-enterable-secret recovery policy: an
+     * entry that can never be decrypted again is dropped and reported as absent (the user pastes
+     * the token again); one the Keystore cannot open for now is kept, reported as absent and
+     * marked to be read again ([huggingFaceTokenUnreadForNow]). Neither propagates the error.
      */
     private fun readHuggingFaceTokenOrNull(): String? = try {
-        secretsStore.getString(SecretKeys.HUGGING_FACE_TOKEN)
+        secretsStore.getString(SecretKeys.HUGGING_FACE_TOKEN).also { huggingFaceTokenUnreadForNow = false }
     } catch (e: SecureValueUnreadableException) {
-        Timber.e(e, "Stored HuggingFace token is unreadable; treating it as unset.")
-        secretsStore.remove(SecretKeys.HUGGING_FACE_TOKEN)
+        if (e.permanent) {
+            Timber.e(e, "Stored HuggingFace token can never be read again; treating it as unset.")
+            huggingFaceTokenUnreadForNow = false
+            secretsStore.remove(SecretKeys.HUGGING_FACE_TOKEN)
+        } else {
+            Timber.w(e, "Stored HuggingFace token is unreadable for now; keeping it to read again.")
+            huggingFaceTokenUnreadForNow = true
+        }
         null
     }
 
@@ -191,7 +211,9 @@ class GenerationSettingsStore @Inject constructor(
                 return
             }
             if (legacyToken != null) {
-                if (huggingFaceTokenFlow.value == null) {
+                // A token the Keystore cannot open for now is still stored, and newer than any
+                // plain leftover: the leftover must not be written over it.
+                if (huggingFaceTokenFlow.value == null && !huggingFaceTokenUnreadForNow) {
                     secretsStore.putString(SecretKeys.HUGGING_FACE_TOKEN, legacyToken, synchronous = true)
                     huggingFaceTokenFlow.value = legacyToken
                     Timber.i("Migrated the HuggingFace token from plain DataStore to the encrypted store.")

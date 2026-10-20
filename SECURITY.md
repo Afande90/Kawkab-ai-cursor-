@@ -98,11 +98,13 @@ storage and credentials:
   saved cloud API keys, the Hugging Face token and MCP credentials: they still
   work on the device where the database failed, and the dialog says they are
   kept. If the database cannot be deleted, nothing else is touched.
-- The store holding **cloud API keys** intentionally keeps the opposite,
-  availability-first recovery: a key value that can no longer be decrypted is
-  treated as unset and dropped. Unlike the database passphrase, keys can
-  simply be re-entered by the user, so availability wins over preservation
-  there.
+- The store holding **cloud API keys** (and the Hugging Face token)
+  intentionally keeps the opposite, availability-first recovery: a value that
+  can never be decrypted again — its Keystore key is gone, or it does not
+  authenticate — is treated as unset and dropped. Unlike the database
+  passphrase, keys can simply be re-entered by the user, so availability wins
+  over preservation there. A Keystore failure that may pass drops nothing: the
+  key reads as unset for now and is read again on its next use.
 - The app does not retain any plaintext copy of the passphrase.
 - **Schema migrations preserve data on upgrade.** Every schema-version bump is
   backed by an explicit Room `Migration` registered through `addMigrations(...)`;

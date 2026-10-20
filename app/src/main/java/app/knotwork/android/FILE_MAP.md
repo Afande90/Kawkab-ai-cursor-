@@ -81,6 +81,7 @@ Only Kotlin files appear inside the generated blocks.
       - `AesGcmCodec.kt` - Pure AES-GCM framing (`IV ‖ ciphertext+tag`, AAD binding) over any `SecretKey`; Keystore-free, fully unit-tested with a software key.
       - `AndroidKeystoreAeadCipher.kt` - Production `AeadCipher`: lazy non-exportable AES-256-GCM key per alias in `AndroidKeyStore`, delegates framing to `AesGcmCodec`; keys are created on encrypt only, never on decrypt.
       - `KeystoreBackedPrefsStore.kt` - `SecretStore` impl: plain `SharedPreferences` file with AEAD-encrypted values (base64 blobs, AAD = `store/entry` slot binding). Opening never fails — failures move to per-value reads (`SecureValueUnreadableException`), letting each consumer pick its recovery policy; `destroy()` clears entries, deletes the file and the Keystore key.
+      - `SecretReadFailure.kt` - Tells a read failure that will last from one that may pass.
       - `SecretStore.kt` - Minimal `getString`/`putString`/`remove` seam over the encrypted store; injected into `SettingsManager` so unit tests substitute an in-memory fake. Implemented by `KeystoreBackedPrefsStore`.
     - `dao/` - Data Access Objects (DAOs).
       - `BackgroundPromptDao.kt` - Data access for the `background_prompts` table: the prompts of queued background runs, held here instead of in the background runtime's unencrypted store.

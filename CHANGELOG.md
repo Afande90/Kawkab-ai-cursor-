@@ -32,6 +32,13 @@ details.
   interrupted before this release with such an item ends at once with a
   request to restart the task. The run trace export is now `schemaVersion` 2:
   a node record carries `failure`.
+- **A Keystore hiccup no longer deletes a saved API key.** Reading a cloud API
+  key or the Hugging Face token treated every decryption error as a lost key
+  and deleted the entry, so a Keystore that failed for a moment — busy after an
+  OS update, say — took a key that was stored intact. Now only a value that can
+  never be read again is deleted: its Keystore key is gone or corrupted, or it
+  does not authenticate. After any other failure the value stays stored and
+  reads as unset until its next use reads it again.
 
 ## [0.12.0] - 2026-10-16
 

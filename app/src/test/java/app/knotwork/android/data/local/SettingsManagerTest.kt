@@ -1330,6 +1330,46 @@ class SettingsManagerTest {
         }
     }
 
+    @Test
+    fun `given the Keystore fails for now when the token is read then it is kept and read again later`() = runTest {
+        val (manager, ds, scope) = freshManagerWithExposedDataStore()
+        try {
+            manager.setHuggingFaceAuthToken("hf_secret_token")
+            cipher.decryptFailure = java.security.ProviderException("Keystore operation failed")
+            val fresh = testSettingsManager(ds, secretStore)
+
+            assertNull("unreadable for now reads as unset", fresh.huggingFaceAuthToken.first())
+            assertTrue("a token stored intact is not dropped", securePrefs.values.containsKey("hugging_face_token"))
+
+            cipher.decryptFailure = null
+            // The next collection reads it again: same instance, no restart.
+            assertEquals("hf_secret_token", fresh.huggingFaceAuthToken.first())
+        } finally {
+            scope.cancel()
+        }
+    }
+
+    @Test
+    fun `given a token unreadable for now when a legacy plain copy exists then the copy does not replace it`() =
+        runTest {
+            val (manager, ds, scope) = freshManagerWithExposedDataStore()
+            try {
+                manager.setHuggingFaceAuthToken("hf_current_token")
+                ds.edit { it[huggingFaceTokenKey] = "hf_legacy_token" }
+                cipher.decryptFailure = java.security.ProviderException("Keystore operation failed")
+                val fresh = testSettingsManager(ds, secretStore)
+
+                fresh.huggingFaceAuthToken.first()
+                cipher.decryptFailure = null
+
+                // The stored token is newer than the leftover; the leftover is only removed.
+                assertEquals("hf_current_token", fresh.huggingFaceAuthToken.first())
+                assertNull(ds.data.first()[huggingFaceTokenKey])
+            } finally {
+                scope.cancel()
+            }
+        }
+
     // ───────────────────────────────────────────────────────────────────
     // updateMcpServer integration tests (real PreferenceDataStore).
     //
