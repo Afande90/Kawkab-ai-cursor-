@@ -39,6 +39,13 @@ details.
   never be read again is deleted: its Keystore key is gone or corrupted, or it
   does not authenticate. After any other failure the value stays stored and
   reads as unset until its next use reads it again.
+- **The on-device model is freed under memory pressure after the background
+  service restarts.** The engine stopped listening for the system's memory
+  warnings the first time the background service was stopped with a model
+  loaded — Android stops an idle background service a few minutes after the app
+  leaves the screen. Every model loaded later in the same process ignored those
+  warnings and stayed in memory under pressure. The engine now keeps listening
+  for as long as the process lives.
 
 ## [0.12.0] - 2026-10-16
 
