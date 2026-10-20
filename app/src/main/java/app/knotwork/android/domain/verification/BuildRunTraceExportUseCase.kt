@@ -138,7 +138,7 @@ class BuildRunTraceExportUseCase @Inject constructor() {
         }
     }
 
-    /** Writes a node's input and output with their hashes. */
+    /** Writes a node's input and output with their hashes, and the error of a visit the run carried on past. */
     private fun JsonObjectBuilder.putNodeIo(record: RunTraceRecord.NodeIo) {
         put("kind", KIND_NODE)
         put("depth", record.depth)
@@ -154,6 +154,7 @@ class BuildRunTraceExportUseCase @Inject constructor() {
         put("inputSha256", record.inputSha256)
         put("output", record.outputText)
         put("outputSha256", record.outputSha256)
+        put("failure", record.failure)
     }
 
     /** Writes an on-device call: everything needed to repeat it, and what it gave. */
@@ -216,8 +217,10 @@ class BuildRunTraceExportUseCase @Inject constructor() {
          * to detect — an additive one included.
          *
          * - `1` — the original shape.
+         * - `2` — a node record carries `failure`: the error of a queue item the run
+         *   carried on past, with an empty `output`; `null` for every other visit.
          */
-        const val SCHEMA_VERSION = 1
+        const val SCHEMA_VERSION = 2
 
         const val KIND_NODE = "node"
         const val KIND_LOCAL_CALL = "localModelCall"

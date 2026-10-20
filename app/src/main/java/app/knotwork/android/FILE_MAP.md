@@ -174,6 +174,7 @@ Only Kotlin files appear inside the generated blocks.
       - `Migration69To70.kt` - v69 → v70: lets a trigger's health be measured from when it was switched on, and remembers which silence the user was told about.
       - `Migration70To71.kt` - v70 → v71: remembers where each downloaded model came from.
       - `Migration71To72.kt` - v71 → v72: remembers that a model's file was checked against its source.
+      - `Migration72To73.kt` - v72 → v73: records a queue item that failed without ending its run.
       - `Migration9To10.kt` - Migration from version 9 to 10.
     - `models/` - Local DB entity models.
       - `BackgroundPromptEntity.kt` - The prompt of one queued background run, kept in the encrypted database so the background runtime's own store — unencrypted — never holds it.

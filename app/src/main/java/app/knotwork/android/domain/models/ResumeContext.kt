@@ -15,8 +15,10 @@ package app.knotwork.android.domain.models
  *
  * A seq-ordered cursor — not a `nodeId → result` map — is deliberate: inside
  * a `QUEUE_PROCESSOR` loop the same node executes once per queue item, so a
- * map keyed by node id would be ambiguous. For linear graphs the cursor
- * degenerates to exactly that map.
+ * map keyed by node id would be ambiguous. Each record also names its visit,
+ * and the cursor checks it: a queue item that failed without ending the run is
+ * recorded with its failure, so every visit of the loop has a record of its own.
+ * For linear graphs the cursor degenerates to exactly that map.
  *
  * **TOOL-node asymmetry.** A TOOL node *with* a recorded snapshot completed
  * before the interruption — its observation is replayed, because re-invoking

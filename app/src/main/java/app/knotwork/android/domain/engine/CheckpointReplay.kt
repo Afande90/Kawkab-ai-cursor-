@@ -10,10 +10,12 @@ import app.knotwork.android.domain.models.ResumeContext
  * completed, hands back what it recorded instead of running it again.
  *
  * The records are the interrupted run's `NodeIo` trace, in `seq` order. While the
- * cursor has records left, each visited node is matched against the next one: the
- * recorded output and routing verdicts then drive the very same control flow a
- * live result would, so branches, queue iterations and inter-node inputs are
- * re-derived without re-running any executor. INPUT and OUTPUT are never recorded
+ * cursor has records left, each visited node is matched against the next one — the
+ * node and, inside a queue loop, which visit to it: the recorded output and
+ * routing verdicts then drive the very same control flow a live result would, so
+ * branches, queue iterations and inter-node inputs are re-derived without
+ * re-running any executor. A queue item that failed without ending the run is
+ * recorded with its failure, and replays as that failure. INPUT and OUTPUT are never recorded
  * — the trace skips them by design — so they always run live, even mid-replay:
  * INPUT is a pure passthrough, and a recorded OUTPUT cannot exist for an
  * interrupted run. The first node without a record runs live, and so does every
@@ -37,12 +39,13 @@ class CheckpointReplay(private val resume: ResumeContext?) {
 
     /**
      * Decides how [node] runs: from its record, live, or not at all because the
-     * record names another node. A replayed record is consumed.
+     * record names another node or another visit. A replayed record is consumed.
      *
      * @param node The node the walk has reached.
+     * @param visit The walk's zero-based visit index to [node].
      * @return What to do with it.
      */
-    fun take(node: NodeModel): ReplayStep {
+    fun take(node: NodeModel, visit: Int): ReplayStep {
         val records = resume?.records ?: return ReplayStep.Live
         if (cursor >= records.size || node.type == NodeType.INPUT || node.type == NodeType.OUTPUT) {
             return ReplayStep.Live
@@ -53,10 +56,18 @@ class CheckpointReplay(private val resume: ResumeContext?) {
         // validation). Failing loudly beats silently executing a half-replayed run
         // on inconsistent inputs.
         if (record.nodeId != node.id) return ReplayStep.Diverged
+        // Inside a queue loop one node runs once per item, so the node alone does
+        // not say which record is this visit's. A record of a later visit means
+        // this one left none — on a trace written before failed items were
+        // recorded, the item that failed. Replaying the later record here handed
+        // the failed item the next item's output and ran that next item again.
+        // A record written before visits were recorded names none.
+        if (record.visit != null && record.visit != visit) return ReplayStep.Diverged
         cursor++
         return ReplayStep.Replayed(
             result = NodeExecutionResult(
                 outputText = record.outputText,
+                error = record.failure,
                 conditionResult = record.conditionResult,
                 routingKey = record.routingKey,
                 tokenCount = record.tokenCount,
@@ -75,14 +86,15 @@ sealed interface ReplayStep {
     data object Live : ReplayStep
 
     /**
-     * The node completed before the interruption: use what it recorded.
+     * The node ran before the interruption: use what it recorded.
      *
-     * @property result Its recorded output, routing verdicts, token count and tool name.
+     * @property result Its recorded output, routing verdicts, token count and tool
+     *   name — or, for a queue item that failed without ending the run, its error.
      * @property input What it executed on.
      * @property durationMs How long it took then.
      */
     data class Replayed(val result: NodeExecutionResult, val input: String, val durationMs: Long) : ReplayStep
 
-    /** The next record names a different node: the checkpoint no longer fits the graph. */
+    /** The next record names a different node or visit: the checkpoint no longer fits the walk. */
     data object Diverged : ReplayStep
 }

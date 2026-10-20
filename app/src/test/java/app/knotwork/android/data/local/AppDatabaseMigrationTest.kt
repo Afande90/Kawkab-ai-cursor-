@@ -39,6 +39,7 @@ import app.knotwork.android.data.local.migrations.MIGRATION_68_69
 import app.knotwork.android.data.local.migrations.MIGRATION_69_70
 import app.knotwork.android.data.local.migrations.MIGRATION_70_71
 import app.knotwork.android.data.local.migrations.MIGRATION_71_72
+import app.knotwork.android.data.local.migrations.MIGRATION_72_73
 import app.knotwork.android.domain.models.NodeContextConfig
 import io.mockk.mockk
 import io.mockk.slot
@@ -1372,5 +1373,25 @@ class AppDatabaseMigrationTest {
         verify { db.execSQL(capture(statements)) }
         // Empty for every model registered before: none of their downloads was checked.
         assertEquals(listOf("ALTER TABLE `local_models` ADD COLUMN `sourceSha256` TEXT"), statements)
+    }
+
+    @Test
+    fun `MIGRATION_72_73 targets versions 72 to 73`() {
+        val migration = MIGRATION_72_73
+
+        assertEquals(72, migration.startVersion)
+        assertEquals(73, migration.endVersion)
+    }
+
+    @Test
+    fun `MIGRATION_72_73 adds a queue item's failure as a nullable trace column`() {
+        val db = mockk<SupportSQLiteDatabase>(relaxed = true)
+        val statements = mutableListOf<String>()
+
+        MIGRATION_72_73.migrate(db)
+
+        verify { db.execSQL(capture(statements)) }
+        // Empty for every row written before: none of them recorded a failure.
+        assertEquals(listOf("ALTER TABLE `trace_steps` ADD COLUMN `failure` TEXT"), statements)
     }
 }

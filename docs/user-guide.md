@@ -708,8 +708,9 @@ the persistent run record and reattaches accordingly:
   a **Run interrupted** card naming the node the run stopped at, with
   **Resume** and **Discard** buttons. *Discard* dismisses the run for
   good. *Resume* continues from the checkpoint: nodes that already
-  finished replay their recorded results instantly (no re-inference),
-  and execution restarts at the first unfinished node. A tool call the
+  finished replay their recorded results instantly (no re-inference) —
+  an item that failed in a queue set to carry on replays as that
+  failure — and execution restarts at the first unfinished node. A tool call the
   run died on is never replayed — the tool may or may not have acted —
   so it runs again from scratch, asking for your approval as usual.
   Resume is offered while the interruption is younger than the

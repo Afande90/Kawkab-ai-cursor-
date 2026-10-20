@@ -67,6 +67,10 @@ import androidx.room.PrimaryKey
  *   other kinds and for rows written before `MIGRATION_66_67`.
  * @property outputSha256 Lowercase hex SHA-256 of [outputText] for `NODE_IO` rows; `null` for
  *   other kinds and for rows written before `MIGRATION_66_67`.
+ * @property failure The redacted error of a `NODE_IO` row whose visit failed without ending the
+ *   run — a queue item, `stopOnError` off — so a checkpoint resume replays the failure instead of
+ *   running the item again; [outputText] is then empty. `null` for a visit that completed, for
+ *   other kinds and for rows written before `MIGRATION_72_73`.
  */
 @Entity(
     tableName = "trace_steps",
@@ -108,6 +112,7 @@ data class TraceStepEntity(
     val visit: Int? = null,
     val inputSha256: String? = null,
     val outputSha256: String? = null,
+    val failure: String? = null,
 ) {
     companion object {
         /** [recordKind] value of a per-node input/output record. */

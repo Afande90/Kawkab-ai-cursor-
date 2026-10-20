@@ -126,7 +126,8 @@ class RunWalk(
             val result = step.result
             val error = result?.error
             if (result != null && error != null) {
-                if (survivesFailure(node, result, CloudErrorSanitizer.redactSecrets(error))) continue else return
+                val redacted = CloudErrorSanitizer.redactSecrets(error)
+                if (survivesFailure(node, step, result, visit, redacted)) continue else return
             }
             record(node, step, visit)
             if (observe(node, step)) {
@@ -216,10 +217,11 @@ class RunWalk(
      * control flow a live result would. No executor call, no metrics, no new
      * NodeIo record; the compact console line is the only addition to the trace.
      *
+     * @param visit Its zero-based visit index, which picks its record inside a queue loop.
      * @return The step, or `null` when the run has ended: the checkpoint no longer
      *   fits the graph, or the live node parked the run or failed.
      */
-    private suspend fun execute(node: NodeModel, visitIndex: Int): Step? = when (val taken = replay.take(node)) {
+    private suspend fun execute(node: NodeModel, visit: Int): Step? = when (val taken = replay.take(node, visit)) {
         ReplayStep.Diverged -> {
             console.push(ConsoleEventType.Error, "Checkpoint trace diverged at ${node.type.name}; resume aborted")
             collector.emit(
@@ -231,10 +233,11 @@ class RunWalk(
             null
         }
         is ReplayStep.Replayed -> {
-            console.push(ConsoleEventType.NodeExecution, "↻ ${node.type.name} replayed from checkpoint")
+            val what = if (taken.result.error != null) "failure replayed" else "replayed"
+            console.push(ConsoleEventType.NodeExecution, "↻ ${node.type.name} $what from checkpoint")
             Step(taken.result, taken.input, taken.durationMs, replayed = true)
         }
-        ReplayStep.Live -> when (val outcome = live.run(node, carried, carriedByModel, visitIndex)) {
+        ReplayStep.Live -> when (val outcome = live.run(node, carried, carriedByModel, visit)) {
             is LiveOutcome.Ran -> Step(outcome.result, outcome.input, outcome.durationMs, replayed = false)
             LiveOutcome.Parked, LiveOutcome.Failed -> null
         }
@@ -248,14 +251,30 @@ class RunWalk(
      * error is stopped regardless of which executor produced it — or forgot to
      * scrub it.
      *
+     * A replayed failure — a queue item that failed before the interruption —
+     * reaches the same decision on the same error, so the item gets the same
+     * result. Its console line was pushed when it really failed and is not
+     * repeated.
+     *
+     * @param step The failed step, live or replayed.
+     * @param result Its result, which carries the error.
+     * @param visit Its zero-based visit index to [node].
      * @param error The node's error, already redacted.
      * @return `true` when the walk carries on — a queue whose author turned
      *   `stopOnError` off moves to its next item; `false` when the run has ended
      *   on the error.
      */
-    private suspend fun survivesFailure(node: NodeModel, result: NodeExecutionResult, error: String): Boolean {
-        Timber.tag("PipelineDebug").e("[NODE_ERR] type=%s id=%s error=%s", node.type.name, node.id, error)
-        console.push(ConsoleEventType.Error, "${node.type.name}: $error")
+    private suspend fun survivesFailure(
+        node: NodeModel,
+        step: Step,
+        result: NodeExecutionResult,
+        visit: Int,
+        error: String,
+    ): Boolean {
+        if (!step.replayed) {
+            Timber.tag("PipelineDebug").e("[NODE_ERR] type=%s id=%s error=%s", node.type.name, node.id, error)
+            console.push(ConsoleEventType.Error, "${node.type.name}: $error")
+        }
         // A typed cause is never survivable, whatever the switch says. A
         // `PIPELINE` node forwards a sub-pipeline's ceiling breach or
         // stuck-detector verdict through this same field, and those are not "this
@@ -263,6 +282,21 @@ class RunWalk(
         // circles. Carrying on would spend the very budget the breach reported as
         // gone.
         if (result.terminationReason == null && queue.continuesAfterFailure()) {
+            // Recorded so a resume replays the failure as this item's result.
+            // Without a record of its own the visit was matched to the next
+            // item's record: the failed item got that item's output, and that
+            // item ran a second time.
+            if (!step.replayed) {
+                console.recordNodeIo(
+                    node = node,
+                    visit = visit,
+                    inputText = step.input,
+                    outputText = "",
+                    durationMs = step.durationMs,
+                    result = result,
+                    failure = error,
+                )
+            }
             moveTo(queue.advancePastFailure(error))
             return true
         }

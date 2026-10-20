@@ -311,6 +311,27 @@ class ChatHomeConsoleDelegateTest {
     }
 
     @Test
+    fun `given a persisted failed queue item when replayTrace then it adds no var or trace row`() =
+        runTest(testDispatcher) {
+            val delegate = backgroundScope.delegate()
+            val failedItem = RunTraceRecord.NodeIo(
+                runId = "run-replay", sessionId = "s1", seq = 3, timestamp = 40L,
+                nodeId = "llm_1", nodeType = "LITE_RT", inputText = "next item", outputText = "",
+                durationMs = 7L, tokenCount = null, visit = 1, failure = "Rate limit reached",
+            )
+            coEvery { runTraceRepository.getTraceForRun("run-replay") } returns replayTrace() + failedItem
+
+            delegate.replayTrace(completedRun())
+            advanceUntilIdle()
+
+            // The live tabs never show the visit — its error is a console line — so
+            // the replayed ones do not either.
+            val console = state.value.console
+            assertEquals(2, console.vars.size)
+            assertEquals(1, console.traces.size)
+        }
+
+    @Test
     fun `given a replayed baseline when resetForNewRun then a different-run snapshot renders alone`() =
         runTest(testDispatcher) {
             val delegate = backgroundScope.delegate()

@@ -21,6 +21,18 @@ details.
   downloaded inside the profile, and turning the profile off stops it. Private
   Space is still untested.
 
+### Fixed
+
+- **A resumed run no longer mixes up the items of a queue that carried on
+  past a failure.** When an item of a queue with *Stop on error* off failed
+  and the run was resumed later — after an approval it waited for, a ceiling,
+  or the app being stopped — the failed item took the next item's result, and
+  that next item ran again, its tool call included. The failed item is now
+  recorded with its error, and a resume replays it as that failure. A run
+  interrupted before this release with such an item ends at once with a
+  request to restart the task. The run trace export is now `schemaVersion` 2:
+  a node record carries `failure`.
+
 ## [0.12.0] - 2026-10-16
 
 ### Added
