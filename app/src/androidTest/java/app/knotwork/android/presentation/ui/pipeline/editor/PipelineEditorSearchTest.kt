@@ -1,12 +1,16 @@
 package app.knotwork.android.presentation.ui.pipeline.editor
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.test.platform.app.InstrumentationRegistry
 import app.knotwork.android.R
@@ -52,13 +56,23 @@ class PipelineEditorSearchTest {
 
     @Test
     fun typingInField_dispatchesOnQueryChange() {
+        // The field is controlled: it shows whatever `query` its caller passes. Held in a
+        // plain `var`, the query never reached the field, which kept showing "" after the
+        // replacement — and the next input event, such as the soft keyboard syncing its
+        // state on the emulator, reported that "" back through `onQueryChange`, at a moment
+        // nothing controlled. Kept in state, as a real caller keeps it, the field shows
+        // what was typed and a later sync reports nothing new.
+        var query by mutableStateOf("")
         var latest: String? = null
         composeTestRule.setContent {
             MaterialTheme {
                 FilterBar(
-                    query = latest.orEmpty(),
+                    query = query,
                     matchCount = 0,
-                    onQueryChange = { latest = it },
+                    onQueryChange = {
+                        query = it
+                        latest = it
+                    },
                     onSubmit = {},
                     onClose = {},
                 )
@@ -74,6 +88,11 @@ class PipelineEditorSearchTest {
         composeTestRule
             .onNode(matcher = hasSetTextAction())
             .performTextReplacement("router")
+        // The keyboard's sync, made deterministic: an empty insert is an input event that
+        // changes nothing. Against a field left showing "", it reports "" every time.
+        composeTestRule
+            .onNode(matcher = hasSetTextAction())
+            .performTextInput("")
         composeTestRule.waitForIdle()
 
         assertEquals("router", latest)
