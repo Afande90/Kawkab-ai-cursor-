@@ -645,9 +645,9 @@ class LiteRTLlmEngine @Inject constructor(
      * registered once in `init`; the service that closes it is started again while
      * the process lives, and the same instance loads the next model. Taking the
      * callbacks off here left every later load deaf to [onTrimMemory] and
-     * [onLowMemory]: under memory pressure the system had to kill the process instead
-     * of the engine freeing the model. Registered on the application context, the
-     * callbacks cannot leak — both live as long as the process.
+     * [onLowMemory]: memory pressure no longer freed the model. Registered on the
+     * application context, the callbacks cannot leak — both live as long as the
+     * process.
      */
     override fun close() {
         appScope.launch { unload() }

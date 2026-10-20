@@ -143,7 +143,8 @@ interface LlmInferenceEngine {
      * callback.
      *
      * The engine stays usable: one instance serves the whole process, so a later [initialize]
-     * loads a model into it again, and it keeps doing what it does under memory pressure.
+     * loads a model into it again, and an engine that frees its model under memory pressure
+     * keeps doing so.
      */
     fun close()
 

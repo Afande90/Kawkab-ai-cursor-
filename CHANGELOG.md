@@ -44,8 +44,8 @@ details.
   warnings the first time the background service was stopped with a model
   loaded — Android stops an idle background service a few minutes after the app
   leaves the screen. Every model loaded later in the same process ignored those
-  warnings, so the system could get the memory back only by killing the app.
-  The engine now keeps listening for as long as the process lives.
+  warnings and stayed in memory under pressure. The engine now keeps listening
+  for as long as the process lives.
 
 ## [0.12.0] - 2026-10-16
 
