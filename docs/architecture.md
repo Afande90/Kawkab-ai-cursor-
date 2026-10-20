@@ -1979,10 +1979,11 @@ Key invariants:
   (the one the run stopped at) re-resolves its call and passes the HITL
   gate again, where an answer given to its parked request applies only
   to the same call. The checkpoint is invalidated when the pipeline graph
-  changed between interruption and resume (content-hash comparison),
-  when its records no longer fit the walk (a node or visit other than
-  the one the walk reached), or when the run outlived the resume
-  window; all three only offer a full restart.
+  changed between interruption and resume (content-hash comparison) or
+  when the run outlived the resume window; both only offer a full
+  restart. A resume whose records no longer fit the walk (a node or
+  visit other than the one the walk reached) ends at once and asks for
+  a restart.
 - **Nested run tree.** A `PIPELINE` node runs its callee as a
   first-class **child run** whose `pipeline_runs.parentRunId` points at
   the parent (a self-referential `ON DELETE CASCADE` foreign key, so
