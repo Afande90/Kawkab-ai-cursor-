@@ -143,11 +143,12 @@ class OpenAiResponsesStreamEndToEndTest {
     /**
      * Runs one CLOUD node set to OpenAI on [client], with [modelId] saved as the provider's model.
      *
-     * On virtual time: the executor waits `NODE_RESULT_EMIT_DELAY_MS` (a second) before it hands its
-     * result on, and in real time that wait was nineteen of the class's twenty-four seconds, one per
-     * offered model. The server and the client still run on real threads. [runTest]'s timeout is
-     * wall-clock, so a stuck request still ends the test at [NODE_DEADLINE]; a `withTimeout` inside
-     * the body would count virtual time and fire while the request is in flight.
+     * On virtual time, so any wait inside the executor costs the suite nothing: it once paused a
+     * second before handing its result on, and in real time that was nineteen of the class's
+     * twenty-four seconds, one per offered model. The server and the client still run on real
+     * threads. [runTest]'s timeout is wall-clock, so a stuck request still ends the test at
+     * [NODE_DEADLINE]; a `withTimeout` inside the body would count virtual time and fire while the
+     * request is in flight.
      *
      * @param modelId The saved model id.
      * @param client The Koog client the node's factory hands out.

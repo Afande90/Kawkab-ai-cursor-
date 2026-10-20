@@ -1,7 +1,6 @@
 package app.knotwork.android.domain.engine.executors
 
 import app.knotwork.android.domain.constants.DefaultPrompts
-import app.knotwork.android.domain.constants.PipelineExecutionDefaults
 import app.knotwork.android.domain.engine.LlmInferenceEngine
 import app.knotwork.android.domain.models.AgentOrchestratorState
 import app.knotwork.android.domain.models.ExecutionScope
@@ -88,8 +87,6 @@ class SummaryNodeExecutor @Inject constructor(
 
         val generatedText = accumulatedResponse.toString().trim()
         val fullResponseText = if (generatedText.isNotEmpty()) generatedText else "No summary generated."
-
-        kotlinx.coroutines.delay(PipelineExecutionDefaults.NODE_RESULT_EMIT_DELAY_MS)
 
         emit(NodeOutput.Result(NodeExecutionResult(outputText = fullResponseText)))
     }

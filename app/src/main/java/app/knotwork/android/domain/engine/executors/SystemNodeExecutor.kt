@@ -1,7 +1,6 @@
 package app.knotwork.android.domain.engine.executors
 
 import app.knotwork.android.domain.constants.DefaultPrompts
-import app.knotwork.android.domain.constants.PipelineExecutionDefaults
 import app.knotwork.android.domain.engine.CloudErrorSanitizer
 import app.knotwork.android.domain.engine.LlmInferenceEngine
 import app.knotwork.android.domain.engine.NodeInference
@@ -273,7 +272,7 @@ class SystemNodeExecutor @Inject constructor(
                     )
                 }
                 val canonical = json.encodeToString(ListSerializer(String.serializer()), capped)
-                emitResultAfterDelay(NodeExecutionResult(outputText = canonical))
+                emit(NodeOutput.Result(NodeExecutionResult(outputText = canonical)))
             }
             is GateResult.Failed -> {
                 val message = "DECOMPOSITION '${node.label}' did not produce a valid sub-task list " +
@@ -323,7 +322,7 @@ class SystemNodeExecutor @Inject constructor(
                 null
             }
         }
-        emitResultAfterDelay(NodeExecutionResult(outputText = outputText, routingKey = routingKey))
+        emit(NodeOutput.Result(NodeExecutionResult(outputText = outputText, routingKey = routingKey)))
     }
 
     /**
@@ -350,7 +349,7 @@ class SystemNodeExecutor @Inject constructor(
             // and let the engine fall back to the first outgoing edge.
             val raw = client.infer(prompt, temperature = null)
             val outputText = raw.trim().ifEmpty { NO_RESPONSE }
-            emitResultAfterDelay(NodeExecutionResult(outputText = outputText, routingKey = outputText))
+            emit(NodeOutput.Result(NodeExecutionResult(outputText = outputText, routingKey = outputText)))
             return
         }
         val result = structuredOutputGate.runToken(
@@ -376,7 +375,7 @@ class SystemNodeExecutor @Inject constructor(
                 null
             }
         }
-        emitResultAfterDelay(NodeExecutionResult(outputText = outputText, routingKey = routingKey))
+        emit(NodeOutput.Result(NodeExecutionResult(outputText = outputText, routingKey = routingKey)))
     }
 
     /** Emits one [NodeOutput.Console] per buffered repair attempt. */
@@ -384,16 +383,6 @@ class SystemNodeExecutor @Inject constructor(
         collected.attempts.forEach { attempt ->
             emit(NodeOutput.Console(ConsoleEventType.StructuredOutputRepair, attempt.consoleMessage()))
         }
-    }
-
-    /**
-     * Applies the customary pre-result UX delay and emits the terminal result.
-     *
-     * @param result The node's terminal [NodeExecutionResult].
-     */
-    private suspend fun FlowCollector<NodeOutput>.emitResultAfterDelay(result: NodeExecutionResult) {
-        kotlinx.coroutines.delay(PipelineExecutionDefaults.NODE_RESULT_EMIT_DELAY_MS)
-        emit(NodeOutput.Result(result))
     }
 
     private companion object {

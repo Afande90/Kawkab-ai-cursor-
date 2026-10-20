@@ -86,9 +86,6 @@ class LiveNodeStep(
     suspend fun run(node: NodeModel, carriedInput: String, carriedByModel: Boolean, visitIndex: Int): LiveOutcome {
         console.push(ConsoleEventType.NodeExecution, "▶ ${node.type.name}")
 
-        // Give UI time to render the stage before CPU-heavy inference starts
-        kotlinx.coroutines.delay(PipelineExecutionDefaults.LITE_RT_PREWARM_DELAY_MS)
-
         val executor = nodeExecutorFactory.getExecutor(node.type)
         Timber.tag(
             "PipelineDebug",

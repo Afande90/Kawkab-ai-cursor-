@@ -20,6 +20,13 @@ details.
   tested in one made with Shelter: it installs, starts and answers with a model
   downloaded inside the profile, and turning the profile off stops it. Private
   Space is still untested.
+- **Runs no longer wait between nodes.** The engine paused half a second before
+  every node it ran and a full second after each cloud, summary, router,
+  planner and evaluation node, background runs included. Neither pause had a
+  measured reason, and nothing on screen used the time. A chat message on the
+  first-launch pipeline now skips 3.5 s of waiting, and longer pipelines skip
+  more — up to 21 s on the longest bundled run. Node durations in the console,
+  the run trace and Monitoring are now the node's own time.
 
 ### Fixed
 
