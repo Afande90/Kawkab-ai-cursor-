@@ -10,17 +10,22 @@ import java.util.Base64
 /**
  * Signals that a stored value exists but cannot be decrypted back into
  * plaintext — the base64 framing is broken, the AEAD tag does not verify,
- * or the Keystore key behind the store is gone.
+ * the Keystore key behind the store is gone, or the Keystore failed for now.
  *
  * Callers distinguish this from an *absent* value (`null` return): an absent
- * value is a normal state, while an unreadable one means the store has lost
- * integrity and the caller must apply its own recovery policy (regenerate,
- * surface an error screen, treat as unset, …).
+ * value is a normal state, while an unreadable one means the caller must apply
+ * its own recovery policy (regenerate, surface an error screen, treat as unset,
+ * …). [permanent] tells the two kinds apart: only a lasting failure may justify
+ * dropping the value — a Keystore failure that may pass leaves an intact value
+ * that a later read opens.
  *
  * @param key The preferences entry whose value could not be read back.
  * @param cause The underlying decoding or cryptographic failure.
+ * @property permanent Whether the value can never be read again — its framing is
+ *   broken, it does not authenticate, or its key is gone ([SecretReadFailure]);
+ *   `false` for a failure that may pass, or one not known to last.
  */
-class SecureValueUnreadableException(key: String, cause: Throwable) :
+class SecureValueUnreadableException(key: String, cause: Throwable, val permanent: Boolean) :
     Exception("Stored secure value '$key' cannot be decrypted", cause)
 
 /**
@@ -71,15 +76,21 @@ class KeystoreBackedPrefsStore(
      * @param key The entry to read.
      * @return The plaintext value, or `null` when no value is stored.
      * @throws SecureValueUnreadableException When a value is present but
-     *   cannot be decoded or does not pass authenticated decryption.
+     *   cannot be decoded or does not pass authenticated decryption — marked
+     *   [SecureValueUnreadableException.permanent] only when it never will.
      */
     override fun getString(key: String): String? {
         val encoded = prefs().getString(key, null) ?: return null
+        val blob = try {
+            Base64.getDecoder().decode(encoded)
+        } catch (e: IllegalArgumentException) {
+            // Broken framing is not something a later read repairs.
+            throw SecureValueUnreadableException(key, e, permanent = true)
+        }
         return try {
-            val blob = Base64.getDecoder().decode(encoded)
             String(cipher.decrypt(keyAlias, associatedDataFor(key), blob), Charsets.UTF_8)
         } catch (e: Exception) {
-            throw SecureValueUnreadableException(key, e)
+            throw SecureValueUnreadableException(key, e, permanent = SecretReadFailure.isPermanent(e))
         }
     }
 

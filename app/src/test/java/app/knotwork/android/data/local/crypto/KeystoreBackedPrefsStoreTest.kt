@@ -5,11 +5,13 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.security.ProviderException
 
 /**
  * Verifies the storage semantics of [KeystoreBackedPrefsStore] against a
@@ -66,28 +68,45 @@ class KeystoreBackedPrefsStoreTest {
         // Same store, same key — but the associated data binds the blob to
         // its original entry name, so the swapped copy must not decrypt.
         assertEquals("secret", store.getString("source"))
-        assertThrows(SecureValueUnreadableException::class.java) {
+        val error = assertThrows(SecureValueUnreadableException::class.java) {
             store.getString("target")
         }
+        assertTrue("a blob that does not authenticate never will", error.permanent)
     }
 
     @Test
-    fun `given undecryptable value when getString then throws SecureValueUnreadableException`() {
+    fun `given the key behind a value is gone when getString then throws a lasting failure`() {
         store.putString("entry", "value", synchronous = false)
         cipher.failDecrypt = true
 
-        assertThrows(SecureValueUnreadableException::class.java) {
+        val error = assertThrows(SecureValueUnreadableException::class.java) {
             store.getString("entry")
         }
+        assertTrue(error.permanent)
     }
 
     @Test
-    fun `given non-base64 stored value when getString then throws SecureValueUnreadableException`() {
+    fun `given non-base64 stored value when getString then throws a lasting failure`() {
         prefs.values["entry"] = "%%% not base64 %%%"
 
-        assertThrows(SecureValueUnreadableException::class.java) {
+        val error = assertThrows(SecureValueUnreadableException::class.java) {
             store.getString("entry")
         }
+        assertTrue(error.permanent)
+    }
+
+    @Test
+    fun `given the Keystore fails for now when getString then the failure may pass and a later read opens it`() {
+        store.putString("entry", "value", synchronous = false)
+        cipher.decryptFailure = ProviderException("Keystore operation failed")
+
+        val error = assertThrows(SecureValueUnreadableException::class.java) {
+            store.getString("entry")
+        }
+        assertFalse("a busy Keystore says nothing about the stored value", error.permanent)
+
+        cipher.decryptFailure = null
+        assertEquals("value", store.getString("entry"))
     }
 
     @Test

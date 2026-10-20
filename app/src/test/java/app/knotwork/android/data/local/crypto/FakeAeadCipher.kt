@@ -1,6 +1,6 @@
 package app.knotwork.android.data.local.crypto
 
-import java.security.GeneralSecurityException
+import javax.crypto.AEADBadTagException
 
 /**
  * Deterministic [AeadCipher] stand-in for JVM unit tests.
@@ -13,8 +13,15 @@ import java.security.GeneralSecurityException
  */
 class FakeAeadCipher : AeadCipher {
 
-    /** When `true`, every [decrypt] call fails — simulates a lost Keystore key. */
+    /** When `true`, every [decrypt] call fails as a lost Keystore key does: for good. */
     var failDecrypt: Boolean = false
+
+    /**
+     * When set, every [decrypt] call throws it — a Keystore failing for now (a
+     * `ProviderException`, a `KeyStoreException`) over a value stored intact. Set it back to
+     * `null` for the Keystore to answer again.
+     */
+    var decryptFailure: Exception? = null
 
     /** Aliases passed to [deleteKey], in call order. */
     val deletedAliases: MutableList<String> = mutableListOf()
@@ -27,11 +34,12 @@ class FakeAeadCipher : AeadCipher {
 
     override fun decrypt(keyAlias: String, associatedData: ByteArray, blob: ByteArray): ByteArray {
         if (failDecrypt) {
-            throw GeneralSecurityException("Simulated Keystore failure")
+            throw UnopenableBlobException("Simulated lost Keystore key")
         }
+        decryptFailure?.let { throw it }
         val expected = header(keyAlias, associatedData)
         if (blob.size < expected.size || !blob.copyOfRange(0, expected.size).contentEquals(expected)) {
-            throw GeneralSecurityException("Simulated authentication failure")
+            throw AEADBadTagException("Simulated authentication failure")
         }
         return blob.copyOfRange(expected.size, blob.size)
     }

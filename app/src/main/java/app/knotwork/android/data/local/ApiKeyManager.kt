@@ -23,12 +23,14 @@ import javax.inject.Singleton
  * dedicated, non-exportable Android Keystore key.
  *
  * **Recovery semantics — deliberately different from [EncryptedDbPassphraseProvider].**
- * A stored value that can no longer be decrypted (e.g. the Keystore key was lost during a
- * backup/restore) is treated as absent: the corrupt entry is removed and the getter returns
- * `null`. That is safe here because API keys are user-re-enterable — the worst outcome is the
- * user pasting their keys again. The database passphrase provider must never do this: its
- * secret cannot be re-derived, and destroying it would render the encrypted database
- * permanently unreadable.
+ * A stored value that can never be decrypted again (the Keystore key was lost during a
+ * backup/restore, the blob does not authenticate) is treated as absent: the entry is removed
+ * and the getter returns `null`. That is safe here because API keys are user-re-enterable —
+ * the worst outcome is the user pasting their keys again. A Keystore failure that may pass
+ * removes nothing: the getter returns `null` for now and the next access reads the entry
+ * again, so a key stored intact survives a busy Keystore. The database passphrase provider
+ * never drops its secret on any failure: it cannot be re-derived, and destroying it would
+ * render the encrypted database permanently unreadable.
  *
  * Earlier releases kept the keys in `EncryptedSharedPreferences` (deprecated upstream and
  * removed from this project without a data migration, as permitted by the pre-release storage
@@ -56,6 +58,12 @@ class ApiKeyManager @Inject constructor(@ApplicationContext private val context:
      * same entry.
      */
     private val entries = ConcurrentHashMap<String, MutableStateFlow<String?>>()
+
+    /**
+     * Entries whose last read failed in a way that may pass. Each is read again on its next
+     * access ([entry]) until a read settles, and a write settles it too.
+     */
+    private val unreadForNow: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
     private val ollamaContextFlow by lazy {
         MutableStateFlow(
@@ -137,25 +145,46 @@ class ApiKeyManager @Inject constructor(@ApplicationContext private val context:
         ollamaContextFlow.value = size
     }
 
-    /** The observable of the entry [name], seeded from the store the first time it is asked for. */
-    private fun entry(name: String): MutableStateFlow<String?> =
-        entries.computeIfAbsent(name) { MutableStateFlow(readOrNull(it)) }
+    /**
+     * The observable of the entry [name], seeded from the store the first time it is asked for.
+     * While the entry's last read failed in a way that may pass, every access reads it again and
+     * publishes what a settled read finds.
+     */
+    private fun entry(name: String): MutableStateFlow<String?> {
+        val flow = entries.computeIfAbsent(name) { MutableStateFlow(readOrNull(it)) }
+        if (name in unreadForNow) {
+            val value = readOrNull(name)
+            if (name !in unreadForNow) flow.value = value
+        }
+        return flow
+    }
 
     /** Persists [value] under [name] (removing the entry for `null`) and publishes it. */
     private fun write(name: String, value: String?) {
         saveString(name, value)
         entry(name).value = value
+        // The value just written is the answer: a read that failed before it — or while [entry]
+        // first seeded the observable — has nothing left to recover.
+        unreadForNow -= name
     }
 
     /**
-     * Reads a stored value, applying the re-enterable-secret recovery policy: an entry that
-     * cannot be decrypted is dropped and reported as absent instead of propagating the error.
+     * Reads a stored value, applying the re-enterable-secret recovery policy: an entry that can
+     * never be decrypted again is dropped and reported as absent; one the Keystore cannot open
+     * for now is kept, reported as absent and marked to be read again ([unreadForNow]). Neither
+     * propagates the error.
      */
     private fun readOrNull(key: String): String? = try {
-        store.getString(key)
+        store.getString(key).also { unreadForNow -= key }
     } catch (e: SecureValueUnreadableException) {
-        Timber.e(e, "Stored API-key entry '%s' is unreadable; treating it as unset.", key)
-        store.remove(key)
+        if (e.permanent) {
+            Timber.e(e, "Stored API-key entry '%s' can never be read again; treating it as unset.", key)
+            unreadForNow -= key
+            store.remove(key)
+        } else {
+            Timber.w(e, "Stored API-key entry '%s' is unreadable for now; keeping it to read again.", key)
+            unreadForNow += key
+        }
         null
     }
 

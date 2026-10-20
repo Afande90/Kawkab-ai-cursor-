@@ -2,7 +2,6 @@ package app.knotwork.android.data.local.crypto
 
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
-import java.security.GeneralSecurityException
 import java.security.KeyStore
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
@@ -24,8 +23,8 @@ import javax.inject.Singleton
  * Keys are created lazily on first [encrypt] and never on [decrypt]: a
  * decryption request for a missing key means the stored blob can no longer
  * be opened, and silently creating a fresh key would only mask that as a
- * tag-verification failure. The miss is surfaced as a
- * [GeneralSecurityException] instead.
+ * tag-verification failure. The miss is surfaced as an
+ * [UnopenableBlobException] instead: the blob can never be opened again.
  *
  * All Keystore interactions are synchronized on a single lock so that two
  * threads racing on first use cannot both generate a key for the same alias.
@@ -44,7 +43,7 @@ class AndroidKeystoreAeadCipher @Inject constructor() : AeadCipher {
 
     override fun decrypt(keyAlias: String, associatedData: ByteArray, blob: ByteArray): ByteArray {
         val key = getKeyOrNull(keyAlias)
-            ?: throw GeneralSecurityException("No Keystore key under alias '$keyAlias'")
+            ?: throw UnopenableBlobException("No Keystore key under alias '$keyAlias'")
         return AesGcmCodec.decrypt(key, associatedData, blob)
     }
 

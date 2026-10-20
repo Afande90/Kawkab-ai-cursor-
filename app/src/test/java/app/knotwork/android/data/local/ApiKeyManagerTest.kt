@@ -16,6 +16,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.security.ProviderException
 
 /**
  * Verifies [ApiKeyManager]'s storage round-trip and its re-enterable-secret
@@ -92,7 +93,7 @@ class ApiKeyManagerTest {
     }
 
     @Test
-    fun `given undecryptable stored key when read then treated as unset and dropped`() = runTest {
+    fun `given the Keystore key behind a stored key is gone when read then treated as unset and dropped`() = runTest {
         manager().setApiKey(CloudProvider.OPENAI, "sk-test-123")
         cipher.failDecrypt = true
 
@@ -100,6 +101,58 @@ class ApiKeyManagerTest {
         // API keys are user re-enterable, unlike the database passphrase.
         assertNull(manager().getApiKey(CloudProvider.OPENAI).first())
         assertFalse(prefs.values.containsKey(OPENAI_KEY))
+    }
+
+    @Test
+    fun `given a stored key that does not authenticate when read then treated as unset and dropped`() = runTest {
+        manager().setApiKey(CloudProvider.OPENAI, "sk-test-123")
+        manager().setApiKey(CloudProvider.ANTHROPIC, "sk-ant")
+        // A blob sealed for another slot fails the tag check, as a tampered one would.
+        prefs.values[OPENAI_KEY] = prefs.values.getValue("anthropic_api_key")
+
+        assertNull(manager().getApiKey(CloudProvider.OPENAI).first())
+        assertFalse(prefs.values.containsKey(OPENAI_KEY))
+    }
+
+    @Test
+    fun `given the Keystore fails for now when a key is read then it is kept and a later process reads it`() = runTest {
+        manager().setApiKey(CloudProvider.OPENAI, "sk-test-123")
+        cipher.decryptFailure = ProviderException("Keystore operation failed")
+
+        assertNull("unreadable for now reads as unset", manager().getApiKey(CloudProvider.OPENAI).first())
+        assertTrue("a key stored intact is not dropped", prefs.values.containsKey(OPENAI_KEY))
+
+        cipher.decryptFailure = null
+        assertEquals("sk-test-123", manager().getApiKey(CloudProvider.OPENAI).first())
+    }
+
+    @Test
+    fun `given the Keystore fails for now when the same instance asks again then the key reappears`() = runTest {
+        manager().setApiKey(CloudProvider.OPENAI, "sk-test-123")
+        cipher.decryptFailure = java.security.KeyStoreException("Keystore not initialized")
+        val subject = manager()
+        val observed = subject.getApiKey(CloudProvider.OPENAI)
+        assertNull(observed.first())
+
+        cipher.decryptFailure = null
+
+        // The next access reads the entry again and publishes it to every observer of it.
+        assertEquals("sk-test-123", subject.getApiKey(CloudProvider.OPENAI).first())
+        assertEquals("sk-test-123", observed.first())
+    }
+
+    @Test
+    fun `given a key unreadable for now when the user saves a new one then the new one wins`() = runTest {
+        manager().setApiKey(CloudProvider.OPENAI, "sk-old")
+        cipher.decryptFailure = ProviderException("Keystore operation failed")
+        val subject = manager()
+        assertNull(subject.getApiKey(CloudProvider.OPENAI).first())
+        cipher.decryptFailure = null
+
+        subject.setApiKey(CloudProvider.OPENAI, "sk-new")
+
+        assertEquals("sk-new", subject.getApiKey(CloudProvider.OPENAI).first())
+        assertEquals("sk-new", manager().getApiKey(CloudProvider.OPENAI).first())
     }
 
     @Test

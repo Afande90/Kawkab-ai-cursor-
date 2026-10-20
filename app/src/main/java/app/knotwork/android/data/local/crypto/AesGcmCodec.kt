@@ -63,12 +63,12 @@ internal object AesGcmCodec {
      * @param blob `IV ‖ ciphertext+tag` as returned by [encrypt].
      * @return The original plaintext bytes.
      * @throws GeneralSecurityException When the blob is too short to contain
-     *   an IV and a tag, has been tampered with, or the associated data does
-     *   not match (surfaces as `AEADBadTagException`).
+     *   an IV and a tag ([UnopenableBlobException]), has been tampered with, or
+     *   the associated data does not match (surfaces as `AEADBadTagException`).
      */
     fun decrypt(key: SecretKey, associatedData: ByteArray, blob: ByteArray): ByteArray {
         if (blob.size <= IV_LENGTH_BYTES) {
-            throw GeneralSecurityException("Encrypted blob too short: ${blob.size} bytes")
+            throw UnopenableBlobException("Encrypted blob too short: ${blob.size} bytes")
         }
         val cipher = Cipher.getInstance(TRANSFORMATION)
         cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(TAG_LENGTH_BITS, blob, 0, IV_LENGTH_BYTES))

@@ -128,6 +128,7 @@ Only Kotlin files appear inside the generated blocks.
       - `FakeAeadCipher.kt` - Deterministic `AeadCipher` stand-in for JVM unit tests.
       - `InMemorySharedPreferences.kt` - Minimal map-backed `SharedPreferences` for JVM unit tests.
       - `KeystoreBackedPrefsStoreTest.kt` - Verifies the storage semantics of `KeystoreBackedPrefsStore` against a `FakeAeadCipher`: framing, slot binding via associated data, the absent-vs-unreadable distinction, and the destroy contract.
+      - `SecretReadFailureTest.kt` - Unit coverage for `SecretReadFailure`.
     - `dao/` - Room DAO tests against a real in-memory database, for queries whose correctness lives in their SQL.
       - `PendingInteractionDaoTest.kt` - `PendingInteractionDao` against a real (in-memory) Room database, for the two queries whose correctness lives in their SQL rather than in any Kotlin a mock could stand in for: finding a parked approval by the request it parks, and writing a decision only onto the record of the request it answers.
       - `PipelineRunDaoRateCountTest.kt` - The count behind the scheduling tool's hourly ceiling, against a real (in-memory) Room database — its correctness is the SQL itself.
