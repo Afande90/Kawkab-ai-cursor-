@@ -392,6 +392,27 @@ internal object GoldenScenarios {
                 )
             }
         },
+        fixture(
+            "queue_continues",
+            "middle-item-fails-then-parked",
+            "The middle item fails, the last parks for approval, and the resumed run replays the failure " +
+                "instead of running the failed item again.",
+            NOTE,
+        ) {
+            settings = GoldenSettings(blockDestructiveTools = true)
+            approvals = listOf(ApprovalAction.LET_IT_PARK)
+            parkResolutions = listOf(ParkResolution.Approve)
+            answers {
+                on("plan", "[\"Look up boiler servicing\", \"Delete the old notes\", \"Note the service date\"]")
+                on(
+                    "item",
+                    "{\"tool\": \"search_tool\", \"arguments\": {\"query\": \"boiler servicing\"}}",
+                    "{\"tool\": \"delete_file\", \"arguments\": {\"path\": \"notes/old.md\"}}",
+                    "{\"tool\": \"write_file\", \"arguments\": {\"path\": \"notes/boiler.md\", " +
+                        "\"content\": \"Service due in March.\"}}",
+                )
+            }
+        },
     )
 
     private const val MOUNTAIN = "What is the tallest mountain on Earth?"

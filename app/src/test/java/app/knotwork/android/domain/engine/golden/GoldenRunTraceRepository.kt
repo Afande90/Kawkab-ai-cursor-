@@ -41,8 +41,11 @@ internal class GoldenRunTraceRepository(private val log: GoldenEventLog) : RunTr
                     record.resolvedToolName?.let { append(" tool=$it") }
                     append(" in=${record.inputSha256.short()} out=${record.outputSha256.short()}")
                 },
-                "input" to record.inputText,
-                "output" to record.outputText,
+                *listOfNotNull(
+                    "input" to record.inputText,
+                    "output" to record.outputText,
+                    record.failure?.let { "failure" to it },
+                ).toTypedArray(),
             )
             // The texts are in the `model local` event of the same call; the record pins what
             // was kept of it — sampling, model file, backend, window — and the hashes.

@@ -1596,7 +1596,12 @@ process can be killed. Records carry a per-run monotonic sequence
 number; the chat console replays the stored trace of a session's
 active (or latest) run on open and merges live events on top by that
 sequence, which keeps the replay/live seam free of duplicates. Trace
-rows cascade-delete with their parent `pipeline_runs` row.
+rows cascade-delete with their parent `pipeline_runs` row. A queue item
+that failed while its queue carried on (`stopOnError` off) gets a node
+record too: an empty output and the redacted error in
+`trace_steps.failure` (v73), so a resume replays the failure. The
+console's Vars and Traces tabs leave that record out, as they leave the
+visit out while the run is live; its error is already a console line.
 
 The model calls of a run live in their own table, `model_calls`, in the same
 `seq` numbering: an on-device call with its full prompt and output, the
@@ -1965,12 +1970,20 @@ Key invariants:
   resume-flagged task. The engine rebuilds a `ResumeContext` from the
   persisted trace and **replays** the recorded output of every node it
   already completed instead of re-executing it; the first node without
-  a record continues live. `INPUT` and `OUTPUT` are re-executed (they
-  are trivial / terminal), and a `TOOL` node is **never replayed** —
-  it re-resolves its call and re-raises the HITL gate. The checkpoint
-  is invalidated when the pipeline graph changed between interruption
-  and resume (content-hash comparison) or when the run outlived the
-  resume window; both cases only offer a full restart.
+  a record continues live. Records are matched by node and visit, so
+  each pass of a queue loop gets its own; a queue item that failed
+  while its queue carried on replays as that failure. `INPUT` and
+  `OUTPUT` are re-executed (they are trivial / terminal). A completed
+  `TOOL` node replays its recorded observation without asking again —
+  the tool is not called a second time; a `TOOL` node without a record
+  (the one the run stopped at) re-resolves its call and passes the HITL
+  gate again, where an answer given to its parked request applies only
+  to the same call. The checkpoint is invalidated when the pipeline graph
+  changed between interruption and resume (content-hash comparison) or
+  when the run outlived the resume window; both only offer a full
+  restart. A resume whose records no longer fit the walk (a node or
+  visit other than the one the walk reached) ends at once and asks for
+  a restart.
 - **Nested run tree.** A `PIPELINE` node runs its callee as a
   first-class **child run** whose `pipeline_runs.parentRunId` points at
   the parent (a self-referential `ON DELETE CASCADE` foreign key, so

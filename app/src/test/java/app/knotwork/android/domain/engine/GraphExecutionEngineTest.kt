@@ -1419,6 +1419,100 @@ class GraphExecutionEngineTest {
         assertEquals(emptyList<AgentOrchestratorState>(), states.filterIsInstance<AgentOrchestratorState.Error>())
     }
 
+    /** INPUT → plan → queue that carries on past a failed item → one item node → echo OUTPUT. */
+    private fun queueCarryingOnGraph() = PipelineGraph(
+        id = "g-queue-carries-on",
+        name = "Queue carries on past a failed item",
+        nodes = listOf(
+            NodeModel("input", NodeType.INPUT, 0f, 0f),
+            NodeModel("list_gen", NodeType.LITE_RT, 0f, 0f),
+            NodeModel("queue", NodeType.QUEUE_PROCESSOR, 0f, 0f, stopOnError = false),
+            NodeModel("item_proc", NodeType.LITE_RT, 0f, 0f),
+            NodeModel("output", NodeType.OUTPUT, 0f, 0f, systemPrompt = null),
+        ),
+        connections = listOf(
+            ConnectionModel("c1", "input", "list_gen"),
+            ConnectionModel("c2", "list_gen", "queue"),
+            ConnectionModel("c3", "queue", "item_proc", label = "Item"),
+            ConnectionModel("c4", "queue", "output", label = "Done"),
+        ),
+    )
+
+    /** Scripts a three-item plan whose second item fails, and runs [graph] to its end. */
+    private suspend fun runThreeItemsSecondFails(graph: PipelineGraph, runId: String): List<AgentOrchestratorState> {
+        every { settingsRepository.pipelineMaxSteps } returns flowOf(30)
+        every { llmEngine.generateResponseStream(any(), any(), any()) } returnsMany listOf(
+            flowOf("""["a", "b", "c"]"""),
+            flowOf("a done"),
+            flow { throw RuntimeException("b crashed") },
+            flowOf("c done"),
+        )
+        return engine(sessionId, "Three items", graph, runId).toList()
+    }
+
+    /** The node records the engine appended so far, in the order it appended them. */
+    private fun appendedNodeIo(): List<RunTraceRecord.NodeIo> {
+        val appended = mutableListOf<RunTraceRecord>()
+        coVerify { runTraceRepository.append(capture(appended)) }
+        return appended.filterIsInstance<RunTraceRecord.NodeIo>()
+    }
+
+    @Test
+    fun `given stopOnError off when a queue item fails then its visit is recorded with the failure`() = runTest {
+        runThreeItemsSecondFails(queueCarryingOnGraph(), "run-q-record")
+
+        val items = appendedNodeIo().filter { it.nodeId == "item_proc" }
+
+        assertEquals(listOf(0, 1, 2), items.map { it.visit })
+        assertEquals(listOf(null, "b crashed", null), items.map { it.failure })
+        // The node produced nothing: the failure is the record, not an output.
+        assertEquals("", items[1].outputText)
+        assertTrue("the failed visit keeps its input", items[1].inputText.contains("CURRENT SUBTASK TO EXECUTE:\nb"))
+    }
+
+    @Test
+    fun `given a queue item failed before an interruption when the run resumes then every item keeps its own result`() =
+        runTest {
+            val graph = queueCarryingOnGraph()
+            val first = runThreeItemsSecondFails(graph, "run-q-resume")
+            val firstAnswer = (first.last() as AgentOrchestratorState.Completed).finalResponse
+            // The trace an interruption after the last item would leave — every
+            // visit recorded, the failed one with its failure.
+            val records = appendedNodeIo()
+            var liveCalls = 0
+            every { llmEngine.generateResponseStream(any(), any(), any()) } answers {
+                liveCalls++
+                flowOf("ran again")
+            }
+
+            val resume = ResumeContext(records = records, memorySnapshot = null, nextSeq = records.maxOf { it.seq } + 1)
+            val resumed = engine(sessionId, "Three items", graph, "run-q-resume", resume).toList()
+
+            // Before the failure was recorded, the failed item replayed the third
+            // item's record ("c done") and the third item ran again.
+            assertEquals("a fully recorded prefix replays without a model call", 0, liveCalls)
+            assertEquals(firstAnswer, (resumed.last() as AgentOrchestratorState.Completed).finalResponse)
+            assertTrue(firstAnswer.contains("2. Subtask failed: b crashed\n3. c done"))
+        }
+
+    @Test
+    fun `given a trace that left a failed queue item unrecorded when the run resumes then it diverges`() = runTest {
+        val graph = queueCarryingOnGraph()
+        runThreeItemsSecondFails(graph, "run-q-legacy")
+        // What a run interrupted before this release left: no record for the
+        // visit that failed.
+        val records = appendedNodeIo().filter { it.failure == null }
+        every { llmEngine.generateResponseStream(any(), any(), any()) } returns flowOf("ran again")
+
+        val resume = ResumeContext(records = records, memorySnapshot = null, nextSeq = records.maxOf { it.seq } + 1)
+        val resumed = engine(sessionId, "Three items", graph, "run-q-legacy", resume).toList()
+
+        // Loud, and restartable — not the next item's output under the failed one's name.
+        val last = resumed.last() as AgentOrchestratorState.Error
+        assertEquals(RunTerminationReason.GraphChanged, last.reason)
+        assertTrue(resumed.none { it is AgentOrchestratorState.Completed })
+    }
+
     @Test
     fun `given a queue with stopOnError off when the run hits its step ceiling then it still ends`() = runTest {
         // The ceiling is what makes the queue's survival opt-in safe: without

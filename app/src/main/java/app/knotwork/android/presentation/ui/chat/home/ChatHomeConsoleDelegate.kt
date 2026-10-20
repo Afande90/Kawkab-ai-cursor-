@@ -359,9 +359,12 @@ class ChatHomeConsoleDelegate(
                 .filter { it.second.isNotEmpty() }
             // All runs' node I/O, ordered by wall-clock time so the Vars and
             // Traces tabs interleave a sub-pipeline's nodes between the start
-            // and end of the PIPELINE node that spawned them.
+            // and end of the PIPELINE node that spawned them. A failed queue
+            // item's record is left out, as the live tabs leave the visit out:
+            // it is there for a resume, and its error is already a console line.
             val allNodeIo = (rootTrace + childTraces.flatMap { it.second })
                 .filterIsInstance<RunTraceRecord.NodeIo>()
+                .filter { it.failure == null }
                 .sortedBy { it.timestamp }
             val snapshots = allNodeIo.map { it.nodeId to nodeIoRecordToNodeIo(it) }
             ReplayProjection(

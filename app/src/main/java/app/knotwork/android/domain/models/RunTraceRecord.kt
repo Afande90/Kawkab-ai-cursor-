@@ -62,6 +62,13 @@ sealed class RunTraceRecord {
      *   `null` for a record written before hashes were recorded.
      * @property outputSha256 Lowercase hex SHA-256 of [outputText] (UTF-8), or
      *   `null` for a record written before hashes were recorded.
+     * @property failure The error this visit failed with, already redacted, when
+     *   the failure did not end the run — a queue item whose queue carries on
+     *   past failed items (`stopOnError` off). [outputText] is then empty: the
+     *   node produced nothing. Recorded so a resumed run replays the failure as
+     *   the item's result instead of running the item again. `null` for a visit
+     *   that completed, and for every record written before such failures were
+     *   recorded.
      */
     data class NodeIo(
         override val runId: String,
@@ -81,6 +88,7 @@ sealed class RunTraceRecord {
         val visit: Int? = null,
         val inputSha256: String? = null,
         val outputSha256: String? = null,
+        val failure: String? = null,
     ) : RunTraceRecord()
 
     /**

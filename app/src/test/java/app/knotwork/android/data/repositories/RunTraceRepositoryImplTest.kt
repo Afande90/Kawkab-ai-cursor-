@@ -378,6 +378,27 @@ class RunTraceRepositoryImplTest {
     }
 
     @Test
+    fun `given a failed queue item's NodeIo then entity and read-back carry its failure`() = runTest {
+        repository.dispatcher = StandardTestDispatcher(testScheduler)
+        val batches = mutableListOf<List<TraceStepEntity>>()
+        coEvery { traceStepDao.insertTraceSteps(capture(batches)) } returns Unit
+
+        repository.append(nodeIo(0L).copy(outputText = "", visit = 1, failure = "Rate limit reached"))
+        repository.append(nodeIo(1L).copy(visit = 2))
+        repository.flush()
+        runCurrent()
+
+        val entities = batches.single()
+        assertEquals(listOf("Rate limit reached", null), entities.map { it.failure })
+
+        coEvery { traceStepDao.getTraceStepsForRun(RUN_ID) } returns entities.mapIndexed { i, e -> e.copy(id = i + 1L) }
+        val readBack = repository.getTraceForRun(RUN_ID).map { it as RunTraceRecord.NodeIo }
+        // A resume replays the first as the item's failure, the second as a completed item.
+        assertEquals(listOf("Rate limit reached", null), readBack.map { it.failure })
+        assertEquals(listOf(1, 2), readBack.map { it.visit })
+    }
+
+    @Test
     fun `given memory snapshot then chunks roundtrip through the JSON payload`() = runTest {
         repository.dispatcher = StandardTestDispatcher(testScheduler)
         val batches = mutableListOf<List<TraceStepEntity>>()

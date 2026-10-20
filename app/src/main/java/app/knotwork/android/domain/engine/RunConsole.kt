@@ -148,6 +148,8 @@ class RunConsole(
      * @param outputText What it produced (its input, for a node that produced nothing).
      * @param durationMs How long it took.
      * @param result Its result — token count, condition, routing key and tool name.
+     * @param failure The redacted error of a visit whose failure the run survived
+     *   (a queue item, `stopOnError` off), or `null` for a visit that completed.
      */
     suspend fun recordNodeIo(
         node: NodeModel,
@@ -156,6 +158,7 @@ class RunConsole(
         outputText: String,
         durationMs: Long,
         result: NodeExecutionResult?,
+        failure: String? = null,
     ) {
         val id = runId ?: return
         runTraceRepository.append(
@@ -177,6 +180,7 @@ class RunConsole(
                 visit = visit,
                 inputSha256 = TraceHashing.sha256Hex(inputText),
                 outputSha256 = TraceHashing.sha256Hex(outputText),
+                failure = failure,
             ),
         )
         if (node.type == NodeType.TOOL || node.type == NodeType.CLOUD) {

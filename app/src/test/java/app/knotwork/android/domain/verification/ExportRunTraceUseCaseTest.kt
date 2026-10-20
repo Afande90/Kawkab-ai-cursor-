@@ -82,7 +82,7 @@ class ExportRunTraceUseCaseTest {
             val document = export(ROOT, "05 Oct 2026 18:30")!!
             val json = Json.parseToJsonElement(document.json).jsonObject
 
-            assertEquals(1, json.getValue("schemaVersion").jsonPrimitive.int)
+            assertEquals(2, json.getValue("schemaVersion").jsonPrimitive.int)
             assertEquals("true", json.string("localOnly"))
             assertEquals(HEADER.seed, json.getValue("header").jsonObject.getValue("seed").jsonPrimitive.int)
             assertEquals("0.7", json.getValue("header").jsonObject.string("temperature"))
@@ -141,4 +141,20 @@ class ExportRunTraceUseCaseTest {
         assertNull(export(ROOT, "now"))
         assertNull(export("missing", "now"))
     }
+
+    @Test
+    fun `given a queue item the run carried on past when exported then its node record carries the failure`() =
+        runTest {
+            traces[ROOT] = listOf(
+                nodeIo(0, "item", "LITE_RT", visit = 0),
+                nodeIo(1, "item", "LITE_RT", visit = 1).copy(outputText = "", failure = "Rate limit reached"),
+            )
+
+            val document = export(ROOT, "05 Oct 2026 18:30")!!
+
+            val records = Json.parseToJsonElement(document.json).jsonObject.getValue("runs").jsonArray
+                .first().jsonObject.getValue("records").jsonArray.map { it.jsonObject }
+            assertEquals(listOf(null, "Rate limit reached"), records.map { it.string("failure") })
+            assertEquals("", records[1].string("output"))
+        }
 }

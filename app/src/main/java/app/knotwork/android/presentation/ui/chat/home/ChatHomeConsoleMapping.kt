@@ -223,8 +223,9 @@ fun nodeIoRecordToNodeIo(record: RunTraceRecord.NodeIo): AgentOrchestratorState.
  * "wall clock when the step landed".
  *
  * @param record Persisted node I/O record loaded from the run trace.
- * @return Span row with `Ok` status — node failures short-circuit the run
- *   before a NodeIo record is appended, mirroring the live-path invariant.
+ * @return Span row with `Ok` status — a failure that ends the run leaves no
+ *   NodeIo record, and the record of a failed queue item the run carried on past
+ *   is filtered out before projection, mirroring the live path.
  */
 fun nodeIoRecordToConsoleSpan(record: RunTraceRecord.NodeIo): ConsoleTraceSpan = ConsoleTraceSpan(
     name = record.nodeType,

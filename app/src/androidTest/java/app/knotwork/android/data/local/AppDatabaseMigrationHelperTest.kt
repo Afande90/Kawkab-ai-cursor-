@@ -33,6 +33,7 @@ import app.knotwork.android.data.local.migrations.MIGRATION_68_69
 import app.knotwork.android.data.local.migrations.MIGRATION_69_70
 import app.knotwork.android.data.local.migrations.MIGRATION_70_71
 import app.knotwork.android.data.local.migrations.MIGRATION_71_72
+import app.knotwork.android.data.local.migrations.MIGRATION_72_73
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -1051,6 +1052,37 @@ class AppDatabaseMigrationHelperTest {
                 assertEquals(1, c.getInt(1))
                 assertEquals("https://huggingface.co/m", c.getString(2))
                 assertTrue("no download of a model registered before was checked", c.isNull(3))
+            }
+        }
+    }
+
+    /**
+     * v72 → v73 adds `trace_steps.failure`, the error of a queue item its run carried on past.
+     * A row written before the migration keeps everything it held and records no failure. The
+     * schema must match the exported `73.json`.
+     */
+    @Test
+    fun migrate72to73_leavesExistingTraceRowsWithoutAFailure() {
+        helper.createDatabase(TEST_DB, 72).use { db ->
+            db.execSQL("INSERT INTO chat_sessions(id, name, updatedAt) VALUES('s1', 'chat', 0)")
+            db.execSQL(
+                "INSERT INTO pipeline_runs(id, sessionId, pipelineId, origin, status, startedAt, hadImage) " +
+                    "VALUES('r1', 's1', 'p1', 'CHAT', 'WAITING_APPROVAL', 1, 0)",
+            )
+            db.execSQL(
+                "INSERT INTO trace_steps(sessionId, nodeName, outputText, timestamp, durationMs, runId, seq, " +
+                    "recordKind, nodeId, inputText, depth, visit) " +
+                    "VALUES('s1', 'LITE_RT', 'a done', 2, 5, 'r1', 3, 'NODE_IO', 'item', 'a', 0, 0)",
+            )
+        }
+
+        helper.runMigrationsAndValidate(TEST_DB, 73, true, MIGRATION_72_73).use { db ->
+            db.query("SELECT outputText, nodeId, visit, failure FROM trace_steps WHERE runId = 'r1'").use { c ->
+                assertTrue("the pre-existing trace row must survive the migration", c.moveToFirst())
+                assertEquals("a done", c.getString(0))
+                assertEquals("item", c.getString(1))
+                assertEquals(0, c.getInt(2))
+                assertTrue("a row written before records no failure", c.isNull(3))
             }
         }
     }

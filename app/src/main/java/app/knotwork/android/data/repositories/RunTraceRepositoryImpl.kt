@@ -219,6 +219,7 @@ private fun RunTraceRecord.NodeIo.toTraceStep(): TraceStepEntity = TraceStepEnti
     visit = visit,
     inputSha256 = inputSha256,
     outputSha256 = outputSha256,
+    failure = failure,
 )
 
 /**
@@ -284,6 +285,7 @@ private fun TraceStepEntity.toRecordOrNull(): RunTraceRecord? {
             visit = visit,
             inputSha256 = inputSha256,
             outputSha256 = outputSha256,
+            failure = failure,
         )
         TraceStepEntity.KIND_CONSOLE_EVENT -> consoleEventTypeFromStorage(consoleEventType)?.let { type ->
             RunTraceRecord.ConsoleEntry(
