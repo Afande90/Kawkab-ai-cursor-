@@ -20,6 +20,11 @@ details.
   tested in one made with Shelter: it installs, starts and answers with a model
   downloaded inside the profile, and turning the profile off stops it. Private
   Space is still untested.
+- **Troubleshooting covers a screen that freezes while the model answers on the
+  GPU.** On some phones the on-device model keeps the graphics chip busy long
+  enough that the screen stops responding and Android may offer to close the
+  app. The new entry explains why and how to switch the model to CPU until the
+  engine lets an app lower the model's GPU priority.
 - **Runs no longer wait between nodes.** The engine paused half a second before
   every node it ran and a full second after each cloud, summary, router,
   planner and evaluation node, background runs included. Neither pause had a
