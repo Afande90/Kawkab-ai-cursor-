@@ -17,6 +17,7 @@ Three sibling documents, and it is worth knowing which one you want:
 
 - [The model fails to load with "out of memory"](#the-model-fails-to-load-with-out-of-memory)
 - [Inference is very slow](#inference-is-very-slow)
+- [The app freezes while the model is answering](#the-app-freezes-while-the-model-is-answering)
 - [A tool says it is unavailable](#a-tool-says-it-is-unavailable)
 - [An MCP server is connected but a tool I expect isn't there](#an-mcp-server-is-connected-but-a-tool-i-expect-isnt-there)
 - [The same question goes to the cloud one time and stays local the next](#the-same-question-goes-to-the-cloud-one-time-and-stays-local-the-next)
@@ -63,6 +64,19 @@ noticeably slower (especially for the first few tokens):
   CPU.
 - Lower **Max context length** in **Settings → Generation → Advanced**.
   Shorter contexts mean less work per token.
+
+## The app freezes while the model is answering
+
+On some phones the screen stops responding while the local model works on a
+reply on the **GPU**, and Android may offer to close the app. The model and the
+screen share one graphics chip, and the model can keep it busy long enough that
+the screen has to wait. The on-device engine has a lower-priority mode meant to
+keep the screen smooth, but an app cannot switch it on yet
+([LiteRT-LM#3992](https://github.com/google-ai-edge/LiteRT-LM/issues/3992)).
+
+Until then, open **Settings → Models**, set **Inference backend** to **CPU** and
+tap **Restart** on the banner. Replies get slower, but the screen no longer
+waits for the model.
 
 ## A tool says it is unavailable
 
