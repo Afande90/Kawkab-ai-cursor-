@@ -43,14 +43,17 @@ abstract class AgentAppFunctionService : AppFunctionService() {
     internal lateinit var searchAppFunction: SearchAppFunction
 
     /**
-     * Looks up a topic on Wikipedia and returns a short plain-text extract of the best
-     * matching article. Read-only: it changes nothing on the device. It is refused while
-     * the user has blocked network access for local models.
+     * Looks up a topic on Wikipedia and returns a short plain-text extract of the top
+     * search result, under a line naming that article and the query. The top result can
+     * be about a different subject than the query, so compare its title with what was
+     * asked. Read-only: it changes nothing on the device. It is refused while the user
+     * has blocked network access for local models.
      *
      * @param query What to look up, in the language given as lang. Must not be blank.
      * @param lang Wikipedia language code matching the language of the query, such as
      *   en, de or simple. Leave empty for English.
-     * @return A plain-text extract of the article that best matches the query.
+     * @return A first line naming the top article and the query, then a plain-text
+     *   extract of that article.
      */
     // The KDoc above is published: `isDescribedByKDoc` turns it into the description the
     // calling agent reads, so it is written for that agent and names parameters in plain

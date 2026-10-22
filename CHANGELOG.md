@@ -37,7 +37,7 @@ details.
 
 - **A Wikipedia lookup names the article it found.** `search_tool` takes
   Wikipedia's top search result, and that result can be about something else:
-  a search for a small farm estate returned the article on an Italian town
+  a search for a farm estate returned the article on an Italian town
   whose dialect name looks like the estate's. The model got the article's text
   without its title and gave the town as the estate's address. The result now
   starts with the article's title and the search term, so the model, and the
