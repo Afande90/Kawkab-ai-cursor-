@@ -108,15 +108,71 @@ class SearchToolTest {
     }
 
     @Test
-    fun `given Wikipedia finds an article when executeSearch then its extract is returned`() = runTest {
+    fun `given Wikipedia finds an article when executeSearch then its extract is returned under its title`() = runTest {
         coEvery { networkGate.networkToolRefusal(any()) } returns null
         serve(articleBody(SHORT_EXTRACT))
 
         val result = searchTool.executeSearch("Ada Lovelace", "en")
 
-        assertEquals(SHORT_EXTRACT, result)
+        assertEquals("$ADA_HEADER\n\n$SHORT_EXTRACT", result)
         assertEquals("en.wikipedia.org", opened.single().host)
         assertEquals("Ada Lovelace", server.takeRequest().url.queryParameter("gsrsearch"))
+    }
+
+    @Test
+    fun `given the top hit is about another subject when executeSearch then the result names that article`() = runTest {
+        // The live API answers `Scio Farms Estates` with the article on Gioia del Colle,
+        // whose dialect name is "Sciò" (measured 22.10.2026). Handed only the extract, a
+        // model answered that the estate's address was that town (issue #573).
+        coEvery { networkGate.networkToolRefusal(any()) } returns null
+        serve(articleBody(GIOIA_EXTRACT, title = "Gioia del Colle"))
+
+        val result = searchTool.executeSearch("Scio Farms Estates", "en")
+
+        assertEquals(
+            "Wikipedia article \"Gioia del Colle\" (top result for \"Scio Farms Estates\"):\n\n$GIOIA_EXTRACT",
+            result,
+        )
+    }
+
+    @Test
+    fun `given an answer without a title when executeSearch then the extract is still returned under a header`() =
+        runTest {
+            coEvery { networkGate.networkToolRefusal(any()) } returns null
+            serve(articleBody(SHORT_EXTRACT, title = ""))
+
+            val result = searchTool.executeSearch("Ada Lovelace", "en")
+
+            assertEquals("Wikipedia article (top result for \"Ada Lovelace\"):\n\n$SHORT_EXTRACT", result)
+        }
+
+    @Test
+    fun `given an over-long extract and a loaded local model when executeSearch then its summary is named too`() =
+        runTest {
+            coEvery { networkGate.networkToolRefusal(any()) } returns null
+            every { llmEngine.isInitialized } returns true
+            every { llmEngine.generateResponseStream(any(), any(), any()) } returns flowOf("Synthetic ", "summary.")
+            serve(articleBody("A sentence of synthetic article text. ".repeat(80)))
+
+            val result = searchTool.executeSearch("Ada Lovelace", "en")
+
+            assertEquals("$ADA_HEADER\n\nSynthetic summary.", result)
+        }
+
+    @Test
+    fun `given the local model fails to summarise when executeSearch then the cut extract is named`() = runTest {
+        coEvery { networkGate.networkToolRefusal(any()) } returns null
+        every { llmEngine.isInitialized } returns true
+        every { llmEngine.generateResponseStream(any(), any(), any()) } throws IllegalStateException("engine busy")
+        val longExtract = "A sentence of synthetic article text. ".repeat(80)
+        serve(articleBody(longExtract))
+
+        val result = searchTool.executeSearch("Ada Lovelace", "en")
+
+        assertTrue(result, result.startsWith("$ADA_HEADER\n\n"))
+        val text = result.removePrefix("$ADA_HEADER\n\n")
+        assertTrue("not shortened: ${text.length}", text.length in 1..2_000)
+        assertTrue(longExtract.startsWith(text))
     }
 
     @Test
@@ -149,9 +205,11 @@ class SearchToolTest {
 
         val result = searchTool.executeSearch("Ada Lovelace", "en")
 
-        assertTrue("not shortened: ${result.length}", result.length in 1..2_000)
-        assertTrue("not cut at a sentence: …${result.takeLast(20)}", result.endsWith("."))
-        assertTrue(longExtract.startsWith(result))
+        assertTrue(result, result.startsWith("$ADA_HEADER\n\n"))
+        val text = result.removePrefix("$ADA_HEADER\n\n")
+        assertTrue("not shortened: ${text.length}", text.length in 1..2_000)
+        assertTrue("not cut at a sentence: …${text.takeLast(20)}", text.endsWith("."))
+        assertTrue(longExtract.startsWith(text))
     }
 
     @Test
@@ -300,6 +358,12 @@ class SearchToolTest {
         const val REFUSAL = "Error: search_tool is disabled — restriction on."
         const val SHORT_EXTRACT = "Synthetic extract standing in for an article introduction."
 
+        /** The header above an article found for `Ada Lovelace` under its own title. */
+        const val ADA_HEADER = "Wikipedia article \"Ada Lovelace\" (top result for \"Ada Lovelace\"):"
+
+        /** Synthetic stand-in for the introduction of the article on Gioia del Colle. */
+        const val GIOIA_EXTRACT = "Synthetic extract about a town on the Murge plateau."
+
         /** The live answer to a search that matched nothing. */
         const val NO_MATCH_BODY = """{"batchcomplete":""}"""
 
@@ -308,10 +372,15 @@ class SearchToolTest {
             """{"error":{"code":"missingparam","info":"The \"gsrsearch\" parameter must be set."},""" +
                 """"servedby":"mw-api-ext"}"""
 
-        /** The live answer to a matching search, with [extract] as the article text. */
-        fun articleBody(extract: String): String =
-            """{"batchcomplete":"","continue":{"gsroffset":1,"continue":"gsroffset||"},""" +
-                """"query":{"pages":{"974":{"pageid":974,"ns":0,"title":"Ada Lovelace","index":1,""" +
+        /**
+         * The live answer to a matching search, with [extract] as the article text and
+         * [title] as the article's title; a blank [title] leaves the field out.
+         */
+        fun articleBody(extract: String, title: String = "Ada Lovelace"): String {
+            val titleField = if (title.isBlank()) "" else """"title":"$title","""
+            return """{"batchcomplete":"","continue":{"gsroffset":1,"continue":"gsroffset||"},""" +
+                """"query":{"pages":{"974":{"pageid":974,"ns":0,$titleField"index":1,""" +
                 """"extract":"$extract"}}}}"""
+        }
     }
 }

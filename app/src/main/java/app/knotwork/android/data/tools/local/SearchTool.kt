@@ -192,6 +192,52 @@ class SearchTool @Inject constructor(
     }
 
     /**
+     * Shortens an over-long article extract to fit [EXTRACT_CHAR_LIMIT].
+     *
+     * A short extract is kept verbatim. A longer one is summarised by the local model when
+     * one is loaded, and cut at a sentence boundary otherwise — or when the summary fails.
+     *
+     * @param extract The article introduction as Wikipedia returned it.
+     * @return The text to hand the caller: the extract itself, its summary or its cut.
+     */
+    private suspend fun fitExtract(extract: String): String {
+        if (extract.length <= EXTRACT_CHAR_LIMIT) return extract
+        if (!llmEngine.isInitialized) return truncateCleanly(extract)
+        return try {
+            val prompt = "Summarize the following text within $EXTRACT_CHAR_LIMIT " +
+                "characters retaining the main factual information:\n\n" +
+                "$extract\n\nSUMMARY: "
+            val summary = StringBuilder()
+            llmEngine.generateResponseStream(prompt).collect { token -> summary.append(token) }
+            summary.toString()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            truncateCleanly(extract)
+        }
+    }
+
+    /**
+     * Puts the found article's title, and the search term it answered, above its text.
+     *
+     * The request takes the top hit of a full-text search, and that hit can be about a
+     * different subject than the term: measured against the live API on 22.10.2026,
+     * `Scio Farms Estates` returns the article on the Italian town Gioia del Colle (whose
+     * dialect name is "Sciò"). Handed the extract alone, the model could not tell, and it
+     * answered that the estate's address was that town (issue #573). With both names in
+     * the result, the mismatch is in front of the model, and in the run trace.
+     *
+     * @param title The article title from the API answer; blank when the answer had none.
+     * @param query The search term the caller asked for.
+     * @param text The article text to hand back, already fitted by [fitExtract].
+     * @return The text under a header naming the article and the search term.
+     */
+    private fun namedArticle(title: String, query: String, text: String): String {
+        val article = if (title.isBlank()) "Wikipedia article" else "Wikipedia article \"$title\""
+        return "$article (top result for \"$query\"):\n\n$text"
+    }
+
+    /**
      * Builds the Wikipedia API request for [query] in the [lang] edition.
      *
      * `lang` sits in the authority of the URL and arrives from a caller the app does
@@ -219,7 +265,8 @@ class SearchTool @Inject constructor(
      *
      * @param query The search query.
      * @param lang The Wikipedia edition to search, e.g. `en` (see [searchUrl]).
-     * @return A summary of the search results; the refusal text when the
+     * @return The top article's text under a header naming that article and [query]
+     *   (see [namedArticle]); the refusal text when the
      *   "Block network from local model" restriction is on; or
      *   [INVALID_LANG_ERROR], before any connection, when [lang] is not a
      *   Wikipedia subdomain.
@@ -261,30 +308,7 @@ class SearchTool @Inject constructor(
 
                 val page = pagesObj.getJSONObject(firstKey)
                 val extract = page.optString("extract", "No summary available.")
-
-                // If the extract is too long, try to summarize it with LLM
-                if (extract.length > EXTRACT_CHAR_LIMIT) {
-                    if (llmEngine.isInitialized) {
-                        try {
-                            val prompt = "Summarize the following text within $EXTRACT_CHAR_LIMIT " +
-                                "characters retaining the main factual information:\n\n" +
-                                "$extract\n\nSUMMARY: "
-                            val responseStream = llmEngine.generateResponseStream(prompt)
-                            val summary = java.lang.StringBuilder()
-                            responseStream.collect { token ->
-                                summary.append(token)
-                            }
-                            return@withContext summary.toString()
-                        } catch (e: CancellationException) {
-                            throw e
-                        } catch (e: Exception) {
-                            return@withContext truncateCleanly(extract)
-                        }
-                    } else {
-                        return@withContext truncateCleanly(extract)
-                    }
-                }
-                return@withContext extract
+                return@withContext namedArticle(page.optString("title"), query, fitExtract(extract))
             } else {
                 return@withContext "Failed to fetch data: HTTP ${connection.responseCode}"
             }

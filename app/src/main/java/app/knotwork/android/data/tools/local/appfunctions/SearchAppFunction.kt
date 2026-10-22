@@ -40,8 +40,8 @@ class SearchAppFunction @Inject constructor(private val searchTool: SearchTool) 
      *   cannot name a Wikipedia edition raises [IllegalArgumentException], like a blank
      *   [query] — [SearchTool] would refuse it anyway, and a typed error tells the caller
      *   so instead of a result string.
-     * @return The article extract (truncated or LLM-summarized) returned by
-     *   [SearchTool.executeSearch].
+     * @return The top article's extract (truncated or LLM-summarized) under a header
+     *   naming that article and [query], as returned by [SearchTool.executeSearch].
      */
     suspend fun search(query: String, lang: String): String {
         require(query.isNotBlank()) { "search_tool requires a non-blank 'query' argument" }
