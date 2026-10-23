@@ -99,7 +99,7 @@ Yes, including gated repositories once you have stored an access token. See
 
 ### What is the FOSS build and how does it differ?
 
-A second flavour built for F-Droid: no crash reporting, no analytics, and no
+The flavour F-Droid distributes: no crash reporting, no analytics, and no
 consent toggle for them. Everything else —
 local models, cloud providers, MCP, triggers — is identical. See
 [README § Install](../README.md#install).

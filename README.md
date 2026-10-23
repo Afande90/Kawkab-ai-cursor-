@@ -6,6 +6,7 @@
 ![Version](https://img.shields.io/badge/version-0.12.0-orange.svg)
 ![Android API](https://img.shields.io/badge/Android-API%2034%2B-3DDC84.svg?logo=android)
 [![Google Play](https://img.shields.io/badge/Google%20Play-available-3DDC84.svg?logo=googleplay&logoColor=white)](https://play.google.com/store/apps/details?id=app.knotwork.android)
+[![F-Droid](https://img.shields.io/f-droid/v/app.knotwork.android.svg?logo=fdroid&logoColor=white)](https://f-droid.org/packages/app.knotwork.android/)
 
 > **An AI agent you build, not just prompt.** A local-first Android agent whose
 > behaviour you assemble from explicit, verifiable blocks — and by default every
@@ -222,12 +223,22 @@ browser's `prefers-color-scheme`.
 — the simplest route, and the one that updates itself. Requires Android 14+.
 
 The Play build is the `full` flavour described below. Google Play signs the
-copies it delivers with its own key; the APKs on the Releases page carry this
-project's key. Android will not update one with the other, so moving between
-Google Play and a release APK means making a backup, uninstalling, installing
-from the other channel and restoring the backup. Which channel is signed by
-which key is set out in
+copies it delivers with its own key; the APKs on the Releases page and on
+F-Droid carry this project's key. Android will not update one with the other,
+so moving between Google Play and either of them means making a backup,
+uninstalling, installing from the other channel and restoring the backup.
+Which channel is signed by which key is set out in
 [docs/release.md](docs/release.md#signing-identities-by-channel).
+
+### From F-Droid
+
+[**Knotwork on F-Droid**](https://f-droid.org/packages/app.knotwork.android/)
+— the `foss` flavour, built by F-Droid from source. Requires Android 14+.
+
+F-Droid publishes a version only when its own build matches the APK on the
+Releases page, and then ships that APK. So the F-Droid copy and the release
+APKs carry the same key and update each other in place. A new version reaches
+F-Droid after the Releases page, once F-Droid's next build has run.
 
 ### From a release build
 
@@ -237,8 +248,8 @@ on an Android 14+ device. Two flavours are published:
 
 - **`full`** — the standard build, with opt-in Firebase Crashlytics for
   anonymous crash reporting (off by default, never collects message content).
-- **`foss`** — zero proprietary dependencies and no crash reporting, suitable
-  for F-Droid. See [docs/release.md](docs/release.md) § *FOSS / F-Droid build*.
+- **`foss`** — zero proprietary dependencies and no crash reporting, the build
+  F-Droid distributes. See [docs/release.md](docs/release.md) § *FOSS / F-Droid build*.
 
 > **Upgrading from `0.6.0` or earlier requires a clean install.** Those builds
 > were signed with the Android debug keystore; `0.7.0` is the first release
