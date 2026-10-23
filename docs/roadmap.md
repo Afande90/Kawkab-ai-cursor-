@@ -48,6 +48,11 @@ end-to-end:
 - Releases built, signed and published by CI from a tag, with the signing
   identity verified before and after the build (see
   [release.md](release.md)).
+- Three ways to install: Google Play, F-Droid and the APKs on GitHub
+  Releases. F-Droid ships the GitHub APK itself, reproduced from source, so
+  the two update each other in place. Installs from before `0.7.0`, the first
+  release-signed build, need one reinstall
+  ([README § Install](../README.md#from-a-release-build)).
 - File-oriented tools in the built-in catalogue: the agent reads, lists,
   finds, writes, edits, appends to and deletes documents in a private
   workspace, with the mutating ones behind the confirmation gate.
@@ -100,26 +105,6 @@ have shipped, along with the first release-signed build; they are listed
 above as things the product does, and [CHANGELOG.md](../CHANGELOG.md) is
 the authoritative record of what each turned into. What follows is what is
 near-term now.
-
-### Getting the app into the places people look for it
-
-Knotwork is on **Google Play**, alongside the APKs on GitHub Releases.
-That settles the first half of this item: a store listing exists, and so
-does a data-safety declaration matching the privacy model the app
-actually implements. What is left is the second channel.
-
-- **F-Droid.** Submitted. Their static review found nothing blocking, and
-  the submission is waiting for a reviewer to test it on a device. It is set
-  up as a reproducible build: F-Droid builds the `foss` APK from source and
-  publishes it only if it matches the one on GitHub Releases, so both carry
-  the same signature and you can switch between them without reinstalling.
-  The review lists the prebuilt native libraries of the inference engine for
-  F-Droid's maintainers, and asks nothing of this project.
-
-Note the one-time migration cost described under *Install* in
-[README.md](../README.md#from-a-release-build): `0.7.0` is the first
-release-signed build, so updating a debug-signed install to it requires a
-reinstall. Releases from `0.7.0` onward update in place.
 
 ### More recipes in the cookbook
 

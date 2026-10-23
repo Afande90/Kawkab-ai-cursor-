@@ -138,7 +138,7 @@ transition.
 | Channel         | Flavour        | Signed with |
 |-----------------|----------------|-------------|
 | GitHub Releases | `full`, `foss` | This project's release key. |
-| F-Droid (submitted, not yet published) | `foss` | This project's release key. F-Droid publishes the APK from the GitHub release once its own build reproduces it (§8 *Reproducible builds*). |
+| F-Droid         | `foss`         | This project's release key. F-Droid publishes the APK from the GitHub release once its own build reproduces it (§8 *Reproducible builds*). |
 | Google Play     | `full`         | Keys Google Play holds, not this project's. The AAB uploaded to Play is signed with the release key, which Play records as the upload key; Play re-signs the APKs it delivers. |
 
 Android updates an installed app only with a copy from the same signer. So the
@@ -599,8 +599,8 @@ behaviourally identical apart from crash reporting.
 ### Known residuals (out of scope for the crash-reporting split)
 
 Removing Crashlytics/Analytics is the blocker this flavour split targets. Two
-larger items remain before the `foss` build is fully F-Droid-*eligible* — they
-are inherent to the product, not to crash reporting, and are tracked separately:
+items are inherent to the product, not to crash reporting, and F-Droid accepted
+the app with both:
 
 - **`com.google.firebase:firebase-encoders{,-json,-proto}`** still appear on the
   `foss` classpath. They are **not** the telemetry SDK — they are Apache-2.0
@@ -640,13 +640,13 @@ are inherent to the product, not to crash reporting, and are tracked separately:
   the licence text and a third-party notice listing only free licences, with
   sources at `github.com/google-ai-edge/LiteRT-LM`; MediaPipe is Apache-2.0 as
   well. (An earlier revision of this document called them "non-free". That was
-  wrong, and the distinction matters: the open question is not the licence but
-  whether a reviewer accepts a prebuilt binary under F-Droid's allowance for
+  wrong, and the distinction matters: the question was never the licence but
+  whether F-Droid accepts a prebuilt binary under its allowance for
   freely-licensed artefacts from trusted Maven repositories, Google Maven
-  included.) The `foss` release APK contains exactly five native libraries —
-  `liblitertlm_jni.so`, `libmediapipe_tasks_jni.so`, `libsqlcipher.so`,
-  `libandroidx.graphics.path.so` and `libdatastore_shared_counter.so` — all
-  from freely-licensed upstreams.
+  included. It does: the app is on F-Droid with these libraries.) The `foss`
+  release APK contains exactly five native libraries — `liblitertlm_jni.so`,
+  `libmediapipe_tasks_jni.so`, `libsqlcipher.so`, `libandroidx.graphics.path.so`
+  and `libdatastore_shared_counter.so` — all from freely-licensed upstreams.
 
 ### The Google dependency-metadata block
 
@@ -700,11 +700,11 @@ JDK vendor, have all 277 entries CRC-identical. Before these changes, the
 published 0.10.1 APK and a local build of its commit differed in 5 of 278
 entries (`classes.dex`, the baseline profile and three native libraries).
 
-F-Droid's CI has since built 0.11.0 from its tag on Linux and matched the
-published `foss` APK. The app is submitted there as a reproducible build: F-Droid
-builds each tag, compares its build with `knotwork-<version>-foss-release.apk`
-from the GitHub release, and publishes that APK, signed with this project's key.
-A tag whose APK it cannot reproduce is not published on F-Droid at all.
+Knotwork is on F-Droid as a reproducible build: F-Droid builds each tag,
+compares its build with `knotwork-<version>-foss-release.apk` from the GitHub
+release, and publishes that APK, signed with this project's key. For 0.12.0 the
+file F-Droid serves has the same SHA-256 as the GitHub asset. A tag whose APK it
+cannot reproduce is not published on F-Droid at all.
 
 F-Droid strips signing configuration from the build script before it builds, so
 its build comes out unsigned. Its rule for the assignment deletes only a

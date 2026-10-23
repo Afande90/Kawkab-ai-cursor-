@@ -276,14 +276,15 @@ the decision to wipe is always yours.
 
 ## Installing over a copy from Google Play fails
 
-Installing a release APK from GitHub on a device that already has Knotwork
-from Google Play stops with an error such as *App not installed* or *package
-conflicts with an existing package*; the wording depends on the Android version
-and on the app doing the install. It fails the other way round too: a copy
-installed from a release APK cannot be updated from Google Play.
+Installing a release APK from GitHub, or Knotwork from F-Droid, on a device
+that already has it from Google Play stops with an error such as *App not
+installed* or *package conflicts with an existing package*; the wording depends
+on the Android version and on the app doing the install. It fails the other way
+round too: a copy installed from a release APK or from F-Droid cannot be updated
+from Google Play.
 
-Neither file is broken. Google Play and the GitHub releases sign the app with
-different keys ([Signing identities by
+Neither file is broken. Google Play signs the app with a different key from the
+GitHub releases and F-Droid ([Signing identities by
 channel](release.md#signing-identities-by-channel)), and Android updates an app
 only with a copy from the same signer. To switch channels:
 
@@ -300,9 +301,9 @@ only with a copy from the same signer. To switch channels:
 The version you install must be able to read the backup. A backup from a
 newer release restores unless that release changed the backup format or the
 database; then the restore refuses and asks you to update first. Google Play
-can trail the Releases page while an update is in review, so before you
-uninstall, check that the other channel offers the same release or a later
-one.
+can trail the Releases page while an update is in review, and F-Droid until its
+next build has run, so before you uninstall, check that the other channel
+offers the same release or a later one.
 
 ## A model download paused after five hours
 

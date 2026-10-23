@@ -13,6 +13,14 @@ details.
 
 ## [Unreleased]
 
+### Added
+
+- **Knotwork is on F-Droid.** F-Droid builds the `foss` APK from source and
+  publishes it only when its build matches the APK on the Releases page, so the
+  F-Droid copy carries the same signature and updates in place over a release
+  APK. The README, the troubleshooting entry on switching from Google Play and
+  `docs/release.md` say so.
+
 ### Changed
 
 - **The security notes say the app was tried in a work profile.** `SECURITY.md`
