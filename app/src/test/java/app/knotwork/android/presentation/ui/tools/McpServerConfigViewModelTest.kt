@@ -9,7 +9,6 @@ import app.knotwork.android.domain.models.McpAuth
 import app.knotwork.android.domain.models.McpServerConfig
 import app.knotwork.android.domain.models.McpTransport
 import app.knotwork.android.domain.models.UpdateMcpServerResult
-import app.knotwork.android.domain.repositories.McpServerRepository
 import app.knotwork.android.domain.repositories.SettingsRepository
 import app.knotwork.android.presentation.ui.common.ConnectionTestState
 import app.knotwork.design.screens.tools.McpAuthSelector
@@ -40,7 +39,6 @@ import kotlin.time.TestTimeSource
 class McpServerConfigViewModelTest {
 
     private val settings: SettingsRepository = mockk(relaxed = true)
-    private val mcp: McpServerRepository = mockk(relaxed = true)
     private val mcpServersFlow = MutableStateFlow<List<McpServerConfig>>(emptyList())
     private val approvedOriginsFlow = MutableStateFlow<Set<String>>(emptySet())
 
@@ -67,7 +65,6 @@ class McpServerConfigViewModelTest {
         ),
         toolSettings = settings,
         networkSettings = settings,
-        mcpServerRepository = mcp,
         connectionChecker = checker,
         timeSource = TestTimeSource(),
     )
@@ -172,7 +169,7 @@ class McpServerConfigViewModelTest {
     }
 
     @Test
-    fun `onSubmit in edit mode disconnects old client and updates the config`() = runTest {
+    fun `onSubmit in edit mode updates the config`() = runTest {
         val url = "https://edited.example/mcp"
         mcpServersFlow.value = listOf(McpServerConfig(url = url))
         val viewModel = vm(originalUrl = url)
@@ -182,7 +179,6 @@ class McpServerConfigViewModelTest {
         viewModel.onSubmit()
         advanceUntilIdle()
 
-        coVerify { mcp.disconnect(serverUrl = url) }
         coVerify {
             settings.updateMcpServer(
                 originalUrl = url,

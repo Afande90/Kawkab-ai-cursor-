@@ -128,6 +128,28 @@ class McpServerRepositoryImplTest {
     }
 
     @Test
+    fun `given a list cached with one config when another config fetches within the TTL then the server is asked`() =
+        runTest {
+            // Given
+            val client = mockk<McpClient>(relaxed = true)
+            coEvery { client.getTools() } returns listOf(AgentTool("a", "d", "{}"))
+            val factory = mockk<McpClientFactory>()
+            coEvery { factory.create() } returns client
+            val repo = McpServerRepositoryImpl(pool = pool(factory))
+            repo.clockMs = { 1_000L }
+            repo.fetchToolList(config = config)
+            val reconfigured = config.copy(auth = McpAuth.Bearer(token = "t"))
+
+            // When — no forced refresh: the saved edit's own refetch never finished
+            val result = repo.fetchToolList(config = reconfigured)
+
+            // Then — the list fetched with the old sign-in does not stand in for the new one
+            assertTrue(result.isSuccess)
+            coVerify(exactly = 1) { client.connect(reconfigured) }
+            coVerify(exactly = 2) { client.getTools() }
+        }
+
+    @Test
     fun `given repeated refreshes when config is unchanged then the client connects only once`() = runTest {
         val client = mockk<McpClient>(relaxed = true)
         coEvery { client.getTools() } returns listOf(AgentTool("a", "d", "{}"))

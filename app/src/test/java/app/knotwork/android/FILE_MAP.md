@@ -722,6 +722,7 @@ Only Kotlin files appear inside the generated blocks.
       - `TaskMonitorViewModelTest.kt` - Tests for TaskMonitorViewModel.
     - `tools/` - Tests for the Tools surface, the MCP server editor and the domain allowlist.
       - `AllowedDomainsViewModelTest.kt` - Unit tests for `AllowedDomainsViewModel` — the add-field feedback computation (delegated to `HttpRequestPolicy.normalizeDomain`) and the add / remove persistence gestures.
+      - `McpServerConfigSaveFlowTest.kt` - Saving the MCP server form, as the Tools screen beneath it sees it: the real `ToolsViewModel`, `McpServerConfigViewModel` and `McpServerRepositoryImpl` over one connection pool, with only the MCP client and the settings faked.
       - `McpServerConfigViewModelTest.kt` - Unit tests for `McpServerConfigViewModel`.
       - `ToolRiskResolutionTest.kt` - Guards the one rule the Tools list and the tool-detail screen must agree on: which tools the approval gate resolves from an override, and which it resolves from the code.
       - `ToolsUiStateTest.kt` - The Tools screen's "not offered to the agent" line must tell the story the agent lives in: these cases mirror the ones `ToolRepositoryImplTest` pins for the agent's catalogue.

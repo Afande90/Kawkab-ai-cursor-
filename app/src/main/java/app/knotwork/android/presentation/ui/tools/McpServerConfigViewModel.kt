@@ -10,7 +10,6 @@ import app.knotwork.android.domain.models.McpAuth
 import app.knotwork.android.domain.models.McpServerConfig
 import app.knotwork.android.domain.models.McpTransport
 import app.knotwork.android.domain.models.UpdateMcpServerResult
-import app.knotwork.android.domain.repositories.McpServerRepository
 import app.knotwork.android.domain.repositories.NetworkSettings
 import app.knotwork.android.domain.repositories.ToolSettings
 import app.knotwork.android.domain.services.CleartextPolicy
@@ -45,8 +44,12 @@ import kotlin.time.TimeSource
  *  - **Edit** — `originalUrl` is supplied via the nav graph; the VM
  *    fetches the existing config from `ToolSettings.mcpServers`
  *    on first observation and pre-fills the form. Submission calls
- *    `ToolSettings.updateMcpServer` and disconnects the
- *    underlying client so the next fetch picks up new headers.
+ *    `ToolSettings.updateMcpServer` and leaves the connection alone:
+ *    the Tools screen, observing the list, refetches a server whose
+ *    config changed, and the connection pool replaces a connection
+ *    opened with a different config. Disconnecting here left the row on
+ *    "Connecting…" after a save that changed nothing, or one refused
+ *    for a URL another server holds — nothing refetched it.
  *
  * Also owns the form's Test connection row ([connectionTestState]): it checks the values in the
  * form through [McpConnectionChecker] and saves nothing — *Add server* / *Save* does.
@@ -56,7 +59,6 @@ class McpServerConfigViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val toolSettings: ToolSettings,
     private val networkSettings: NetworkSettings,
-    private val mcpServerRepository: McpServerRepository,
     private val connectionChecker: McpConnectionChecker,
     timeSource: TimeSource.WithComparableMarks,
 ) : ViewModel() {
@@ -243,9 +245,6 @@ class McpServerConfigViewModel @Inject constructor(
             _form.update { it.copy(submitting = true, urlError = null) }
             val config = current.toDomain()
             if (originalUrl != null) {
-                // Drop the cached client so the next fetch reconnects with the
-                // new headers/transport/URL instead of reusing the old session.
-                mcpServerRepository.disconnect(serverUrl = originalUrl)
                 val outcome = toolSettings.updateMcpServer(originalUrl = originalUrl, updated = config)
                 when (outcome) {
                     is UpdateMcpServerResult.Success -> _events.value = Event.Saved
