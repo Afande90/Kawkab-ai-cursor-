@@ -302,8 +302,8 @@ class ToolSettingsStore @Inject constructor(
      * longer holds (removed, or its URL changed) are removed after it. [mcpServers] reads a server's
      * secrets when the list emits, and DataStore emits the list as soon as its write lands — before this
      * function resumes. Written the other way round, an observer of the list (the Tools screen) got a
-     * new server without its auth and headers, or an edited one with its old auth, and connected with
-     * that until the process died.
+     * new server without its auth and headers, or an edited one with its old auth, and kept connecting
+     * with that until something else made the list emit — in practice, until the app restarted.
      *
      * The change ends with one [mcpServerChanges] tick, so observers read the list again once it is
      * whole — the only emission a change of auth or headers alone produces. One tick per change, not per

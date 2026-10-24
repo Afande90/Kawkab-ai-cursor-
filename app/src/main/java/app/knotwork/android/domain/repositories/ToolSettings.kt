@@ -27,8 +27,8 @@ interface ToolSettings {
      * [updateMcpServer] or [removeMcpServer] — a change of a server's auth or
      * headers alone included — and the list a change produces already carries
      * the servers' new auth and headers. The Tools screen connects with what
-     * it last received, so a list without them would stand until the process
-     * died.
+     * it last received, so a list without them would stand until something
+     * else made the list emit.
      */
     val mcpServers: Flow<List<McpServerConfig>>
 

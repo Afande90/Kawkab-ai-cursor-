@@ -49,7 +49,7 @@ details.
   before its sign-in was stored, connected without it, and *Refresh* did the
   same. An edited sign-in had the same fault — the screen kept the old one, and
   a change of the sign-in alone never reached it. The agent was not affected:
-  it reads the server list afresh for every run.
+  it reads the server list afresh each time it lists or calls a tool.
 - **A Wikipedia lookup names the article it found.** `search_tool` takes
   Wikipedia's top search result, and that result can be about something else:
   a search for a farm estate returned the article on an Italian town
