@@ -11,8 +11,10 @@ import kotlinx.coroutines.flow.Flow
  * Adds three concerns on top of the protocol-level client:
  *
  *  1. **Tool list caching.** `fetchToolList` returns cached `McpTool` entries
- *     for up to [TOOL_LIST_TTL_MS] (5 minutes); `forceRefresh = true` bypasses
- *     the cache (wired to the trailing refresh icon in `McpServerRow`).
+ *     for up to [TOOL_LIST_TTL_MS] (5 minutes), and only to a fetch with the
+ *     config they were fetched with — an edited server is asked again;
+ *     `forceRefresh = true` bypasses the cache (wired to the trailing refresh
+ *     icon in `McpServerRow`).
  *  2. **Per-server connection status.** Each URL has a hot `Flow<McpConnectionStatus>`
  *     that drives the status pill in the Tools screen. Transitions are emitted
  *     from inside `fetchToolList`: `Connecting → Connected` on success,
