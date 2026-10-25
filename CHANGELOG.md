@@ -43,6 +43,20 @@ details.
 
 ### Fixed
 
+- **A saved MCP server connects with its sign-in on the Tools screen.** A
+  server added with a sign-in or custom headers showed a connection error on
+  the Tools screen until the app was restarted: the screen got the new server
+  before its sign-in was stored, connected without it, and *Refresh* did the
+  same. An edited sign-in had the same fault — the screen kept the old one, and
+  a change of the sign-in alone never reached it. The agent was not affected:
+  it reads the server list afresh each time it lists or calls a tool.
+- **Saving an MCP server without changes no longer leaves it on
+  *Connecting…*.** The server form disconnected the server before saving it,
+  and the Tools screen reconnects only a server whose settings changed. A save
+  that changed nothing, or one refused because another server already has
+  that address, left the row on *Connecting…* until *Refresh*. The form no
+  longer disconnects; a server whose settings did change is reconnected with
+  them as before.
 - **A Wikipedia lookup names the article it found.** `search_tool` takes
   Wikipedia's top search result, and that result can be about something else:
   a search for a farm estate returned the article on an Italian town

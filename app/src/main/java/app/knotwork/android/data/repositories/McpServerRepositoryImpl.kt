@@ -58,7 +58,14 @@ class McpServerRepositoryImpl @Inject constructor(private val pool: McpConnectio
             val now = clockMs()
             if (!forceRefresh) {
                 val cached = caches[serverUrl]
-                if (cached != null && now - cached.fetchedAtMs <= McpServerRepository.TOOL_LIST_TTL_MS) {
+                // A list fetched with another config (a saved edit's sign-in, transport
+                // or headers) does not answer for this one: the edit's own refetch may
+                // have been cancelled, and serving the old list would show "Connected"
+                // without ever trying the new config.
+                if (cached != null &&
+                    cached.config == config &&
+                    now - cached.fetchedAtMs <= McpServerRepository.TOOL_LIST_TTL_MS
+                ) {
                     // A previously-failed refresh may have left the status flow in `Error`.
                     // Serving cached tools while still telling the UI we're broken would
                     // surface a stale red pill on a perfectly usable server — so reconcile
@@ -87,7 +94,7 @@ class McpServerRepositoryImpl @Inject constructor(private val pool: McpConnectio
             try {
                 val client = client(config)
                 val tools = client.getTools().map { agentTool -> agentTool.toMcpTool(serverUrl) }
-                caches[serverUrl] = CachedToolList(tools = tools, fetchedAtMs = clockMs())
+                caches[serverUrl] = CachedToolList(config = config, tools = tools, fetchedAtMs = clockMs())
                 flow.value = McpConnectionStatus.Connected
                 settled = true
                 Result.success(tools)
@@ -167,7 +174,14 @@ class McpServerRepositoryImpl @Inject constructor(private val pool: McpConnectio
         risk = risk,
     )
 
-    private data class CachedToolList(val tools: List<McpTool>, val fetchedAtMs: Long)
+    /**
+     * One server's tool list as last fetched.
+     *
+     * @property config The config the list was fetched with; the list answers only a fetch with it.
+     * @property tools The tools the server published.
+     * @property fetchedAtMs When the fetch finished, by [clockMs].
+     */
+    private data class CachedToolList(val config: McpServerConfig, val tools: List<McpTool>, val fetchedAtMs: Long)
 
     /** Stable id builder + format constants shared with `ToolDetailScreen`. */
     companion object {

@@ -22,6 +22,13 @@ interface ToolSettings {
      * choice, and arbitrary request headers (typically `Authorization`).
      * Implementations migrate legacy URL-only persistence one-shot to
      * default [McpServerConfig]s on first read.
+     *
+     * Emits again after every change made through [addMcpServer],
+     * [updateMcpServer] or [removeMcpServer] — a change of a server's auth or
+     * headers alone included — and the list a change produces already carries
+     * the servers' new auth and headers. The Tools screen connects with what
+     * it last received, so a list without them would stand until something
+     * else made the list emit.
      */
     val mcpServers: Flow<List<McpServerConfig>>
 

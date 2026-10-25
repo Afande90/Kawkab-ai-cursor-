@@ -141,9 +141,11 @@ class ToolsViewModel @Inject constructor(
         }
         // Existing URLs whose persisted config differs from what the VM last
         // observed get a forced refetch. This is the on-save-edit path: the
-        // user updated auth/transport/URL via `McpServerConfigScreen`, the
-        // repository has just dropped its cached client, and we need to
-        // reconnect with the new config without waiting for a manual Refresh.
+        // user updated auth/transport/headers via `McpServerConfigScreen`, and
+        // the fetch reconnects with the new config (the connection pool replaces
+        // a connection opened with a different one) without waiting for a manual
+        // Refresh. It is the only reconnect a save gets: the form does not
+        // disconnect, so a save that changed nothing leaves the row as it was.
         configs.forEach { config ->
             val previous = previousByUrl[config.url] ?: return@forEach
             if (previous.config != config) {

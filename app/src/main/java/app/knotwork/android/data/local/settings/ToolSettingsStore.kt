@@ -23,10 +23,13 @@ import app.knotwork.android.domain.models.UpdateMcpServerResult
 import app.knotwork.android.domain.repositories.ToolSettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.json.JSONArray
@@ -209,7 +212,9 @@ class ToolSettingsStore @Inject constructor(
         // into the encrypted store before exposing the list (one-time, idempotent).
         migrateLegacyMcpSecrets()
         emitAll(
-            dataStore.preferencesOrEmpty()
+            // [mcpServerChanges] re-emits the list after every server change: a change of
+            // auth or headers alone leaves the stored JSON as it was, so DataStore emits nothing.
+            combine(dataStore.preferencesOrEmpty(), mcpServerChanges) { preferences, _ -> preferences }
                 .map { preferences ->
                     val json = preferences[Keys.MCP_SERVERS_JSON]
                     if (!json.isNullOrBlank()) {
@@ -228,11 +233,7 @@ class ToolSettingsStore @Inject constructor(
     override suspend fun addMcpServer(config: McpServerConfig) = mcpMutex.withLock {
         val previous = mcpServers.first()
         val next = previous.filterNot { it.url == config.url } + config
-        dataStore.edit { preferences ->
-            preferences[Keys.MCP_SERVERS_JSON] = encodeMcpServers(next)
-            preferences.remove(Keys.MCP_SERVER_URLS)
-        }
-        reconcileMcpSecrets(previous, next)
+        persistMcpServers(previous, next)
     }
 
     override suspend fun updateMcpServer(originalUrl: String, updated: McpServerConfig): UpdateMcpServerResult =
@@ -251,25 +252,17 @@ class ToolSettingsStore @Inject constructor(
             } else {
                 snapshot + updated
             }
-            dataStore.edit { preferences ->
-                preferences[Keys.MCP_SERVERS_JSON] = encodeMcpServers(next)
-                preferences.remove(Keys.MCP_SERVER_URLS)
-            }
-            // Reconciling against the prior snapshot drops the old URL's secret on
+            // Persisting against the prior snapshot drops the old URL's secret on
             // a URL change and writes the credentials under the new URL only when
             // they changed.
-            reconcileMcpSecrets(snapshot, next)
+            persistMcpServers(snapshot, next)
             UpdateMcpServerResult.Success
         }
 
     override suspend fun removeMcpServer(url: String) = mcpMutex.withLock {
         val previous = mcpServers.first()
         val next = previous.filterNot { it.url == url }
-        dataStore.edit { preferences ->
-            preferences[Keys.MCP_SERVERS_JSON] = encodeMcpServers(next)
-            preferences.remove(Keys.MCP_SERVER_URLS)
-        }
-        reconcileMcpSecrets(previous, next)
+        persistMcpServers(previous, next)
     }
 
     /**
@@ -295,17 +288,61 @@ class ToolSettingsStore @Inject constructor(
     private val mcpMutex = Mutex()
 
     /**
-     * Reconciles the per-server MCP secrets — auth and custom headers — against a
-     * settings change: removes both encrypted entries of every server dropped (or
-     * whose URL changed), and (re)writes each secret **only for a server where that
-     * secret actually changed** — so editing one server never rewrites (and cannot
-     * clobber) another's.
+     * Counts the server changes [persistMcpServers] has finished, whatever their outcome. [mcpServers]
+     * combines it with DataStore so that every change reaches the list's observers: a secret lives
+     * outside DataStore, and a change of auth or headers alone leaves the stored JSON untouched.
      */
-    private fun reconcileMcpSecrets(previous: List<McpServerConfig>, next: List<McpServerConfig>) {
-        val nextUrls = next.mapTo(mutableSetOf()) { it.url }
-        previous.forEach { config ->
-            if (config.url !in nextUrls) removeMcpSecrets(config.url)
+    private val mcpServerChanges = MutableStateFlow(0L)
+
+    /**
+     * Replaces the server list [previous] with [next], together with its per-server secrets — auth and
+     * custom headers.
+     *
+     * The changed secrets are written **before** the list, and the secrets of every server [next] no
+     * longer holds (removed, or its URL changed) are removed after it. [mcpServers] reads a server's
+     * secrets when the list emits, and DataStore emits the list as soon as its write lands — before this
+     * function resumes. Written the other way round, an observer of the list (the Tools screen) got a
+     * new server without its auth and headers, or an edited one with its old auth, and kept connecting
+     * with that until something else made the list emit — in practice, until the app restarted.
+     *
+     * The change ends with one [mcpServerChanges] tick, so observers read the list again once it is
+     * whole — the only emission a change of auth or headers alone produces. One tick per change, not per
+     * secret: a tick between two secret writes showed an observer an edited server's new auth beside
+     * its old name.
+     *
+     * When the list cannot be written, the secrets written for it are put back as they were and the
+     * failure propagates. A cancelled write is not rolled back: DataStore may complete it after the
+     * caller has gone.
+     *
+     * @param previous The server list as stored.
+     * @param next The server list to store.
+     */
+    private suspend fun persistMcpServers(previous: List<McpServerConfig>, next: List<McpServerConfig>) {
+        try {
+            writeChangedMcpSecrets(previous, next)
+            try {
+                dataStore.edit { preferences ->
+                    preferences[Keys.MCP_SERVERS_JSON] = encodeMcpServers(next)
+                    preferences.remove(Keys.MCP_SERVER_URLS)
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                writeChangedMcpSecrets(previous = next, next = previous)
+                removeDroppedMcpSecrets(previous = next, next = previous)
+                throw e
+            }
+            removeDroppedMcpSecrets(previous, next)
+        } finally {
+            mcpServerChanges.update { it + 1 }
         }
+    }
+
+    /**
+     * (Re)writes each server's secret **only where it changed** between [previous] and [next] — so
+     * editing one server never rewrites (and cannot clobber) another's.
+     */
+    private fun writeChangedMcpSecrets(previous: List<McpServerConfig>, next: List<McpServerConfig>) {
         val previousByUrl = previous.associateBy { it.url }
         next.forEach { config ->
             val before = previousByUrl[config.url]
@@ -315,6 +352,14 @@ class ToolSettingsStore @Inject constructor(
             if (before?.headers != config.headers) {
                 writeMcpHeaders(config.url, config.headers)
             }
+        }
+    }
+
+    /** Removes both encrypted entries of every server in [previous] that [next] does not hold. */
+    private fun removeDroppedMcpSecrets(previous: List<McpServerConfig>, next: List<McpServerConfig>) {
+        val nextUrls = next.mapTo(mutableSetOf()) { it.url }
+        previous.forEach { config ->
+            if (config.url !in nextUrls) removeMcpSecrets(config.url)
         }
     }
 
@@ -517,7 +562,7 @@ class ToolSettingsStore @Inject constructor(
             if (!config.name.isNullOrBlank()) obj.put("name", config.name)
             // Neither auth nor custom headers are written here: both live in the
             // encrypted store (see [writeMcpAuth] / [writeMcpHeaders] /
-            // [reconcileMcpSecrets]), keyed by server URL.
+            // [persistMcpServers]), keyed by server URL.
             array.put(obj)
         }
         return array.toString()
