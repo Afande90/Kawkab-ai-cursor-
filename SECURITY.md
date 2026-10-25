@@ -5,7 +5,7 @@ agent for Android: what data the app handles, how it is protected, what is sent
 off-device when the user opts in to crash reporting, and how to report a
 vulnerability you discover.
 
-The project is currently a **pre-release (0.12.0)** and is published primarily
+The project is currently a **pre-release (0.12.1)** and is published primarily
 for review and experimentation. There are no stability guarantees for storage
 formats, APIs, or persisted data across versions.
 
@@ -20,7 +20,7 @@ the current `0.12.x` line and on the latest commit on `main`.
 | Version            | Supported          |
 |--------------------|--------------------|
 | `0.12.x` (latest)  | :white_check_mark: |
-| `< 0.12.0`         | :x:                |
+| `< 0.12.1`         | :x:                |
 
 ---
 
@@ -783,9 +783,9 @@ install it in a work profile, for example with
 on Android 15 and later. An app in another profile has its own storage and its
 own VPN, and turning the profile off stops it. So PCAPdroid has to run in the
 same profile to see the app's traffic, and the model has to be downloaded again
-inside it. The maintainer has tested 0.12.0 in a work profile made with Shelter:
-it installs, starts and answers with a model downloaded inside the profile, and
-turning the profile off stops it. Private Space has not been tested.
+inside it. In October 2026 the maintainer tested the app in a work profile made
+with Shelter: it installs, starts and answers with a model downloaded inside the
+profile, and turning the profile off stops it. Private Space has not been tested.
 
 #### Seeing what a run did
 

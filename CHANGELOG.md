@@ -13,6 +13,8 @@ details.
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-10-24
+
 ### Added
 
 - **Knotwork is on F-Droid.** F-Droid builds the `foss` APK from source and
@@ -6981,7 +6983,8 @@ that produced the initial 0.1.0 snapshot.
 - **Master key**: `EncryptedSharedPreferences` is rooted in the Android
   Keystore, so the master key is hardware-backed where available.
 
-[Unreleased]: https://github.com/alexeyw/knotwork/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/alexeyw/knotwork/compare/v0.12.1...HEAD
+[0.12.1]: https://github.com/alexeyw/knotwork/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/alexeyw/knotwork/compare/v0.11.1...v0.12.0
 [0.11.1]: https://github.com/alexeyw/knotwork/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/alexeyw/knotwork/compare/v0.10.1...v0.11.0
