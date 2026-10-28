@@ -11,7 +11,7 @@ Dates are calendar dates in Asia/Dubai. The owner asked for commits on `main` an
 | 3. Remove the extra hosted provider | done | 28 Oct 2026 | `aec4bb24` |
 | 4. Three compliance checks | done | 28 Oct 2026 | `c9ff8b78` |
 | 5. Licence audit, `THIRD_PARTY.md`, `NOTICE`, About credits | done | 28 Oct 2026 | `44c481a2` |
-| 6. GitHub Actions: build, unit tests, compliance, APK size, `foss` arm64 artifact | not started | | |
+| 6. GitHub Actions: build, unit tests, compliance, APK size, `foss` arm64 artifact | done | 28 Oct 2026 | `eda85647` |
 | 7. Arabic and RTL tests, emulator setup, Tier 1 harness with a stub engine | not started | | |
 | 8. Kawkab restyle, then tag `m0` | not started | | |
 
