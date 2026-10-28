@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="errors_generic_unexpected">حدث خطأ غير متوقع</string>
+    <string name="errors_chat_pipeline_removed">حُذف المسار. يُستخدم المسار الافتراضي الآن.</string>
+    <string name="errors_orchestrator_cycle_detected">تعذّر الربط: اكتُشفت حلقة</string>
+    <string name="errors_orchestrator_at_least_one_source">يجب أن يبقى مصدر بيانات واحد على الأقل مفعّلًا</string>
+    <string name="errors_orchestrator_pipeline_not_found">المسار غير موجود</string>
+    <string name="errors_orchestrator_validation_missing_input">عقدة الإدخال مفقودة</string>
+    <string name="errors_orchestrator_validation_missing_output">عقدة الإخراج مفقودة</string>
+    <string name="errors_orchestrator_validation_multiple_inputs">لا يُسمح بأكثر من عقدة إدخال</string>
+    <string name="errors_orchestrator_validation_multiple_outputs">لا يُسمح بأكثر من عقدة إخراج</string>
+    <string name="errors_orchestrator_validation_has_cycles">المسار يحتوي حلقات</string>
+    <string name="errors_orchestrator_validation_disconnected_input">عقدة الإدخال غير موصولة</string>
+    <string name="errors_orchestrator_validation_disconnected_output">عقدة الإخراج غير موصولة</string>
+    <string name="errors_orchestrator_validation_unreachable_node">بعض العقد لا يُوصل إليها من الإدخال</string>
+    <string name="errors_orchestrator_validation_dead_end">بعض العقد لا تصل إلى الإخراج</string>
+    <string name="errors_orchestrator_validation_node_no_sources">العقدة \"%1$s\" لن تستقبل أي بيانات — فعّل مصدرًا واحدًا على الأقل</string>
+    <string name="errors_orchestrator_validation_missing_target_pipeline">عقدة المسار \"%1$s\" بلا مسار هدف محدد</string>
+    <string name="errors_orchestrator_validation_target_pipeline_not_found">عقدة المسار \"%1$s\" تشير إلى مسار لم يعد موجودًا</string>
+    <string name="errors_orchestrator_validation_pipeline_cycle">المسارات تشير إلى بعضها في حلقة: %1$s</string>
+    <string name="errors_orchestrator_validation_pipeline_nesting_too_deep">تداخل المسارات أعمق من الحد %1$d</string>
+    <string name="errors_orchestrator_validation_missing_skill">عقدة المهارة \"%1$s\" بلا مهارة محددة</string>
+    <string name="errors_orchestrator_validation_skill_not_found">عقدة المهارة \"%1$s\" تشير إلى مهارة لم تعد موجودة</string>
+</resources>

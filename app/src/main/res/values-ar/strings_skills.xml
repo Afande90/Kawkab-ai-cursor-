@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Skill Library — list surface -->
+    <string name="skills_screen_title">مكتبة المهارات</string>
+    <string name="skills_back_cd">رجوع</string>
+    <string name="skills_search_cd">بحث</string>
+    <string name="skills_more_cd">مزيد من الإجراءات</string>
+    <string name="skills_fab">مهارة جديدة</string>
+    <string name="skills_tab_bundled">مضمّنة</string>
+    <string name="skills_tab_mine">خاصتي</string>
+    <string name="skills_bundled_badge">مضمّنة</string>
+    <string name="skills_tools_all">كل الأدوات</string>
+    <string name="skills_tools_none">بلا أدوات</string>
+    <plurals name="skills_tools_count">
+        <item quantity="zero">%1$d أداة</item>
+        <item quantity="one">%1$d أداة</item>
+        <item quantity="two">%1$d أداتين</item>
+        <item quantity="few">%1$d أدوات</item>
+        <item quantity="many">%1$d أداةً</item>
+        <item quantity="other">%1$d أداة</item>
+    </plurals>
+    <string name="skills_menu_view">عرض</string>
+    <string name="skills_menu_edit">تعديل</string>
+    <string name="skills_menu_duplicate">تكرار</string>
+    <string name="skills_menu_delete">حذف</string>
+    <string name="skills_empty_mine_title">لا مهارات خاصة بك بعد</string>
+    <string name="skills_empty_mine_body">كرّر مهارة مضمّنة لتعدّلها، أو انقر «مهارة جديدة» لتصف قدرة مرة واحدة وتعيد استخدامها في المسارات.</string>
+    <string name="skills_error_title">تعذّر تحميل المهارات</string>
+    <string name="skills_error_body">لم يستجب مخزن المهارات على الجهاز. مهاراتك في أمان — هذه مجرد قراءة.</string>
+    <string name="skills_subtitle_format" tools:ignore="PluralsCandidate">%1$d مضمّنة · %2$d خاصة</string>
+
+    <!-- Skill Library — full-screen editor -->
+    <string name="skills_editor_title_new">مهارة جديدة</string>
+    <string name="skills_editor_title_edit">تعديل المهارة</string>
+    <string name="skills_editor_title_view">عرض المهارة</string>
+    <string name="skills_editor_subtitle_draft">مسودة</string>
+    <string name="skills_editor_subtitle_mine">خاصتي</string>
+    <string name="skills_editor_subtitle_duplicated">نسخة قابلة للتعديل · من مضمّنة</string>
+    <string name="skills_editor_subtitle_readonly">مضمّنة · للقراءة فقط</string>
+    <string name="skills_editor_close_cd">إغلاق</string>
+    <string name="skills_editor_required">مطلوب</string>
+    <string name="skills_editor_skill_kicker">المهارة</string>
+    <string name="skills_editor_skill_kicker_body">تعليمات · تقييد الأدوات · السياق — تُعاد كحزمة واحدة.</string>
+    <string name="skills_editor_name_label">الاسم</string>
+    <string name="skills_editor_name_placeholder">مثلًا: موجز الوقفة</string>
+    <string name="skills_editor_name_error">الاسم مطلوب</string>
+    <string name="skills_editor_description_label">الوصف</string>
+    <string name="skills_editor_description_hint">قصير</string>
+    <string name="skills_editor_description_placeholder">سطر واحد — ماذا تفعل هذه المهارة</string>
+    <string name="skills_editor_instruction_label">التعليمات</string>
+    <string name="skills_editor_instruction_placeholder">صِف القدرة. استخدم $VARIABLES لقيم وقت التشغيل — تُستبدَل عند تشغيل المهارة.</string>
+    <string name="skills_editor_instruction_error">لا يمكن أن تكون التعليمات فارغة</string>
+    <string name="skills_editor_insert_label">إدراج</string>
+    <string name="skills_editor_tools_label">الأدوات</string>
+    <string name="skills_editor_tool_mode_all">كل الأدوات</string>
+    <string name="skills_editor_tool_mode_restrict">تقييد</string>
+    <string name="skills_editor_tool_mode_none">بلا أدوات</string>
+    <string name="skills_editor_tools_selected_format" tools:ignore="PluralsCandidate">%1$d من %2$d محددة</string>
+    <string name="skills_editor_tools_select_header_format">اختيار الأدوات · %1$d/%2$d</string>
+    <string name="skills_editor_tools_clear">مسح</string>
+    <string name="skills_editor_tools_all_title">كل الأدوات — بلا قيد</string>
+    <string name="skills_editor_tools_all_body">تستطيع المهارة استدعاء أي أداة مفعّلة، بما فيها ما تضيفه لاحقًا. اختر هذا للمهارات العامة.</string>
+    <string name="skills_editor_tools_none_title">تعليمات فقط — بلا أدوات</string>
+    <string name="skills_editor_tools_none_body">لا تستطيع المهارة استدعاء أي أداة، حتى ما يملكه الوكيل. هذه قائمة سماح فارغة صراحة، وليست مثل \"بلا قيد\".</string>
+    <string name="skills_editor_context_label">السياق الذي تراه المهارة</string>
+    <string name="skills_editor_context_on_format">%1$d من %2$d مفعّل</string>
+    <string name="skills_editor_delete">حذف المهارة</string>
+
+    <!-- Context flag rows -->
+    <string name="skills_context_chat_label">سجل المحادثة</string>
+    <string name="skills_context_chat_desc">الأدوار السابقة في هذه المحادثة</string>
+    <string name="skills_context_task_label">المهمة الأصلية</string>
+    <string name="skills_context_task_desc">طلب المستخدم الأول</string>
+    <string name="skills_context_input_label">إدخال العقدة</string>
+    <string name="skills_context_input_desc">المخرج الوارد من الخطوة السابقة</string>
+    <string name="skills_context_memory_label">الذاكرة الطويلة</string>
+    <string name="skills_context_memory_desc">مقاطع ذات صلة من الذاكرة المتجهة</string>
+    <string name="skills_context_tools_label">نتائج الأدوات</string>
+    <string name="skills_context_tools_desc">مخرجات استدعاءات الأدوات السابقة</string>
+
+    <!-- Skill Library — delete dialog -->
+    <string name="skills_delete_title_format">حذف \"%1$s\"؟</string>
+    <string name="skills_delete_body_no_deps">هذا يزيل المهارة نهائيًا. لا يستخدمها أي مسار. لا يمكن التراجع عن هذا.</string>
+    <string name="skills_delete_body_one">يشغّل مسار واحد هذه المهارة عبر عقدة مهارة. حذفها يترك تلك العقدة بمرجع معلّق — سيظهر في المسار خطأ تحقق إلى أن تعيد توجيهها أو تحذفها.</string>
+    <string name="skills_delete_body_many_format" tools:ignore="PluralsCandidate">%1$d مسارات تشغّل هذه المهارة عبر عقدة مهارة. حذفها يترك كلًا منها بمرجع معلّق — سيظهر خطأ تحقق إلى أن تعيد توجيه العقدة أو تحذفها.</string>
+    <string name="skills_delete_will_break_format">سيتعطّل · %1$d</string>
+    <string name="skills_delete_keep">إبقاء</string>
+    <string name="skills_delete_anyway">حذف رغم ذلك</string>
+    <string name="skills_delete_delete">حذف</string>
+
+    <!-- More-tab entry -->
+    <string name="more_skills_title">مكتبة المهارات</string>
+    <string name="more_skills_subtitle">تعليمات + أدوات + سياق قابلة لإعادة الاستخدام</string>
+</resources>

@@ -103,4 +103,6 @@ Only Kotlin files appear inside the generated blocks.
       - `TriggersScreenTest.kt` - Compose happy-path for the Triggers surface: starting from the empty state, create a trigger, bind a pipeline, leave it enabled, save, and confirm the new trigger appears in the list.
 - `testing/` - The `@DeviceOnlyInstrumentedTest` annotation, which names an instrumented test that cannot produce a meaningful verdict on an emulator.
   - `DeviceOnlyInstrumentedTest.kt` - Marks an instrumented test that **cannot produce a meaningful verdict on an emulator** and is therefore excluded from every automated CI run by name.
+- `tier1/` - Tier 1 emulator harness. Inference is the debug stub engine, so the test never loads a model.
+  - `Tier1StubEngineTest.kt` - Tier 1 emulator harness (spec §12.1).
 <!-- /AUTO-GEN:FILE_MAP -->

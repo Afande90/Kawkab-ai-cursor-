@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="discover_error_network">تعذّر الوصول إلى Hugging Face. تحقق من الاتصال وأعد المحاولة.</string>
+    <string name="discover_detail_load_error">تعذّر تحميل تفاصيل هذا النموذج.</string>
+    <string name="discover_install_success">تم تثبيت %1$s</string>
+    <string name="discover_install_gated">هذا النموذج مقيّد الوصول. اقبل رخصته على Hugging Face وأضف رمزًا، ثم أعد المحاولة.</string>
+    <string name="discover_install_failed">فشل التنزيل. تحقق من الاتصال وأعد المحاولة.</string>
+</resources>

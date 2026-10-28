@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_help_system_prompt_prefix">يُوضع قبل كل خطوة LLM محلي وسحابة ومهارة، أينما عملت — محادثات ومشغّلات وخلفية. تتخطاه أنواع العقد الأخرى.</string>
+    <string name="settings_help_max_context_length">نافذة عمل النموذج على الجهاز. الأكبر يحتفظ بأكثر دفعة واحدة ويعمل أبطأ، والنماذج السحابية تستخدم نافذتها.</string>
+    <string name="settings_help_audio_max_duration_sec">يتوقف التسجيل وحده عند هذه النقطة ويرسل ما سجّله.</string>
+    <string name="settings_help_local_model_backend">أي شريحة تشغّل النموذج على الجهاز. GPU أسرع حيث يعمل، وإذا تعذّر البدء يعمل التطبيق على CPU.</string>
+    <string name="settings_help_auto_extract_enabled">عند التفعيل تُحفظ الحقائق الثابتة من محادثاتك — الأسماء والتفضيلات وتفاصيل المشاريع — لتُستخدم لاحقًا.</string>
+    <string name="settings_help_memory_compaction_enabled">تُدمج الذكريات القديمة في ملخصات أقصر حين تكثر. يفرّغ مساحة ويفقد الصياغة الحرفية.</string>
+    <string name="settings_help_chat_history_compression_enabled">تُلخَّص السلاسل الطويلة بعد النافذة الحية، فيبقي الوكيل الخلاصة بدل أن ينسى البداية.</string>
+    <string name="settings_help_memory_search_top_k">أقصى عدد ذكريات تُجلب إلى الرد. المزيد سياق أوسع وبدء أبطأ وضوضاء أكثر.</string>
+    <string name="settings_help_memory_search_threshold">الأعلى يستدعي المطابق القريب فقط فيُجلب أقل، والأدنى يستدعي أكثر بما فيها ما يبتعد عن المقصود.</string>
+    <string name="settings_help_memory_recency_half_life_days">سرعة خسارة الذكريات القديمة أمام الجديدة حين يطابق الاثنان. القصير يفضّل هذا الأسبوع، والطويل يعدّ الكل حاليًا.</string>
+    <string name="settings_help_memory_compaction_age_days">العمر اللازم للذكرى قبل أن يجوز للدمج ضمّها. الأحدث تُبقي صياغتها حتى تتجاوزه.</string>
+    <string name="settings_help_max_memory_chunks">سقف القطع المخزّنة. بلوغه يبدأ جولة دمج، فلا أثر له ما دام الدمج متوقفًا.</string>
+    <string name="settings_help_chat_history_compression_threshold_tokens">حجم السلسلة قبل تلخيص ما بعد النافذة الحية. الأدنى يضغط أبكر ويبقي صياغة أقل.</string>
+    <string name="settings_help_chat_history_live_window_size">عدد الرسائل الحديثة التي تبقى بنصها بعد تلخيص السلسلة. الأقدم يبقى في الملخص فقط.</string>
+    <string name="settings_help_memory_summary_default_limit">عدد الذكريات الحديثة التي يسردها متغير الموجّه $MEMORY_SUMMARY. المسارات التي لا تستخدمه لا تتأثر.</string>
+    <string name="settings_help_active_embedding_provider_id">النموذج الذي يحوّل النص إلى أرقام يقارنها بحث الذاكرة. بعد تغييره يبقى الاستدعاء ضعيفًا حتى تعيد التضمين يدويًا.</string>
+    <string name="settings_help_verbose_memory_logging_enabled">يضيف كل ذكرى مستدعاة بنصها إلى الطرفية — مفيد حين تستشهد الإجابة بخطأ، وكاشف على شاشة مشتركة.</string>
+    <string name="settings_help_memory_actions">إعادة التضمين تعيد بناء كل متجه للنموذج الحالي. ابقَ في هذه الشاشة أثناء عملها، والاستدعاء يبقى ضعيفًا حتى تنتهي.</string>
+    <string name="settings_help_pipeline_max_nesting_depth">كم مستوى مسار فرعي يجوز للتشغيل أن ينزل إليه قبل الرفض. الأعمق يركّب أكثر، والسطحي يوقف الانفلات أبكر.</string>
+    <string name="settings_help_structured_output_max_repairs">حين يأتي جواب النموذج بالشكل الخطأ، كم مرة يُعرض عليه مخرجه ويُسأل مجددًا قبل أن تتوقف العقدة.</string>
+    <string name="settings_help_tool_approval_policy">أي استدعاءات تتوقف لتنتظر موافقتك. «أبدًا» يمرّر القراءة فقط والحساسة، والمدمّرة تظل تطلب.</string>
+    <string name="settings_help_block_destructive_tools">عند التفعيل يُرفض استدعاء الأداة المدمّرة فورًا بدل عرضه للموافقة، ويراه التشغيل استدعاءً فاشلًا.</string>
+    <string name="settings_help_block_network_from_local_model">عند التفعيل لا يعمل نموذج سحابي ولا بحث Wikipedia، بما فيه بحث الذاكرة. يجيب Ollama عند localhost أو IP خاص فقط، لا بالاسم.</string>
+    <string name="settings_help_tool_call_timeout_ms">كم ينتظر التشغيل موافقتك على استدعاء أداة قبل أن يتوقف ويسأل لاحقًا. لا يحدّ مدة الاستدعاء نفسه.</string>
+    <string name="settings_help_workspace_max_file_size_bytes">أكبر ملف واحد تقبله مساحة العمل، كتابةً وقراءةً للملف كاملًا.</string>
+    <string name="settings_help_workspace_max_total_bytes">كم من تخزين الجهاز يجوز لمساحة العمل كلها أن تشغل. الكتابة التي تتجاوزه تُرفض ولا تُقص.</string>
+    <string name="settings_help_workspace_read_token_budget">كم من قراءة ملف واحدة، أو نتيجة أداة واحدة للنموذج على الجهاز، يصل إليه. يُقص الباقي ليبقى متسع للموجّه.</string>
+    <string name="settings_help_http_tool_max_response_bytes">كم من استجابة ويب أو نتيجة MCP يُبقي التطبيق. بعده يُقص النص ويُعلَّم. يحدّ الذاكرة لا السياق.</string>
+    <string name="settings_help_scheduled_task_notifications">يصل إشعار حين تنتهي مهمة مجدولة أو تفشل، فلا تنتظر نتيجة الخلفية فتح التطبيق.</string>
+    <string name="settings_help_share_target_pipeline_id">أي مسار يعمل حين تشارك نصًا أو رابطًا إلى التطبيق من مكان آخر.</string>
+    <string name="settings_help_share_reuse_session">عند التفعيل تصل كل مشاركة إلى محادثة \"مشارَك\" واحدة. عند الإيقاف تفتح كل مشاركة محادثتها فتكبر القائمة.</string>
+    <string name="settings_help_quick_settings_tile_pipeline_id">أي مسار تشغّله مربعة الإعدادات السريعة حين تضغطها من لوحة الإشعارات.</string>
+    <!-- Link label inside the hint panel, opening the full contract document. -->
+    <string name="settings_help_link_external_automation">اقرأ العقد</string>
+    <string name="settings_help_external_automation_enabled">يمكن لتطبيقات أخرى على هذا الجهاز بدء تشغيل — Tasker وMacroDroid وadb. عند الإيقاف تُرفض الطلبات ولا يُعاد شيء.</string>
+    <string name="settings_help_external_automation_pipeline_id">المسار الوحيد الذي يجوز لتطبيق خارجي أن يبدأه. لا يُسمّى غيره في الطلب مهما طلب.</string>
+    <string name="settings_help_resume_max_age_hours">أقصى قِدَم للتشغيل المتوقف مع بقائه قابلًا للاستئناف. بعده يُسقَط لأن سياقه المجموع لم يعد صالحًا.</string>
+    <string name="settings_help_background_approval_window_hours">كم ينتظر تشغيل الخلفية موافقتك على استدعاء أداة. إن لم تُجب ينتهي التشغيل بدل الانتظار بلا حد.</string>
+    <string name="settings_help_crash_reporting_enabled">عند الإيقاف لا يغادر شيء الجهاز. عند التفعيل تخرج الأعطال وأسطر التحذير والخطأ — لا رسائلك ولا موجّهاتك ولا مفاتيحك.</string>
+    <string name="settings_help_trace_retention_runs_per_session">كم تشغيلًا سابقًا يُبقي أثر خطواته في المحادثة. تُسقَط الآثار الأقدم، والرسائل نفسها تبقى.</string>
+    <string name="settings_help_trace_retention_max_age_days">كم يُبقى الأثر قبل إسقاطه، مهما كان العدد لكل محادثة. يحدّ ما يتراكم على القرص.</string>
+    <string name="settings_help_temperature">القيم الأعلى تجعل إجابات النموذج على الجهاز أكثر تنوّعًا ومفاجأة، والأدنى يبقيها متوقَّعة.</string>
+    <string name="settings_help_top_k">يحدّ عدد الكلمات المرشحة التي يختار النموذج على الجهاز بينها في كل خطوة. الأصغر يبقيه على الخيار الواضح.</string>
+    <string name="settings_help_top_p">يضيّق كل خطوة على أرجح الكلمات التي تبلغ معًا هذه الحصة من الاحتمال. الأدنى أأمن، والأعلى يجول.</string>
+</resources>

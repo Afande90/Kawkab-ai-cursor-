@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="splash_starting">جارٍ البدء…</string>
+
+    <string name="splash_data_locked_title">تعذّر فتح بياناتك</string>
+    <string name="splash_data_locked_body">تعذّرت قراءة مفتاح التشفير الذي يحمي بياناتك المحلية. هذا غالبًا مؤقت، مثلًا بعد تحديث أندرويد مباشرة. أعد المحاولة أولًا. إذا استمرت المشكلة، فالسبيل الوحيد لمتابعة استخدام التطبيق هو مسح بياناتك والبدء من جديد.</string>
+    <string name="splash_data_locked_reset">مسح البيانات</string>
+    <string name="splash_reset_dialog_title">مسح بياناتك؟</string>
+    <string name="splash_reset_dialog_body">هذا يحذف نهائيًا محادثاتك وذاكرتك الطويلة ومساراتك وإعداداتك المسبقة وملفات مساحة العمل والمرفقات والمهام المجدولة على هذا الجهاز. تُحفظ إعداداتك والمفاتيح المحفوظة. لا يمكن التراجع عن هذا. اكتب %1$s للتأكيد.</string>
+    <string name="splash_reset_dialog_hint">اكتب %1$s للتأكيد</string>
+    <string name="splash_reset_dialog_confirm">مسح البيانات</string>
+</resources>

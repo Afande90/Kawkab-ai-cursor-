@@ -349,6 +349,8 @@ Only Kotlin files appear inside the generated blocks.
       - `JsonPayloadExtractorTest.kt` - Unit tests for `JsonPayloadExtractor`, covering each packaging a local model may wrap a JSON payload in — bare, fenced, and embedded in prose — for both object and array shapes, plus the non-JSON fallback.
       - `ReasoningBlockSplitterTest.kt` - Unit tests for `ReasoningBlockSplitter`.
       - `StructuredOutputGateTest.kt` - Unit tests for `StructuredOutputGate`: each output form (JSON object, JSON array, constrained token), extraction from every payload packaging, the repair loop fixing on a later attempt, exhaustion producing a fully-populated `GateResult.Failed`, the lowered repair temperature, repair-listener notifications, and cancellation propagation.
+    - `stub/` - Unit tests for the Tier 1 stub engine.
+      - `StubLlmInferenceEngineTest.kt` - Tier 1 stub engine (spec §12.1).
     - `stuck/` - Tests for the graph stuck-detector.
       - `GraphStuckDetectorTest.kt` - Unit tests for `GraphStuckDetector`.
     - `TestGraphExecutionEngine.kt` - Builds a `GraphExecutionEngine` for a test from the flat list of dependencies the test fakes.
@@ -575,6 +577,8 @@ Only Kotlin files appear inside the generated blocks.
     - `VerifyRunUseCaseTest.kt` - `VerifyRunUseCase`: each recorded call is sent again from its own prompt with its own sampler and seed, on the model it ran on, and its answer compared by SHA-256.
 - `editor/` - Guard over the browser pipeline editor: its context configuration must still mirror the domain sources.
   - `BrowserEditorContextConfigGuardTest.kt` - Drift guard for the browser pipeline editor's hand-maintained `defaultContextConfig(typeId)` JS function in `pipeline-editor.html`.
+- `i18n/` - Arabic string-key coverage for the app and catalog resources.
+  - `ArabicStringKeysTest.kt` - Fails when a default `strings.xml` key has no Arabic resource (spec §0.6).
 - `integration/` - Background-run integration tests wiring real components end to end — the trigger path, the external-automation path and the autonomy cycle.
   - `BackgroundAutonomyCycleIntegrationTest.kt` - End-to-end JVM integration test of the background-autonomy cycle:
   - `ExternalAutomationBackgroundRunIntegrationTest.kt` - End-to-end JVM integration test of the **external request → background run → callback** arc: the entry point another app on the device broadcasts to.

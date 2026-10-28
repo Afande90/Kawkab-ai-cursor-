@@ -1,0 +1,45 @@
+<resources>
+    <string name="app_name">كوكب</string>
+
+    <!-- Approval notification (Human-in-the-loop fallback when chat is not visible) -->
+    <string name="approval_channel_sensitive_name">موافقات الوكيل</string>
+    <string name="approval_channel_sensitive_description">تأكيدات لتنفيذ الأدوات الحساسة.</string>
+    <string name="approval_channel_destructive_name">موافقات الوكيل — إجراء لا يُتراجع عنه</string>
+    <string name="approval_channel_destructive_description">تأكيدات لتنفيذ أدوات لا يُتراجع عنها (مثل الإرسال أو الحذف أو الشراء).</string>
+    <string name="approval_notification_title_sensitive">موافقة على تنفيذ أداة</string>
+    <string name="approval_notification_title_destructive">إجراء لا يُتراجع عنه يحتاج موافقتك</string>
+    <string name="approval_notification_text">يريد الوكيل استخدام %1$s. هل تسمح؟</string>
+    <string name="approval_notification_big_text">يريد الوكيل استخدام %1$s بهذه المعطيات:\n%2$s</string>
+    <string name="approval_notification_waiting_text">بانتظار موافقتك على استخدام %1$s.</string>
+    <string name="approval_notification_review_in_chat">راجع في المحادثة</string>
+    <string name="approval_notification_arguments_cut">المعطيات أطول مما يستطيع هذا الإشعار عرضه. افتح المحادثة لتقرأها كلها قبل الموافقة.</string>
+    <!-- Last line of the expanded approval text, after a blank line: whose words, then the request. -->
+    <string name="approval_notification_request_line">%1$s: %2$s</string>
+    <string name="approval_notification_request_image_only">أرسلت صورة بلا نص.</string>
+
+    <!-- Clarification notification (background waiting for the user's answer) -->
+    <string name="clarification_channel_name">أسئلة الوكيل</string>
+    <string name="clarification_channel_description">أسئلة يحتاج الوكيل إجابتها ليتابع مهمة متوقفة.</string>
+    <string name="clarification_notification_title">الوكيل يحتاج إجابتك</string>
+
+    <!-- Entry surfaces: launcher shortcuts, share target, Quick Settings tile -->
+    <string name="shortcut_new_chat_short">محادثة جديدة</string>
+    <string name="shortcut_new_chat_long">ابدأ محادثة جديدة</string>
+    <string name="shortcut_pipelines_short">مسارات</string>
+    <string name="shortcut_pipelines_long">افتح مكتبة المسارات</string>
+    <string name="share_not_configured">اختر مسارًا للمشاركة من الإعدادات ← الخلفية.</string>
+    <string name="share_nothing_to_share">لا شيء للمشاركة.</string>
+    <string name="share_rate_limited">مشاركات كثيرة في الساعة الأخيرة. حاول لاحقًا.</string>
+    <string name="share_image_blocked_cloud">مسار المشاركة يبدأ في السحابة، والصور تبقى على جهازك.</string>
+    <string name="share_image_blocked_model_no_vision">هذا النموذج لا يقرأ الصور. فعّل دعم الصور من النماذج.</string>
+    <string name="share_image_blocked_no_vision_step">مسار المشاركة بلا خطوة على الجهاز تستطيع قراءة الصور.</string>
+    <string name="share_session_image_name">صورة مشارَكة</string>
+    <string name="share_session_content_name">محتوى مشارَك</string>
+    <string name="share_session_reused_name">مشارَك</string>
+    <string name="tile_label">تشغيل مسار</string>
+    <string name="tile_duty_prompt">شغّل مسار الواجب.</string>
+    <string name="tile_running">المسار يعمل في الخلفية…</string>
+    <string name="tile_not_configured">اختر مسار الإعدادات السريعة من الإعدادات ← الخلفية.</string>
+    <string name="tile_subtitle_ready">جاهز</string>
+    <string name="tile_subtitle_unconfigured">غير مُعدّ</string>
+</resources>

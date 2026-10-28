@@ -133,3 +133,15 @@ Local `./gradlew :app:assembleFossRelease` succeeded in 5m 28s. The APK is 64380
 
 `scripts/ci-local.sh` runs `check`, `:buildSrc:test`, the foss release assemble, and the size script. It does not start an emulator.
 
+## 2026-10-28 — Arabic resources and the Tier 1 stub
+
+Every default `strings.xml` key in `app` and `catalog` has a `values-ar` entry. The launcher name in Arabic is كوكب. Plurals include the Arabic quantities zero, one, two, few, many, and other.
+
+`ArabicStringKeysTest` walks the source XML. `ArabicLayoutDirectionTest` sets the locale to Arabic and asserts Compose `LayoutDirection.Rtl`.
+
+The Tier 1 engine is `StubLlmInferenceEngine` in the debug source set. It accepts any path, reads no file, and returns the fixed text `stub-engine`. Release APKs do not compile it. `Tier1StubEngineTest` is the emulator harness and was not run here: this machine has no emulator. The same behaviour is covered by `StubLlmInferenceEngineTest` on the JVM.
+
+`scripts/emulator-setup.sh` grants the runtime permissions the later command tests need, sets `ACCESS_RESTRICTED_SETTINGS`, enables accessibility, and seeds two contacts. The accessibility component is `app.kawkab.android.accessibility.KawkabAccessibilityService`. That class does not exist yet; task 10 must use this name. The script was not run against a device.
+
+Checks on 28 Oct 2026, all passed: `ArabicStringKeysTest`, `StubLlmInferenceEngineTest`, `ArabicLayoutDirectionTest`, `:app:compileFossDebugAndroidTestKotlin`, `:app:ktlintCheck`, `:catalog:ktlintCheck`, `:app:detekt`, `:catalog:detekt`, `:app:verifyFileMap`, `:app:verifyComplianceSource`. No gate is BLOCKED.
+

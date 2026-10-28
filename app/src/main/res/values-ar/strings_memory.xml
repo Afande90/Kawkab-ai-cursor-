@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="memory_msg_load_error">تعذّر تحديث الذاكرة</string>
+    <string name="memory_msg_add_error">تعذّر الحفظ في الذاكرة</string>
+    <string name="memory_msg_edit_error">تعذّر حفظ التعديل</string>
+</resources>

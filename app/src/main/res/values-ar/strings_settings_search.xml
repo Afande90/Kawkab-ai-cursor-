@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Generation -->
+    <string name="settings_search_name_system_prompt_prefix">تعليمات النظام</string>
+    <string name="settings_search_desc_system_prompt_prefix">تُضاف في بداية كل موجّه نظام يرسله الوكيل.</string>
+    <string name="settings_search_name_temperature">الحرارة</string>
+    <string name="settings_search_desc_temperature">عشوائية العيّنة — الأعلى أكثر إبداعًا.</string>
+    <string name="settings_search_name_top_k">Top-K</string>
+    <string name="settings_search_desc_top_k">الاختيار من الرموز الـ K الأرجح فقط.</string>
+    <string name="settings_search_name_top_p">Top-P</string>
+    <string name="settings_search_desc_top_p">كتلة احتمال العيّنة النووية.</string>
+    <string name="settings_search_name_max_context_length">أقصى طول للسياق</string>
+    <string name="settings_search_desc_max_context_length">نافذة الرموز التي يقرأها النموذج في كل دور.</string>
+    <string name="settings_search_name_audio_max_duration_sec">مدة الإدخال الصوتي</string>
+    <string name="settings_search_desc_audio_max_duration_sec">أقصى مدة التقاط صوتي قبل توقف التسجيل.</string>
+
+    <!-- Models -->
+    <string name="settings_search_name_local_model_backend">محرّك النموذج المحلي</string>
+    <string name="settings_search_desc_local_model_backend">محرّك الاستدلال على الجهاز (GPU/CPU).</string>
+    <string name="settings_search_name_link_provider_list">المزوّدون الخارجيون</string>
+    <string name="settings_search_desc_link_provider_list">مفاتيح API السحابية وإعادة المحاولة في تفاصيل المزوّد.</string>
+    <string name="settings_search_name_default_pipeline_id">المسار الافتراضي</string>
+    <string name="settings_search_desc_default_pipeline_id">يُضبط من مكتبة المسارات — يُعرض هنا ولا يُعدَّل.</string>
+
+    <!-- Memory -->
+    <string name="settings_search_name_auto_extract_enabled">استخراج الذكريات تلقائيًا</string>
+    <string name="settings_search_desc_auto_extract_enabled">تعلّم الحقائق الثابتة من المحادثات تلقائيًا.</string>
+    <string name="settings_search_name_memory_compaction_enabled">دمج الذاكرة</string>
+    <string name="settings_search_desc_memory_compaction_enabled">ادمج ولخّص الذكريات القديمة لتوفير المساحة.</string>
+    <string name="settings_search_name_chat_history_compression_enabled">ضغط سجل المحادثة</string>
+    <string name="settings_search_desc_chat_history_compression_enabled">لخّص السلاسل الطويلة بعد النافذة الحية.</string>
+    <string name="settings_search_name_memory_search_top_k">بحث الذاكرة Top-K</string>
+    <string name="settings_search_desc_memory_search_top_k">كم جزءًا يعيده استرجاع واحد.</string>
+    <string name="settings_search_name_memory_search_threshold">عتبة بحث الذاكرة</string>
+    <string name="settings_search_desc_memory_search_threshold">أدنى درجة تشابه لإظهار جزء.</string>
+    <string name="settings_search_name_memory_recency_half_life_days">عمر النصف للحداثة</string>
+    <string name="settings_search_desc_memory_recency_half_life_days">سرعة فقدان الذكريات الأقدم لوزن الترتيب.</string>
+    <string name="settings_search_name_memory_compaction_age_days">عمر الدمج</string>
+    <string name="settings_search_desc_memory_compaction_age_days">العمر الذي تصبح الذكرى بعده مرشحة للدمج.</string>
+    <string name="settings_search_name_max_memory_chunks">أقصى أجزاء الذاكرة</string>
+    <string name="settings_search_desc_max_memory_chunks">سقف صارم لعدد الأجزاء المخزّنة.</string>
+    <string name="settings_search_name_chat_history_compression_threshold_tokens">عتبة ضغط السجل</string>
+    <string name="settings_search_desc_chat_history_compression_threshold_tokens">ميزانية الرموز التي يُضغط السجل عند تجاوزها.</string>
+    <string name="settings_search_name_chat_history_live_window_size">حجم النافذة الحية</string>
+    <string name="settings_search_desc_chat_history_live_window_size">الرسائل الحديثة التي تُبقى بنصها عند الضغط.</string>
+    <string name="settings_search_name_memory_summary_default_limit">حد ملخص الذاكرة</string>
+    <string name="settings_search_desc_memory_summary_default_limit">الذكريات الحديثة المعروضة في \$MEMORY_SUMMARY.</string>
+    <string name="settings_search_name_active_embedding_provider_id">مزوّد التضمين</string>
+    <string name="settings_search_desc_active_embedding_provider_id">نموذج المتجهات المستخدم لاسترجاع الذاكرة.</string>
+    <string name="settings_search_name_verbose_memory_logging_enabled">تسجيل الذاكرة المفصّل</string>
+    <string name="settings_search_desc_verbose_memory_logging_enabled">سجّل كل استرجاع في الطرفية.</string>
+    <string name="settings_search_name_memory_actions">تصدير · استيراد · إعادة التضمين · مسح</string>
+    <string name="settings_search_desc_memory_actions">انسخ احتياطيًا أو استعد أو أعد التضمين أو امسح الذاكرة.</string>
+
+    <!-- Run limits &amp; structured output -->
+    <string name="settings_search_name_pipeline_max_nesting_depth">أقصى عمق تداخل</string>
+    <string name="settings_search_desc_pipeline_max_nesting_depth">أعمق توسعة مسموحة لمسار فرعي.</string>
+    <string name="settings_search_name_structured_output_max_repairs">إصلاحات المخرجات المنظمة</string>
+    <string name="settings_search_desc_structured_output_max_repairs">إعادات محاولة لتقويم مخرج JSON المشوّه.</string>
+    <string name="settings_search_name_link_provider_detail">محاولات إعادة المحاولة السحابية / التأخير الأساسي</string>
+    <string name="settings_search_desc_link_provider_detail">إعدادات إعادة المحاولة السحابية في تفاصيل المزوّد — رابط فقط.</string>
+
+    <!-- Tools &amp; workspace -->
+    <string name="settings_search_name_tool_approval_policy">الموافقة على استدعاءات الأدوات</string>
+    <string name="settings_search_desc_tool_approval_policy">متى يتوقف انتظارًا لموافقتك.</string>
+    <string name="settings_search_name_block_destructive_tools">حجب الأدوات المدمّرة</string>
+    <string name="settings_search_desc_block_destructive_tools">ارفض الاستدعاءات المدمّرة فورًا بدل السؤال.</string>
+    <string name="settings_search_name_block_network_from_local_model">حجب الشبكة عن النموذج المحلي</string>
+    <string name="settings_search_desc_block_network_from_local_model">النماذج السحابية وبحث الذاكرة وWikipedia متوقفة · Ollama على IP محلي فقط.</string>
+    <string name="settings_search_name_link_tools_screen">إدارة الأدوات / خوادم MCP</string>
+    <string name="settings_search_desc_link_tools_screen">تفعيل الأدوات أو إيقافها، وتجاوزات الخطر، وخوادم MCP.</string>
+    <string name="settings_search_name_tool_call_timeout_ms">انتظار الموافقة</string>
+    <string name="settings_search_desc_tool_call_timeout_ms">كم ينتظر التشغيل موافقتك قبل أن يتوقف.</string>
+    <string name="settings_search_name_workspace_max_file_size_bytes">أكبر ملف</string>
+    <string name="settings_search_desc_workspace_max_file_size_bytes">أكبر ملف واحد تكتبه مساحة العمل أو تقرأه.</string>
+    <string name="settings_search_name_workspace_max_total_bytes">حد حجم مساحة العمل</string>
+    <string name="settings_search_desc_workspace_max_total_bytes">إجمالي ما يجوز للوكيل شغله في مساحة العمل.</string>
+    <string name="settings_search_name_workspace_read_token_budget">ميزانية القراءة الواحدة</string>
+    <string name="settings_search_desc_workspace_read_token_budget">ميزانية الرموز لقراءة واحدة من مساحة العمل أو لنتيجة أداة.</string>
+    <string name="settings_search_name_http_tool_max_response_bytes">أكبر استجابة أداة</string>
+    <string name="settings_search_desc_http_tool_max_response_bytes">أكبر استجابة ويب أو نتيجة MCP تُحفظ.</string>
+    <string name="settings_search_name_link_files_domains">نطاقات HTTP المسموحة</string>
+    <string name="settings_search_desc_link_files_domains">تُدار في شاشة الملفات والنطاقات.</string>
+
+    <!-- Background &amp; triggers -->
+    <string name="settings_search_name_scheduled_task_notifications">تنبيهات المهام المجدولة</string>
+    <string name="settings_search_desc_scheduled_task_notifications">أبلغ عند انطلاق مهمة مجدولة.</string>
+    <string name="settings_search_name_share_target_pipeline_id">مسار المشاركة</string>
+    <string name="settings_search_desc_share_target_pipeline_id">المسار الذي يعمل حين تشارك نصًا أو صورة إلى التطبيق.</string>
+    <string name="settings_search_name_share_reuse_session">إبقاء المشاركات في محادثة واحدة</string>
+    <string name="settings_search_desc_share_reuse_session">أضف كل مشاركة إلى محادثة \"مشارَك\" واحدة بدل محادثة جديدة في كل مرة.</string>
+    <string name="settings_search_name_quick_settings_tile_pipeline_id">مسار الإعدادات السريعة</string>
+    <string name="settings_search_desc_quick_settings_tile_pipeline_id">المسار الذي تشغّله مربعة الإعدادات السريعة بضغطة.</string>
+    <string name="settings_search_name_resume_max_age_hours">أقصى عمر للاستئناف</string>
+    <string name="settings_search_desc_resume_max_age_hours">المدة التي يظل فيها التشغيل المتوقف قابلًا للاستئناف.</string>
+    <string name="settings_search_name_background_approval_window_hours">نافذة موافقة الخلفية</string>
+    <string name="settings_search_desc_background_approval_window_hours">المدة التي ينتظرها التشغيل المتوقف للموافقة.</string>
+
+    <string name="settings_search_name_external_automation_enabled">الأتمتة الخارجية</string>
+    <string name="settings_search_desc_external_automation_enabled">اسمح لـ Tasker أو MacroDroid أو adb ببدء تشغيل · متوقف افتراضيًا.</string>
+    <string name="settings_search_name_external_automation_pipeline_id">مسار قد تشغّله تطبيقات أخرى</string>
+    <string name="settings_search_desc_external_automation_pipeline_id">المسار الوحيد الذي يجوز للأتمتة الخارجية تشغيله.</string>
+    <string name="settings_search_name_link_external_automation_journal">سجل الطلبات الخارجية</string>
+    <string name="settings_search_desc_link_external_automation_journal">كل طلب وارد، قُبل أو رُفض.</string>
+
+    <!-- Privacy -->
+    <string name="settings_search_name_crash_reporting_enabled">الإبلاغ عن الأعطال</string>
+    <string name="settings_search_desc_crash_reporting_enabled">اختياري · أثر التعطل فقط، بلا محتوى الرسائل.</string>
+    <string name="settings_search_name_trace_retention_runs_per_session">الإبقاء على الأثر · التشغيلات</string>
+    <string name="settings_search_desc_trace_retention_runs_per_session">التشغيلات الحديثة المُبقاة لكل محادثة.</string>
+    <string name="settings_search_name_trace_retention_max_age_days">الإبقاء على الأثر · العمر</string>
+    <string name="settings_search_desc_trace_retention_max_age_days">أقصى عمر يُبقى فيه أثر التشغيل.</string>
+    <string name="settings_search_name_link_backup_restore">النسخ الاحتياطي والاستعادة</string>
+    <string name="settings_search_desc_link_backup_restore">احتفظ بنسخة، أو انقل إلى هاتف جديد.</string>
+
+    <!-- About -->
+    <string name="settings_search_name_identity">الهوية</string>
+    <string name="settings_search_desc_identity">مجهول · هذا الجهاز · المفاتيح في Keystore.</string>
+    <string name="settings_search_name_link_licenses">إصدار التطبيق والرخص</string>
+    <string name="settings_search_desc_link_licenses">معلومات البناء ورخص المصدر المفتوح.</string>
+    <string name="settings_search_name_reset">إعادة ضبط كل الإعدادات</string>
+    <string name="settings_search_desc_reset">استعادة الافتراضي · تبقى المحادثات والذاكرة.</string>
+
+</resources>

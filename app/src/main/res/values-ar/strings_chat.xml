@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    سلاسل واجهة المحادثة.
+-->
+<resources>
+    <string name="chat_export_chooser_title">تصدير المحادثة</string>
+
+    <string name="chat_console_clear_dialog_title">مسح سجل وحدة التحكم؟</string>
+    <string name="chat_console_clear_dialog_text">هذا يزيل كل الأحداث من سجل الجلسة الحالية. لا يمكن التراجع عن هذا الإجراء.</string>
+
+    <string name="chat_thought_deny">رفض</string>
+    <string name="chat_thought_approve">موافقة</string>
+
+    <string name="chat_snackbar_copied">نُسخ</string>
+    <string name="chat_snackbar_saved_to_memory">حُفظ في الذاكرة</string>
+    <string name="chat_snackbar_save_to_memory_failed">تعذّر الحفظ في الذاكرة</string>
+    <string name="chat_snackbar_console_copied">نُسخ سجل وحدة التحكم</string>
+    <string name="chat_snackbar_console_line_copied">نُسخ السطر</string>
+    <string name="chat_snackbar_attachment_failed">تعذّر إرفاق تلك الصورة. جرّب صورة أخرى.</string>
+    <string name="chat_snackbar_attachment_replaced">استُبدلت الصورة السابقة — صورة واحدة في كل مرة.</string>
+    <string name="chat_snackbar_voice_failed">تعذّرت معالجة التسجيل. حاول مرة أخرى.</string>
+    <string name="chat_snackbar_resume_unavailable">لم يعد يمكن استئناف هذا التشغيل</string>
+    <string name="chat_snackbar_resume_graph_changed">عُدّل المسار \u2014 الاستئناف غير متاح، أعد بدء المهمة بدلًا من ذلك</string>
+    <string name="chat_snackbar_resume_expired">انقضت نافذة الاستئناف \u2014 لا يمكن إلا تجاهل هذا التشغيل</string>
+    <string name="chat_console_clear_dialog_confirm">مسح</string>
+    <string name="chat_console_clear_dialog_cancel">إلغاء</string>
+
+    <string name="chat_home_debug_state_empty">فارغ</string>
+    <string name="chat_home_debug_state_idle">خامل</string>
+    <string name="chat_home_debug_state_generating">توليد</string>
+    <string name="chat_home_debug_state_hitl_readonly">HITL — للقراءة فقط</string>
+    <string name="chat_home_debug_state_hitl_sensitive">HITL — حسّاس</string>
+    <string name="chat_home_debug_state_hitl_destructive">HITL — لا يُتراجع عنه</string>
+    <string name="chat_home_debug_state_clarification">توضيح</string>
+    <string name="chat_home_debug_state_interrupted">مقاطَع</string>
+    <string name="chat_home_debug_state_error">خطأ</string>
+    <string name="chat_home_debug_state_drawer_open">الدرج مفتوح</string>
+    <string name="chat_home_debug_state_console_partial">وحدة التحكم — جزئية</string>
+    <string name="chat_home_debug_state_console_full">وحدة التحكم — كاملة</string>
+
+    <!--
+        Two spaces between the bracketed tag and the body keep the surfaces aligned.
+    -->
+    <string name="chat_home_status_idle">[NODE]  خامل · جاهز</string>
+    <string name="chat_home_status_generating">[NODE]  يُولّد</string>
+    <string name="chat_home_status_preparing_model">[NODE]  تحميل النموذج · يُرجى الانتظار</string>
+    <string name="chat_home_status_waiting_in_queue">[NODE]  بانتظار تشغيل آخر · في الطابور</string>
+    <string name="chat_home_loader_preparing_model">جارٍ تحميل النموذج…</string>
+    <string name="chat_home_loader_waiting_in_queue">جارٍ الانتظار…</string>
+    <string name="chat_home_status_hitl">[TOOL]  بانتظار الموافقة</string>
+    <string name="chat_home_status_clarification">[NODE]  بانتظار توضيح</string>
+    <string name="chat_home_status_error">[NODE]  خطأ · راجع الرسالة</string>
+
+    <string name="chat_home_stub_session_1_title">مساعد شخصي</string>
+    <string name="chat_home_stub_session_1_subtitle">الآن · المسار الافتراضي</string>
+    <string name="chat_home_stub_session_2_title">مخطّط إعادة الهيكلة</string>
+    <string name="chat_home_stub_session_2_subtitle">12د · مسار الشفرة</string>
+    <string name="chat_home_stub_session_3_title">ملخص أسبوعي</string>
+    <string name="chat_home_stub_session_3_subtitle">2س · الملخّص</string>
+    <string name="chat_home_stub_session_4_title">بحث السفر</string>
+    <string name="chat_home_stub_session_4_subtitle">الإثنين · المسار الافتراضي</string>
+    <string name="chat_home_stub_session_5_title">اختبار LiteRT</string>
+    <string name="chat_home_stub_session_5_subtitle">الأسبوع الماضي</string>
+
+    <string name="chat_home_suggestion_card_1_title">فيمَ تستطيع مساعدتي؟</string>
+    <string name="chat_home_suggestion_card_1_tools" />
+    <string name="chat_home_suggestion_card_2_title">لخّص ملاحظة طويلة ألصقها هنا</string>
+    <string name="chat_home_suggestion_card_2_tools" />
+    <string name="chat_home_suggestion_card_3_title">قسّم هدفًا إلى خطوات</string>
+    <string name="chat_home_suggestion_card_3_tools" />
+
+    <string name="chat_overflow_export">تصدير المحادثة</string>
+    <string name="chat_overflow_delete">حذف المحادثة</string>
+
+    <string name="chat_delete_dialog_title">حذف هذه المحادثة؟</string>
+    <string name="chat_delete_dialog_text">هذا يزيل المحادثة نهائيًا، بما في ذلك كل رسالة فيها. لا يمكن التراجع عن هذا.</string>
+    <string name="chat_delete_dialog_confirm">حذف</string>
+    <string name="chat_delete_dialog_cancel">إلغاء</string>
+
+    <string name="chat_rename_sheet_title">إعادة تسمية المحادثة</string>
+    <string name="chat_rename_sheet_label">اسم المحادثة</string>
+    <string name="chat_rename_sheet_save">حفظ</string>
+    <string name="chat_rename_sheet_cancel">إلغاء</string>
+
+    <string name="chat_new_thread_sheet_title">بدء محادثة جديدة</string>
+    <string name="chat_new_thread_sheet_create">إنشاء</string>
+    <string name="chat_new_thread_sheet_cancel">إلغاء</string>
+    <string name="chat_new_thread_sheet_use_default">استخدام المسار الافتراضي</string>
+
+    <string name="chat_import_failed">تعذّر استيراد المحادثة: %1$s</string>
+    <string name="chat_import_unreadable">تعذّرت قراءة الملف المحدد.</string>
+
+    <string name="chat_report_dialog_title">الإبلاغ عن هذا الرد</string>
+    <string name="chat_report_dialog_body">بيّن الخطأ فيما أنتجه النموذج. هذا يساعد على تحسين المسارات والموجّهات التي تأتي مع التطبيق.</string>
+    <string name="chat_report_dialog_note_placeholder">ما الخطأ في هذا الرد؟ (اختياري)</string>
+    <string name="chat_report_dialog_disclosure">لا يُرسَل شيء تلقائيًا. «فتح بلاغ» يضع هذا البلاغ في رابط GitHub، فيتلقاه GitHub عند فتح الصفحة؛ ولا يصبح علنيًا إلا إذا أرسلته. لتعديله أولًا، انسخه بدلًا من ذلك.</string>
+    <string name="chat_report_dialog_copy">نسخ البلاغ</string>
+    <string name="chat_report_dialog_cancel">إلغاء</string>
+    <string name="chat_report_dialog_open_issue">فتح بلاغ</string>
+    <string name="chat_report_reason_harmful">ضار أو غير آمن</string>
+    <string name="chat_report_reason_sexual">صريح جنسيًا</string>
+    <string name="chat_report_reason_hate">كراهية أو تحرش</string>
+    <string name="chat_report_reason_misleading">مضلِّل</string>
+    <string name="chat_report_reason_other">شيء آخر</string>
+    <string name="chat_report_snackbar_copied">نُسخ البلاغ</string>
+    <string name="chat_report_snackbar_no_browser">لا تطبيق يستطيع فتح متتبّع البلاغات. نُسخ البلاغ بدلًا من ذلك.</string>
+
+    <string name="chat_snackbar_archived">أُرشفت المحادثة</string>
+    <string name="chat_snackbar_archive_undo">تراجع</string>
+    <string name="chat_snackbar_restored">استُعيدت المحادثة</string>
+
+    <string name="chat_archive_title">المحادثات المؤرشفة</string>
+    <string name="chat_archive_back_cd">رجوع</string>
+    <plurals name="chat_archive_subtitle">
+        <item quantity="zero">%1$d محادثة · الأحدث أولًا</item>
+        <item quantity="one">%1$d محادثة · الأحدث أولًا</item>
+        <item quantity="two">%1$d محادثتين · الأحدث أولًا</item>
+        <item quantity="few">%1$d محادثات · الأحدث أولًا</item>
+        <item quantity="many">%1$d محادثةً · الأحدث أولًا</item>
+        <item quantity="other">%1$d محادثة · الأحدث أولًا</item>
+    </plurals>
+    <string name="chat_archive_restore">استعادة</string>
+    <string name="chat_archive_export">تصدير المحادثة</string>
+    <string name="chat_archive_delete_forever">حذف نهائي</string>
+    <string name="chat_archive_row_menu_cd">مزيد من الإجراءات</string>
+    <string name="chat_archive_ran_after_archiving">اكتمل التشغيل بعد الأرشفة</string>
+    <string name="chat_archive_footer">تبقى المحادثات المؤرشفة إلى أن تحذفها</string>
+    <string name="chat_archive_empty_title">لا شيء مؤرشف</string>
+    <string name="chat_archive_empty_body">تُخرج الأرشفة المحادثة من قائمتك دون حذفها. في قائمة المحادثات، اسحب محادثة أو افتح قائمتها واختر أرشفة — فتبقى هنا كاملة إلى أن تستعيدها.</string>
+    <string name="chat_archive_error_title">تعذّر تحميل الأرشيف</string>
+    <string name="chat_archive_error_retry">حاول مرة أخرى</string>
+    <string name="chat_archive_delete_title">حذف هذه المحادثة؟</string>
+    <string name="chat_archive_delete_body">سيُحذف \"%1$s\" وكل رسائله من هذا الجهاز. لا يمكن التراجع عن هذا.</string>
+    <string name="chat_archive_delete_confirm">حذف</string>
+    <string name="chat_archive_delete_cancel">إلغاء</string>
+
+    <string name="chat_archive_when_just_now">أُرشفت الآن</string>
+    <string name="chat_archive_when_yesterday">أُرشفت أمس</string>
+    <string name="chat_archive_when_unknown">مؤرشفة</string>
+    <plurals name="chat_archive_when_minutes">
+        <item quantity="zero">أُرشفت قبل %1$d دقيقة</item>
+        <item quantity="one">أُرشفت قبل %1$d دقيقة</item>
+        <item quantity="two">أُرشفت قبل %1$d دقيقتين</item>
+        <item quantity="few">أُرشفت قبل %1$d دقائق</item>
+        <item quantity="many">أُرشفت قبل %1$d دقيقةً</item>
+        <item quantity="other">أُرشفت قبل %1$d دقيقة</item>
+    </plurals>
+    <plurals name="chat_archive_when_hours">
+        <item quantity="zero">أُرشفت قبل %1$d ساعة</item>
+        <item quantity="one">أُرشفت قبل %1$d ساعة</item>
+        <item quantity="two">أُرشفت قبل %1$d ساعتين</item>
+        <item quantity="few">أُرشفت قبل %1$d ساعات</item>
+        <item quantity="many">أُرشفت قبل %1$d ساعةً</item>
+        <item quantity="other">أُرشفت قبل %1$d ساعة</item>
+    </plurals>
+    <plurals name="chat_archive_when_days">
+        <item quantity="zero">أُرشفت قبل %1$d يوم</item>
+        <item quantity="one">أُرشفت قبل %1$d يوم</item>
+        <item quantity="two">أُرشفت قبل %1$d يومين</item>
+        <item quantity="few">أُرشفت قبل %1$d أيام</item>
+        <item quantity="many">أُرشفت قبل %1$d يومًا</item>
+        <item quantity="other">أُرشفت قبل %1$d يوم</item>
+    </plurals>
+    <plurals name="chat_archive_when_weeks">
+        <item quantity="zero">أُرشفت قبل %1$d أسبوع</item>
+        <item quantity="one">أُرشفت قبل %1$d أسبوع</item>
+        <item quantity="two">أُرشفت قبل %1$d أسبوعين</item>
+        <item quantity="few">أُرشفت قبل %1$d أسابيع</item>
+        <item quantity="many">أُرشفت قبل %1$d أسبوعًا</item>
+        <item quantity="other">أُرشفت قبل %1$d أسبوع</item>
+    </plurals>
+    <plurals name="chat_archive_when_months">
+        <item quantity="zero">أُرشفت قبل %1$d شهر</item>
+        <item quantity="one">أُرشفت قبل %1$d شهر</item>
+        <item quantity="two">أُرشفت قبل %1$d شهرين</item>
+        <item quantity="few">أُرشفت قبل %1$d أشهر</item>
+        <item quantity="many">أُرشفت قبل %1$d شهرًا</item>
+        <item quantity="other">أُرشفت قبل %1$d شهر</item>
+    </plurals>
+    <plurals name="chat_archive_when_years">
+        <item quantity="zero">أُرشفت قبل %1$d سنة</item>
+        <item quantity="one">أُرشفت قبل %1$d سنة</item>
+        <item quantity="two">أُرشفت قبل %1$d سنتين</item>
+        <item quantity="few">أُرشفت قبل %1$d سنوات</item>
+        <item quantity="many">أُرشفت قبل %1$d سنةً</item>
+        <item quantity="other">أُرشفت قبل %1$d سنة</item>
+    </plurals>
+</resources>

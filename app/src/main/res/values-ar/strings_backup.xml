@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_snack_cancelled">أُلغي النسخ الاحتياطي. حُذف الملف غير المكتمل.</string>
+    <string name="backup_snack_cancelled_left">أُلغي النسخ الاحتياطي. احذف الملف غير المكتمل %1$s بنفسك.</string>
+    <string name="backup_snack_restored">تمت الاستعادة</string>
+</resources>

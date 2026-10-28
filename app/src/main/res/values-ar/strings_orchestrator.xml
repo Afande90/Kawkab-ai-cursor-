@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    سلاسل واجهة مكتبة المسارات والمنسّق المشترك.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Library screen -->
+    <string name="orchestrator_library_new_pipeline_title">مسار جديد</string>
+    <string name="orchestrator_library_rename_pipeline_title">إعادة تسمية المسار</string>
+    <string name="orchestrator_library_delete_pipeline_title">حذف المسار</string>
+    <string name="orchestrator_library_delete_confirm">حذف المسار «%1$s»؟ لا يمكن التراجع عن هذا.</string>
+    <!-- Shown instead of the plain confirm when other pipelines run this one
+         through a PIPELINE node. %1$d is the dependent count. -->
+    <plurals name="orchestrator_library_delete_dependents_warning">
+        <item quantity="zero">%1$d مسار يشغّل هذا المسار عبر عقدة مسار. حذفه يترك هدفًا معلّقًا — سيظهر خطأ تحقق إلى أن تعيد توجيه العقدة أو تحذفها.</item>
+        <item quantity="one">%1$d مسار يشغّل هذا المسار عبر عقدة مسار. حذفه يترك تلك العقدة بهدف معلّق — سيظهر خطأ تحقق في المسار إلى أن تعيد توجيهها أو تحذفها.</item>
+        <item quantity="two">%1$d مسارين يشغّلان هذا المسار عبر عقدة مسار. حذفه يترك كلًا منهما بهدف معلّق — سيظهر خطأ تحقق إلى أن تعيد توجيه العقدة أو تحذفها.</item>
+        <item quantity="few">%1$d مسارات تشغّل هذا المسار عبر عقدة مسار. حذفه يترك كلًا منها بهدف معلّق — سيظهر خطأ تحقق إلى أن تعيد توجيه العقدة أو تحذفها.</item>
+        <item quantity="many">%1$d مسارًا يشغّل هذا المسار عبر عقدة مسار. حذفه يترك كلًا منها بهدف معلّق — سيظهر خطأ تحقق إلى أن تعيد توجيه العقدة أو تحذفها.</item>
+        <item quantity="other">%1$d مسار يشغّل هذا المسار عبر عقدة مسار. حذفه يترك كلًا منها بهدف معلّق — سيظهر خطأ تحقق إلى أن تعيد توجيه العقدة أو تحذفها.</item>
+    </plurals>
+    <string name="orchestrator_library_delete_dependents_header" tools:ignore="PluralsCandidate">سيتعطّل · %1$d</string>
+    <string name="orchestrator_library_delete_anyway">حذف رغم ذلك</string>
+    <string name="orchestrator_library_delete_keep">إبقاء</string>
+    <string name="orchestrator_library_name_field_label">الاسم</string>
+
+    <!-- Snackbars / feedback -->
+    <string name="orchestrator_feedback_default_pipeline_updated">تم تحديث المسار الافتراضي</string>
+    <string name="orchestrator_feedback_share_pipeline_bound">تم تعيين المسار للمشاركة</string>
+    <string name="orchestrator_feedback_tile_pipeline_bound">تم تعيين المسار لمربّع الإعدادات السريعة</string>
+    <string name="orchestrator_feedback_pipeline_renamed">تمت إعادة تسمية المسار</string>
+    <string name="orchestrator_feedback_pipeline_duplicated">تم تكرار المسار</string>
+    <string name="orchestrator_feedback_pipeline_deleted">تم حذف المسار</string>
+    <string name="orchestrator_feedback_pipeline_created">تم إنشاء المسار</string>
+
+    <!-- Prompt-preset picker -->
+    <string name="prompt_preset_picker_title">إعدادات الموجّه المسبقة</string>
+    <string name="prompt_preset_picker_subtitle">%1$s · اختر إعدادًا مسبقًا لهذه العقدة</string>
+    <string name="prompt_preset_picker_tab_bundled">مضمّنة</string>
+    <string name="prompt_preset_picker_tab_mine">خاصتي</string>
+    <string name="prompt_preset_picker_all_chip">الكل</string>
+    <string name="prompt_preset_picker_current_badge">الحالي</string>
+    <string name="prompt_preset_picker_tokens_suffix">رمز</string>
+    <string name="prompt_preset_picker_empty_bundled">لا إعدادات مسبقة مضمّنة لهذا النوع من العقد.</string>
+    <string name="prompt_preset_picker_empty_mine">لم تحفظ أي إعدادات مسبقة لهذا النوع من العقد.</string>
+    <string name="prompt_preset_picker_empty_filtered">لا إعدادات مسبقة تطابق عامل التصفية الحالي.</string>
+    <string name="prompt_preset_picker_action_preview">معاينة</string>
+    <string name="prompt_preset_picker_action_use_prompt">استخدام الموجّه</string>
+    <string name="prompt_preset_picker_action_cancel">إلغاء</string>
+
+    <!-- Save-as-prompt-preset dialog -->
+    <string name="prompt_preset_save_dialog_title">حفظ كإعداد مسبق</string>
+    <string name="prompt_preset_save_dialog_subtitle">نوع العقدة الهدف: %1$s</string>
+    <string name="prompt_preset_save_field_name">الاسم</string>
+    <string name="prompt_preset_save_field_description">الوصف (اختياري)</string>
+    <string name="prompt_preset_save_field_tags">الوسوم (مفصولة بفواصل، اختياري)</string>
+    <string name="prompt_preset_save_field_tags_hint">مثلًا: موجز، استدلال، json</string>
+    <string name="prompt_preset_save_action_save">حفظ</string>
+    <string name="prompt_preset_save_action_cancel">إلغاء</string>
+    <string name="prompt_preset_save_error_blank_prompt">لا يمكن حفظ موجّه نظام فارغ.</string>
+    <string name="prompt_preset_save_error_name_too_long" tools:ignore="PluralsCandidate">يجب ألا يتجاوز الاسم %1$d حرفًا</string>
+
+    <!-- Node context-config section -->
+    <string name="orchestrator_context_section_title">بيانات الإدخال</string>
+    <string name="orchestrator_context_previous_node_output_label">مخرج العقدة السابقة</string>
+    <string name="orchestrator_context_previous_node_output_hint">نتيجة الخطوة السابقة (مفعّل دائمًا)</string>
+    <string name="orchestrator_context_original_task_label">مهمة المستخدم الأصلية</string>
+    <string name="orchestrator_context_original_task_hint">رسالة المحادثة التي بدأت هذا التشغيل</string>
+    <string name="orchestrator_context_chat_history_label">سجل المحادثة</string>
+    <string name="orchestrator_context_chat_history_hint">كل الرسائل السابقة في الجلسة الحالية</string>
+    <string name="orchestrator_context_long_term_memory_label">الذاكرة الطويلة</string>
+    <string name="orchestrator_context_long_term_memory_hint">عناصر ذات صلة من الذاكرة الطويلة للوكيل</string>
+    <string name="orchestrator_context_tool_results_label">نتائج الأدوات</string>
+    <string name="orchestrator_context_tool_results_hint">البيانات التي أعادتها الأدوات في الخطوة الحالية</string>
+    <string name="orchestrator_context_hint">قلّة المدخلات تجعل العقدة أسرع وأقل كلفة. فعّل ما يلزم فقط.</string>
+    <string name="orchestrator_context_inherited_tag">موروث</string>
+    <string name="orchestrator_context_overridden_tag">معدَّل</string>
+
+    <!-- Pipeline presets UI -->
+    <string name="orchestrator_library_speed_dial_new">جديد</string>
+    <string name="orchestrator_library_speed_dial_new_pipeline">مسار جديد</string>
+    <string name="orchestrator_library_speed_dial_from_preset">من إعداد مسبق</string>
+
+    <!-- Preset picker sheet -->
+    <string name="orchestrator_preset_picker_title">اختر إعدادًا مسبقًا</string>
+    <string name="orchestrator_preset_picker_tab_bundled">مضمّنة</string>
+    <string name="orchestrator_preset_picker_tab_mine">خاصتي</string>
+    <string name="orchestrator_preset_picker_chip_all">الكل</string>
+    <string name="orchestrator_preset_picker_empty">لا إعدادات مسبقة تطابق عامل التصفية هذا.</string>
+    <string name="orchestrator_preset_picker_use">استخدام هذا الإعداد المسبق</string>
+    <string name="orchestrator_preset_picker_loaded">تم تحميل الإعداد المسبق في المحرّر</string>
+
+    <!-- Save as preset dialog -->
+    <string name="orchestrator_preset_save_title">حفظ كإعداد مسبق</string>
+    <string name="orchestrator_preset_save_name_label">الاسم</string>
+    <string name="orchestrator_preset_save_description_label">الوصف</string>
+    <string name="orchestrator_preset_save_category_label">الفئة</string>
+    <string name="orchestrator_preset_save_tags_label">الوسوم (مفصولة بفواصل)</string>
+    <string name="orchestrator_preset_save_success">تم حفظ الإعداد المسبق</string>
+    <string name="orchestrator_prompt_preset_save_success">تم حفظ إعداد الموجّه المسبق</string>
+
+    <!-- Preset categories -->
+    <string name="orchestrator_preset_category_local">محلي</string>
+    <string name="orchestrator_preset_category_cloud">سحابي</string>
+    <string name="orchestrator_preset_category_hybrid">هجين</string>
+    <string name="orchestrator_preset_category_tool">أداة</string>
+    <string name="orchestrator_preset_category_research">بحث</string>
+    <string name="orchestrator_preset_category_other">أخرى</string>
+
+    <!-- Preset manager screen -->
+    <string name="orchestrator_preset_manager_title">إعدادات المسارات المسبقة</string>
+    <string name="orchestrator_preset_manager_subtitle" tools:ignore="PluralsCandidate">%1$d مضمّنة · %2$d محفوظة</string>
+    <string name="orchestrator_preset_manager_bundled_empty">لا تتوفر إعدادات مسبقة مضمّنة.</string>
+    <string name="orchestrator_preset_manager_user_empty">لم تحفظ أي إعداد مسبق بعد. احفظ مسارًا كإعداد مسبق من المحرّر أو من قائمة المزيد في المكتبة.</string>
+    <string name="orchestrator_preset_manager_action_rename">إعادة تسمية</string>
+    <string name="orchestrator_preset_manager_action_export">تصدير JSON</string>
+    <string name="orchestrator_preset_manager_action_delete">حذف</string>
+    <string name="orchestrator_preset_manager_rename_title">إعادة تسمية الإعداد المسبق</string>
+    <string name="orchestrator_preset_manager_rename_blank">لا يمكن أن يكون اسم الإعداد المسبق فارغًا</string>
+    <string name="orchestrator_preset_manager_renamed">تمت إعادة تسمية الإعداد المسبق</string>
+    <string name="orchestrator_preset_manager_deleted">تم حذف الإعداد المسبق</string>
+    <string name="orchestrator_preset_manager_delete_title">حذف الإعداد المسبق؟</string>
+    <string name="orchestrator_preset_manager_delete_confirm">حذف الإعداد المسبق \"%1$s\"؟ لا يمكن التراجع عن هذا.</string>
+
+    <!-- Pipeline JSON import (library) -->
+    <string name="orchestrator_library_import_unreadable">تعذّرت قراءة الملف المحدد.</string>
+    <string name="orchestrator_library_import_too_large">هذا الملف أكبر من %1$s، وهو أقصى ما يقرأه استيراد مسار.</string>
+    <string name="orchestrator_library_import_schema_title">عدم تطابق المخطط</string>
+    <string name="orchestrator_library_import_schema_body" tools:ignore="PluralsCandidate">كُتب هذا المسار للمخطط v%1$d بينما يتوقع هذا الإصدار v%2$d. قد لا يُستورد بعض الإعداد على نحو سليم.</string>
+    <string name="orchestrator_library_import_dropped_heading">هذه الإعدادات موجودة في الملف، لكن هذا الإصدار لا يستطيع استيرادها، وستُفقد:</string>
+    <plurals name="orchestrator_library_import_dropped_more">
+        <item quantity="zero">…و%1$d أخرى</item>
+        <item quantity="one">…و%1$d أخرى</item>
+        <item quantity="two">…و%1$d أخريين</item>
+        <item quantity="few">…و%1$d أُخريات</item>
+        <item quantity="many">…و%1$d أخرى</item>
+        <item quantity="other">…و%1$d أخرى</item>
+    </plurals>
+    <plurals name="orchestrator_library_import_dropped_feedback">
+        <item quantity="zero">تم الاستيراد. تعذّرت قراءة %1$d إعداد في الملف بهذا الإصدار ولم يُحتفظ به.</item>
+        <item quantity="one">تم الاستيراد. تعذّرت قراءة %1$d إعداد في الملف بهذا الإصدار ولم يُحتفظ به.</item>
+        <item quantity="two">تم الاستيراد. تعذّرت قراءة %1$d إعدادين في الملف بهذا الإصدار ولم يُحتفظ بهما.</item>
+        <item quantity="few">تم الاستيراد. تعذّرت قراءة %1$d إعدادات في الملف بهذا الإصدار ولم يُحتفظ بها.</item>
+        <item quantity="many">تم الاستيراد. تعذّرت قراءة %1$d إعدادًا في الملف بهذا الإصدار ولم يُحتفظ به.</item>
+        <item quantity="other">تم الاستيراد. تعذّرت قراءة %1$d إعداد في الملف بهذا الإصدار ولم يُحتفظ به.</item>
+    </plurals>
+    <string name="orchestrator_library_import_anyway">استيراد رغم ذلك</string>
+
+    <!-- Pipeline id-collision resolution (single import) -->
+    <string name="orchestrator_library_import_collision_title_format">«%1$s» موجود أصلًا في مكتبتك</string>
+    <string name="orchestrator_library_import_collision_single_body">يسمّيه الملف «%1$s». الاستبدال يبدّل خطواته بخطوات الملف، والاستيراد كنسخة يُبقي كليهما.</string>
+    <string name="orchestrator_library_import_collision_bindings_heading">الاستبدال يُبقي كل ما يشغّله. بعد الاستبدال، تشغّل هذه خطوات الملف:</string>
+    <string name="orchestrator_library_import_collision_replace">استبدال</string>
+    <string name="orchestrator_library_import_collision_copy">استيراد كنسخة</string>
+    <string name="orchestrator_library_import_orphan_title">يستخدم هذا الملف معرّف مسار حذفته</string>
+    <string name="orchestrator_library_import_orphan_body">يسمّيه الملف «%1$s». أبقِ المعرّف، فما زال يشغّله سيشغّل خطوات الملف؛ والاستيراد كنسخة يتركها كما هي.</string>
+    <string name="orchestrator_library_import_orphan_bindings_heading">هذه ما زالت تشغّل ذلك المعرّف. بعد إبقاء المعرّف، تشغّل خطوات الملف:</string>
+    <string name="orchestrator_library_import_orphan_keep">إبقاء المعرّف</string>
+    <string name="orchestrator_library_import_bundle_orphan_item">«%1$s» (معرّف مسار محذوف)</string>
+
+    <!-- Pipeline bundle import (library) -->
+    <string name="orchestrator_library_import_bundle_title">استيراد حزمة</string>
+    <plurals name="orchestrator_library_import_bundle_collision_title">
+        <item quantity="zero">%1$d من %2$d مسار موجود أصلًا في مكتبتك</item>
+        <item quantity="one">%1$d من %2$d مسار موجود أصلًا في مكتبتك</item>
+        <item quantity="two">%1$d من %2$d مسارين موجودين أصلًا في مكتبتك</item>
+        <item quantity="few">%1$d من %2$d مسارات موجودة أصلًا في مكتبتك</item>
+        <item quantity="many">%1$d من %2$d مسارًا موجودًا أصلًا في مكتبتك</item>
+        <item quantity="other">%1$d من %2$d مسار موجود أصلًا في مكتبتك</item>
+    </plurals>
+    <string name="orchestrator_library_import_bundle_collision_body">الاستبدال يبدّل خطواتها بما في هذا الملف. والاستيراد كنسخ يُبقي كليهما.</string>
+    <string name="orchestrator_library_import_bundle_collision_heading">الاستبدال يُبقي كل ما يشغّلها. موجودة أصلًا في مكتبتك:</string>
+    <plurals name="orchestrator_library_import_bundle_taken_title">
+        <item quantity="zero">%1$d من %2$d مسار يستخدم معرّفًا محجوزًا أصلًا</item>
+        <item quantity="one">%1$d من %2$d مسار يستخدم معرّفًا محجوزًا أصلًا</item>
+        <item quantity="two">%1$d من %2$d مسارين يستخدمان معرّفًا محجوزًا أصلًا</item>
+        <item quantity="few">%1$d من %2$d مسارات تستخدم معرّفًا محجوزًا أصلًا</item>
+        <item quantity="many">%1$d من %2$d مسارًا يستخدم معرّفًا محجوزًا أصلًا</item>
+        <item quantity="other">%1$d من %2$d مسار يستخدم معرّفًا محجوزًا أصلًا</item>
+    </plurals>
+    <string name="orchestrator_library_import_bundle_taken_heading">الاستبدال يُبقي كل ما يشغّلها. محجوز أصلًا — في مكتبتك، أو ما زالت تسمّيه محادثات مسار محذوف أو محفّزاته أو مستدعيه:</string>
+    <string name="orchestrator_library_import_bundle_collision_item">«%1$s»</string>
+
+    <!-- What is bound to a pipeline id -->
+    <string name="orchestrator_library_binding_default">المسار الافتراضي للمحادثات</string>
+    <string name="orchestrator_library_binding_share">وجهة المشاركة</string>
+    <string name="orchestrator_library_binding_tile">مربّع الإعدادات السريعة</string>
+    <string name="orchestrator_library_binding_external">طلبات من تطبيقات أخرى</string>
+    <plurals name="orchestrator_library_binding_triggers">
+        <item quantity="zero">%1$d محفّز أتمتة</item>
+        <item quantity="one">%1$d محفّز أتمتة</item>
+        <item quantity="two">%1$d محفّزين أتمتة</item>
+        <item quantity="few">%1$d محفّزات أتمتة</item>
+        <item quantity="many">%1$d محفّزًا للأتمتة</item>
+        <item quantity="other">%1$d محفّز أتمتة</item>
+    </plurals>
+    <plurals name="orchestrator_library_binding_chats">
+        <item quantity="zero">%1$d محادثة</item>
+        <item quantity="one">%1$d محادثة</item>
+        <item quantity="two">%1$d محادثتين</item>
+        <item quantity="few">%1$d محادثات</item>
+        <item quantity="many">%1$d محادثةً</item>
+        <item quantity="other">%1$d محادثة</item>
+    </plurals>
+    <string name="orchestrator_library_binding_caller">يستدعيه «%1$s»</string>
+    <string name="orchestrator_library_import_bundle_schema_body">كُتبت بعض المسارات في هذه الحزمة لإصدار مخطط مختلف. قد لا يُستورد بعض الإعداد على نحو سليم.</string>
+    <string name="orchestrator_library_import_bundle_replace">استبدال</string>
+    <string name="orchestrator_library_import_bundle_copies">استيراد كنسخ</string>
+    <plurals name="orchestrator_library_import_bundle_success">
+        <item quantity="zero">تم استيراد %d مسار</item>
+        <item quantity="one">تم استيراد %d مسار</item>
+        <item quantity="two">تم استيراد %d مسارين</item>
+        <item quantity="few">تم استيراد %d مسارات</item>
+        <item quantity="many">تم استيراد %d مسارًا</item>
+        <item quantity="other">تم استيراد %d مسار</item>
+    </plurals>
+    <string name="orchestrator_library_export_bundle_failed">فشل تصدير الحزمة: %1$s</string>
+    <string name="orchestrator_library_export_bundle_success">تم تصدير %1$s</string>
+</resources>

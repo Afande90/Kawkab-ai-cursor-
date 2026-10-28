@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    سلاسل إدارة المحفّزات: القائمة، والمحرّر، وحوار الحذف.
+-->
+<resources>
+    <!-- List screen chrome -->
+    <string name="triggers_screen_title">المحفّزات</string>
+    <string name="triggers_back_cd">رجوع</string>
+    <string name="triggers_more_cd">مزيد من الإجراءات</string>
+    <string name="triggers_fab">محفّز جديد</string>
+    <plurals name="triggers_subtitle">
+        <item quantity="zero">%1$d محفّز · %2$d نشط</item>
+        <item quantity="one">%1$d محفّز · %2$d نشط</item>
+        <item quantity="two">%1$d محفّزين · %2$d نشطين</item>
+        <item quantity="few">%1$d محفّزات · %2$d نشطة</item>
+        <item quantity="many">%1$d محفّزًا · %2$d نشطًا</item>
+        <item quantity="other">%1$d محفّز · %2$d نشط</item>
+    </plurals>
+    <string name="triggers_unbound_hint">لا مسار بعد</string>
+    <string name="triggers_bind">ربط</string>
+    <string name="triggers_bind_cd">ربط مسار بـ %1$s</string>
+    <string name="triggers_unbound_action">لا مسار بعد — انقر للربط</string>
+    <string name="triggers_menu_edit">تعديل</string>
+    <string name="triggers_menu_delete">حذف</string>
+
+    <!-- Teaching empty state -->
+    <string name="triggers_empty_title">شغّل الوكيل من تلقاء نفسه</string>
+    <string name="triggers_empty_body">يراقب المحفّز لحظة معيّنة — وقتًا من اليوم أو حدثًا في الجهاز — ثم يشغّل مسارًا في الخلفية ويضع النتيجة في محادثة. لا حاجة إلى أن تكون هناك.</string>
+    <string name="triggers_empty_cta">أنشئ محفّزك الأول</string>
+    <string name="triggers_empty_step_trigger">المحفّز</string>
+    <string name="triggers_empty_step_run">التشغيل</string>
+    <string name="triggers_empty_step_result">النتيجة</string>
+
+    <!-- Error state -->
+    <string name="triggers_error_title">تعذّر تحميل المحفّزات</string>
+    <string name="triggers_error_body">لم يستجب مخزن المحفّزات على الجهاز. محفّزاتك وجداولها في أمان — هذه مجرد قراءة.</string>
+
+    <!-- Human-readable condition lines -->
+    <string name="triggers_condition_daily">كل يوم عند %1$s</string>
+    <string name="triggers_condition_charging">عند توصيل الشحن</string>
+    <string name="triggers_condition_network_any">عند الاتصال بأي شبكة</string>
+    <string name="triggers_condition_network_wifi">عند اتصال Wi-Fi</string>
+    <string name="triggers_condition_network_named">عند الانضمام إلى %1$s</string>
+    <plurals name="triggers_interval_minutes">
+        <item quantity="zero">كل %1$d دقيقة</item>
+        <item quantity="one">كل %1$d دقيقة</item>
+        <item quantity="two">كل %1$d دقيقتين</item>
+        <item quantity="few">كل %1$d دقائق</item>
+        <item quantity="many">كل %1$d دقيقةً</item>
+        <item quantity="other">كل %1$d دقيقة</item>
+    </plurals>
+    <plurals name="triggers_interval_hours">
+        <item quantity="zero">كل %1$d ساعة</item>
+        <item quantity="one">كل %1$d ساعة</item>
+        <item quantity="two">كل %1$d ساعتين</item>
+        <item quantity="few">كل %1$d ساعات</item>
+        <item quantity="many">كل %1$d ساعةً</item>
+        <item quantity="other">كل %1$d ساعة</item>
+    </plurals>
+
+    <!-- Editor chrome -->
+    <string name="triggers_editor_title_new">محفّز جديد</string>
+    <string name="triggers_editor_title_edit">تعديل المحفّز</string>
+    <string name="triggers_editor_subtitle_new">مسودة</string>
+    <string name="triggers_editor_subtitle_edit">محفوظ</string>
+    <string name="triggers_editor_close_cd">إغلاق</string>
+    <string name="triggers_editor_required">مطلوب</string>
+    <string name="triggers_editor_kicker">المحفّز</string>
+    <string name="triggers_editor_kicker_body">شرط يشغّل مسارًا في الخلفية — وتصل النتيجة إلى المحادثة.</string>
+    <string name="triggers_editor_name_label">الاسم</string>
+    <string name="triggers_editor_name_placeholder">مثلًا: ملخص الليل</string>
+    <string name="triggers_editor_name_error">الاسم مطلوب</string>
+    <string name="triggers_editor_condition_label">متى</string>
+    <string name="triggers_editor_delete">حذف المحفّز</string>
+
+    <!-- Condition type selector -->
+    <string name="triggers_type_interval">فترة</string>
+    <string name="triggers_type_interval_sub">كل ن دقيقة / ساعة</string>
+    <string name="triggers_type_daily">يومي</string>
+    <string name="triggers_type_daily_sub">وقت من اليوم</string>
+    <string name="triggers_type_charging">الشحن</string>
+    <string name="triggers_type_charging_sub">توصيل الشاحن</string>
+    <string name="triggers_type_network">الشبكة</string>
+    <string name="triggers_type_network_sub">عند الاتصال</string>
+
+    <!-- Interval params -->
+    <string name="triggers_interval_custom">مخصص</string>
+    <string name="triggers_interval_error">يجب ألا تقل الفترة عن 15 دقيقة</string>
+    <string name="triggers_interval_floor_note">تُجمَّع التشغيلات في الخلفية؛ وقد يؤجّلها النظام بضع دقائق. الحد الأدنى 15 دقيقة.</string>
+    <string name="triggers_unit_minutes">دقائق</string>
+    <string name="triggers_unit_hours">ساعات</string>
+
+    <!-- Daily params -->
+    <string name="triggers_daily_field_label">وقت اليوم · 24H</string>
+
+    <!-- Charging params -->
+    <string name="triggers_charging_title">عند توصيل الشاحن</string>
+    <string name="triggers_charging_body">يُطلَق مرة واحدة كلما بدأ الجهاز الشحن، ويعود إلى التأهب عند فصل القابس.</string>
+
+    <!-- Network params -->
+    <string name="triggers_wifi_only_label">Wi-Fi فقط</string>
+    <string name="triggers_wifi_only_desc">تشغيل = لا تُطلقه إلا اتصالات Wi-Fi. إيقاف = أي شبكة.</string>
+    <string name="triggers_ssid_section_label">على شبكات Wi-Fi هذه فقط</string>
+    <string name="triggers_ssid_section_desc">اتركه فارغًا ليُطلَق على أي شبكة Wi-Fi. أضف أسماء ليُطلَق عليها فقط (يحتاج إذن الموقع).</string>
+    <string name="triggers_ssid_placeholder">مثلًا: المنزل</string>
+    <string name="triggers_ssid_add">إضافة</string>
+
+    <!-- Pipeline binding -->
+    <string name="triggers_pipeline_label">شغّل هذا المسار</string>
+    <string name="triggers_pipeline_none">بلا — اتركه غير مربوط</string>
+    <string name="triggers_pipeline_none_sub">يبقى المحفّز خاملًا</string>
+
+    <!-- Input prompt -->
+    <string name="triggers_prompt_label">موجّه الإدخال</string>
+    <string name="triggers_prompt_placeholder">ماذا ينبغي أن يفعل الوكيل عند الإطلاق؟ مثلًا: لخّص بريد اليوم غير المقروء وضع الموجز.</string>
+
+    <!-- Enabled toggle -->
+    <string name="triggers_enabled_label">مفعّل</string>
+    <string name="triggers_enabled_desc">إيقاف = محفوظ لكنه لن يُطلَق. ويمكن تبديله من القائمة أيضًا.</string>
+
+    <!-- Delete dialog -->
+    <string name="triggers_delete_title">حذف هذا المحفّز؟</string>
+    <string name="triggers_delete_body_format">سيُزال \"%1$s\" وجدولُه في الخلفية. المسار المربوط لا يتأثر. لا يمكن التراجع عن هذا.</string>
+    <string name="triggers_delete_confirm">حذف</string>
+
+    <!-- List health badge -->
+    <string name="triggers_health_healthy">سليم</string>
+    <string name="triggers_health_overdue">متأخر</string>
+    <string name="triggers_health_last_run_failed">فشل آخر تشغيل</string>
+
+    <!-- Detail screen chrome -->
+    <string name="triggers_detail_subtitle">تفاصيل المحفّز</string>
+    <string name="triggers_detail_when">متى</string>
+    <string name="triggers_detail_runs">يشغّل</string>
+    <string name="triggers_detail_state">الحالة</string>
+    <string name="triggers_detail_state_enabled">مفعّل</string>
+    <string name="triggers_detail_state_disabled">معطّل</string>
+    <string name="triggers_detail_edit">تعديل</string>
+    <string name="triggers_detail_delete">حذف</string>
+
+    <!-- Stale banner -->
+    <string name="triggers_detail_stale_title_format">لم يُفحص منذ %1$s</string>
+    <string name="triggers_detail_stale_title_no_time">فحوصات الخلفية تبدو متأخرة</string>
+    <string name="triggers_detail_stale_body">تبدو فحوصات الخلفية متأخرة. بعض الهواتف توقف عمل الخلفية لتوفير البطارية — وقد يتأثر هذا المحفّز.</string>
+
+    <!-- Journal section -->
+    <string name="triggers_journal_section">سجل التقييم</string>
+    <string name="triggers_journal_window">آخر 30 يومًا</string>
+    <string name="triggers_journal_retention">تُحفظ السجلات 30 يومًا · وتزول المدخلات الأقدم</string>
+    <string name="triggers_journal_empty_title">لا تقييمات بعد</string>
+    <string name="triggers_journal_empty_body">لم يُفحص هذا المحفّز بعد. كلما قُيِّم — سواء اشتغل أم لا — ستجده هنا.</string>
+
+    <!-- Journal: evaluation sources -->
+    <string name="triggers_journal_source_poll">فحص مجدول</string>
+    <string name="triggers_journal_source_event">حدث في الجهاز</string>
+    <string name="triggers_journal_source_charging">فحص الشحن</string>
+
+    <!-- Journal: verdicts -->
+    <string name="triggers_journal_verdict_fired">أُطلق</string>
+    <string name="triggers_journal_verdict_rearmed">أُعيد التأهب</string>
+    <string name="triggers_journal_verdict_skipped">لم يشتغل</string>
+    <string name="triggers_journal_rearm_note">سقط الشرط أثناء عدم التأهب — أُعيد ضبط مزلاج الحافة. بلا تشغيل.</string>
+
+    <!-- Journal: skip-reason sentences -->
+    <string name="triggers_journal_skip_disabled">كان المحفّز متوقفًا.</string>
+    <string name="triggers_journal_skip_unbound">لا مسار مربوط.</string>
+    <string name="triggers_journal_skip_condition_not_met_format">لم يتحقق الشرط عند %1$s.</string>
+    <string name="triggers_journal_skip_already_fired">كان قد أُطلق لهذه النافذة.</string>
+
+    <!-- Journal: run outcomes -->
+    <string name="triggers_journal_outcome_pending">قيد التشغيل…</string>
+    <string name="triggers_journal_outcome_success">اكتمل</string>
+    <string name="triggers_journal_outcome_failure">فشل</string>
+    <string name="triggers_journal_outcome_cancelled_by_system">أوقفه النظام</string>
+    <string name="triggers_journal_outcome_cancelled">أوقفته أنت</string>
+    <string name="triggers_journal_outcome_hitl_timeout">انتهت المهلة أثناء انتظار الموافقة</string>
+    <string name="triggers_journal_outcome_stopped_by_ceiling">أوقفه حدّ أمان</string>
+
+    <!-- Journal: the run stopped to ask the user something -->
+    <string name="triggers_journal_hitl_waiting">بانتظار ردّك</string>
+    <string name="triggers_journal_hitl_approved">وافقت عليه</string>
+    <string name="triggers_journal_hitl_denied">رفضته</string>
+    <string name="triggers_journal_hitl_answered">أجبت عنه</string>
+    <string name="triggers_journal_hitl_timed_out">لم يصل رد قبل انغلاق النافذة</string>
+    <string name="triggers_journal_hitl_abandoned">لم يصلك الطلب</string>
+    <string name="triggers_journal_hitl_parked_pending">في درج الإشعارات</string>
+    <string name="triggers_journal_hitl_parked_settled">من الإشعار</string>
+
+    <!-- Journal: timestamps and day headers -->
+    <string name="triggers_journal_time_just_now">الآن</string>
+    <string name="triggers_journal_time_minutes_ago">قبل %1$d د</string>
+    <string name="triggers_journal_day_today">اليوم</string>
+    <string name="triggers_journal_day_yesterday">أمس</string>
+
+    <string name="triggers_documentation_cd">اقرأ عن المحفّزات</string>
+
+    <string name="triggers_export_share_cd">مشاركة سجل التقييم</string>
+    <string name="triggers_export_save_cd">حفظ سجل التقييم</string>
+</resources>

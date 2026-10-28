@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="run_copied_seed">نُسخت البذرة</string>
+    <string name="run_copied_sha">نُسخ تجزئة SHA-256 للنموذج</string>
+    <string name="run_copied_digest">نُسخ ملخص التشغيل</string>
+    <string name="run_copied_hash">نُسخت تجزئة %1$s لـ «%2$s»</string>
+    <string name="run_hash_input">الإدخال</string>
+    <string name="run_hash_output">الإخراج</string>
+    <string name="run_copied_verification_hash">نُسخت التجزئة</string>
+    <string name="run_again_snackbar">يُعاد التشغيل بالبذرة %1$s. تتكرر الإجابة فقط إذا تطابقت كل المدخلات.</string>
+    <string name="run_trace_export_chooser_title">مشاركة أثر التشغيل</string>
+    <string name="run_trace_export_save_failed">تعذّر حفظ أثر التشغيل</string>
+    <string name="run_trace_export_render_failed">تعذّر قراءة أثر التشغيل</string>
+    <plurals name="run_trace_export_saved">
+        <item quantity="zero">لم يُحفظ أي سجل</item>
+        <item quantity="one">حُفظ سجل واحد</item>
+        <item quantity="two">حُفظ سجلان</item>
+        <item quantity="few">حُفظت %1$d سجلات</item>
+        <item quantity="many">حُفظ %1$d سجلًا</item>
+        <item quantity="other">حُفظ %1$d سجل</item>
+    </plurals>
+</resources>

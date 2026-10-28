@@ -1147,6 +1147,10 @@ one) and `app/src/full/AndroidManifest.xml` (overlay adding the
 - `debug/` - `debug` build type — present in a debug build only.
   - `debug/` - Debug-only diagnostics entry points.
     - `TriggerJournalDumpReceiver.kt` - **Debug-only** diagnostic receiver that dumps the whole trigger-evaluation journal to an app-private JSON file, so a background-reliability soak run can pull it off the device for offline analysis without opening the app or decrypting the SQLCipher database.
+  - `domain/` - Debug-only domain types. Release APKs do not compile this tree.
+    - `engine/` - Debug-only inference engines.
+      - `stub/` - Tier 1 stand-in for the on-device model. It never reads a model file.
+        - `StubLlmInferenceEngine.kt` - On-device stand-in for Tier 1.
 - `foss/` - F-Droid distribution: zero Firebase/Google dependency.
   - `data/` - Data layer, `foss` flavour.
     - `repositories/` - Repository implementations, `foss` flavour.

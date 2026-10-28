@@ -500,6 +500,8 @@ matters.
 - `ComposeTestRuleV2GuardTest.kt` - Keeps the design system's tests on the v2 Compose test APIs.
 - `foundations/` - the foundations catalog page — the surface that renders the tokens themselves.
   - `FoundationsCatalogPageSnapshotTest.kt` - Roborazzi snapshot baseline for the `FoundationsCatalogPage` in both Knotwork themes.
+- `i18n/` - Compose layout direction under the Arabic locale.
+  - `ArabicLayoutDirectionTest.kt` - Compose under an Arabic locale lays out right to left (spec §0.6).
 - `icons/` - the `AppIcons` registry: a cheap correctness gate over every entry, plus the catalog page baseline.
   - `AppIconsTest.kt` - Cheap correctness gate for every `AppIcons` entry.
   - `IconCatalogPageSnapshotTest.kt` - Roborazzi snapshot baseline for `IconCatalogPage` in both Knotwork themes.
