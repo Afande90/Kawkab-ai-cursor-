@@ -2657,7 +2657,19 @@ val verifyDocLinks by tasks.registering(VerifyDocLinksTask::class) {
     documents.from(documentationFiles)
     requiredPrefixes.set(documentationRoots)
     // History names the files of the tree each entry was written against.
-    codePathExemptions.set(listOf("CHANGELOG.md"))
+    // Kawkab planning documents name files later tasks create (scripts,
+    // owner-check notes, the architecture note). Their markdown links are
+    // still checked; only the inline-code path pass is skipped. See
+    // DECISIONS.md, 2026-10-28.
+    codePathExemptions.set(
+        listOf(
+            "CHANGELOG.md",
+            "KAWKAB_SPEC.md",
+            "AGENTS.md",
+            "PROGRESS.md",
+            "DECISIONS.md",
+        ),
+    )
 }
 tasks.named("check") { dependsOn(verifyDocLinks) }
 
