@@ -238,6 +238,9 @@ jobs:
         run: |
           ./gradlew :app:assembleFossRelease :app:verifyFossReleaseKeepRules --no-daemon --stacktrace
 
+      - name: Check the foss APK size and arm64 ABI
+        run: scripts/check-apk-size.sh app/build/outputs/apk/foss/release/app-foss-release.apk
+
       - name: Verify the foss APK carries no Firebase configuration
         # The separate invocation above is load-bearing but its violation is
         # silent: a mixed invocation still produces a working foss APK, just one

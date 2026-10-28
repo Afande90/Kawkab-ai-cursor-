@@ -123,3 +123,13 @@ Coil (`io.coil-kt.coil3:coil-compose:3.6.3`) is a direct dependency. `AboutAckno
 
 Gemma 4 weights are an owner download, not an APK asset. EmbeddingGemma, Piper, the Sudanese Whisper fine-tunes and the `arbml` datasets are not shipped and are not given a download link. No OpenDroid or Minitap files were copied.
 
+## 2026-10-28 — APK size gate
+
+150 MB in spec §0.2 is 150000000 bytes. `scripts/check-apk-size.sh` also requires `lib/arm64-v8a/` and no other ABI under `lib/`.
+
+The release variant already filters to `arm64-v8a`. The pinned NDK `28.2.13676358` is installed on this machine at `$ANDROID_HOME/ndk/28.2.13676358`.
+
+Local `./gradlew :app:assembleFossRelease` succeeded in 5m 28s. The APK is 64380860 bytes and the size script passed. GitHub Actions has not been run from this machine, so that job is not claimed as passed.
+
+`scripts/ci-local.sh` runs `check`, `:buildSrc:test`, the foss release assemble, and the size script. It does not start an emulator.
+

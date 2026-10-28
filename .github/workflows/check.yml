@@ -8,6 +8,8 @@ name: Check
 # `:buildSrc:test` is added explicitly because the build-logic module's own
 # unit tests (e.g. the browser-editor constants generator) are not reachable
 # from the app's `check` aggregate and would otherwise drift unnoticed.
+# Compliance checks are tasks inside `check`. The `foss-arm64-apk` job builds
+# the arm64 foss release, rejects it above 150 MB, and uploads the APK.
 # Compiling the instrumented source set is added for the same reason: `check`
 # does not compile it either, so a broken instrumented test would leave every
 # gate green. The instrumented tests are *run* by the separate `Instrumented`
@@ -357,3 +359,51 @@ jobs:
           name: test-report
           path: app/build/reports/tests/
           if-no-files-found: ignore
+
+  foss-arm64-apk:
+    name: foss arm64 APK size
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
+        with:
+          packages: 'platform-tools'
+
+      - name: Install the pinned NDK
+        run: |
+          set -euo pipefail
+          ndk="$(sed -n 's/^ndk = "\(.*\)"$/\1/p' gradle/libs.versions.toml)"
+          if [[ -z "$ndk" ]]; then
+            echo "::error::gradle/libs.versions.toml declares no ndk version."
+            exit 1
+          fi
+          sdkmanager --install "ndk;$ndk"
+          echo "NDK $ndk installed."
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Build the foss release APK
+        run: ./gradlew :app:assembleFossRelease --stacktrace --no-daemon
+
+      - name: Check APK size and arm64 ABI
+        run: scripts/check-apk-size.sh app/build/outputs/apk/foss/release/app-foss-release.apk
+
+      - name: Upload the foss arm64 APK
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: kawkab-foss-arm64-release
+          path: app/build/outputs/apk/foss/release/app-foss-release.apk
+          if-no-files-found: error
