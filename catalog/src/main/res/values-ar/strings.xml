@@ -1,0 +1,922 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ============ ChatMessage ============ -->
+
+    <string name="knotwork_chat_message_status_pending">جارٍ الإرسال</string>
+    <string name="knotwork_chat_message_status_sent">أُرسلت</string>
+    <string name="knotwork_chat_message_status_failed">تعذّر الإرسال</string>
+
+    <string name="knotwork_chat_message_action_copy">نسخ</string>
+    <string name="knotwork_chat_message_action_rerun">إعادة التشغيل</string>
+    <string name="knotwork_chat_message_action_save_to_memory">حفظ في الذاكرة</string>
+    <string name="knotwork_chat_message_action_report">الإبلاغ عن الرد</string>
+
+    <string name="knotwork_chat_message_error_retry">إعادة المحاولة</string>
+
+    <string name="knotwork_chat_message_system_default">تحديث النظام</string>
+
+    <string name="knotwork_chat_message_tool_running">→ قيد التشغيل…</string>
+    <string name="knotwork_chat_message_tool_ok">→ تم</string>
+    <string name="knotwork_chat_message_tool_error">→ خطأ</string>
+    <string name="knotwork_chat_message_tool_arrow">→ %1$s</string>
+
+    <string name="knotwork_chat_message_token_count">%1$d tok</string>
+
+    <!-- ============ HitlConfirmationCard ============ -->
+
+    <string name="knotwork_hitl_action_reject">رفض</string>
+    <string name="knotwork_hitl_action_allow_once">سماح مرة واحدة</string>
+    <string name="knotwork_hitl_action_always_allow">سماح دائم</string>
+
+    <string name="knotwork_hitl_typed_confirm_placeholder">اكتب \"%1$s\" للتأكيد</string>
+
+    <string name="knotwork_hitl_args_expand">توسيع الوسائط</string>
+    <string name="knotwork_hitl_args_collapse">طي الوسائط</string>
+
+    <string name="knotwork_hitl_request_source_chat">طلبت</string>
+    <string name="knotwork_hitl_request_source_chat_image">طلبت، مع صورة</string>
+    <string name="knotwork_hitl_request_source_image_only">أرسلت صورة</string>
+    <string name="knotwork_hitl_request_image_only_body">بلا نص معها.</string>
+    <string name="knotwork_hitl_request_source_shared">شاركت</string>
+    <string name="knotwork_hitl_request_source_trigger">المشغّل “%1$s”</string>
+    <string name="knotwork_hitl_request_source_trigger_deleted">مشغّل محذوف</string>
+    <string name="knotwork_hitl_request_source_scheduled">مجدول من الوكيل</string>
+    <string name="knotwork_hitl_request_source_tile">مربع الإعدادات السريعة</string>
+    <string name="knotwork_hitl_request_source_other_app">طلب تطبيق آخر</string>
+    <string name="knotwork_hitl_request_show_all">إظهار الكل</string>
+    <string name="knotwork_hitl_request_show_less">إظهار أقل</string>
+    <string name="knotwork_hitl_request_a11y">%1$s: %2$s</string>
+    <string name="knotwork_hitl_request_a11y_shortened">%1$s: %2$s. مختصَر.</string>
+    <string name="knotwork_hitl_request_a11y_image_only">أرسلت صورة بلا نص</string>
+    <string name="knotwork_hitl_call_a11y">يريد الوكيل استخدام %1$s</string>
+
+    <!-- ============ ClarificationCard ============ -->
+
+    <string name="knotwork_clarification_freeform_default">إجابتك…</string>
+    <string name="knotwork_clarification_send">إرسال الرد</string>
+    <string name="knotwork_clarification_replied">أُجيب: %1$s</string>
+    <string name="knotwork_clarification_header">سؤال سريع من الوكيل</string>
+
+    <!-- ============ InterruptedRunCard ============ -->
+
+    <string name="knotwork_interrupted_run_header">تقطّع التشغيل</string>
+    <string name="knotwork_interrupted_run_body">تقطّع التنفيذ عند العقدة “%1$s”.</string>
+    <string name="knotwork_interrupted_run_resume">استئناف</string>
+    <string name="knotwork_interrupted_run_discard">تجاهل</string>
+    <string name="knotwork_interrupted_run_expired_note">لم يعد يمكن استئناف هذا التشغيل.</string>
+
+    <!-- ============ ChatComposer ============ -->
+
+    <string name="knotwork_composer_placeholder">راسل الوكيل…</string>
+    <string name="knotwork_composer_send">إرسال الرسالة</string>
+    <string name="knotwork_composer_stop">إيقاف التوليد</string>
+    <string name="knotwork_composer_mic">إدخال صوتي</string>
+
+    <!-- ============ Voice input ============ -->
+
+    <string name="knotwork_composer_recording_discard">تجاهل التسجيل</string>
+    <string name="knotwork_composer_recording_stop">إيقاف التسجيل</string>
+    <string name="knotwork_composer_recording_indicator">جارٍ التسجيل</string>
+    <string name="knotwork_composer_recording_limit_caption">اقتراب من حد %1$s · يتوقف ويفرغ تلقائيًا</string>
+    <string name="knotwork_composer_transcribing">جارٍ التفريغ…</string>
+    <string name="knotwork_composer_recording_timer">%1$s / %2$s</string>
+
+    <string name="knotwork_voice_no_model_title">هذا النموذج لا يستطيع تفريغ الصوت</string>
+    <string name="knotwork_voice_no_model_body">النموذج النشط غير معلَّم كقادر على الصوت. انتقل إلى نموذج صوتي لتسجيل مقطع أو تفريغه.</string>
+    <string name="knotwork_voice_no_model_action">تغيير النموذج</string>
+    <string name="knotwork_voice_busy_title">مشغول بمهمة</string>
+    <string name="knotwork_voice_busy_body">يتوقف التفريغ أثناء تشغيل مسار. أعد المحاولة بعد انتهاء المهمة الحالية.</string>
+    <string name="knotwork_voice_permission_title">الوصول إلى الميكروفون متوقف</string>
+    <string name="knotwork_voice_permission_body">لتسجيل الصوت، اسمح لهذا التطبيق بالوصول إلى الميكروفون من إعدادات النظام.</string>
+    <string name="knotwork_voice_permission_action">فتح الإعدادات</string>
+
+    <!-- ============ Audio source chooser ============ -->
+
+    <string name="knotwork_audio_source_title">إضافة صوت</string>
+    <string name="knotwork_audio_source_record">تسجيل صوت</string>
+    <string name="knotwork_audio_source_record_sub">حتى %1$s · 16 kHz أحادي</string>
+    <string name="knotwork_audio_source_file">اختيار ملف صوتي</string>
+    <string name="knotwork_audio_source_file_sub">اختر مقطعًا لتفريغه</string>
+
+    <!-- ============ Image attachments ============ -->
+
+    <string name="knotwork_attachment_add">إضافة صورة</string>
+    <string name="knotwork_attachment_remove">إزالة الصورة</string>
+    <string name="knotwork_attachment_attached">أُرفقت صورة</string>
+    <string name="knotwork_attachment_processing">جارٍ المعالجة…</string>
+    <string name="knotwork_attachment_processing_detail">تصغير · حد 1536px · JPEG</string>
+    <string name="knotwork_attachment_thumbnail">صورة مرفقة</string>
+    <string name="knotwork_attachment_unavailable">الصورة غير متاحة</string>
+    <string name="knotwork_attachment_removed">أُزيلت في مسح الاحتفاظ</string>
+
+    <!-- ============ SourceChooserSheet ============ -->
+
+    <string name="knotwork_source_title">إضافة صورة</string>
+    <string name="knotwork_source_photo_library">مكتبة الصور</string>
+    <string name="knotwork_source_camera">الكاميرا</string>
+
+    <!-- ============ ImageViewer ============ -->
+
+    <string name="knotwork_image_viewer_close">إغلاق</string>
+    <string name="knotwork_image_viewer_share">مشاركة الصورة</string>
+    <string name="knotwork_image_viewer_image">صورة مرفقة، ملء الشاشة</string>
+    <string name="knotwork_image_viewer_missing_title">الصورة لم تعد متاحة</string>
+    <string name="knotwork_image_viewer_missing_body">أُزيل الملف من هذا الجهاز لتوفير المساحة. نص الرسالة ما زال في المحادثة.</string>
+
+    <!-- ============ ConsolePane ============ -->
+
+    <string name="knotwork_console_action_search">بحث في السجل</string>
+    <string name="knotwork_console_action_copy_all">نسخ الكل</string>
+    <string name="knotwork_console_action_clear">مسح السجل</string>
+    <string name="knotwork_console_search_placeholder">بحث في السجل</string>
+    <string name="knotwork_console_search_field_cd">حقل البحث في وحدة التحكم</string>
+    <string name="knotwork_console_search_clear_cd">مسح البحث</string>
+    <string name="knotwork_console_line_copy">نسخ السطر</string>
+    <string name="knotwork_console_var_copy">نسخ القيمة</string>
+    <string name="knotwork_console_span_copy">نسخ المدى</string>
+    <string name="knotwork_console_line_filter_only">إظهار هذا المصدر فقط</string>
+    <string name="knotwork_console_empty_search">لا أسطر سجل تطابق هذا البحث.</string>
+
+    <!-- ============ Pipeline library ============ -->
+
+    <string name="knotwork_library_title">المسارات</string>
+    <string name="knotwork_library_filter_all">الكل</string>
+    <string name="knotwork_library_filter_recent">الأخيرة</string>
+    <string name="knotwork_library_filter_shared">المشتركة</string>
+    <string name="knotwork_library_filter_mine">خاصتي</string>
+    <string name="knotwork_library_new_pipeline_cd">إنشاء مسار جديد</string>
+    <string name="knotwork_library_new_pipeline_label">مسار جديد</string>
+    <string name="knotwork_library_empty_title">لا مسارات بعد</string>
+    <string name="knotwork_library_empty_subtitle">ابنِ واحدًا من الصفر أو اختر قالبًا.</string>
+    <string name="knotwork_library_empty_cta_new">+ مسار جديد</string>
+    <string name="knotwork_library_empty_cta_templates">تصفح القوالب</string>
+    <string name="knotwork_library_error_title">تعذّر تحميل المسارات</string>
+    <string name="knotwork_library_error_retry">إعادة المحاولة</string>
+    <string name="knotwork_library_error_report">الإبلاغ عن مشكلة</string>
+    <plurals name="knotwork_library_multi_select_count">
+        <item quantity="zero">%1$d محدّد</item>
+        <item quantity="one">%1$d محدّد</item>
+        <item quantity="two">%1$d محدّدان</item>
+        <item quantity="few">%1$d محدّدة</item>
+        <item quantity="many">%1$d محدّدًا</item>
+        <item quantity="other">%1$d محدّد</item>
+    </plurals>
+    <string name="knotwork_library_multi_select_cancel">إلغاء</string>
+    <string name="knotwork_library_multi_select_archive">أرشفة</string>
+    <string name="knotwork_library_multi_select_delete">حذف</string>
+    <plurals name="knotwork_library_topbar_subtitle">
+        <item quantity="zero">%1$d محفوظ · %2$d افتراضي</item>
+        <item quantity="one">%1$d محفوظ · %2$d افتراضي</item>
+        <item quantity="two">%1$d محفوظان · %2$d افتراضي</item>
+        <item quantity="few">%1$d محفوظة · %2$d افتراضي</item>
+        <item quantity="many">%1$d محفوظًا · %2$d افتراضي</item>
+        <item quantity="other">%1$d محفوظ · %2$d افتراضي</item>
+    </plurals>
+    <string name="knotwork_library_section_library">المكتبة</string>
+    <string name="knotwork_library_badge_default">افتراضي</string>
+    <string name="knotwork_library_badge_share">مشاركة</string>
+    <string name="knotwork_library_badge_share_cd">مربوط بهدف المشاركة</string>
+    <string name="knotwork_library_badge_tile">مربع</string>
+    <string name="knotwork_library_badge_tile_cd">مربوط بمربع الإعدادات السريعة</string>
+    <string name="knotwork_library_footer_header">من محرّر المتصفح</string>
+    <string name="knotwork_library_footer_import">استيراد JSON</string>
+    <string name="knotwork_library_footer_body">صدّر من pipeline-editor.html واستورد هنا — مخطط JSON نفسه، بلا تحويل يدوي.</string>
+    <string name="knotwork_library_menu_load">تحميل في المحرّر</string>
+    <string name="knotwork_library_menu_set_default">تعيين كافتراضي</string>
+    <string name="knotwork_library_menu_set_default_active">افتراضي</string>
+    <string name="knotwork_library_menu_use_for_share">استخدام للمشاركة</string>
+    <string name="knotwork_library_menu_use_for_tile">استخدام لمربع الإعدادات السريعة</string>
+    <string name="knotwork_library_menu_rename">إعادة التسمية</string>
+    <string name="knotwork_library_menu_duplicate">تكرار</string>
+    <string name="knotwork_library_menu_export_bundle">تصدير</string>
+    <string name="knotwork_library_menu_save_as_preset">حفظ كإعداد مسبق</string>
+    <string name="knotwork_library_menu_delete">حذف</string>
+    <string name="knotwork_library_row_overflow_cd">المزيد من الإجراءات لـ %1$s</string>
+
+    <!-- ============ Tools screen ============ -->
+
+    <string name="knotwork_tools_title">الأدوات</string>
+    <string name="knotwork_tools_empty_title">لا خوادم أدوات متصلة</string>
+    <string name="knotwork_tools_empty_subtitle">صل خادم MCP ليمنح الوكيل قدرات مثل البحث في الويب أو الوصول إلى الملفات أو الصدفة.</string>
+    <string name="knotwork_tools_empty_cta">+ وصل خادمًا</string>
+    <plurals name="knotwork_tools_topbar_subtitle">
+        <item quantity="zero">%1$d مدمجة · %2$d MCP</item>
+        <item quantity="one">%1$d مدمجة · %2$d MCP</item>
+        <item quantity="two">%1$d مدمجتان · %2$d MCP</item>
+        <item quantity="few">%1$d مدمجات · %2$d MCP</item>
+        <item quantity="many">%1$d مدمجة · %2$d MCP</item>
+        <item quantity="other">%1$d مدمجة · %2$d MCP</item>
+    </plurals>
+    <string name="knotwork_tools_section_built_in">أدوات مدمجة</string>
+    <plurals name="knotwork_tools_group_count_tools">
+        <item quantity="zero">%1$d أدوات</item>
+        <item quantity="one">%1$d أداة</item>
+        <item quantity="two">%1$d أداتان</item>
+        <item quantity="few">%1$d أدوات</item>
+        <item quantity="many">%1$d أداةً</item>
+        <item quantity="other">%1$d أداة</item>
+    </plurals>
+    <plurals name="knotwork_tools_group_count_servers">
+        <item quantity="zero">%1$d خوادم</item>
+        <item quantity="one">%1$d خادم</item>
+        <item quantity="two">%1$d خادمان</item>
+        <item quantity="few">%1$d خوادم</item>
+        <item quantity="many">%1$d خادمًا</item>
+        <item quantity="other">%1$d خادم</item>
+    </plurals>
+    <plurals name="knotwork_tools_group_warn_disconnected">
+        <item quantity="zero">%1$d غير متصلين</item>
+        <item quantity="one">%1$d غير متصل</item>
+        <item quantity="two">%1$d غير متصلين</item>
+        <item quantity="few">%1$d غير متصلين</item>
+        <item quantity="many">%1$d غير متصل</item>
+        <item quantity="other">%1$d غير متصل</item>
+    </plurals>
+    <string name="knotwork_tools_docs_cd">اقرأ عن خوادم MCP</string>
+    <string name="knotwork_tools_add_mcp_cd">إضافة خادم MCP</string>
+    <string name="knotwork_tools_empty_mcp_title">لا خوادم بعد</string>
+    <string name="knotwork_tools_empty_mcp_body">يضيف خادم MCP أدوات يستطيع الوكيل استدعاءها — بحث في الويب، وملفات، وصدفة.</string>
+    <string name="knotwork_tools_empty_mcp_cta">إضافة خادم</string>
+    <string name="knotwork_tools_mcp_disconnected">غير متصل</string>
+    <string name="knotwork_tools_mcp_reconnect">إعادة الاتصال</string>
+    <string name="knotwork_tools_mcp_shadowed_by_device">لا تُعرض على الوكيل: أداة على هذا الجهاز تحمل الاسم نفسه.</string>
+    <string name="knotwork_tools_mcp_shadowed_by_server">لا تُعرض على الوكيل: %1$s، المذكور أعلاه، فيه أداة بهذا الاسم.</string>
+    <string name="knotwork_tools_section_mcp">خوادم MCP</string>
+    <string name="knotwork_tools_pill_readonly">للقراءة فقط</string>
+    <string name="knotwork_tools_pill_sensitive">حسّاس</string>
+    <string name="knotwork_tools_pill_destructive">مدمّر</string>
+    <string name="knotwork_tools_add_form_header">إضافة عنوان خادم MCP جديد</string>
+    <string name="knotwork_tools_cleartext_consent_body">الحركة إلى %1$s غير مشفّرة. أي شخص على الشبكة نفسها يستطيع قراءة ما ترسله، بما في ذلك أي رمز يُضبط أدناه. وافق فقط إذا كان هذا العنوان جهازًا تثق به على شبكتك.</string>
+    <string name="knotwork_tools_cleartext_consent_action">الموافقة على اتصال غير مشفّر</string>
+    <string name="knotwork_tools_add_form_placeholder">https://mcp.example.com/mcp</string>
+    <string name="knotwork_tools_add_form_address_hint">نقطة النهاية التي يطبعها خادمك عند بدئه. طابق النقل المذكور تحتها، وعنوان على شبكتك الخاصة مناسب.</string>
+    <string name="knotwork_tools_add_form_cancel">إلغاء</string>
+    <string name="knotwork_tools_add_form_submit">إضافة خادم</string>
+    <string name="knotwork_tools_detail_back">رجوع إلى الأدوات</string>
+    <string name="knotwork_tools_detail_schema">مخطط JSON</string>
+    <string name="knotwork_tools_detail_risk">مستوى الخطورة</string>
+    <string name="knotwork_tools_detail_risk_fixed_note">مدمج في التطبيق، لذا هذا المستوى ثابت.</string>
+    <string name="knotwork_tools_detail_risk_editable_note">أنت وحدك تعرف ما تفعله هذه الأداة فعلًا. للقراءة فقط يوقف مطالبة الموافقة؛ والمدمّر يمكن رفضه تمامًا.</string>
+    <string name="knotwork_tools_detail_schema_error">المخطط غير متاح — أعاد الخادم JSON مشوّهًا.</string>
+    <string name="knotwork_tools_expand_server_cd">تبديل قائمة أدوات MCP</string>
+    <string name="knotwork_tools_row_overflow_cd">إجراءات خادم MCP</string>
+    <string name="knotwork_tools_row_action_refresh">تحديث</string>
+    <string name="knotwork_tools_row_action_edit">تعديل</string>
+    <string name="knotwork_tools_row_action_delete">إزالة</string>
+    <string name="knotwork_tools_form_name_label">الاسم المعروض (اختياري)</string>
+    <string name="knotwork_tools_form_name_placeholder">مثل HuggingFace MCP</string>
+    <string name="knotwork_tools_form_transport_label">النقل</string>
+    <string name="knotwork_tools_form_auth_label">المصادقة</string>
+    <string name="knotwork_tools_form_auth_bearer_placeholder">رمز Bearer</string>
+    <string name="knotwork_tools_form_auth_basic_user_placeholder">اسم المستخدم</string>
+    <string name="knotwork_tools_form_auth_basic_pass_placeholder">كلمة المرور</string>
+    <string name="knotwork_tools_form_auth_apikey_name_placeholder">اسم الترويسة (مثل X-API-Key)</string>
+    <string name="knotwork_tools_form_auth_apikey_value_placeholder">قيمة المفتاح</string>
+    <string name="knotwork_tools_form_headers_label">ترويسات مخصصة</string>
+    <string name="knotwork_tools_form_headers_add">+ إضافة ترويسة</string>
+    <string name="knotwork_tools_form_header_key_placeholder">Authorization</string>
+    <string name="knotwork_tools_form_header_value_placeholder">Bearer …</string>
+    <string name="knotwork_tools_form_header_remove_cd">إزالة الترويسة</string>
+    <string name="knotwork_tools_form_submit_save">حفظ</string>
+    <string name="knotwork_tools_form_title_add">إضافة خادم MCP</string>
+    <string name="knotwork_tools_form_title_edit">تعديل خادم MCP</string>
+
+    <!-- ============ Allowed domains ============ -->
+
+    <string name="knotwork_allowed_domains_entry_title">النطاقات المسموح بها</string>
+    <plurals name="knotwork_allowed_domains_entry_count">
+        <item quantity="zero">%1$d مضيفين</item>
+        <item quantity="one">%1$d مضيف</item>
+        <item quantity="two">%1$d مضيفان</item>
+        <item quantity="few">%1$d مضيفين</item>
+        <item quantity="many">%1$d مضيفًا</item>
+        <item quantity="other">%1$d مضيف</item>
+    </plurals>
+    <string name="knotwork_allowed_domains_entry_cd">فتح النطاقات المسموح بها لـ http_request</string>
+    <string name="knotwork_allowed_domains_title">النطاقات المسموح بها</string>
+    <plurals name="knotwork_allowed_domains_subtitle">
+        <item quantity="zero">http_request · %1$d مضيفين</item>
+        <item quantity="one">http_request · %1$d مضيف</item>
+        <item quantity="two">http_request · %1$d مضيفان</item>
+        <item quantity="few">http_request · %1$d مضيفين</item>
+        <item quantity="many">http_request · %1$d مضيفًا</item>
+        <item quantity="other">http_request · %1$d مضيف</item>
+    </plurals>
+    <string name="knotwork_allowed_domains_info_cd">حول النطاقات المسموح بها</string>
+    <string name="knotwork_allowed_domains_back_cd">رجوع إلى الأدوات</string>
+    <string name="knotwork_allowed_domains_info_title">النطاقات المسموح بها</string>
+    <string name="knotwork_allowed_domains_info_close">حسنًا</string>
+    <string name="knotwork_allowed_domains_empty_title">لا نطاقات بعد</string>
+    <string name="knotwork_allowed_domains_empty_body">تبقى أداة http_request مخفية عن الوكيل حتى تسمح بمضيف واحد على الأقل. أضف نطاقًا لتشغيلها.</string>
+    <string name="knotwork_allowed_domains_empty_warn_title">إضافة مضيف تعني موافقتك على HTTP صادر</string>
+    <string name="knotwork_allowed_domains_empty_warn_body">عندما يصبح نطاق على هذه القائمة، يستطيع الوكيل إرسال بيانات الطلب إليه. أضف فقط المضيفين الذين تثق بهم.</string>
+    <string name="knotwork_allowed_domains_explainer">يجوز للوكيل إرسال طلبات HTTP فقط إلى المضيفين في هذه القائمة. إزالة الأخير تخفي الأداة من جديد.</string>
+    <string name="knotwork_allowed_domains_add_label">إضافة مضيف</string>
+    <string name="knotwork_allowed_domains_add_placeholder">example.com</string>
+    <string name="knotwork_allowed_domains_add_button">إضافة</string>
+    <string name="knotwork_allowed_domains_add_helper">المضيف فقط — بلا https:// ولا مسار ولا منفذ.</string>
+    <string name="knotwork_allowed_domains_add_normalized">سيُضاف بالشكل %1$s</string>
+    <string name="knotwork_allowed_domains_add_invalid">ليس مضيفًا صالحًا. أدخل نطاقًا مثل api.example.com.</string>
+    <string name="knotwork_allowed_domains_add_duplicate">%1$s موجود في القائمة أصلًا.</string>
+    <plurals name="knotwork_allowed_domains_list_label">
+        <item quantity="zero">المضيفون المسموح بهم · %1$d</item>
+        <item quantity="one">مضيف مسموح به · %1$d</item>
+        <item quantity="two">مضيفان مسموح بهما · %1$d</item>
+        <item quantity="few">مضيفون مسموح بهم · %1$d</item>
+        <item quantity="many">مضيف مسموح به · %1$d</item>
+        <item quantity="other">مضيف مسموح به · %1$d</item>
+    </plurals>
+    <string name="knotwork_allowed_domains_list_footer">تُطابَق أسماء المضيفين تطابقًا تامًا — والنطاقات الفرعية غير مقصودة.</string>
+    <string name="knotwork_allowed_domains_remove_cd">إزالة %1$s من قائمة السماح</string>
+
+    <!-- ============ Settings ============ -->
+
+    <string name="knotwork_settings_title">الإعدادات</string>
+    <string name="knotwork_settings_back">رجوع</string>
+
+    <string name="knotwork_settings_section_system_instructions">تعليمات النظام</string>
+    <string name="knotwork_settings_section_providers">المزوّدون الخارجيون</string>
+
+    <string name="knotwork_settings_hub_basic">أساسي</string>
+    <string name="knotwork_settings_hub_categories">الفئات</string>
+
+    <string name="knotwork_settings_search_hint">بحث في الإعدادات</string>
+    <string name="knotwork_settings_search_clear">مسح البحث</string>
+    <string name="knotwork_settings_search_count">%1$d إعدادات مطابقة</string>
+    <string name="knotwork_settings_search_empty_title">لا إعدادات تطابق “%1$s”</string>
+    <string name="knotwork_settings_search_empty_subtitle">جرّب اسم إعداد أو فئة أو ما يفعله — البحث ينظر في الأسماء والمرادفات.</string>
+    <string name="knotwork_settings_search_tier_basic">أساسي</string>
+    <string name="knotwork_settings_search_tier_advanced">متقدم</string>
+    <string name="knotwork_settings_search_synonym">≈ “%1$s”</string>
+    <string name="knotwork_settings_hub_system_instructions_empty">انقر لتعديل موجّه النظام.</string>
+    <string name="knotwork_settings_count">%1$d إعدادات</string>
+    <string name="knotwork_settings_advanced_title">متقدم</string>
+
+    <string name="knotwork_settings_system_instructions_title">تعليمات النظام</string>
+    <string name="knotwork_settings_memory_actions_title">بيانات الذاكرة</string>
+    <string name="knotwork_settings_hint_open_cd">شرح: %1$s</string>
+    <string name="knotwork_settings_hint_state_collapsed">مطوي</string>
+    <string name="knotwork_settings_hint_state_expanded">موسّع</string>
+
+    <string name="knotwork_settings_cat_generation_title">التوليد</string>
+    <string name="knotwork_settings_cat_generation_summary">موجّه النظام · أخذ العينات · الصوت</string>
+    <string name="knotwork_settings_cat_models_title">النماذج</string>
+    <string name="knotwork_settings_cat_models_summary">الخلفية المحلية · المزوّدون</string>
+    <string name="knotwork_settings_cat_memory_title">الذاكرة</string>
+    <string name="knotwork_settings_cat_memory_summary">الاستخراج · الضغط · المتجهات</string>
+    <string name="knotwork_settings_cat_pipelines_title">حدود التشغيل والخرج المنظّم</string>
+    <string name="knotwork_settings_cat_pipelines_summary">سقوف الخطوات · الخرج المنظّم</string>
+    <string name="knotwork_settings_cat_tools_title">الأدوات ومساحة العمل</string>
+    <string name="knotwork_settings_cat_tools_summary">الموافقات · الحدود · MCP</string>
+    <string name="knotwork_settings_cat_background_title">الخلفية والمشغّلات</string>
+    <string name="knotwork_settings_cat_background_summary">الإشعارات · نافذة الاستئناف</string>
+    <string name="knotwork_settings_cat_privacy_title">الخصوصية</string>
+    <string name="knotwork_settings_cat_privacy_summary">تقارير الأعطال · الاحتفاظ بالأثر · النسخ الاحتياطي</string>
+    <string name="knotwork_settings_cat_about_title">حول</string>
+    <string name="knotwork_settings_cat_about_summary">الإصدار · الهوية · إعادة الضبط</string>
+
+    <string name="knotwork_settings_privacy_usage_title">إحصاءات الاستخدام</string>
+    <string name="knotwork_settings_privacy_usage_subtitle">أعداد على الجهاز · لا شيء يغادر الجهاز</string>
+    <string name="knotwork_usage_title">إحصاءات الاستخدام</string>
+    <string name="knotwork_usage_subtitle">على هذا الجهاز فقط</string>
+    <string name="knotwork_usage_record_label">تسجيل الاستخدام على هذا الجهاز</string>
+    <string name="knotwork_usage_record_hint">عدّ التشغيلات وإطلاقات المشغّلات محليًا، لتحليلك أنت.</string>
+    <string name="knotwork_usage_local_only">كل ما هنا مخزّن على هذا الجهاز فقط ولا يُرسل إلى أي مكان.</string>
+    <string name="knotwork_usage_empty">لا استخدام مسجّل بعد. عندما تشغّل المسارات وتنطلق المشغّلات، تظهر الأعداد المحلية هنا.</string>
+    <string name="knotwork_usage_section_runs">التشغيلات</string>
+    <string name="knotwork_usage_section_pipelines">التشغيلات حسب المسار</string>
+    <string name="knotwork_usage_section_triggers">إطلاقات المشغّلات</string>
+    <string name="knotwork_usage_section_active_days">الأيام النشطة</string>
+    <string name="knotwork_usage_section_retention">هذا الأسبوع</string>
+    <string name="knotwork_usage_section_onboarding">الإعداد</string>
+    <string name="knotwork_usage_none">لا شيء</string>
+    <string name="knotwork_usage_action_share">مشاركة كنص</string>
+    <string name="knotwork_usage_action_export">تصدير JSON</string>
+    <string name="knotwork_usage_action_reset">إعادة ضبط الإحصاءات</string>
+
+    <string name="knotwork_settings_system_instructions_counter">%1$d / %2$d حرف · ≈ %3$d tok</string>
+
+    <string name="knotwork_settings_restrictions_approve">الموافقة على استدعاءات الأدوات</string>
+    <string name="knotwork_settings_restrictions_block_destructive">حظر الأدوات المدمّرة</string>
+    <string name="knotwork_settings_restrictions_block_network">حظر الشبكة عن النموذج المحلي</string>
+
+    <string name="knotwork_settings_llm_reset">إعادة الضبط إلى الافتراضيات</string>
+
+    <string name="knotwork_settings_local_model_manage">إدارة</string>
+    <string name="knotwork_settings_local_model_active_pill">نشط</string>
+    <string name="knotwork_settings_local_model_empty">لا نموذج مثبّت</string>
+    <string name="knotwork_settings_local_model_backend_title">خلفية الاستنتاج</string>
+    <string name="knotwork_settings_local_model_test_title">اختبار الخلفية</string>
+    <string name="knotwork_settings_local_model_test_run">تشغيل</string>
+    <string name="knotwork_settings_models_manage_subtitle">استكشف نماذج الجهاز وثبّتها.</string>
+
+    <string name="knotwork_settings_providers_add">إضافة مزوّد</string>
+    <string name="knotwork_settings_providers_lan">شبكة محلية</string>
+    <string name="knotwork_settings_providers_not_configured">غير مُعدّ · انقر لإضافة مفتاح API</string>
+    <string name="knotwork_settings_providers_not_configured_address">غير مُعدّ · انقر لإضافة عنوان الخادم</string>
+    <string name="knotwork_settings_providers_no_model">لم يُحدَّد نموذج</string>
+
+    <string name="knotwork_node_provider_auto">تلقائي</string>
+    <string name="knotwork_node_provider_not_configured">غير مُعدّ على هذا الجهاز</string>
+    <string name="knotwork_node_provider_auto_line">أول مُعدّ من Google ثم OpenAI ثم DeepSeek</string>
+    <string name="knotwork_node_provider_auto_resolved">على هذا الجهاز → %1$s</string>
+    <string name="knotwork_node_provider_on_device_line">نموذج على الجهاز</string>
+    <string name="knotwork_node_provider_picker_note">المزوّدون غير المُعدّين هنا يُحفظون مع ذلك: يمكن أن يعمل المسار على جهاز آخر.</string>
+    <string name="knotwork_node_provider_hint_cloud">إذا لم يكن %1$s مُعدًّا على الجهاز الذي يشغّل هذا، تفشل العقدة وتذكر السبب.</string>
+    <string name="knotwork_node_provider_hint_engine">إذا لم يكن %1$s مُعدًّا على الجهاز الذي يشغّل هذا، تعمل العقدة على النموذج المحلي وتكتب سطرًا في وحدة التحكم.</string>
+    <string name="knotwork_node_provider_hint_auto">يستخدم أول مُعدّ من Google ثم OpenAI ثم DeepSeek — وليس OpenRouter ولا Groq ولا خادمك. إذا لم يُعدّ أي منها، تفشل العقدة وتذكر السبب.</string>
+    <string name="knotwork_node_provider_group_hosted">مستضاف</string>
+    <string name="knotwork_node_provider_group_own">خادمك</string>
+
+    <string name="knotwork_model_sheet_title">اختيار نموذج</string>
+    <string name="knotwork_model_sheet_count">%1$d من %2$s</string>
+    <string name="knotwork_model_sheet_search">ابحث في معرّفات النماذج</string>
+    <plurals name="knotwork_model_sheet_matches">
+        <item quantity="zero">%1$d نتائج</item>
+        <item quantity="one">%1$d نتيجة</item>
+        <item quantity="two">%1$d نتيجتان</item>
+        <item quantity="few">%1$d نتائج</item>
+        <item quantity="many">%1$d نتيجة</item>
+        <item quantity="other">%1$d نتيجة</item>
+    </plurals>
+
+    <string name="knotwork_settings_notifications_scheduled_results">نتائج المهام المجدولة</string>
+    <string name="knotwork_settings_share_pipeline_title">مسار المشاركة</string>
+    <string name="knotwork_settings_share_reuse_title">إبقاء المشاركات في محادثة واحدة</string>
+    <string name="knotwork_settings_tile_pipeline_title">مسار الإعدادات السريعة</string>
+    <string name="knotwork_settings_external_automation_title">أتمتة خارجية</string>
+    <string name="knotwork_settings_external_pipeline_title">المسار الذي يجوز للتطبيقات الأخرى تشغيله</string>
+    <string name="knotwork_settings_external_journal_title">سجل الطلبات</string>
+    <string name="knotwork_settings_run_limits_title">حدود التشغيل</string>
+
+    <string name="knotwork_settings_crash_reporting_label">إرسال تقارير أعطال مجهولة</string>
+    <string name="knotwork_settings_verbose_memory_logging_label">تسجيل مفصّل للذاكرة</string>
+    <string name="knotwork_settings_reset_button">إعادة ضبط كل الإعدادات</string>
+    <string name="knotwork_settings_reset_hint">الافتراضيات نقاط بداية معقولة، صُقلت بالاستخدام الفعلي. تعيد ضبط الإعدادات فقط — محادثاتك وذاكرتك ومساراتك وإعداداتك المسبقة واتصالاتك تبقى كما هي.</string>
+    <string name="knotwork_settings_restart_action">إعادة التشغيل</string>
+
+    <string name="knotwork_settings_destructive_confirm">تأكيد</string>
+    <string name="knotwork_settings_destructive_cancel">إلغاء</string>
+
+    <string name="knotwork_settings_memory_reembed_progress">إعادة التضمين · %1$d %%</string>
+
+    <string name="knotwork_settings_tools_manage_title">إدارة الأدوات / خوادم MCP</string>
+    <string name="knotwork_settings_tools_manage_subtitle">تفعيل الأدوات، وضبط تجاوزات الخطورة، وإضافة خوادم MCP.</string>
+    <string name="knotwork_settings_tools_domains_title">نطاقات HTTP المسموح بها</string>
+    <string name="knotwork_settings_tools_domains_subtitle">المضيفون الذين يجوز لأداة HTTP الوصول إليهم.</string>
+
+    <string name="knotwork_settings_about_version_title">إصدار التطبيق والرخص</string>
+
+<!-- ============ Memory screen ============ -->
+
+    <string name="knotwork_memory_title">الذاكرة</string>
+    <string name="knotwork_memory_subtitle">طويلة الأمد · قاعدة متجهات</string>
+    <string name="knotwork_memory_overflow_cd">المزيد من الخيارات</string>
+    <string name="knotwork_memory_export_all">تصدير الذاكرة</string>
+    <string name="knotwork_memory_add_memory">إضافة ذاكرة</string>
+    <string name="knotwork_memory_count_unit">ذكريات</string>
+    <string name="knotwork_memory_compact">ضغط</string>
+    <string name="knotwork_memory_search_placeholder">بحث في الذكريات</string>
+    <string name="knotwork_memory_search_cd">حقل البحث في الذاكرة</string>
+    <string name="knotwork_memory_search_clear_cd">مسح بحث الذاكرة</string>
+    <string name="knotwork_memory_search_semantic">دلالي · مرتّب حسب الصلة</string>
+    <string name="knotwork_memory_empty_title">لا شيء في الذاكرة بعد</string>
+    <string name="knotwork_memory_empty_subtitle">اطلب من الوكيل أن يتذكر شيئًا — حقائق أو تفضيلات أو ملاحظات مشروع — وسيظهر هنا.</string>
+    <string name="knotwork_memory_no_match_title">لا شيء يطابق هذا البحث</string>
+    <string name="knotwork_memory_no_match_subtitle">جرّب كلمة أخرى أو امسح البحث.</string>
+    <string name="knotwork_memory_no_match_clear">مسح البحث</string>
+    <string name="knotwork_memory_error_title">الذاكرة غير متاحة</string>
+    <string name="knotwork_memory_error_retry">إعادة المحاولة</string>
+    <string name="knotwork_memory_pinned_cd">مثبّت</string>
+    <string name="knotwork_memory_pin">تثبيت</string>
+    <string name="knotwork_memory_unpin">إلغاء التثبيت</string>
+    <string name="knotwork_memory_sort_label">الترتيب</string>
+    <string name="knotwork_memory_sort_recent">الأحدث</string>
+    <string name="knotwork_memory_sort_relevance">الصلة</string>
+    <string name="knotwork_memory_sort_alphabetical">أ → ي</string>
+    <string name="knotwork_memory_filter_date_all">كل الأوقات</string>
+    <string name="knotwork_memory_filter_date_7d">آخر 7 أيام</string>
+    <string name="knotwork_memory_filter_date_30d">آخر 30 يومًا</string>
+    <string name="knotwork_memory_category_all">الكل</string>
+    <string name="knotwork_memory_category_pinned">المثبّت</string>
+    <string name="knotwork_memory_category_auto">تلقائي</string>
+    <string name="knotwork_memory_category_manual">يدوي</string>
+    <string name="knotwork_memory_category_compaction">ضغط</string>
+    <string name="knotwork_memory_badge_auto">تلقائي</string>
+    <string name="knotwork_memory_badge_manual">يدوي</string>
+    <string name="knotwork_memory_badge_compact">مضغوط</string>
+    <string name="knotwork_memory_badge_unknown">غير معروف</string>
+    <string name="knotwork_memory_detail_edit">تعديل</string>
+    <string name="knotwork_memory_detail_delete">حذف</string>
+    <string name="knotwork_memory_detail_cancel">إلغاء</string>
+    <string name="knotwork_memory_detail_save">حفظ</string>
+    <string name="knotwork_memory_detail_close">إغلاق</string>
+    <string name="knotwork_memory_hist_title">نسخ سابقة</string>
+    <plurals name="knotwork_memory_hist_count">
+        <item quantity="zero">%1$d نسخ سابقة</item>
+        <item quantity="one">%1$d نسخة سابقة</item>
+        <item quantity="two">%1$d نسختان سابقتان</item>
+        <item quantity="few">%1$d نسخ سابقة</item>
+        <item quantity="many">%1$d نسخة سابقة</item>
+        <item quantity="other">%1$d نسخة سابقة</item>
+    </plurals>
+    <string name="knotwork_memory_hist_src_auto">استُخرج تلقائيًا</string>
+    <string name="knotwork_memory_hist_src_manual">حُفظ يدويًا</string>
+    <string name="knotwork_memory_hist_src_compact">مُضغط</string>
+    <string name="knotwork_memory_hist_src_unknown">مصدر غير معروف</string>
+    <string name="knotwork_memory_hist_learned_from">مُكتسب من المحادثة “%1$s”</string>
+    <string name="knotwork_memory_hist_captured">التُقط %1$s</string>
+    <string name="knotwork_memory_hist_replaced">استُبدل %1$s</string>
+    <string name="knotwork_memory_hist_version_more">المزيد من الخيارات لهذه النسخة</string>
+    <string name="knotwork_memory_hist_delete_version">حذف هذه النسخة</string>
+    <string name="knotwork_memory_dlg_delete_version_title">حذف هذه النسخة؟</string>
+    <string name="knotwork_memory_dlg_delete_version_body">يُزال النص السابق من سجل هذه الذاكرة. النص الحالي يبقى.</string>
+    <string name="knotwork_memory_edit_history_note">يستبدل تعديلك النص دون إضافة نسخة سابقة.</string>
+    <string name="knotwork_memory_pair_pinned_title">تحديث بانتظارك</string>
+    <string name="knotwork_memory_pair_update_title">يحدّث ذاكرة مثبّتة</string>
+    <string name="knotwork_memory_pair_note">يستخدم الوكيل النص المثبّت إلى أن تختار.</string>
+    <string name="knotwork_memory_pair_use">استخدام التحديث</string>
+    <string name="knotwork_memory_pair_keep">الإبقاء على المثبّت</string>
+    <string name="knotwork_memory_row_pair_pinned">تحديث بانتظار</string>
+    <string name="knotwork_memory_row_pair_update">يحدّث ذاكرة مثبّتة</string>
+    <plurals name="knotwork_memory_a11y_row_history">
+        <item quantity="zero">%1$d نسخ سابقة</item>
+        <item quantity="one">%1$d نسخة سابقة</item>
+        <item quantity="two">%1$d نسختان سابقتان</item>
+        <item quantity="few">%1$d نسخ سابقة</item>
+        <item quantity="many">%1$d نسخة سابقة</item>
+        <item quantity="other">%1$d نسخة سابقة</item>
+    </plurals>
+    <string name="knotwork_memory_a11y_hist_show">إظهار النسخ السابقة</string>
+    <string name="knotwork_memory_a11y_hist_hide">إخفاء النسخ السابقة</string>
+    <string name="knotwork_memory_a11y_version">نسخة سابقة %1$d من %2$d. %3$s. %4$s.</string>
+    <string name="knotwork_memory_a11y_pair_update_text">التحديث: %1$s</string>
+    <string name="knotwork_memory_a11y_pair_pinned_text">النص المثبّت: %1$s</string>
+    <string name="knotwork_memory_meta_source">المصدر</string>
+    <string name="knotwork_memory_meta_learned_from">مُكتسب من</string>
+    <string name="knotwork_memory_meta_captured">التُقط</string>
+    <string name="knotwork_memory_meta_used_in">استُخدم في</string>
+    <string name="knotwork_memory_tag_add">وسم</string>
+    <string name="knotwork_memory_tag_add_action">إضافة</string>
+    <string name="knotwork_memory_tag_remove_cd">إزالة الوسم</string>
+    <string name="knotwork_memory_compact_title">ضغط الذاكرة؟</string>
+    <string name="knotwork_memory_compact_body">يدمج الأجزاء شبه المكررة ويعيد تلخيص أقدم 30 يومًا. الذكريات المثبّتة لا تُمس.</string>
+    <string name="knotwork_memory_compact_removed">المقدَّر إزالته</string>
+    <string name="knotwork_memory_compact_freed">المحرَّر</string>
+    <string name="knotwork_memory_compact_runtime">مدة التشغيل</string>
+    <string name="knotwork_memory_compact_confirm">ضغط الآن</string>
+    <string name="knotwork_memory_add_title">إضافة ذاكرة</string>
+    <string name="knotwork_memory_add_placeholder">ماذا يجب أن يتذكر الوكيل؟</string>
+    <string name="knotwork_memory_add_save">حفظ</string>
+
+    <!-- ============ Onboarding ============ -->
+
+    <string name="knotwork_onboarding_brand_title">كوكب</string>
+    <string name="knotwork_onboarding_skip">تخطّي</string>
+    <string name="knotwork_onboarding_continue">متابعة</string>
+
+    <string name="knotwork_onboarding_welcome_headline">وكيل ذكاء اصطناعي خاص يعمل على هاتفك.</string>
+    <string name="knotwork_onboarding_welcome_body">بلا رحلة إلى السحابة. بلا قياس عن بُعد. محادثاتك تبقى على الجهاز. المزوّدون السحابيون اختياريون — أحضر مفتاحك إن أردتهم.</string>
+    <string name="knotwork_onboarding_welcome_tile_litert">استنتاج LiteRT على الجهاز</string>
+    <string name="knotwork_onboarding_welcome_tile_appfunctions">أدوات AppFunctions المحلية</string>
+    <string name="knotwork_onboarding_welcome_tile_storage">تخزين مشفّر (SQLCipher · Keystore)</string>
+
+    <string name="knotwork_onboarding_scenario_headline">ماذا تريد أن يفعل وكيلك من أجلك؟</string>
+    <string name="knotwork_onboarding_scenario_body">اختر شيئًا لتبدأ به — سنُعد كل ما يحتاجه وننزّل النموذج الذي تتطلبه تلك المهمة فقط.</string>
+    <string name="knotwork_onboarding_scenario_cta_empty">اختر سيناريو</string>
+    <string name="knotwork_onboarding_scenario_cta_setup">إعداد %1$s</string>
+    <string name="knotwork_onboarding_scenario_cta_setting_up">جارٍ الإعداد…</string>
+    <string name="knotwork_onboarding_scenario_featured_badge">الأكثر شيوعًا</string>
+    <string name="knotwork_onboarding_scenario_meta_model">نموذج %1$s</string>
+    <string name="knotwork_onboarding_scenario_meta_ondevice">يعمل على الجهاز</string>
+    <string name="knotwork_onboarding_scenario_meta_share">ورقة المشاركة في النظام</string>
+    <string name="knotwork_onboarding_scenario_meta_hitl">يسأل قبل الكتابة</string>
+    <string name="knotwork_onboarding_scenario_meta_private">خاص بالكامل</string>
+    <string name="knotwork_onboarding_scenario_translate_title">ترجمة بأسلوب</string>
+    <string name="knotwork_onboarding_scenario_translate_value">ترجم الرسائل مع الحفاظ على نبرتها ومستواها ولهجتها — لا الكلمات وحدها.</string>
+    <string name="knotwork_onboarding_scenario_capture_title">معالج المشاركة</string>
+    <string name="knotwork_onboarding_scenario_capture_value">شارك أي شيء مع الوكيل فيصبح ملاحظة نظيفة منظّمة في صندوق الوارد.</string>
+    <string name="knotwork_onboarding_scenario_companion_title">رفيق افتراضي</string>
+    <string name="knotwork_onboarding_scenario_companion_value">رفيق يستشعر مزاجك ويغيّر طريقة حديثه معك.</string>
+    <string name="knotwork_onboarding_scenario_scratch_title">البدء من الصفر</string>
+    <string name="knotwork_onboarding_scenario_scratch_body">تفضّل أن تبنيه بنفسك؟ ستصل إلى مسار فارغ توصله عقدةً عقدة.</string>
+
+    <string name="knotwork_onboarding_download_headline">%1$s يحتاج %2$s.</string>
+    <string name="knotwork_onboarding_download_body">نحو %1$s — يعمل بالكامل على جهازك بعد وصوله. تفضّل نموذجًا أخف؟ اختر واحدًا أدناه.</string>
+    <string name="knotwork_onboarding_download_generic_headline">تنزيل %1$s.</string>
+    <string name="knotwork_onboarding_download_custom_headline">إضافة نموذج مخصص.</string>
+    <string name="knotwork_onboarding_download_custom_body">الصق رابط .litertlm مباشرًا أدناه لاستخدام نموذج خاص بك.</string>
+    <string name="knotwork_onboarding_download_installed_headline">%1$s موجود على جهازك أصلًا.</string>
+    <string name="knotwork_onboarding_download_installed_body">لا حاجة إلى تنزيل — النموذج الذي يستخدمه هذا السيناريو مثبّت أصلًا. يمكنك المتابعة فورًا.</string>
+    <string name="knotwork_onboarding_download_needs_this">يحتاج هذا</string>
+    <string name="knotwork_onboarding_download_choose_another">أو اختر آخر</string>
+    <string name="knotwork_onboarding_models_download_cta">تنزيل %1$s</string>
+    <string name="knotwork_onboarding_models_downloading_cta">جارٍ التنزيل…</string>
+    <string name="knotwork_onboarding_models_continue_cta">متابعة</string>
+    <string name="knotwork_onboarding_models_installed">مثبّت</string>
+    <string name="knotwork_onboarding_models_progress">جارٍ التنزيل… %1$d%%</string>
+    <string name="knotwork_onboarding_models_custom_url_placeholder">https://…/model.litertlm</string>
+    <string name="knotwork_onboarding_models_custom_url_label">عنوان النموذج</string>
+
+    <string name="knotwork_onboarding_ready_active_model_label">النموذج النشط</string>
+    <string name="knotwork_onboarding_ready_active_model_value">%1$s · على الجهاز</string>
+    <string name="knotwork_onboarding_ready_active_model_pending">جارٍ تحميل النموذج…</string>
+    <string name="knotwork_onboarding_ready_surface_label">سطح الدخول</string>
+    <string name="knotwork_onboarding_ready_surface_value">يستمع إلى ورقة المشاركة في النظام</string>
+    <string name="knotwork_onboarding_ready_safety_label">الأمان</string>
+    <string name="knotwork_onboarding_ready_safety_value">يؤكد قبل كل كتابة ملف (HITL)</string>
+    <string name="knotwork_onboarding_ready_scenario_headline">%1$s جاهز.</string>
+    <string name="knotwork_onboarding_ready_generic_headline">أنت جاهز.</string>
+    <string name="knotwork_onboarding_ready_docs_label">احتجت مساعدة لاحقًا؟</string>
+    <string name="knotwork_onboarding_ready_docs_cta">اقرأ الأسئلة الشائعة</string>
+    <string name="knotwork_onboarding_ready_scenario_body">هذا ما أعددناه لك — يمكنك تعديل أي جزء لاحقًا من المسارات.</string>
+    <plurals name="knotwork_onboarding_ready_preview_caption">
+        <item quantity="zero">// افتراضي · %1$d عقد · %2$d حافة</item>
+        <item quantity="one">// افتراضي · %1$d عقدة · %2$d حافة</item>
+        <item quantity="two">// افتراضي · %1$d عقدتان · %2$d حافة</item>
+        <item quantity="few">// افتراضي · %1$d عقد · %2$d حافة</item>
+        <item quantity="many">// افتراضي · %1$d عقدة · %2$d حافة</item>
+        <item quantity="other">// افتراضي · %1$d عقدة · %2$d حافة</item>
+    </plurals>
+    <string name="knotwork_onboarding_ready_open_cta">فتح %1$s</string>
+    <string name="knotwork_onboarding_ready_open_generic_cta">فتح المحادثة</string>
+    <string name="knotwork_onboarding_ready_preparing_cta">جارٍ التحضير…</string>
+    <string name="knotwork_onboarding_ready_checking_acceleration_cta">جارٍ فحص التسريع…</string>
+    <string name="knotwork_onboarding_ready_retry_cta">إعادة المحاولة</string>
+
+    <string name="knotwork_onboarding_exit_title">إنهاء الإعداد؟</string>
+    <string name="knotwork_onboarding_exit_body">يمكنك إكمال الإعداد في المرة القادمة التي تفتح فيها التطبيق.</string>
+    <string name="knotwork_onboarding_exit_confirm">إنهاء</string>
+    <string name="knotwork_onboarding_exit_cancel">إلغاء</string>
+
+    <!-- ============ Pipeline editor ============ -->
+
+    <string name="knotwork_editor_unsaved_changes">غير محفوظ</string>
+    <string name="knotwork_editor_name_placeholder">مسار بلا عنوان</string>
+    <string name="knotwork_editor_action_navigate_up">رجوع</string>
+    <string name="knotwork_editor_action_overflow">المزيد من الإجراءات</string>
+
+    <string name="knotwork_node_config_action_cancel">إلغاء</string>
+    <string name="knotwork_node_config_action_save">حفظ</string>
+
+    <string name="knotwork_node_field_title">العنوان</string>
+    <string name="knotwork_node_field_system_prompt">موجّه النظام</string>
+    <string name="knotwork_node_field_model">النموذج</string>
+    <string name="knotwork_node_field_temperature">درجة الحرارة</string>
+    <string name="knotwork_node_field_provider">المزوّد</string>
+    <string name="knotwork_node_field_engine">المحرك</string>
+    <string name="knotwork_node_field_engine_on_device">على الجهاز</string>
+    <string name="knotwork_node_field_expression">سؤال للنموذج</string>
+    <string name="knotwork_node_field_expression_help">يُسأل فقط عندما لا يطابق أي فحص أعلاه. هذا هو الفحص الذي يستهلك استدعاء نموذج.</string>
+    <string name="knotwork_node_field_keywords">كلمات مفتاحية</string>
+    <string name="knotwork_node_field_keywords_help">اختياري. كلمات مفصولة بفواصل. إذا احتوى النص الوارد على أي منها يُسلك فرع True فورًا دون سؤال النموذج.</string>
+    <string name="knotwork_node_field_complexity_threshold">عتبة الطول</string>
+    <string name="knotwork_node_field_complexity_threshold_help">اختياري. النص الوارد الذي يبلغ هذا العدد من الأحرف على الأقل يسلك فرع True دون سؤال النموذج. 0 يوقف الفحص.</string>
+    <string name="knotwork_node_input_no_settings">لا شيء لضبطه. يأخذ مدخل المسار نص التشغيل كما يصل.</string>
+    <string name="knotwork_node_tool_arguments_help">يبني النموذج وسائط الاستدعاء من مدخل هذه العقدة ومخطط الأداة نفسه.</string>
+    <string name="knotwork_node_queue_source_help">الطابور هو القائمة التي أنتجتها العقدة السابقة، عنصرًا عنصرًا، بالترتيب.</string>
+    <string name="knotwork_node_summary_shape_help">اطلب الشكل والطول في الموجّه — نقاطًا، أو فقرة، أو عدد كلمات.</string>
+    <string name="knotwork_node_field_branch_on_image">اسلك فرع True عندما يحمل المدخل صورة</string>
+    <string name="knotwork_node_field_question">قالب السؤال</string>
+    <string name="knotwork_node_field_quick_replies">ردود سريعة</string>
+    <string name="knotwork_node_field_quick_replies_help">اختياري. إجابات مفصولة بفواصل تظهر كشرائح قابلة للنقر تحت السؤال (حتى 4).</string>
+    <string name="knotwork_node_field_timeout_seconds">مهلة الانتظار</string>
+    <string name="knotwork_node_field_timeout_none">بلا</string>
+    <string name="knotwork_node_field_timeout_seconds_value">%1$d ث</string>
+    <string name="knotwork_node_field_tool">الأداة</string>
+    <string name="knotwork_node_field_always_confirm">اسأل دائمًا قبل هذا الاستدعاء</string>
+    <string name="knotwork_node_field_always_confirm_help">يضيف تأكيدًا إلى كل استدعاء تصدره هذه العقدة، مهما كانت خطورة الأداة. يستطيع أن يضيف تأكيدًا فقط — لا تستطيع العقدة إسقاط تأكيد تفرضه خطورة الأداة.</string>
+    <string name="knotwork_node_field_planning_prompt">موجّه التخطيط</string>
+    <string name="knotwork_node_field_max_subtasks">الحد الأقصى للمهام الفرعية</string>
+    <string name="knotwork_node_field_stop_on_error">التوقف عند الخطأ</string>
+    <string name="knotwork_node_field_criteria_prompt">موجّه المعايير</string>
+    <string name="knotwork_node_field_max_retries">الحد الأقصى لإعادات المحاولة</string>
+    <string name="knotwork_node_field_custom_prompt">موجّه مخصص</string>
+    <string name="knotwork_node_field_classes">الفئات</string>
+    <string name="knotwork_node_field_classifier_prompt">موجّه المصنّف</string>
+    <string name="knotwork_node_field_fallback_class">فئة الاحتياط</string>
+    <string name="knotwork_node_action_add_class">إضافة فئة</string>
+    <string name="knotwork_node_action_remove_class">إزالة فئة</string>
+    <string name="knotwork_node_action_load_from_library">تحميل من المكتبة</string>
+    <string name="knotwork_node_action_save_as_preset">حفظ كإعداد مسبق</string>
+    <string name="knotwork_node_field_tool_auto">تلقائي (دع الوكيل يختار)</string>
+    <string name="knotwork_node_field_tool_custom">معرّف أداة مخصص…</string>
+    <string name="knotwork_node_field_model_active_suffix">%1$s · نشط</string>
+    <string name="knotwork_node_field_model_custom">مسار مخصص…</string>
+    <string name="knotwork_node_field_model_active">النموذج النشط</string>
+
+    <string name="knotwork_node_field_target_pipeline">المسار الهدف</string>
+    <string name="knotwork_node_field_target_pipeline_none">اختر مسارًا…</string>
+    <string name="knotwork_node_field_target_pipeline_help">المسار الذي تشغّله هذه العقدة كاستدعاء فرعي متداخل.</string>
+    <string name="knotwork_node_pipeline_picker_self">لا يستطيع المسار استهداف نفسه</string>
+    <string name="knotwork_node_pipeline_picker_cycle">حلقة — %1$s يستدعي هذا أصلًا</string>
+    <string name="knotwork_node_pipeline_picker_depth">سيتجاوز التداخل %1$d مستويات</string>
+    <string name="knotwork_node_pipeline_picker_empty_title">لا مسارات مؤهلة</string>
+    <string name="knotwork_node_pipeline_picker_empty_body">كل مسار آخر سينشئ حلقة أو يتجاوز حد التداخل. أنشئ واحدًا أو أعد توجيهه، ثم عُد.</string>
+
+    <string name="knotwork_node_field_skill">المهارة</string>
+    <string name="knotwork_node_field_skill_none">اختر مهارة…</string>
+    <string name="knotwork_node_field_skill_help">المهارة التي تشغّلها هذه العقدة: تعليمتها، وقائمة أدواتها المسموحة، وسياقها الافتراضي.</string>
+    <string name="knotwork_node_skill_picker_empty_title">لا مهارات بعد</string>
+    <string name="knotwork_node_skill_picker_empty_body">أنشئ مهارة في مكتبة المهارات أولًا، ثم اخترها هنا.</string>
+    <string name="knotwork_node_field_skill_instruction">التعليمة (للقراءة فقط)</string>
+    <string name="knotwork_node_field_skill_instruction_help">تُعدَّل في مكتبة المهارات، لا هنا.</string>
+    <string name="knotwork_node_field_skill_allowlist">قائمة الأدوات المسموحة</string>
+    <string name="knotwork_node_field_skill_engine">محرك الاستنتاج</string>
+    <string name="knotwork_node_skill_engine_lite_rt">على الجهاز</string>
+    <string name="knotwork_node_skill_engine_cloud">سحابة</string>
+
+    <string name="knotwork_node_validation_title_empty">يجب ألا يكون العنوان فارغًا</string>
+    <string name="knotwork_node_validation_title_duplicate">يجب أن يكون العنوان فريدًا داخل المسار</string>
+    <string name="knotwork_node_validation_field_required">هذا الحقل مطلوب</string>
+    <string name="knotwork_node_validation_out_of_range">يجب أن تكون القيمة ضمن المدى المسموح</string>
+    <string name="knotwork_node_validation_intent_class_count">قدّم بين فئتين و6 فئات</string>
+    <string name="knotwork_node_validation_fallback_unknown">فئة الاحتياط لم تعد معلنة أعلاه</string>
+    <string name="knotwork_node_validation_class_duplicate">يجب أن تكون أسماء الفئات فريدة</string>
+    <string name="knotwork_node_validation_target_pipeline_missing">اختر مسارًا لتشغيله</string>
+    <string name="knotwork_node_validation_target_skill_missing">اختر مهارة لتشغيلها</string>
+
+    <!-- ============ ChatHomeScreen ============ -->
+
+    <string name="knotwork_chat_home_action_threads">فتح المحادثات</string>
+    <string name="knotwork_chat_home_action_overflow">المزيد من خيارات المحادثة</string>
+    <string name="knotwork_chat_home_action_favorite">تبديل المفضلة</string>
+    <string name="knotwork_chat_home_topbar_pipeline">%1$s</string>
+    <string name="knotwork_chat_home_topbar_tokens">%1$s / %2$s tok</string>
+    <string name="knotwork_chat_home_title_debug_hint">انقر ثلاث مرات لفتح منتقي حالة التصحيح</string>
+    <string name="knotwork_chat_home_empty_title">محادثة جديدة</string>
+    <string name="knotwork_chat_home_empty_caption">مسار · %1$s · %2$s (نشط)</string>
+    <string name="knotwork_chat_home_empty_card_uses">يستخدم · %1$s</string>
+    <string name="knotwork_chat_home_drawer_sessions_header">الجلسات</string>
+    <string name="knotwork_chat_home_drawer_new_thread">محادثة جديدة</string>
+    <string name="knotwork_chat_home_drawer_menu_cd">المزيد من الإجراءات</string>
+    <string name="knotwork_chat_home_drawer_menu_rename">إعادة التسمية</string>
+    <string name="knotwork_chat_home_drawer_menu_delete">حذف المحادثة</string>
+    <string name="knotwork_chat_home_drawer_archive_action">أرشفة</string>
+    <string name="knotwork_chat_home_drawer_archive_a11y">أرشفة المحادثة</string>
+    <string name="knotwork_chat_home_drawer_archive_title">المحادثات المؤرشفة</string>
+    <plurals name="knotwork_chat_home_drawer_archive_subtitle">
+        <item quantity="zero">%1$d محادثات</item>
+        <item quantity="one">%1$d محادثة</item>
+        <item quantity="two">%1$d محادثتان</item>
+        <item quantity="few">%1$d محادثات</item>
+        <item quantity="many">%1$d محادثة</item>
+        <item quantity="other">%1$d محادثة</item>
+    </plurals>
+    <string name="knotwork_chat_home_archived_subtitle">مؤرشفة · للقراءة فقط</string>
+    <string name="knotwork_chat_home_archived_bar_title">هذه المحادثة مؤرشفة</string>
+    <string name="knotwork_chat_home_archived_bar_body">استعدها إلى قائمتك لمتابعة الحديث.</string>
+    <string name="knotwork_chat_home_archived_bar_restore">استعادة</string>
+    <string name="knotwork_chat_home_drawer_starred_cd">مميزة بنجمة</string>
+    <string name="knotwork_chat_home_drawer_running_cd">مهمة قيد التنفيذ</string>
+    <string name="knotwork_chat_home_drawer_import_title">استيراد محادثة</string>
+    <string name="knotwork_chat_home_drawer_import_subtitle">من JSON / نص</string>
+    <string name="knotwork_chat_home_drawer_settings_title">الإعدادات</string>
+    <string name="knotwork_chat_home_drawer_settings_subtitle">مفاتيح API · معاملات النموذج</string>
+    <string name="knotwork_chat_home_generating_label">جارٍ التوليد…</string>
+    <string name="knotwork_chat_home_error_title">حدث خطأ ما</string>
+    <string name="knotwork_chat_home_error_retry">إعادة المحاولة</string>
+    <string name="knotwork_chat_home_debug_picker_title">حالة التصحيح</string>
+    <string name="knotwork_section_header_expand">توسيع القسم</string>
+    <string name="knotwork_section_header_collapse">طي القسم</string>
+
+    <string name="knotwork_console_strip_label">وحدة التحكم</string>
+    <string name="knotwork_console_strip_open_cd">فتح وحدة التحكم. حالة الوكيل: %1$s</string>
+    <string name="knotwork_console_strip_close_cd">إغلاق وحدة التحكم</string>
+
+    <string name="knotwork_common_back">رجوع</string>
+
+    <!-- ============ Files ============ -->
+
+    <string name="knotwork_files_title">الملفات</string>
+    <string name="knotwork_files_subtitle">مساحة عمل الوكيل</string>
+    <string name="knotwork_files_back_cd">رجوع</string>
+    <string name="knotwork_files_refresh_cd">إعادة فحص مساحة العمل</string>
+    <plurals name="knotwork_files_count">
+        <item quantity="zero">ملفات</item>
+        <item quantity="one">ملف</item>
+        <item quantity="two">ملفان</item>
+        <item quantity="few">ملفات</item>
+        <item quantity="many">ملفًا</item>
+        <item quantity="other">ملف</item>
+    </plurals>
+    <string name="knotwork_files_import">استيراد</string>
+    <string name="knotwork_files_quota_full_banner">مساحة العمل ممتلئة. كتابات الوكيل تُرفض — احذف ملفات أو ارفع السقف لإفراغ مساحة.</string>
+    <plurals name="knotwork_files_list_label">
+        <item quantity="zero">%1$d ملفات · مرتّبة حسب المسار</item>
+        <item quantity="one">%1$d ملف · مرتّب حسب المسار</item>
+        <item quantity="two">%1$d ملفان · مرتّبان حسب المسار</item>
+        <item quantity="few">%1$d ملفات · مرتّبة حسب المسار</item>
+        <item quantity="many">%1$d ملفًا · مرتّبًا حسب المسار</item>
+        <item quantity="other">%1$d ملف · مرتّب حسب المسار</item>
+    </plurals>
+    <string name="knotwork_files_badge_new">جديد</string>
+    <string name="knotwork_files_badge_binary">ثنائي</string>
+    <string name="knotwork_files_row_menu_cd">إجراءات %1$s</string>
+    <string name="knotwork_files_empty_title">لا شيء هنا بعد</string>
+    <string name="knotwork_files_empty_body">مساحة العمل صندوق خاص يقرأ منه الوكيل ويكتب فيه — التقارير والتصديرات التي ينتجها تصل إلى هنا. لا تظهر الملفات إلا بعد أن يحفظ الوكيل واحدًا، أو تستورد ملفك ليقرأه.</string>
+    <string name="knotwork_files_empty_cta">استيراد ملف</string>
+    <string name="knotwork_files_error_title">تعذّرت قراءة مساحة العمل</string>
+    <string name="knotwork_files_error_body">فشل سرد مساحة العمل (خطأ إدخال/إخراج). ملفاتك بأمان — هذا يؤثر في هذا العرض فقط.</string>
+    <string name="knotwork_files_error_retry">إعادة المحاولة</string>
+    <string name="knotwork_files_action_preview">معاينة</string>
+    <string name="knotwork_files_action_share">مشاركة</string>
+    <string name="knotwork_files_action_save_as">حفظ باسم…</string>
+    <string name="knotwork_files_action_delete">حذف</string>
+    <string name="knotwork_files_preview_close_cd">إغلاق المعاينة</string>
+    <string name="knotwork_files_preview_read_only">للقراءة فقط</string>
+    <string name="knotwork_files_preview_truncation">يُعرض أول %1$s من %2$s. احفظه خارجًا لقراءة الملف كاملًا.</string>
+    <string name="knotwork_files_preview_truncation_marker">— مقطوع عند %1$s —</string>
+    <plurals name="knotwork_files_selected">
+        <item quantity="zero">%1$d محدّد</item>
+        <item quantity="one">%1$d محدّد</item>
+        <item quantity="two">%1$d محدّدان</item>
+        <item quantity="few">%1$d محدّدة</item>
+        <item quantity="many">%1$d محدّدًا</item>
+        <item quantity="other">%1$d محدّد</item>
+    </plurals>
+    <string name="knotwork_files_select_all_cd">تحديد الكل</string>
+    <string name="knotwork_files_selection_share_cd">مشاركة المحدَّد</string>
+    <string name="knotwork_files_selection_delete_cd">حذف المحدَّد</string>
+    <string name="knotwork_files_selection_close_cd">الخروج من التحديد</string>
+    <string name="knotwork_files_delete_title_one">حذف الملف؟</string>
+    <plurals name="knotwork_files_delete_title_many">
+        <item quantity="zero">حذف %1$d ملفات؟</item>
+        <item quantity="one">حذف %1$d ملف؟</item>
+        <item quantity="two">حذف %1$d ملفين؟</item>
+        <item quantity="few">حذف %1$d ملفات؟</item>
+        <item quantity="many">حذف %1$d ملفًا؟</item>
+        <item quantity="other">حذف %1$d ملف؟</item>
+    </plurals>
+    <string name="knotwork_files_delete_body_one">يزيل %1$s من مساحة العمل نهائيًا. لا يمكن التراجع عن ذلك.</string>
+    <string name="knotwork_files_delete_body_many">تُزال هذه من مساحة العمل نهائيًا. لا يمكن التراجع عن ذلك.</string>
+    <string name="knotwork_files_delete_confirm">حذف</string>
+    <string name="knotwork_files_delete_cancel">إلغاء</string>
+    <string name="knotwork_files_collision_title">الاسم موجود أصلًا</string>
+    <string name="knotwork_files_collision_body">%1$s موجود في مساحة العمل أصلًا. كيف يُعالَج الاستيراد؟</string>
+    <string name="knotwork_files_collision_keep_both">الإبقاء على الاثنين</string>
+    <string name="knotwork_files_collision_keep_both_sub">استيراد باسم %1$s</string>
+    <string name="knotwork_files_collision_replace">استبدال</string>
+    <string name="knotwork_files_collision_replace_sub">الكتابة فوق الملف الموجود</string>
+    <string name="knotwork_files_collision_cancel">إلغاء</string>
+
+    <!-- ============ Discover ============ -->
+
+    <string name="knotwork_discover_title">استكشاف النماذج</string>
+    <string name="knotwork_discover_back_cd">رجوع</string>
+    <string name="knotwork_discover_search_placeholder">ابحث في نماذج litert-community</string>
+    <string name="knotwork_discover_gated_badge">مقيّد</string>
+    <plurals name="knotwork_discover_file_count">
+        <item quantity="zero">%1$d ملفات</item>
+        <item quantity="one">%1$d ملف</item>
+        <item quantity="two">%1$d ملفان</item>
+        <item quantity="few">%1$d ملفات</item>
+        <item quantity="many">%1$d ملفًا</item>
+        <item quantity="other">%1$d ملف</item>
+    </plurals>
+    <string name="knotwork_discover_empty_title">لم يُعثر على نماذج</string>
+    <string name="knotwork_discover_empty_subtitle">جرّب بحثًا آخر، أو اسحب للتحديث.</string>
+    <string name="knotwork_discover_error_title">تعذّر تحميل النماذج</string>
+    <string name="knotwork_discover_error_retry">إعادة المحاولة</string>
+    <string name="knotwork_discover_detail_title_fallback">نموذج</string>
+    <string name="knotwork_discover_detail_files_header">الملفات</string>
+    <string name="knotwork_discover_detail_license">الرخصة: %1$s</string>
+    <string name="knotwork_discover_install">تثبيت</string>
+    <string name="knotwork_discover_installed">مثبّت</string>
+    <string name="knotwork_discover_cancel_cd">إلغاء التنزيل</string>
+    <string name="knotwork_discover_view_on_hf">عرض على Hugging Face</string>
+    <string name="knotwork_discover_gated_notice">هذا النموذج مقيّد الوصول. اقبل رخصته على Hugging Face، ثم الصق رمز وصول شخصي أدناه.</string>
+    <string name="knotwork_discover_token_placeholder">رمز Hugging Face</string>
+    <string name="knotwork_discover_token_paste">لصق</string>
+    <string name="knotwork_discover_license_title">مراجعة الرخصة</string>
+    <string name="knotwork_discover_license_body">يُوزَّع هذا النموذج بموجب رخصة %1$s. تثبيته يعني قبولك شروطها.</string>
+    <string name="knotwork_discover_license_body_unknown">رخصة هذا النموذج غير معلنة على Hugging Face. راجعها في بطاقة النموذج قبل التثبيت.</string>
+    <string name="knotwork_discover_license_accept">قبول وتثبيت</string>
+    <string name="knotwork_discover_license_cancel">إلغاء</string>
+
+    <!-- ============ Node type picker ============ -->
+
+    <string name="knotwork_node_picker_title">إضافة عقدة</string>
+    <string name="knotwork_node_picker_close">إغلاق</string>
+    <string name="knotwork_node_picker_search_hint">بحث في أنواع العقد</string>
+    <string name="knotwork_node_picker_search_clear">مسح البحث</string>
+    <string name="knotwork_node_picker_group_io">البداية والنهاية</string>
+    <string name="knotwork_node_picker_group_model">تشغيل نموذج</string>
+    <string name="knotwork_node_picker_group_act">اسأل وتصرّف</string>
+    <string name="knotwork_node_picker_group_branch">تفرّع</string>
+    <string name="knotwork_node_picker_group_list">المرور على قائمة</string>
+    <string name="knotwork_node_picker_no_match">لا نوع عقدة يطابق “%1$s”</string>
+    <string name="knotwork_node_picker_a11y_row_action">إضافة إلى المسار</string>
+    <plurals name="knotwork_node_picker_a11y_results">
+        <item quantity="zero">%1$d أنواع عقد</item>
+        <item quantity="one">%1$d نوع عقدة</item>
+        <item quantity="two">%1$d نوعا عقد</item>
+        <item quantity="few">%1$d أنواع عقد</item>
+        <item quantity="many">%1$d نوع عقدة</item>
+        <item quantity="other">%1$d نوع عقدة</item>
+    </plurals>
+
+    <string name="knotwork_password_show">إظهار كلمة المرور</string>
+    <string name="knotwork_password_hide">إخفاء كلمة المرور</string>
+</resources>

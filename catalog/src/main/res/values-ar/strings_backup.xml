@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="knotwork_backup_settings_row">النسخ الاحتياطي والاستعادة</string>
+    <string name="knotwork_backup_settings_row_sub">احتفظ بنسخة، أو انقل بياناتك إلى هاتف جديد</string>
+
+    <string name="knotwork_backup_home_title">النسخ الاحتياطي والاستعادة</string>
+    <string name="knotwork_backup_home_intro">ملف واحد، مقفل بكلمة مرور تختارها: المحادثات والذاكرة والمسارات وسجل التشغيل والمشغّلات والإعدادات والملفات. وليس ملفات النماذج.</string>
+    <string name="knotwork_backup_home_no_server">كوكب لا يرفع شيئًا. يذهب الملف فقط إلى حيث تحفظه.</string>
+    <string name="knotwork_backup_action_backup">نسخ احتياطي…</string>
+    <string name="knotwork_backup_action_backup_sub">اختر كلمة مرور ومكان حفظ الملف</string>
+    <string name="knotwork_backup_action_restore">استعادة من ملف…</string>
+    <string name="knotwork_backup_action_restore_sub">يستبدل كل شيء على هذا الهاتف</string>
+
+    <string name="knotwork_backup_backup_title">نسخ احتياطي</string>
+    <string name="knotwork_backup_backup_lead">ستحتاج إلى كلمة المرور هذه للاستعادة. إذا نسيتها، لا يستطيع أحد فتح النسخة، ونحن منهم.</string>
+    <string name="knotwork_backup_pw_label">كلمة المرور</string>
+    <string name="knotwork_backup_pw_rule">12 حرفًا على الأقل. بضع كلمات غير مترابطة تصنع كلمة قوية.</string>
+    <string name="knotwork_backup_pw_short">قصيرة جدًا. استخدم 12 حرفًا على الأقل.</string>
+    <string name="knotwork_backup_pw2_label">كلمة المرور مرة أخرى</string>
+    <string name="knotwork_backup_pw2_mismatch">لا تطابق كلمة المرور أعلاه.</string>
+    <string name="knotwork_backup_secrets_label">تضمين مفاتيح API وتسجيلات الدخول</string>
+    <string name="knotwork_backup_secrets_sub">مفاتيح API السحابية، ورمز Hugging Face، وتسجيلات دخول MCP. إذا تُركت خارج النسخة، يحتاج الهاتف الجديد إلى إدخالها من جديد.</string>
+    <string name="knotwork_backup_choose_where">اختر مكان الحفظ</string>
+
+    <string name="knotwork_backup_working_title">جارٍ النسخ الاحتياطي</string>
+    <string name="knotwork_backup_step_password">تأمين كلمة المرور</string>
+    <string name="knotwork_backup_step_db">المحادثات والذاكرة والإعدادات</string>
+    <string name="knotwork_backup_step_files">الملفات والصور</string>
+    <string name="knotwork_backup_bytes">%1$s من %2$s</string>
+    <string name="knotwork_backup_keep_open">أبقِ كوكب مفتوحًا حتى ينتهي هذا.</string>
+    <string name="knotwork_backup_cancel">إلغاء</string>
+
+    <string name="knotwork_backup_saved_title">حُفظت النسخة الاحتياطية</string>
+    <string name="knotwork_backup_saved_keys_in">مفاتيح API وتسجيلات الدخول موجودة في هذا الملف. أي شخص يملك الملف وكلمة المرور يستطيع استخدامها.</string>
+    <string name="knotwork_backup_saved_keys_out">مفاتيح API وتسجيلات الدخول ليست في هذا الملف.</string>
+    <string name="knotwork_backup_saved_reminder">احتفظ بكلمة المرور في مكان آمن. من دونها لا يمكن فتح الملف.</string>
+    <plurals name="knotwork_backup_saved_skipped">
+        <item quantity="zero">%1$s ملفات ليست في هذه النسخة: لا يمكن تخزين أسمائها فيها.</item>
+        <item quantity="one">%1$s ملف ليس في هذه النسخة: لا يمكن تخزين اسمه فيها.</item>
+        <item quantity="two">%1$s ملفان ليسا في هذه النسخة: لا يمكن تخزين اسميهما فيها.</item>
+        <item quantity="few">%1$s ملفات ليست في هذه النسخة: لا يمكن تخزين أسمائها فيها.</item>
+        <item quantity="many">%1$s ملفًا ليست في هذه النسخة: لا يمكن تخزين أسمائها فيها.</item>
+        <item quantity="other">%1$s ملف ليست في هذه النسخة: لا يمكن تخزين أسمائها فيها.</item>
+    </plurals>
+    <string name="knotwork_backup_done">تم</string>
+    <string name="knotwork_backup_failed_title">لم تُحفظ النسخة الاحتياطية</string>
+    <string name="knotwork_backup_failed_space">لم تتسع المساحة في المكان الذي اخترته للحفظ. تحتاج إلى نحو %1$s.</string>
+    <string name="knotwork_backup_failed_write">توقف المكان الذي اخترته عن قبول الملف.</string>
+    <string name="knotwork_backup_failed_phone_full">لا توجد مساحة فارغة كافية على هذا الهاتف لتجهيز النسخة الاحتياطية.</string>
+    <string name="knotwork_backup_failed_read">تعذّرت قراءة بعض بيانات كوكب.</string>
+    <string name="knotwork_backup_failed_deleted">حُذف الملف غير المكتمل.</string>
+    <string name="knotwork_backup_failed_left">احذف الملف غير المكتمل %1$s بنفسك.</string>
+    <string name="knotwork_backup_try_again">حاول مرة أخرى</string>
+    <string name="knotwork_backup_close">إغلاق</string>
+
+    <string name="knotwork_backup_restore_title">استعادة</string>
+    <string name="knotwork_backup_not_backup_title">ليست نسخة كوكب احتياطية</string>
+    <string name="knotwork_backup_not_backup_body">%1$s ليست نسخة احتياطية أنشأها كوكب.</string>
+    <string name="knotwork_backup_choose_another">اختيار ملف آخر</string>
+    <string name="knotwork_backup_this_file">هذا الملف</string>
+    <string name="knotwork_backup_newer_title">حدّث كوكب أولًا</string>
+    <string name="knotwork_backup_newer_body">أُنشئت هذه النسخة بكوكب %1$s. على هذا الهاتف %2$s، ولا يستطيع قراءتها.</string>
+    <string name="knotwork_backup_made_with">أُنشئت بكوكب %1$s في %2$s</string>
+    <string name="knotwork_backup_restore_lead">أدخل كلمة المرور التي أُنشئت بها هذه النسخة.</string>
+    <string name="knotwork_backup_check">تحقق</string>
+
+    <string name="knotwork_backup_checking_title">جارٍ فحص النسخة الاحتياطية</string>
+    <string name="knotwork_backup_step_check_password">التحقق من كلمة المرور</string>
+    <string name="knotwork_backup_step_check_file">فحص كل جزء من الملف</string>
+    <string name="knotwork_backup_nothing_yet">لم يُستبدل شيء على هذا الهاتف بعد.</string>
+    <string name="knotwork_backup_wrong_password">كلمة المرور هذه لا تفتح هذه النسخة.</string>
+    <string name="knotwork_backup_damaged_title">هذه النسخة تالفة</string>
+    <string name="knotwork_backup_damaged_body">لا يمكن قراءة جزء من الملف، لذا لا يمكن استعادته.</string>
+    <string name="knotwork_backup_incomplete_title">هذه النسخة غير مكتملة</string>
+    <string name="knotwork_backup_incomplete_body">ينتهي الملف قبل اكتماله. ربما لم ينتهِ نسخه.</string>
+    <string name="knotwork_backup_untouched">لم يتغير شيء على هذا الهاتف.</string>
+    <string name="knotwork_backup_space_title">المساحة غير كافية</string>
+    <string name="knotwork_backup_space_body">تحتاج الاستعادة إلى %1$s فارغة على هذا الهاتف. المتاح الآن %2$s.</string>
+    <string name="knotwork_backup_space_ran_out">نفدت مساحة هذا الهاتف أثناء فحص النسخة الاحتياطية.</string>
+    <string name="knotwork_backup_read_failed_title">تعذّرت قراءة النسخة الاحتياطية</string>
+    <string name="knotwork_backup_read_failed_body">توقف الملف عن أن يكون قابلًا للقراءة، أو فشل تخزين هذا الهاتف، أثناء الفحص.</string>
+    <string name="knotwork_backup_phone_key_title">لا يمكن الاستعادة على هذا الهاتف</string>
+    <string name="knotwork_backup_not_started_title">لم تبدأ الاستعادة</string>
+    <string name="knotwork_backup_not_started_body">لم يستطع كوكب تجهيز النسخة للتطبيق. أعد المحاولة من البداية.</string>
+    <string name="knotwork_backup_phone_key_body">لا يستطيع كوكب قراءة مفتاح قاعدة بيانات هذا الهاتف، لذا لا يستطيع تجهيز النسخة هنا.</string>
+
+    <string name="knotwork_backup_summary_title">جاهز للاستعادة</string>
+    <string name="knotwork_backup_summary_checked">تم التحقق من كلمة المرور والملف</string>
+    <string name="knotwork_backup_summary_from">من النسخة الاحتياطية</string>
+    <string name="knotwork_backup_summary_keys_in">مفاتيح API وتسجيلات الدخول: مضمّنة</string>
+    <string name="knotwork_backup_summary_keys_out">مفاتيح API وتسجيلات الدخول: ليست في هذه النسخة</string>
+    <plurals name="knotwork_backup_summary_models">
+        <item quantity="zero">%1$d نماذج لإعادة التنزيل · %2$s</item>
+        <item quantity="one">%1$d نموذج لإعادة التنزيل · %2$s</item>
+        <item quantity="two">%1$d نموذجان لإعادة التنزيل · %2$s</item>
+        <item quantity="few">%1$d نماذج لإعادة التنزيل · %2$s</item>
+        <item quantity="many">%1$d نموذجًا لإعادة التنزيل · %2$s</item>
+        <item quantity="other">%1$d نموذج لإعادة التنزيل · %2$s</item>
+    </plurals>
+    <string name="knotwork_backup_summary_never">المهام التي جدولها الوكيل لا تدخل في أي نسخة احتياطية.</string>
+    <string name="knotwork_backup_summary_lost">سيُفقد</string>
+    <string name="knotwork_backup_summary_lost_body">كل ما على هذا الهاتف الآن: %1$s، وإعداداته.</string>
+    <string name="knotwork_backup_summary_lost_settings">كل ما على هذا الهاتف الآن: إعداداته.</string>
+    <string name="knotwork_backup_replace">استبدال بياناتي</string>
+    <string name="knotwork_backup_confirm_title">استبدال كل شيء على هذا الهاتف؟</string>
+    <string name="knotwork_backup_confirm_body">تُحذف محادثاتك وذاكرتك ومساراتك وملفاتك وإعداداتك الحالية وتُستبدل بالنسخة الاحتياطية. لا يمكن التراجع عن ذلك.</string>
+    <string name="knotwork_backup_confirm_prompt">اكتب %1$s للتأكيد</string>
+    <string name="knotwork_backup_confirm_keyword">استبدل</string>
+    <string name="knotwork_backup_confirm_action">استبدال</string>
+
+    <string name="knotwork_backup_restoring">جارٍ الاستعادة…</string>
+    <string name="knotwork_backup_restoring_sub">سيُعاد تشغيل كوكب خلال ثوانٍ.</string>
+    <string name="knotwork_backup_after_title">تمت الاستعادة</string>
+    <string name="knotwork_backup_after_sub">من النسخة الاحتياطية التي أُنشئت في %1$s</string>
+    <string name="knotwork_backup_after_models">نماذج لإعادة التنزيل</string>
+    <string name="knotwork_backup_download">تنزيل</string>
+    <string name="knotwork_backup_discover">استكشاف</string>
+    <string name="knotwork_backup_model_unknown">المصدر غير معروف. ابحث عنه في استكشاف.</string>
+    <string name="knotwork_backup_download_needs_access">رفضه Hugging Face. إذا كان النموذج مقيّدًا، اقبل رخصته هناك وأضف رمزك في النماذج، ثم أعد المحاولة.</string>
+    <string name="knotwork_backup_download_failed">لم يكتمل التنزيل. أعد المحاولة، أو ابحث عن النموذج في استكشاف.</string>
+    <string name="knotwork_backup_download_paused">متوقف مؤقتًا: يحد Android من مدة التنزيل في الخلفية.</string>
+    <string name="knotwork_backup_download_mismatch">لم يطابق الملف المجموع الاختباري الذي نشره Hugging Face له، لذا حُذف.</string>
+    <string name="knotwork_backup_after_keys">أدخل مفاتيح API من جديد في الإعدادات، ورمز Hugging Face في النماذج، وتسجيلات دخول MCP في الأدوات.</string>
+    <string name="knotwork_backup_after_tasks">لم تُنقل المهام التي جدولها الوكيل. اطلب منه إعدادها من جديد.</string>
+    <string name="knotwork_backup_cancel_download">إلغاء التنزيل</string>
+
+    <plurals name="knotwork_backup_n_chats">
+        <item quantity="zero">%1$s محادثات</item>
+        <item quantity="one">%1$s محادثة</item>
+        <item quantity="two">%1$s محادثتان</item>
+        <item quantity="few">%1$s محادثات</item>
+        <item quantity="many">%1$s محادثة</item>
+        <item quantity="other">%1$s محادثة</item>
+    </plurals>
+    <plurals name="knotwork_backup_n_memories">
+        <item quantity="zero">%1$s ذكريات</item>
+        <item quantity="one">%1$s ذاكرة</item>
+        <item quantity="two">%1$s ذاكرتان</item>
+        <item quantity="few">%1$s ذكريات</item>
+        <item quantity="many">%1$s ذاكرة</item>
+        <item quantity="other">%1$s ذاكرة</item>
+    </plurals>
+    <plurals name="knotwork_backup_n_pipelines">
+        <item quantity="zero">%1$s مسارات</item>
+        <item quantity="one">%1$s مسار</item>
+        <item quantity="two">%1$s مساران</item>
+        <item quantity="few">%1$s مسارات</item>
+        <item quantity="many">%1$s مسارًا</item>
+        <item quantity="other">%1$s مسار</item>
+    </plurals>
+    <plurals name="knotwork_backup_n_files">
+        <item quantity="zero">%1$s ملفات</item>
+        <item quantity="one">%1$s ملف</item>
+        <item quantity="two">%1$s ملفان</item>
+        <item quantity="few">%1$s ملفات</item>
+        <item quantity="many">%1$s ملفًا</item>
+        <item quantity="other">%1$s ملف</item>
+    </plurals>
+
+    <plurals name="knotwork_backup_stat_chats">
+        <item quantity="zero">محادثات</item>
+        <item quantity="one">محادثة</item>
+        <item quantity="two">محادثتان</item>
+        <item quantity="few">محادثات</item>
+        <item quantity="many">محادثة</item>
+        <item quantity="other">محادثة</item>
+    </plurals>
+    <plurals name="knotwork_backup_stat_memories">
+        <item quantity="zero">ذكريات</item>
+        <item quantity="one">ذاكرة</item>
+        <item quantity="two">ذاكرتان</item>
+        <item quantity="few">ذكريات</item>
+        <item quantity="many">ذاكرة</item>
+        <item quantity="other">ذاكرة</item>
+    </plurals>
+    <plurals name="knotwork_backup_stat_pipelines">
+        <item quantity="zero">مسارات</item>
+        <item quantity="one">مسار</item>
+        <item quantity="two">مساران</item>
+        <item quantity="few">مسارات</item>
+        <item quantity="many">مسارًا</item>
+        <item quantity="other">مسار</item>
+    </plurals>
+    <plurals name="knotwork_backup_stat_files">
+        <item quantity="zero">ملفات</item>
+        <item quantity="one">ملف</item>
+        <item quantity="two">ملفان</item>
+        <item quantity="few">ملفات</item>
+        <item quantity="many">ملفًا</item>
+        <item quantity="other">ملف</item>
+    </plurals>
+</resources>

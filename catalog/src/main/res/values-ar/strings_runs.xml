@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="knotwork_run_line">بذرة %1$s · %2$s · %3$s · t %4$s</string>
+    <string name="knotwork_run_line_seed_only">بذرة %1$s · t %2$s</string>
+    <string name="knotwork_run_line_cloud_suffix">%1$s · + سحابة</string>
+    <string name="knotwork_run_line_cloud_only">السحابة فقط · غير قابل للتكرار</string>
+    <string name="knotwork_run_line_pre_version">لا ترويسة تشغيل · سُجّل قبل أن تحتفظ التشغيلات بترويسة</string>
+    <string name="knotwork_run_line_a11y">ترويسة التشغيل، %1$s. انقر مرتين للتوسيع.</string>
+    <string name="knotwork_run_line_open_a11y">ترويسة التشغيل، موسّعة. انقر مرتين للطي.</string>
+
+    <string name="knotwork_run_title">هذا التشغيل</string>
+    <string name="knotwork_run_field_seed">بذرة</string>
+    <string name="knotwork_run_field_sampler">المعيّن</string>
+    <string name="knotwork_run_sampler_value">t %1$s · top-k %2$d · top-p %3$s</string>
+    <string name="knotwork_run_field_model">النموذج</string>
+    <string name="knotwork_run_model_value">%1$s · %2$s · نافذة %3$s</string>
+    <string name="knotwork_run_model_none">لا شيء على هذا الجهاز</string>
+    <string name="knotwork_run_field_sha">sha-256</string>
+    <string name="knotwork_run_sha_not_recorded">غير مسجّل · لم يكن للملف SHA-256 بعد</string>
+    <string name="knotwork_run_field_cloud">السحابة</string>
+    <string name="knotwork_run_cloud_some">مستخدَم · غير قابل للتكرار</string>
+    <string name="knotwork_run_cloud_all">أجاب عن كل استدعاء نموذج</string>
+    <string name="knotwork_run_field_app">التطبيق</string>
+    <string name="knotwork_run_app_value">%1$s · %2$s</string>
+    <string name="knotwork_run_field_device">الجهاز</string>
+    <string name="knotwork_run_field_digest">البصمة</string>
+    <string name="knotwork_run_field_digest_a11y">بصمة التشغيل</string>
+    <string name="knotwork_run_digest_pending">عند انتهاء التشغيل</string>
+    <string name="knotwork_run_now_tag">الآن %1$s</string>
+    <string name="knotwork_run_copy_seed_cd">نسخ البذرة</string>
+    <string name="knotwork_run_copy_sha_cd">نسخ SHA-256 للنموذج</string>
+    <string name="knotwork_run_copy_digest_cd">نسخ بصمة التشغيل</string>
+    <string name="knotwork_run_hash_full_a11y">%1$s، 64 حرفًا، تبدأ بـ %2$s</string>
+    <string name="knotwork_run_hash_model_a11y">SHA-256 للنموذج</string>
+
+    <string name="knotwork_run_repro_head">يتكرر بايتًا ببايت على هذا الجهاز</string>
+    <string name="knotwork_run_repro_cpu">على CPU، مع ملف النموذج نفسه والبذرة والمعيّن والمدخل.</string>
+    <string name="knotwork_run_repro_gpu">على GPU، مع ملف النموذج نفسه والبذرة والمعيّن والمدخل ونافذة السياق.</string>
+    <string name="knotwork_run_repro_head_mixed">استدعاءات الجهاز تتكرر بايتًا ببايت على هذا الجهاز</string>
+    <string name="knotwork_run_repro_mixed_cloud">إجابات السحابة غير قابلة للتكرار.</string>
+    <string name="knotwork_run_repro_limit">غير مضمون على NPU ولا على جهاز آخر.</string>
+    <string name="knotwork_run_repro_npu_head">غير مضمون: استخدم هذا التشغيل NPU</string>
+    <string name="knotwork_run_repro_npu_body">إجابات NPU لا يُتحقق من تكرارها. للتشغيلات التي تتكرر، اختر CPU أو GPU في الإعدادات.</string>
+    <string name="knotwork_run_repro_cloud_head">غير مضمون: جاءت كل إجابة من نموذج سحابي</string>
+    <string name="knotwork_run_repro_cloud_body">لا يستطيع هذا التطبيق تكرار إجابة نموذج سحابي. الإصدارات أعلاه ما زالت تسجّل ما عمل على هذا الهاتف.</string>
+    <string name="knotwork_run_repro_image_head">غير مضمون: قرأ هذا التشغيل صورة</string>
+    <string name="knotwork_run_repro_image_body">التشغيلات التي تقرأ صورة لا يُتحقق من تكرارها.</string>
+    <string name="knotwork_run_repro_pre_version">سُجّل قبل أن يحفظ التطبيق البذور والتجزئات، لذا لا يمكن التحقق من هذا التشغيل ولا تكراره.</string>
+
+    <string name="knotwork_run_action_verify">تحقّق</string>
+    <plurals name="knotwork_run_action_verify_line">
+        <item quantity="zero">يعيد %1$d استدعاءات على الجهاز · نحو %2$s</item>
+        <item quantity="one">يعيد %1$d استدعاء على الجهاز · نحو %2$s</item>
+        <item quantity="two">يعيد %1$d استدعاءين على الجهاز · نحو %2$s</item>
+        <item quantity="few">يعيد %1$d استدعاءات على الجهاز · نحو %2$s</item>
+        <item quantity="many">يعيد %1$d استدعاءً على الجهاز · نحو %2$s</item>
+        <item quantity="other">يعيد %1$d استدعاء على الجهاز · نحو %2$s</item>
+    </plurals>
+    <plurals name="knotwork_run_action_verify_line_count">
+        <item quantity="zero">يعيد %1$d استدعاءات على الجهاز</item>
+        <item quantity="one">يعيد %1$d استدعاء على الجهاز</item>
+        <item quantity="two">يعيد %1$d استدعاءين على الجهاز</item>
+        <item quantity="few">يعيد %1$d استدعاءات على الجهاز</item>
+        <item quantity="many">يعيد %1$d استدعاءً على الجهاز</item>
+        <item quantity="other">يعيد %1$d استدعاء على الجهاز</item>
+    </plurals>
+    <plurals name="knotwork_run_action_verify_line_npu">
+        <item quantity="zero">عمل %1$d استدعاءات على NPU · لا يمكن إعادة تشغيل أي منها</item>
+        <item quantity="one">عمل %1$d استدعاء على NPU · لا يمكن إعادة تشغيله</item>
+        <item quantity="two">عمل %1$d استدعاءان على NPU · لا يمكن إعادة تشغيلهما</item>
+        <item quantity="few">عمل %1$d استدعاءات على NPU · لا يمكن إعادة تشغيل أي منها</item>
+        <item quantity="many">عمل %1$d استدعاءً على NPU · لا يمكن إعادة تشغيل أي منها</item>
+        <item quantity="other">عمل %1$d استدعاء على NPU · لا يمكن إعادة تشغيله</item>
+    </plurals>
+    <string name="knotwork_run_action_seed">إعادة التشغيل بهذه البذرة</string>
+    <string name="knotwork_run_action_seed_line">البذرة والمعيّن نفسهما؛ تتكرر الإجابة فقط إذا تطابق كل مدخل.</string>
+    <string name="knotwork_run_action_export">تصدير الأثر</string>
+    <string name="knotwork_run_action_export_line">JSON · الترويسة والسجلات والتجزئات وبصمة التشغيل</string>
+    <string name="knotwork_run_action_export_line_pre">JSON · السجلات فقط، بلا بذرة ولا تجزئات</string>
+    <string name="knotwork_run_action_busy">يتاح عند انتهاء التشغيل.</string>
+    <string name="knotwork_run_kept_note">يعمل التحقّق وإعادة التشغيل والتصدير ما دام هذا التشغيل محفوظًا. مقدار سجل التشغيل الذي يبقى يُضبط في الإعدادات → الخصوصية.</string>
+    <string name="knotwork_run_action_dimmed_a11y">%1$s، خافت. %2$s</string>
+    <string name="knotwork_run_verify_no_local">لا شيء لإعادة تشغيله: لم تأتِ أي إجابة في هذا التشغيل من النموذج على الجهاز.</string>
+    <string name="knotwork_run_verify_pre_version">غير متاح: لم تُسجَّل بذرة.</string>
+    <string name="knotwork_run_verify_mismatch_backend">سُجّل على %1$s؛ والتطبيق يعمل الآن على %2$s. للتحقق، اختر %1$s في الإعدادات.</string>
+    <string name="knotwork_run_verify_mismatch_window">سُجّل بنافذة %1$s؛ والتطبيق يستخدم الآن %2$s. للتحقق، اضبط %1$s في الإعدادات → التوليد.</string>
+    <string name="knotwork_run_verify_mismatch_both">سُجّل على %1$s بنافذة %2$s؛ والتطبيق يعمل الآن على %3$s. للتحقق، اختر %1$s في الإعدادات ونافذة %2$s في الإعدادات → التوليد.</string>
+    <string name="knotwork_run_verify_model_missing">%1$s، النموذج الذي استخدمه هذا التشغيل، لم يعد على هذا الجهاز. نزّله مرة أخرى للتحقق.</string>
+    <string name="knotwork_run_verify_model_changed">ملف %1$s على هذا الجهاز ليس الملف الذي استخدمه هذا التشغيل: تختلف بصمة SHA-256.</string>
+    <string name="knotwork_run_verify_hash_pending">يتاح بعد حساب SHA-256 لملف النموذج.</string>
+    <string name="knotwork_run_verify_open_settings">الإعدادات</string>
+    <string name="knotwork_run_verify_open_generation_settings">إعدادات التوليد</string>
+    <string name="knotwork_run_seed_not_image">غير متاح للتشغيلات التي تقرأ صورة.</string>
+    <string name="knotwork_run_seed_not_background">غير متاح للتشغيلات التي بدأها مشغّل.</string>
+    <string name="knotwork_run_seed_not_pre_version">غير متاح: لم تُسجَّل بذرة.</string>
+    <string name="knotwork_run_seed_not_pipeline_deleted">غير متاح: حُذف المسار الذي استخدمه هذا التشغيل.</string>
+
+    <string name="knotwork_run_verify_confirm_title">التحقق من هذا التشغيل؟</string>
+    <plurals name="knotwork_run_verify_confirm_body">
+        <item quantity="zero">يعيد تشغيل النموذج على الجهاز %1$d مرات من الموجّهات المسجّلة، بالبذرة %2$s، ويقارن كل إجابة بايتًا ببايت. لا تُعاد تشغيل الأدوات: يبقى خرجها المسجّل.</item>
+        <item quantity="one">يعيد تشغيل النموذج على الجهاز %1$d مرة من الموجّه المسجّل، بالبذرة %2$s، ويقارن الإجابة بايتًا ببايت. لا تُعاد تشغيل الأدوات: يبقى خرجها المسجّل.</item>
+        <item quantity="two">يعيد تشغيل النموذج على الجهاز %1$d مرتين من الموجّهين المسجّلين، بالبذرة %2$s، ويقارن كل إجابة بايتًا ببايت. لا تُعاد تشغيل الأدوات: يبقى خرجها المسجّل.</item>
+        <item quantity="few">يعيد تشغيل النموذج على الجهاز %1$d مرات من الموجّهات المسجّلة، بالبذرة %2$s، ويقارن كل إجابة بايتًا ببايت. لا تُعاد تشغيل الأدوات: يبقى خرجها المسجّل.</item>
+        <item quantity="many">يعيد تشغيل النموذج على الجهاز %1$d مرة من الموجّهات المسجّلة، بالبذرة %2$s، ويقارن كل إجابة بايتًا ببايت. لا تُعاد تشغيل الأدوات: يبقى خرجها المسجّل.</item>
+        <item quantity="other">يعيد تشغيل النموذج على الجهاز %1$d مرة من الموجّهات المسجّلة، بالبذرة %2$s، ويقارن كل إجابة بايتًا ببايت. لا تُعاد تشغيل الأدوات: يبقى خرجها المسجّل.</item>
+    </plurals>
+    <plurals name="knotwork_run_verify_confirm_cloud">
+        <item quantity="zero">يُتخطى %1$d استدعاءات سحابية: لا يمكن التحقق منها.</item>
+        <item quantity="one">يُتخطى %1$d استدعاء سحابي: لا يمكن التحقق منه.</item>
+        <item quantity="two">يُتخطى %1$d استدعاءان سحابيان: لا يمكن التحقق منهما.</item>
+        <item quantity="few">يُتخطى %1$d استدعاءات سحابية: لا يمكن التحقق منها.</item>
+        <item quantity="many">يُتخطى %1$d استدعاءً سحابيًا: لا يمكن التحقق منه.</item>
+        <item quantity="other">يُتخطى %1$d استدعاء سحابي: لا يمكن التحقق منه.</item>
+    </plurals>
+    <string name="knotwork_run_verify_confirm_time">نحو %1$s — كل استدعاء يستغرق تقريبًا ما استغرقته عقدته.</string>
+    <string name="knotwork_run_verify_confirm_busy">النموذج على الجهاز مشغول حتى ينتهي. يمكنك الإلغاء.</string>
+    <string name="knotwork_run_verify_confirm_ok">تحقّق</string>
+    <string name="knotwork_run_dialog_cancel">إلغاء</string>
+
+    <string name="knotwork_run_verify_title">التحقق من التشغيل</string>
+    <string name="knotwork_run_verify_sub">بذرة %1$s · %2$s · %3$s</string>
+    <string name="knotwork_run_verify_close_cd">إغلاق</string>
+    <plurals name="knotwork_run_verify_progress">
+        <item quantity="zero">%1$d من %2$d استدعاءات · متبقٍ نحو %3$s</item>
+        <item quantity="one">%1$d من %2$d استدعاء · متبقٍ نحو %3$s</item>
+        <item quantity="two">%1$d من %2$d استدعاءين · متبقٍ نحو %3$s</item>
+        <item quantity="few">%1$d من %2$d استدعاءات · متبقٍ نحو %3$s</item>
+        <item quantity="many">%1$d من %2$d استدعاءً · متبقٍ نحو %3$s</item>
+        <item quantity="other">%1$d من %2$d استدعاء · متبقٍ نحو %3$s</item>
+    </plurals>
+    <plurals name="knotwork_run_verify_progress_count">
+        <item quantity="zero">%1$d من %2$d استدعاءات</item>
+        <item quantity="one">%1$d من %2$d استدعاء</item>
+        <item quantity="two">%1$d من %2$d استدعاءين</item>
+        <item quantity="few">%1$d من %2$d استدعاءات</item>
+        <item quantity="many">%1$d من %2$d استدعاءً</item>
+        <item quantity="other">%1$d من %2$d استدعاء</item>
+    </plurals>
+    <string name="knotwork_run_verify_cancel">إلغاء</string>
+    <string name="knotwork_run_verify_node_waiting">بانتظار</string>
+    <string name="knotwork_run_verify_node_checking">إعادة تشغيل الاستدعاء %1$d من %2$d</string>
+    <plurals name="knotwork_run_verify_node_matched">
+        <item quantity="zero">تطابق · %1$d استدعاءات</item>
+        <item quantity="one">تطابق · %1$d استدعاء</item>
+        <item quantity="two">تطابق · %1$d استدعاءين</item>
+        <item quantity="few">تطابق · %1$d استدعاءات</item>
+        <item quantity="many">تطابق · %1$d استدعاءً</item>
+        <item quantity="other">تطابق · %1$d استدعاء</item>
+    </plurals>
+    <string name="knotwork_run_verify_node_diverged">اختلف عند الاستدعاء %1$d من %2$d</string>
+    <string name="knotwork_run_verify_node_unchecked">لم يُفحص</string>
+    <string name="knotwork_run_verify_hash_recorded">المسجّل %1$s</string>
+    <string name="knotwork_run_verify_hash_replayed">المُعاد %1$s</string>
+    <string name="knotwork_run_nv_tool">لم تُعد تشغيل الأداة · يبقى خرجها المسجّل</string>
+    <string name="knotwork_run_nv_cloud">أجاب نموذج سحابي · لا يمكن إعادة تشغيله هنا</string>
+    <string name="knotwork_run_nv_no_call">لا استدعاء نموذج</string>
+    <string name="knotwork_run_nv_npu">عمل على NPU · لا يُتحقق من تكراره</string>
+    <string name="knotwork_run_nv_image">قرأ صورة · لا يُتحقق من تكراره</string>
+    <string name="knotwork_run_nv_model_not_recorded">لم يكن لملف النموذج SHA-256 بعد · لا يمكن إعادة تشغيله</string>
+    <string name="knotwork_run_verify_node_a11y">%1$s، %2$s.</string>
+
+    <plurals name="knotwork_run_verify_all_head">
+        <item quantity="zero">تطابقت %1$d استدعاءات</item>
+        <item quantity="one">تطابق %1$d استدعاء</item>
+        <item quantity="two">تطابق %1$d استدعاءان</item>
+        <item quantity="few">تطابقت %1$d استدعاءات</item>
+        <item quantity="many">تطابق %1$d استدعاءً</item>
+        <item quantity="other">تطابق %1$d استدعاء</item>
+    </plurals>
+    <string name="knotwork_run_verify_all_body">كل إجابة على الجهاز مطابقة بايتًا ببايت للإجابة المسجّلة.</string>
+    <plurals name="knotwork_run_verify_all_body_nv">
+        <item quantity="zero">تعذّر التحقق من %1$d عقد؛ وكل منها تبيّن السبب.</item>
+        <item quantity="one">تعذّر التحقق من %1$d عقدة؛ وهي تبيّن السبب.</item>
+        <item quantity="two">تعذّر التحقق من %1$d عقدتين؛ وكل منهما تبيّن السبب.</item>
+        <item quantity="few">تعذّر التحقق من %1$d عقد؛ وكل منها تبيّن السبب.</item>
+        <item quantity="many">تعذّر التحقق من %1$d عقدة؛ وكل منها تبيّن السبب.</item>
+        <item quantity="other">تعذّر التحقق من %1$d عقدة؛ وكل منها تبيّن السبب.</item>
+    </plurals>
+    <plurals name="knotwork_run_verify_div_head">
+        <item quantity="zero">اختلفت %1$d عقد</item>
+        <item quantity="one">اختلفت %1$d عقدة</item>
+        <item quantity="two">اختلفت %1$d عقدتان</item>
+        <item quantity="few">اختلفت %1$d عقد</item>
+        <item quantity="many">اختلفت %1$d عقدة</item>
+        <item quantity="other">اختلفت %1$d عقدة</item>
+    </plurals>
+    <string name="knotwork_run_verify_div_body">“%1$s” أعطى إجابة مختلفة عند الاستدعاء %2$d من %3$d. يُعاد كل استدعاء من موجّهه المسجّل، لذا فُحصت العقد اللاحقة كل على حدة.</string>
+    <string name="knotwork_run_verify_none_head">تعذّر التحقق من أي شيء</string>
+    <string name="knotwork_run_verify_none_body">لا استدعاء في هذا التشغيل يمكن إعادة تشغيله ومقارنته. كل عقدة تبيّن السبب.</string>
+    <plurals name="knotwork_run_verify_cancelled_head">
+        <item quantity="zero">أُلغي بعد %1$d من %2$d استدعاءات</item>
+        <item quantity="one">أُلغي بعد %1$d من %2$d استدعاء</item>
+        <item quantity="two">أُلغي بعد %1$d من %2$d استدعاءين</item>
+        <item quantity="few">أُلغي بعد %1$d من %2$d استدعاءات</item>
+        <item quantity="many">أُلغي بعد %1$d من %2$d استدعاءً</item>
+        <item quantity="other">أُلغي بعد %1$d من %2$d استدعاء</item>
+    </plurals>
+    <string name="knotwork_run_verify_cancelled_body">الاستدعاءات التي فُحصت حتى الآن تطابقت. الباقي لم يُفحص.</string>
+    <string name="knotwork_run_verify_cancelled_body_diverged">الباقي لم يُفحص.</string>
+    <plurals name="knotwork_run_verify_stopped_head">
+        <item quantity="zero">توقف بعد %1$d من %2$d استدعاءات</item>
+        <item quantity="one">توقف بعد %1$d من %2$d استدعاء</item>
+        <item quantity="two">توقف بعد %1$d من %2$d استدعاءين</item>
+        <item quantity="few">توقف بعد %1$d من %2$d استدعاءات</item>
+        <item quantity="many">توقف بعد %1$d من %2$d استدعاءً</item>
+        <item quantity="other">توقف بعد %1$d من %2$d استدعاء</item>
+    </plurals>
+    <string name="knotwork_run_verify_failed_head">تعذّر تحميل النموذج على الجهاز</string>
+    <string name="knotwork_run_verify_failed_body">لم يُحمَّل %1$s (%2$s)، لذا لم تُقارَن أي نتيجة.</string>
+    <string name="knotwork_run_verify_again">تحقّق مرة أخرى</string>
+    <string name="knotwork_run_not_signed">تُظهر التجزئات أن هذا التصدير وتكرارًا متطابقان. وهي لا تثبت من أنتجه — لا شيء موقَّع.</string>
+
+    <string name="knotwork_run_hash_in">دخل %1$s</string>
+    <string name="knotwork_run_hash_out">خرج %1$s</string>
+    <string name="knotwork_run_hash_input">مدخل</string>
+    <string name="knotwork_run_hash_output">مخرج</string>
+    <string name="knotwork_run_hash_short_a11y">تجزئة %1$s %2$s. انقر مرتين لنسخ SHA-256 كاملًا.</string>
+
+    <string name="knotwork_run_seed_confirm_title">إعادة التشغيل بالبذرة %1$s؟</string>
+    <string name="knotwork_run_seed_confirm_body">تشغيل جديد لـ “%1$s” على مدخلات اليوم: تُعاد قراءة الذاكرة وسجل المحادثة ونتائج الأدوات، وتعمل الأدوات من جديد بالموافقات المعتادة.</string>
+    <string name="knotwork_run_seed_confirm_ok">تشغيل</string>
+
+    <string name="knotwork_run_export_title">تصدير الأثر</string>
+    <string name="knotwork_run_export_file">%1$s · %2$s</string>
+    <string name="knotwork_run_export_body">يحمل الملف كل ما قرأه النموذج في هذا التشغيل: الموجّهات، ومقتطفات الذاكرة، وسجل المحادثة داخل تلك الموجّهات. يبقى على هذا الجهاز ما لم تشاركه.</string>
+    <string name="knotwork_run_export_share">مشاركة</string>
+    <string name="knotwork_run_export_save">حفظ في ملف</string>
+</resources>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="knotwork_node_type_input_name">مدخل</string>
+    <string name="knotwork_node_type_input_description">حيث يبدأ التشغيل: رسالتك، أو صفحة مشاركة، أو موجّه المشغّل.</string>
+
+    <string name="knotwork_node_type_output_name">مخرج</string>
+    <string name="knotwork_node_type_output_description">حيث ينتهي التشغيل وتصلك الإجابة.</string>
+
+    <string name="knotwork_node_type_lite_rt_name">LiteRT</string>
+    <string name="knotwork_node_type_lite_rt_description">خطوة استنتاج واحدة على النموذج المحلي الذي يعمل على الهاتف.</string>
+
+    <string name="knotwork_node_type_cloud_name">سحابة</string>
+    <string name="knotwork_node_type_cloud_description">خطوة استنتاج واحدة عبر مزوّد سحابي مُعدّ.</string>
+
+    <string name="knotwork_node_type_intent_router_name">موجّه النية</string>
+    <string name="knotwork_node_type_intent_router_description">يصنّف النص الوارد في إحدى فئاتك ويرسل التشغيل عبر فرعها.</string>
+
+    <string name="knotwork_node_type_if_condition_name">شرط</string>
+    <string name="knotwork_node_type_if_condition_description">فرع من اتجاهين: سؤال بنعم أو لا عن المدخل، أو التحقق من صورة مرفقة.</string>
+
+    <string name="knotwork_node_type_clarification_name">توضيح</string>
+    <string name="knotwork_node_type_clarification_description">يوقف التشغيل ليسألك سؤالًا، وتصبح إجابتك خرج العقدة.</string>
+
+    <string name="knotwork_node_type_tool_name">أداة</string>
+    <string name="knotwork_node_type_tool_description">يستدعي أداة واحدة، مدمجة أو من تطبيق آخر أو خادم MCP، ويمرّر النتيجة.</string>
+
+    <string name="knotwork_node_type_decomposition_name">تفكيك</string>
+    <string name="knotwork_node_type_decomposition_description">يحوّل تعليمة واحدة إلى قائمة مهام فرعية.</string>
+
+    <string name="knotwork_node_type_queue_processor_name">معالج الطابور</string>
+    <string name="knotwork_node_type_queue_processor_description">يمرّ على المهام الفرعية واحدةً واحدة عبر فرع Item، ثم فرع Done.</string>
+
+    <string name="knotwork_node_type_evaluation_name">تقييم</string>
+    <string name="knotwork_node_type_evaluation_description">يحكم على ناتج الخطوة السابقة ويجيب بـ Pass أو Retry أو Fail.</string>
+
+    <string name="knotwork_node_type_summary_name">ملخّص</string>
+    <string name="knotwork_node_type_summary_description">يختصر ما أنتجته الخطوات السابقة في نص واحد، غالبًا بعد حلقة.</string>
+
+    <string name="knotwork_node_type_pipeline_name">مسار</string>
+    <string name="knotwork_node_type_pipeline_description">يشغّل مسارًا محفوظًا آخر كخطوة واحدة ويعيد إجابته.</string>
+
+    <string name="knotwork_node_type_skill_name">مهارة</string>
+    <string name="knotwork_node_type_skill_description">يشغّل مهارة قابلة لإعادة الاستخدام: تعليمة ثابتة وقائمة أدواتها.</string>
+
+</resources>
