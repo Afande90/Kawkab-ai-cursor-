@@ -189,7 +189,7 @@ jobs:
           # The instrumented exclusion list. Classes carrying this annotation
           # cannot reach a verdict on an emulator; the roster and the reason for
           # each entry are pinned by `InstrumentedTestExclusionGuardTest`.
-          EXCLUDE_ANNOTATION: app.knotwork.android.testing.DeviceOnlyInstrumentedTest
+          EXCLUDE_ANNOTATION: app.kawkab.android.testing.DeviceOnlyInstrumentedTest
         with:
           api-level: ${{ matrix.api }}
           target: ${{ matrix.target }}

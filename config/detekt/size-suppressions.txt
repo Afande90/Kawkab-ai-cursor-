@@ -11,25 +11,25 @@
 # below was measured live — removing its annotation produced a detekt finding.
 # See docs/static-analysis.md, "Size-suppression ratchet".
 
-app/src/main/java/app/knotwork/android/data/local/dao/ChatDao.kt :: interface ChatDao :: TooManyFunctions
-app/src/main/java/app/knotwork/android/di/AppModule.kt :: object AppModule :: TooManyFunctions
-app/src/main/java/app/knotwork/android/di/DataModule.kt :: class DataModule :: TooManyFunctions
-app/src/main/java/app/knotwork/android/domain/engine/DefaultPipelineFactory.kt :: fun create :: LongMethod
-app/src/main/java/app/knotwork/android/domain/engine/executors/ToolInvocationGate.kt :: fun dispatch :: LongMethod
-app/src/main/java/app/knotwork/android/domain/models/PipelineGraph.kt :: fun validate :: CyclomaticComplexMethod
-app/src/main/java/app/knotwork/android/presentation/ui/chat/home/ChatHomeStateMapping.kt :: fun ChatHomeScreenState.toViewState :: LongMethod
-app/src/main/java/app/knotwork/android/presentation/ui/chat/home/ChatHomeViewModel.kt :: constructor :: LongParameterList
-app/src/main/java/app/knotwork/android/presentation/ui/more/MoreScreen.kt :: fun MoreUiState.toViewState :: LongParameterList
-app/src/main/java/app/knotwork/android/presentation/ui/more/MoreScreen.kt :: fun appSection :: LongParameterList
-app/src/main/java/app/knotwork/android/presentation/ui/pipeline/editor/config/NodeConfigCodec.kt :: (file) :: TooManyFunctions
-app/src/main/java/app/knotwork/android/presentation/ui/pipeline/editor/core/BezierEdge.kt :: fun distanceToPoint :: LongParameterList
-app/src/main/java/app/knotwork/android/presentation/ui/prompts/PromptLibraryViewModel.kt :: class PromptLibraryViewModel :: TooManyFunctions
-app/src/main/java/app/knotwork/android/presentation/ui/settings/MemorySettingsDelegate.kt :: class MemorySettingsDelegate :: TooManyFunctions
-app/src/main/java/app/knotwork/android/presentation/ui/settings/SettingsViewModel.kt :: class SettingsViewModel :: LongParameterList
-app/src/main/java/app/knotwork/android/presentation/ui/settings/SettingsViewModel.kt :: class SettingsViewModel :: TooManyFunctions
-app/src/main/java/app/knotwork/android/presentation/ui/skills/SkillLibraryViewModel.kt :: class SkillLibraryViewModel :: TooManyFunctions
-app/src/main/java/app/knotwork/android/presentation/ui/triggers/TriggersViewModel.kt :: class TriggersViewModel :: TooManyFunctions
-catalog/src/main/java/app/knotwork/design/screens/automation/ExternalAutomationJournalContent.kt :: (file) :: TooManyFunctions
-catalog/src/main/java/app/knotwork/design/screens/memory/MemoryContent.kt :: (file) :: TooManyFunctions
-catalog/src/main/java/app/knotwork/design/screens/onboarding/OnboardingContent.kt :: (file) :: TooManyFunctions
-catalog/src/main/java/app/knotwork/design/screens/triggers/TriggerDetailContent.kt :: (file) :: TooManyFunctions
+app/src/main/java/app/kawkab/android/data/local/dao/ChatDao.kt :: interface ChatDao :: TooManyFunctions
+app/src/main/java/app/kawkab/android/di/AppModule.kt :: object AppModule :: TooManyFunctions
+app/src/main/java/app/kawkab/android/di/DataModule.kt :: class DataModule :: TooManyFunctions
+app/src/main/java/app/kawkab/android/domain/engine/DefaultPipelineFactory.kt :: fun create :: LongMethod
+app/src/main/java/app/kawkab/android/domain/engine/executors/ToolInvocationGate.kt :: fun dispatch :: LongMethod
+app/src/main/java/app/kawkab/android/domain/models/PipelineGraph.kt :: fun validate :: CyclomaticComplexMethod
+app/src/main/java/app/kawkab/android/presentation/ui/chat/home/ChatHomeStateMapping.kt :: fun ChatHomeScreenState.toViewState :: LongMethod
+app/src/main/java/app/kawkab/android/presentation/ui/chat/home/ChatHomeViewModel.kt :: constructor :: LongParameterList
+app/src/main/java/app/kawkab/android/presentation/ui/more/MoreScreen.kt :: fun MoreUiState.toViewState :: LongParameterList
+app/src/main/java/app/kawkab/android/presentation/ui/more/MoreScreen.kt :: fun appSection :: LongParameterList
+app/src/main/java/app/kawkab/android/presentation/ui/pipeline/editor/config/NodeConfigCodec.kt :: (file) :: TooManyFunctions
+app/src/main/java/app/kawkab/android/presentation/ui/pipeline/editor/core/BezierEdge.kt :: fun distanceToPoint :: LongParameterList
+app/src/main/java/app/kawkab/android/presentation/ui/prompts/PromptLibraryViewModel.kt :: class PromptLibraryViewModel :: TooManyFunctions
+app/src/main/java/app/kawkab/android/presentation/ui/settings/MemorySettingsDelegate.kt :: class MemorySettingsDelegate :: TooManyFunctions
+app/src/main/java/app/kawkab/android/presentation/ui/settings/SettingsViewModel.kt :: class SettingsViewModel :: LongParameterList
+app/src/main/java/app/kawkab/android/presentation/ui/settings/SettingsViewModel.kt :: class SettingsViewModel :: TooManyFunctions
+app/src/main/java/app/kawkab/android/presentation/ui/skills/SkillLibraryViewModel.kt :: class SkillLibraryViewModel :: TooManyFunctions
+app/src/main/java/app/kawkab/android/presentation/ui/triggers/TriggersViewModel.kt :: class TriggersViewModel :: TooManyFunctions
+catalog/src/main/java/app/kawkab/design/screens/automation/ExternalAutomationJournalContent.kt :: (file) :: TooManyFunctions
+catalog/src/main/java/app/kawkab/design/screens/memory/MemoryContent.kt :: (file) :: TooManyFunctions
+catalog/src/main/java/app/kawkab/design/screens/onboarding/OnboardingContent.kt :: (file) :: TooManyFunctions
+catalog/src/main/java/app/kawkab/design/screens/triggers/TriggerDetailContent.kt :: (file) :: TooManyFunctions

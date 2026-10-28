@@ -22,7 +22,7 @@ The codebase is split into three Gradle modules:
 ```
 
 Inside `:app`, the source tree is split into the three Clean Architecture
-layers under `app/src/main/java/app/knotwork/android/`:
+layers under `app/src/main/java/app/kawkab/android/`:
 
 ```
 app/
@@ -1097,14 +1097,14 @@ Caveat: when the entry point's package path contains a Kotlin soft keyword
 (`data`, `value`, …), the AppFunctions compiler bakes Kotlin
 source-level escaping into the generated wire id. The `search` id
 therefore embeds literal backticks around `data`:
-`` app.knotwork.android.`data`.tools.local.appfunctions.AgentAppFunctionService#search ``
+`` app.kawkab.android.`data`.tools.local.appfunctions.AgentAppFunctionService#search ``
 External callers must pass the backticks verbatim. The
 end-to-end test (`AppFunctionsEndToEndTest.SEARCH_TOOL_ID`) and the
 `:tools-probe` `MainActivity` constant are the source-of-truth literals.
 
 Every tool — built-in, discovered AppFunction, or MCP — carries an
 effective
-[`ToolRisk`](../app/src/main/java/app/knotwork/android/domain/models/ToolRisk.kt):
+[`ToolRisk`](../app/src/main/java/app/kawkab/android/domain/models/ToolRisk.kt):
 
 ```kotlin
 enum class ToolRisk { READ_ONLY, SENSITIVE, DESTRUCTIVE }
@@ -1212,7 +1212,7 @@ cancellation; see [`docs/api-conventions.md`](api-conventions.md) §
 Model Context Protocol).
 
 **One server per name.** Which server answers a tool name is decided by one
-rule, [`McpToolRouting`](../app/src/main/java/app/knotwork/android/domain/services/McpToolRouting.kt),
+rule, [`McpToolRouting`](../app/src/main/java/app/kawkab/android/domain/services/McpToolRouting.kt),
 read by the agent's catalogue (`getAvailableTools`), the risk lookup
 (`getRisk`), the dispatch (`executeTool`) and the Tools screen alike: a tool on
 the device — built-in or discovered AppFunction — always owns its name, and

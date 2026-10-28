@@ -5,13 +5,13 @@ plugins {
 }
 
 android {
-    namespace = "app.knotwork.android.toolsprobe"
+    namespace = "app.kawkab.android.toolsprobe"
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId = "app.knotwork.android.toolsprobe"
+        applicationId = "app.kawkab.android.toolsprobe"
         minSdk = 34
         targetSdk = 37
         versionCode = 1

@@ -31,15 +31,15 @@ uses-permission android.permission.RECORD_AUDIO
 uses-permission android.permission.WAKE_LOCK
 
 # ── Declared by androidx.core for its non-exported dynamic receivers ─────────
-permission app.knotwork.android.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION protectionLevel=signature
-uses-permission app.knotwork.android.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+permission app.kawkab.android.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION protectionLevel=signature
+uses-permission app.kawkab.android.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 
 # ── Exported by the app — reachable by any installed app when permission=none ─
-exported activity app.knotwork.android.presentation.share.ShareReceiverActivity permission=none
-exported activity app.knotwork.android.presentation.ui.MainActivity permission=none
-exported receiver app.knotwork.android.presentation.receivers.ExternalAutomationReceiver permission=none
-exported service app.knotwork.android.data.tools.local.appfunctions.KnotworkAppFunctionService permission=android.permission.BIND_APP_FUNCTION_SERVICE
-exported service app.knotwork.android.presentation.tile.DutyPipelineTileService permission=android.permission.BIND_QUICK_SETTINGS_TILE
+exported activity app.kawkab.android.presentation.share.ShareReceiverActivity permission=none
+exported activity app.kawkab.android.presentation.ui.MainActivity permission=none
+exported receiver app.kawkab.android.presentation.receivers.ExternalAutomationReceiver permission=none
+exported service app.kawkab.android.data.tools.local.appfunctions.KnotworkAppFunctionService permission=android.permission.BIND_APP_FUNCTION_SERVICE
+exported service app.kawkab.android.presentation.tile.DutyPipelineTileService permission=android.permission.BIND_QUICK_SETTINGS_TILE
 
 # ── Exported by libraries — each behind a permission only the system holds ───
 exported receiver androidx.profileinstaller.ProfileInstallReceiver permission=android.permission.DUMP
@@ -48,7 +48,7 @@ exported service androidx.work.impl.background.systemjob.SystemJobService permis
 
 # ── Package visibility ───────────────────────────────────────────────────────
 queries intent action=android.app.appfunctions.AppFunctionService
-queries intent action=app.knotwork.android.action.RUN_RESULT
+queries intent action=app.kawkab.android.action.RUN_RESULT
 
 # ── What this flavour promises not to declare ────────────────────────────────
 # The classes of Google's data-transport library (and its CCT endpoint) still ship

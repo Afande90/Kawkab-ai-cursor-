@@ -44,7 +44,7 @@ type into the browser-based editor so users can place it on the canvas.
 ### 1.1. Extend the `NodeType` enum
 
 Add a new constant to
-[`domain/models/NodeType.kt`](../app/src/main/java/app/knotwork/android/domain/models/NodeType.kt).
+[`domain/models/NodeType.kt`](../app/src/main/java/app/kawkab/android/domain/models/NodeType.kt).
 Keep the name SCREAMING_SNAKE_CASE and group it logically with similar
 existing types (e.g. control-flow next to `IF_CONDITION`,
 LLM-driven next to `LITE_RT` / `CLOUD`).
@@ -52,9 +52,9 @@ LLM-driven next to `LITE_RT` / `CLOUD`).
 ### 1.2. Implement `NodeExecutor`
 
 Create a new class under
-`app/src/main/java/app/knotwork/android/domain/engine/executors/` that
+`app/src/main/java/app/kawkab/android/domain/engine/executors/` that
 implements
-[`NodeExecutor`](../app/src/main/java/app/knotwork/android/domain/engine/executors/NodeExecutor.kt):
+[`NodeExecutor`](../app/src/main/java/app/kawkab/android/domain/engine/executors/NodeExecutor.kt):
 
 ```kotlin
 class MyNewNodeExecutor @Inject constructor(
@@ -105,7 +105,7 @@ Contract reminders:
 
 ### 1.3. Register the executor in the factory
 
-[`NodeExecutorFactory`](../app/src/main/java/app/knotwork/android/domain/engine/executors/NodeExecutorFactory.kt)
+[`NodeExecutorFactory`](../app/src/main/java/app/kawkab/android/domain/engine/executors/NodeExecutorFactory.kt)
 is the single dispatch point used by `GraphExecutionEngine`. Inject
 the new executor and add a branch to the `when`:
 
@@ -144,7 +144,7 @@ use it.
 ### 1.4. Provide default context flags
 
 `NodeContextConfig.defaultForType(type)` in
-[`domain/models/NodeContextConfig.kt`](../app/src/main/java/app/knotwork/android/domain/models/NodeContextConfig.kt)
+[`domain/models/NodeContextConfig.kt`](../app/src/main/java/app/kawkab/android/domain/models/NodeContextConfig.kt)
 returns the recommended starting context for a freshly-created node of
 each type. Add a `when` branch for your new type that selects the
 minimum set of blocks the executor actually needs:
@@ -166,7 +166,7 @@ tool node should not default to seeing long-term memory.
 
 ### 1.5. Update graph validation if needed
 
-[`PipelineGraph.validate()`](../app/src/main/java/app/knotwork/android/domain/models/PipelineGraph.kt)
+[`PipelineGraph.validate()`](../app/src/main/java/app/kawkab/android/domain/models/PipelineGraph.kt)
 already enforces the universal invariants (exactly one `INPUT`, at
 least one `OUTPUT`, DAG, no dangling connections, non-empty
 `contextConfig` for executor-driven types). You only need to touch
@@ -180,7 +180,7 @@ references another entity by id (as `PIPELINE` references a target
 pipeline and `SKILL` references a skill), put the single-graph check in
 `validate()` (e.g. `MissingTargetPipeline` / `MissingSkill` for an unset
 reference) and the cross-entity checks in a dedicated repository-backed
-validator invoked from the relevant use case. [`PipelineCompositionValidator`](../app/src/main/java/app/knotwork/android/domain/services/PipelineCompositionValidator.kt)
+validator invoked from the relevant use case. [`PipelineCompositionValidator`](../app/src/main/java/app/kawkab/android/domain/services/PipelineCompositionValidator.kt)
 is the reference example: `SavePipelineUseCase` runs it alongside
 `validate()` to reject reference cycles, dangling targets, and chains
 nested deeper than `RunSettings.pipelineMaxNestingDepth` before a
@@ -250,7 +250,7 @@ target pipeline, `SKILL` → skill), there are two extra obligations:
 1. Carry the id in the **flat `config` block** of the export, not only in
    the rich `nodeConfig` envelope — the runtime executors read the flat
    `NodeModel` field (`targetPipelineId` / `skillId`), so
-   [`PipelineJsonSerializer`](../app/src/main/java/app/knotwork/android/domain/pipelineio/PipelineJsonSerializer.kt)
+   [`PipelineJsonSerializer`](../app/src/main/java/app/kawkab/android/domain/pipelineio/PipelineJsonSerializer.kt)
    emits and reads it there, and the editor mirrors that in `exportToJson`
    / `importFromJson`.
 2. The browser holds a **single document**, so it can only flag a *direct*
@@ -274,7 +274,7 @@ cannot silently lose a node type or a field.
 - A unit test for the executor that covers the happy path, at least
   one error branch, and (if relevant) the empty-input case.
 - A new case in
-  [`GraphExecutionEngineTest`](../app/src/test/java/app/knotwork/android/domain/engine/GraphExecutionEngineTest.kt)
+  [`GraphExecutionEngineTest`](../app/src/test/java/app/kawkab/android/domain/engine/GraphExecutionEngineTest.kt)
   that walks a minimal graph including the new node type.
 - If `defaultForType` or `validate()` changed, add a unit test in the
   matching test file.
@@ -290,9 +290,9 @@ class plus one `@Binds` line.
 ### 2.1. Implement `LocalToolExecutor`
 
 Create a class under
-`app/src/main/java/app/knotwork/android/data/tools/local/executors/` that
+`app/src/main/java/app/kawkab/android/data/tools/local/executors/` that
 implements
-[`LocalToolExecutor`](../app/src/main/java/app/knotwork/android/domain/repositories/LocalToolExecutor.kt):
+[`LocalToolExecutor`](../app/src/main/java/app/kawkab/android/domain/repositories/LocalToolExecutor.kt):
 
 ```kotlin
 class MyToolExecutor @Inject constructor(
@@ -319,17 +319,17 @@ class MyToolExecutor @Inject constructor(
 
 Existing implementations to crib from:
 
-- [`SearchToolExecutor`](../app/src/main/java/app/knotwork/android/data/tools/local/executors/SearchToolExecutor.kt)
+- [`SearchToolExecutor`](../app/src/main/java/app/kawkab/android/data/tools/local/executors/SearchToolExecutor.kt)
   — calls a public HTTP API.
-- [`DelegateTaskExecutor`](../app/src/main/java/app/knotwork/android/data/tools/local/executors/DelegateTaskExecutor.kt)
+- [`DelegateTaskExecutor`](../app/src/main/java/app/kawkab/android/data/tools/local/executors/DelegateTaskExecutor.kt)
   — delegates to a different LLM provider via the cloud client factory.
-- [`ScheduleTaskExecutor`](../app/src/main/java/app/knotwork/android/data/tools/local/executors/ScheduleTaskExecutor.kt)
+- [`ScheduleTaskExecutor`](../app/src/main/java/app/kawkab/android/data/tools/local/executors/ScheduleTaskExecutor.kt)
   — bridges to a domain use case (`ScheduleTaskUseCase`).
 
 ### 2.2. Register the executor
 
 Add one `@Binds @IntoMap @StringKey(...)` entry to
-[`di/LocalToolsModule.kt`](../app/src/main/java/app/knotwork/android/di/LocalToolsModule.kt):
+[`di/LocalToolsModule.kt`](../app/src/main/java/app/kawkab/android/di/LocalToolsModule.kt):
 
 ```kotlin
 @Binds
@@ -339,7 +339,7 @@ abstract fun bindMyToolExecutor(executor: MyToolExecutor): LocalToolExecutor
 ```
 
 That is the only DI touch-point.
-[`ToolRepositoryImpl`](../app/src/main/java/app/knotwork/android/data/repositories/ToolRepositoryImpl.kt)
+[`ToolRepositoryImpl`](../app/src/main/java/app/kawkab/android/data/repositories/ToolRepositoryImpl.kt)
 already consumes the multibinding map and dispatches by name; you do
 not edit it.
 
@@ -367,7 +367,7 @@ from other packages), the default is `SENSITIVE` — the platform
 `AppFunctionManager` metadata gives no trustworthy signal about side
 effects. The user can downgrade a specific tool to `READ_ONLY` (or
 upgrade it to `DESTRUCTIVE`) via
-[`ToolSettings.setToolRiskOverride(toolKey, risk)`](../app/src/main/java/app/knotwork/android/domain/repositories/ToolSettings.kt),
+[`ToolSettings.setToolRiskOverride(toolKey, risk)`](../app/src/main/java/app/kawkab/android/domain/repositories/ToolSettings.kt),
 which writes into the `toolRiskOverrides` flow persisted under
 DataStore key `app_function_risk_overrides`. `ToolRepository.getRisk(name)`
 consults the override map first and falls back to the conservative
@@ -390,7 +390,7 @@ Most tools have a single, static risk. A tool whose risk depends on the
 *call* rather than its name (the built-in `http_request`, whose `GET` is
 `SENSITIVE` but whose `POST`/`PUT`/`DELETE` are `DESTRUCTIVE`) resolves it
 through the argument-aware overload
-[`ToolRepository.getRisk(name, arguments)`](../app/src/main/java/app/knotwork/android/domain/repositories/ToolRepository.kt):
+[`ToolRepository.getRisk(name, arguments)`](../app/src/main/java/app/kawkab/android/domain/repositories/ToolRepository.kt):
 the HITL gate passes the resolved argument string so the confirmation
 strength matches the concrete request. Keep the per-call decision in one pure
 helper that both the risk lookup and the executor's own enforcement read from
@@ -410,7 +410,7 @@ can never diverge. An unparsable call must fall back to the strictest risk.
 If you want a third-party app to be able to call your tool through the
 system [`AppFunctionManager`](https://developer.android.com/reference/android/app/appfunctions/AppFunctionManager),
 add an `@AppFunction` method to the app's one entry point,
-[`AgentAppFunctionService`](../app/src/main/java/app/knotwork/android/data/tools/local/appfunctions/AgentAppFunctionService.kt)
+[`AgentAppFunctionService`](../app/src/main/java/app/kawkab/android/data/tools/local/appfunctions/AgentAppFunctionService.kt)
 — an abstract `AppFunctionService` annotated `@AppFunctionServiceEntryPoint`
 ([`androidx.appfunctions`](https://developer.android.com/ai/appfunctions/add-appfunctions),
 still alpha). The AppFunctions compiler generates the concrete
@@ -444,7 +444,7 @@ of them at once without touching trigger or Quick-Settings work.
 
 1. **Put the logic in an injectable class.** Add a `@Singleton` class
    under `data/tools/local/appfunctions/`, next to
-   [`SearchAppFunction`](../app/src/main/java/app/knotwork/android/data/tools/local/appfunctions/SearchAppFunction.kt).
+   [`SearchAppFunction`](../app/src/main/java/app/kawkab/android/data/tools/local/appfunctions/SearchAppFunction.kt).
    It needs nothing from AppFunctions, so it is unit-testable as is.
    Kotlin defaults are not honoured at the wire level, so normalise blank
    inputs inside the body if you want a fallback:
@@ -495,7 +495,7 @@ of them at once without touching trigger or Quick-Settings work.
    - Unit-test the logic class directly. Cover happy path, invalid
      arguments, and the blank-fallback if applicable.
    - Add a scenario to
-     [`AppFunctionsEndToEndTest`](../app/src/androidTest/java/app/knotwork/android/AppFunctionsEndToEndTest.kt)
+     [`AppFunctionsEndToEndTest`](../app/src/androidTest/java/app/kawkab/android/AppFunctionsEndToEndTest.kt)
      that resolves the metadata via `searchAppFunctions` and invokes
      the function through `AppFunctionManager.executeAppFunction(...)`.
      The test currently skips on stock Android 16 because
@@ -515,7 +515,7 @@ private file sandbox instead of calling the network. The seven built-ins
 (`read_file`, `write_file`, `edit_file`, `append_file`, `delete_file`,
 `list_files`, `find_files`) all share one rule: **they never touch `java.io.File`
 directly** — every byte goes through the
-[`AgentWorkspace`](../app/src/main/java/app/knotwork/android/domain/services/AgentWorkspace.kt)
+[`AgentWorkspace`](../app/src/main/java/app/kawkab/android/domain/services/AgentWorkspace.kt)
 interface, which is the single trust boundary for agent-driven file I/O.
 Reuse that boundary and the sandbox guarantees (containment, quotas, the
 typed error surface) come for free; bypass it and you reopen the path-traversal
@@ -584,7 +584,7 @@ Contract reminders specific to the workspace:
 
 **Step 2 — register it like any other tool.** Add the `@Binds @IntoMap
 @StringKey(CountLinesExecutor.TOOL_NAME)` entry to
-[`di/LocalToolsModule.kt`](../app/src/main/java/app/knotwork/android/di/LocalToolsModule.kt)
+[`di/LocalToolsModule.kt`](../app/src/main/java/app/kawkab/android/di/LocalToolsModule.kt)
 (see §2.2). No other DI edit is needed.
 
 **Step 3 — pick the risk tier and declare it on the built-in.** Use the same
@@ -597,7 +597,7 @@ read / mutate / destructive mapping as the existing workspace tools:
 | irreversibly removes data (`delete_file`-shaped) | `DESTRUCTIVE`  |
 
 Built-in workspace tools carry their risk in the built-in list inside
-[`ToolRepositoryImpl`](../app/src/main/java/app/knotwork/android/data/repositories/ToolRepositoryImpl.kt)
+[`ToolRepositoryImpl`](../app/src/main/java/app/kawkab/android/data/repositories/ToolRepositoryImpl.kt)
 (the `getRisk(name)` source of truth), alongside `search_tool` and friends —
 add your tool there with the tier from the table. If the risk depends on the
 *call* rather than the name (as it does for `http_request`), resolve it through
@@ -630,7 +630,7 @@ browser editor needs one line (3.1).
 ### 3.1. Extend the `CloudProvider` enum
 
 Add a constant to
-[`domain/models/CloudProvider.kt`](../app/src/main/java/app/knotwork/android/domain/models/CloudProvider.kt)
+[`domain/models/CloudProvider.kt`](../app/src/main/java/app/kawkab/android/domain/models/CloudProvider.kt)
 with a stable wire-id (the lowercase string used in pipeline JSON,
 e.g. `"mistral"`). Existing values are
 `OPENAI`, `ANTHROPIC`, `GOOGLE`, `DEEPSEEK`, `OPENROUTER`, `GROQ`, `OLLAMA`,
@@ -659,29 +659,29 @@ from it — otherwise the browser would show such a node as on-device or Auto.
 ### 3.2. Implement client construction
 
 Add a branch in
-[`KoogClientFactory.createClient(...)`](../app/src/main/java/app/knotwork/android/data/engine/KoogClientFactory.kt)
+[`KoogClientFactory.createClient(...)`](../app/src/main/java/app/kawkab/android/data/engine/KoogClientFactory.kt)
 that constructs the Koog executor for the new provider. If the
 provider's SDK needs extra configuration (base URL, organization id),
 keep all of that inside the helper method — `CloudLlmNodeExecutor`
 should remain provider-agnostic. A provider that speaks the OpenAI API
 needs no new Koog module: add it to
-[`OpenAiCompatibleClients`](../app/src/main/java/app/knotwork/android/data/engine/OpenAiCompatibleClients.kt),
+[`OpenAiCompatibleClients`](../app/src/main/java/app/kawkab/android/data/engine/OpenAiCompatibleClients.kt),
 as OpenRouter and Groq are. Build the client on the `http` factory the
 factory passes in: that transport checks every hop, redirects included,
 and records `Retry-After` for the retry policy.
 
 ### 3.3. Teach the model resolver
 
-[`KoogCloudLlmModelResolver`](../app/src/main/java/app/knotwork/android/data/engine/KoogCloudLlmModelResolver.kt)
+[`KoogCloudLlmModelResolver`](../app/src/main/java/app/kawkab/android/data/engine/KoogCloudLlmModelResolver.kt)
 turns the saved model id into the Koog `LLModel` a run sends (and, for
 Ollama-shaped providers, adds the context window). Which id that is comes from
-[`CloudModelCatalog`](../app/src/main/java/app/knotwork/android/domain/engine/CloudModelCatalog.kt):
+[`CloudModelCatalog`](../app/src/main/java/app/kawkab/android/domain/engine/CloudModelCatalog.kt):
 the models offered and the one used when nothing is chosen or the choice is no
 longer offered. The provider's screen, its row in Settings and the node sheet
 ask the same catalog, so none of them can name a model a run would not use.
 
 A provider Koog lists gets an entry in
-[`KoogModelMapper`](../app/src/main/java/app/knotwork/android/data/engine/KoogModelMapper.kt):
+[`KoogModelMapper`](../app/src/main/java/app/kawkab/android/data/engine/KoogModelMapper.kt):
 its default and the models it offers, as Koog's own constants — never an
 `LLModel` built by hand, since Koog's client routes by a constant's
 capabilities. A provider whose model is typed needs no entry; give it a default
@@ -696,10 +696,10 @@ API keys live in the Keystore-backed encrypted store only — never in
 DataStore, never in `local.properties`, never committed to git.
 
 There is nothing to add for a provider of the usual shape.
-[`ApiKeyRepository`](../app/src/main/java/app/knotwork/android/domain/repositories/ApiKeyRepository.kt)
+[`ApiKeyRepository`](../app/src/main/java/app/kawkab/android/domain/repositories/ApiKeyRepository.kt)
 is keyed by `CloudProvider` — `getApiKey`/`setApiKey`, `getModel`/`setModel`,
 `getBaseUrl`/`setBaseUrl` — and
-[`ApiKeyManager`](../app/src/main/java/app/knotwork/android/data/local/ApiKeyManager.kt)
+[`ApiKeyManager`](../app/src/main/java/app/kawkab/android/data/local/ApiKeyManager.kt)
 names each entry after the wire-id: `<id>_api_key`, `<id>_model`,
 `<id>_base_url`. `ApiKeyManagerTest` pins the names already shipped, because
 renaming one would read every saved key as missing.
@@ -709,34 +709,34 @@ renaming one would read every saved key as missing.
 Settings is a **hub with per-category sub-screens**, driven by a
 pure-domain registry. Every user-facing setting is declared once as a
 `SettingEntry` in
-[`SettingsRegistry`](../app/src/main/java/app/knotwork/android/domain/settings/SettingsRegistry.kt)
+[`SettingsRegistry`](../app/src/main/java/app/kawkab/android/domain/settings/SettingsRegistry.kt)
 — that single declaration stamps its category (Generation, Models,
 Memory, Pipelines, Tools, Background, Privacy, About), its Basic/Advanced
 tier, its control type and its search synonyms, so the control lands in
 the right sub-screen and becomes searchable automatically. Each category
 renders through a catalog `*SettingsContent` composable
-(`catalog/src/main/java/app/knotwork/design/screens/settings/`) fed by a
+(`catalog/src/main/java/app/kawkab/design/screens/settings/`) fed by a
 per-category delegate
-(`app/src/main/java/app/knotwork/android/presentation/ui/settings/*SettingsDelegate.kt`)
+(`app/src/main/java/app/kawkab/android/presentation/ui/settings/*SettingsDelegate.kt`)
 under the coordinating `SettingsViewModel`.
 
 To add a new external LLM provider:
 
 1. Add a `ProviderId` entry in
-   [`ProviderSummary.kt`](../app/src/main/java/app/knotwork/android/domain/models/ProviderSummary.kt)
+   [`ProviderSummary.kt`](../app/src/main/java/app/kawkab/android/domain/models/ProviderSummary.kt)
    with its `cloudProvider` mapping (the wire id used for navigation and
    key storage).
 2. Give it its display name in
-   [`ProviderId.displayName()`](../app/src/main/java/app/knotwork/android/presentation/ui/settings/provider/ProviderDisplayName.kt)
+   [`ProviderId.displayName()`](../app/src/main/java/app/kawkab/android/presentation/ui/settings/provider/ProviderDisplayName.kt)
    — the exhaustive `when` asks for it. The **External providers** row, the
    *Add provider* picker and the detail title all read that one function;
-   [`ModelsSettingsDelegate`](../app/src/main/java/app/knotwork/android/presentation/ui/settings/ModelsSettingsDelegate.kt)
+   [`ModelsSettingsDelegate`](../app/src/main/java/app/kawkab/android/presentation/ui/settings/ModelsSettingsDelegate.kt)
    builds a row for every `ProviderId` by itself.
 3. For a standard cloud provider there is little else to wire in the editor:
-   [`ProviderDetailScreen`](../app/src/main/java/app/knotwork/android/presentation/ui/settings/provider/ProviderDetailScreen.kt)
+   [`ProviderDetailScreen`](../app/src/main/java/app/kawkab/android/presentation/ui/settings/provider/ProviderDetailScreen.kt)
    projects the fields the provider's shape asks for (`usesApiKey`,
    `usesBaseUrl`, `requiresModel`) onto the catalog's
-   [`ProviderDetailContent`](../catalog/src/main/java/app/knotwork/design/screens/settings/ProviderDetailContent.kt)
+   [`ProviderDetailContent`](../catalog/src/main/java/app/kawkab/design/screens/settings/ProviderDetailContent.kt)
    form in `toViewState`: a built-in model list comes from `CloudModelCatalog` (§3.3), a fixed
    address in `fixedAddressOf`, and *Test connection* works through
    `ProviderConnectionChecker` once the provider can list its models. The node
@@ -751,7 +751,7 @@ To add a **non-provider setting**: declare a `SettingEntry` in the right
 category list of `SettingsRegistry`, add its property and setter to the
 settings section it belongs to (`MemorySettings`, `ToolSettings`, … in
 `domain/repositories/`) with a default in
-[`SettingsDefaults`](../app/src/main/java/app/knotwork/android/domain/constants/SettingsDefaults.kt),
+[`SettingsDefaults`](../app/src/main/java/app/kawkab/android/domain/constants/SettingsDefaults.kt),
 add the new key to `PreferenceStorageSnapshotTest`, and render the control
 in that category's `*SettingsContent` (plus its delegate). Code that reads the
 new setting depends on its section, not on `SettingsRepository`. The hub,
@@ -768,7 +768,7 @@ The catalog composables that power these screens:
 
 ### 3.6. Decide whether an absent finish reason means truncation
 
-[`CloudStreamEnd.reportsFinishReason(...)`](../app/src/main/java/app/knotwork/android/domain/engine/CloudStreamEnd.kt)
+[`CloudStreamEnd.reportsFinishReason(...)`](../app/src/main/java/app/kawkab/android/domain/engine/CloudStreamEnd.kt)
 is exhaustive over `CloudProvider`, so a new constant will not compile
 until you answer this. Every caller that turns a cloud stream into an
 answer — the Cloud node, a structured step, `delegate_task` — asks this one
@@ -834,8 +834,8 @@ The five built-in variables (`$DATE`, `$TIME`, `$TOOLS`, `$MODEL`,
 ### 4.1. Implement `PromptVariableProvider`
 
 Create a class under
-`app/src/main/java/app/knotwork/android/data/prompt/` that implements
-[`PromptVariableProvider`](../app/src/main/java/app/knotwork/android/domain/prompt/PromptVariableProvider.kt):
+`app/src/main/java/app/kawkab/android/data/prompt/` that implements
+[`PromptVariableProvider`](../app/src/main/java/app/kawkab/android/domain/prompt/PromptVariableProvider.kt):
 
 ```kotlin
 class WeatherVariableProvider @Inject constructor(
@@ -863,7 +863,7 @@ Rules:
 ### 4.2. Register the provider via Hilt
 
 Add a `@Binds @IntoSet` method to
-[`di/PromptTemplateModule.kt`](../app/src/main/java/app/knotwork/android/di/PromptTemplateModule.kt):
+[`di/PromptTemplateModule.kt`](../app/src/main/java/app/kawkab/android/di/PromptTemplateModule.kt):
 
 ```kotlin
 @Binds
@@ -1140,7 +1140,7 @@ it and refuses any other label:
 
 **Step 2 — register the filename in `PipelinePresetCatalogValidationTest`.**
 `expectedFileNames` in
-`app/src/test/java/app/knotwork/android/domain/pipelineio/PipelinePresetCatalogValidationTest.kt`
+`app/src/test/java/app/kawkab/android/domain/pipelineio/PipelinePresetCatalogValidationTest.kt`
 is a hard whitelist of the shipped catalogue. Add the new filename in the
 same PR; otherwise the test refuses the new file (or misses a deletion).
 A preset marked `"internal": true` also belongs in the same file's
@@ -1227,7 +1227,7 @@ Rules:
 **Step 2 — register the filename in `PromptPresetCatalogValidationTest`.**
 
 `expectedFileNames` in
-`app/src/test/java/app/knotwork/android/domain/promptio/PromptPresetCatalogValidationTest.kt`
+`app/src/test/java/app/kawkab/android/domain/promptio/PromptPresetCatalogValidationTest.kt`
 is a hard whitelist of the shipped catalogue. Add the new filename in
 the same commit; otherwise the catalogue test will refuse the new file
 (or, if you removed one, miss the deletion). The test also asserts that
@@ -1418,9 +1418,9 @@ full memory lifecycle these vectors flow through is documented in
 ### 6.1. Implement the `EmbeddingProvider` interface
 
 Add a class in
-[`data/services/embedding/`](../app/src/main/java/app/knotwork/android/data/services/embedding/)
+[`data/services/embedding/`](../app/src/main/java/app/kawkab/android/data/services/embedding/)
 implementing
-[`EmbeddingProvider`](../app/src/main/java/app/knotwork/android/domain/services/EmbeddingProvider.kt):
+[`EmbeddingProvider`](../app/src/main/java/app/kawkab/android/domain/services/EmbeddingProvider.kt):
 
 - `id` — a stable, lowercase wire key (persisted in settings; **never**
   change it once shipped).
@@ -1449,7 +1449,7 @@ fallback, and `SettingsDefaults`.
 ### 6.3. Bind it into the Hilt map
 
 Append one binding to
-[`EmbeddingModule`](../app/src/main/java/app/knotwork/android/di/EmbeddingModule.kt):
+[`EmbeddingModule`](../app/src/main/java/app/kawkab/android/di/EmbeddingModule.kt):
 
 ```kotlin
 @Binds
@@ -1487,7 +1487,7 @@ backend needs credentials (API key / base URL), add that field under
 ## 7. Use input atoms and chip atoms
 
 Every text input and chip on screen lives in the Knotwork catalog under
-`catalog/src/main/java/app/knotwork/design/components/controls/` and
+`catalog/src/main/java/app/kawkab/design/components/controls/` and
 `…/chips/`. The full specification is `inputs-and-chips.md` (sizing,
 spacing, state tables, motion); this section is the quick "which atom
 do I reach for" lookup.

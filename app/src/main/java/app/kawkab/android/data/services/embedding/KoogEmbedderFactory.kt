@@ -1,0 +1,127 @@
+package app.kawkab.android.data.services.embedding
+
+import ai.koog.http.client.ktor.KtorKoogHttpClient
+import ai.koog.prompt.executor.clients.LLMEmbeddingProviderAPI
+import ai.koog.prompt.executor.clients.openai.OpenAIClientSettings
+import ai.koog.prompt.executor.clients.openai.OpenAILLMClient
+import ai.koog.prompt.executor.ollama.client.OllamaClient
+import app.kawkab.android.data.engine.CloudClientTimeouts
+import app.kawkab.android.data.engine.KoogTransportFactory
+import app.kawkab.android.data.engine.ModelNetworkGate
+import app.kawkab.android.data.engine.retry.CloudRetryWrapper
+import app.kawkab.android.data.engine.retry.RetryAfterSlot
+import app.kawkab.android.domain.models.CloudProvider
+import javax.inject.Inject
+import javax.inject.Singleton
+
+/**
+ * Factory that constructs Koog embedding clients for the cloud / local-server
+ * embedding providers.
+ *
+ * Pulling client construction behind an interface keeps the
+ * [EmbeddingProvider][app.kawkab.android.domain.services.EmbeddingProvider]
+ * implementations unit-testable: tests substitute a fake factory that returns
+ * a mocked [LLMEmbeddingProviderAPI], so no real HTTP client is created and no
+ * network is touched. It mirrors the existing
+ * [KoogClientFactory][app.kawkab.android.data.engine.KoogClientFactory] seam
+ * used for chat clients.
+ *
+ * Every Koog `LLMClient` implements `LLMEmbeddingProviderAPI`, so the returned
+ * clients expose `embed(text, model)` / `embed(texts, model)` directly.
+ */
+interface KoogEmbedderFactory {
+
+    /**
+     * Builds an OpenAI embedding client authenticated with [apiKey], decorated
+     * with the configured transient-failure retry policy.
+     *
+     * Applies no network rule of its own: callers must have asked
+     * `ModelNetworkGate.cloudRefusal` first, as `CloudEmbeddingProvider` does.
+     *
+     * `suspend` because the retry policy is read from settings at build time.
+     *
+     * @param apiKey A non-blank OpenAI API key (callers must check for blank
+     *   first and take the fallback path).
+     * @return A Koog [LLMEmbeddingProviderAPI] backed by the OpenAI client.
+     */
+    suspend fun openAiClient(apiKey: String): LLMEmbeddingProviderAPI
+
+    /**
+     * Builds an Ollama embedding client targeting the local-network server at
+     * [baseUrl], decorated with the configured transient-failure retry policy.
+     *
+     * Applies no network rule of its own: callers must have passed [baseUrl]
+     * through `ModelNetworkGate.endpointRefusal` first, as `OllamaEmbeddingProvider`
+     * does — a client built from an unchecked address bypasses both the cleartext
+     * rule and the "Block network from local model" restriction.
+     *
+     * `suspend` because the retry policy is read from settings at build time.
+     *
+     * @param baseUrl A non-blank Ollama base URL (e.g. `http://192.168.1.2:11434`).
+     * @return A Koog [LLMEmbeddingProviderAPI] backed by the Ollama client.
+     */
+    suspend fun ollamaClient(baseUrl: String): LLMEmbeddingProviderAPI
+}
+
+/**
+ * Default [KoogEmbedderFactory] backed by the real Koog Ktor HTTP transport.
+ *
+ * Reuses a single explicitly-constructed [KtorKoogHttpClient.Factory] for the
+ * same reason as `KoogClientFactory`: the Maven Central publish of Koog 1.0.0
+ * omits the `KoogHttpClient.Factory` service-loader registration, so the SPI
+ * auto-discovery path throws at runtime — passing the factory explicitly
+ * bypasses the lookup.
+ *
+ * Both clients run on a [KoogTransportFactory], as the chat clients do: every hop is checked
+ * against the network rules in force ([ModelNetworkGate.hopRule]), redirects included, and the
+ * `Retry-After` of an error answer reaches the retry policy.
+ *
+ * Both clients carry [CloudClientTimeouts.CONFIG], the chat clients' own deadlines. Built
+ * without it, as they once were, they fell back to Koog's 900 s request and socket
+ * timeouts — every memory write and search could wait fifteen minutes on a silent
+ * provider.
+ */
+@Singleton
+class DefaultKoogEmbedderFactory @Inject constructor(
+    private val retryWrapper: CloudRetryWrapper,
+    private val modelNetworkGate: ModelNetworkGate,
+) : KoogEmbedderFactory {
+
+    private val httpClientFactory = KtorKoogHttpClient.Factory()
+
+    override suspend fun openAiClient(apiKey: String): LLMEmbeddingProviderAPI {
+        val retryAfter = RetryAfterSlot()
+        return retryWrapper.wrap(
+            client = OpenAILLMClient(
+                apiKey = apiKey,
+                settings = OpenAIClientSettings(timeoutConfig = CloudClientTimeouts.CONFIG),
+                httpClientFactory = KoogTransportFactory(httpClientFactory, retryAfter, modelNetworkGate.hopRule()),
+            ),
+            provider = CloudProvider.OPENAI.id,
+            retryAfter = retryAfter,
+        )
+    }
+
+    override suspend fun ollamaClient(baseUrl: String): LLMEmbeddingProviderAPI {
+        val retryAfter = RetryAfterSlot()
+        return retryWrapper.wrap(
+            client = OllamaClient(
+                httpClientFactory = KoogTransportFactory(httpClientFactory, retryAfter, modelNetworkGate.hopRule()),
+                baseUrl = baseUrl,
+                timeoutConfig = CloudClientTimeouts.CONFIG,
+            ),
+            provider = CloudProvider.OLLAMA.id,
+            retryAfter = retryAfter,
+        )
+    }
+}
+
+/**
+ * Converts a Koog embedding vector ([List]<[Double]>) into the [FloatArray]
+ * representation used throughout the memory subsystem (and by MediaPipe).
+ *
+ * The narrowing from `Double` to `Float` is intentional: on-device storage and
+ * cosine-similarity math operate on `Float`, and embedding magnitudes are well
+ * within `Float` range, so the precision loss is irrelevant for ranking.
+ */
+internal fun List<Double>.toFloatVector(): FloatArray = FloatArray(size) { this[it].toFloat() }

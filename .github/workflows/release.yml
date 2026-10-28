@@ -197,7 +197,7 @@ jobs:
           # file is still the right file, and a false failure here blocks a
           # release for nothing.
           if ! grep -qE '"package_name"[[:space:]]*:[[:space:]]*"app\.knotwork\.android"' app/google-services.json; then
-            echo "::error::The decoded google-services.json has no client for app.knotwork.android — wrong Firebase project or a truncated secret."
+            echo "::error::The decoded google-services.json has no client for app.kawkab.android — wrong Firebase project or a truncated secret."
             exit 1
           fi
           if grep -q 'placeholder' app/google-services.json; then

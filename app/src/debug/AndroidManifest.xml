@@ -17,7 +17,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <queries>
-        <package android:name="app.knotwork.android.toolsprobe" />
+        <package android:name="app.kawkab.android.toolsprobe" />
     </queries>
 
     <application>
@@ -32,7 +32,7 @@
             android:exported="true"
             tools:ignore="ExportedReceiver">
             <intent-filter>
-                <action android:name="app.knotwork.android.debug.DUMP_TRIGGER_JOURNAL" />
+                <action android:name="app.kawkab.android.debug.DUMP_TRIGGER_JOURNAL" />
             </intent-filter>
         </receiver>
     </application>

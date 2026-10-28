@@ -128,7 +128,7 @@ aggregate; per-package floors will be promoted to enforced rules when Kover
 
 | Package                            | Coverage | Covered / Total |
 |------------------------------------|----------|-----------------|
-| `app.knotwork.android` (root, `App.kt`)| 23.53 %  | 8 / 34          |
+| `app.kawkab.android` (root, `App.kt`)| 23.53 %  | 8 / 34          |
 | `appfunctions_aggregated_deps`     | 0.00 %   | 0 / 5           |
 
 `App.kt` is the Hilt `Application` subclass; the lit lines are the
@@ -149,37 +149,37 @@ Each is justified below.
 | `*_Provide*Factory`, `*_Provide*Factory$*`        | Hilt module-provider factories.                                          |
 | `dagger.hilt.internal.*`, `hilt_aggregated_deps.*`| Hilt internals.                                                          |
 | `*_Impl`, `*_Impl$*`                              | Room-generated DAO implementations.                                      |
-| `app.knotwork.android.data.local.AppDatabase`        | Abstract Room database class (one counted line, its constructor); the migrations in `data.local.migrations` are measured. |
-| `app.knotwork.android.data.local.AppDatabase_Impl*`  | Room-generated database implementation.                                  |
+| `app.kawkab.android.data.local.AppDatabase`        | Abstract Room database class (one counted line, its constructor); the migrations in `data.local.migrations` are measured. |
+| `app.kawkab.android.data.local.AppDatabase_Impl*`  | Room-generated database implementation.                                  |
 | `*_AutoMigration_*`                               | Room auto-migration generated bridges.                                   |
-| `app.knotwork.android.data.local.dao.*`              | Room DAO **interfaces** (only `companion object` constants in source).   |
+| `app.kawkab.android.data.local.dao.*`              | Room DAO **interfaces** (only `companion object` constants in source).   |
 | `*ComposableSingletons*`, `ComposableSingletons$*`| Compose-compiler-emitted lambda singletons.                              |
 | `*Preview`, `*PreviewKt`                          | Compose preview files (project convention: `*Preview.kt`).               |
-| `app.knotwork.android.di.*`                           | Hilt DI modules — only `@Provides` wiring, no business behaviour.        |
-| `app.knotwork.android.BuildConfig`                    | Android-Gradle-generated build constants.                                |
+| `app.kawkab.android.di.*`                           | Hilt DI modules — only `@Provides` wiring, no business behaviour.        |
+| `app.kawkab.android.BuildConfig`                    | Android-Gradle-generated build constants.                                |
 | `*.databinding.*`, `*.BR`                         | DataBinding generated code (defensive — project does not use DataBinding today). |
 | `@androidx.compose.ui.tooling.preview.Preview`    | Belt-and-braces annotation filter for preview functions outside `*Preview.kt`. |
-| `app.knotwork.android.App`                            | Hilt `Application` subclass; needs Android runtime to instantiate.       |
-| `app.knotwork.android.presentation.ui.MainActivity*`  | Compose host `Activity`; covered by androidTest, not JVM unit tests.      |
-| `app.knotwork.android.presentation.ui.*Screen*`       | Top-level Compose screen files (project convention: `*Screen.kt`).        |
-| `app.knotwork.android.presentation.ui.components.*`   | Reusable Compose components used by multiple screens.                     |
-| `app.knotwork.android.presentation.ui.orchestrator.components.*` | Sub-package of orchestrator Compose components.                |
-| `app.knotwork.android.presentation.ui.chat.legacy.*` (selected) | Legacy chat surface kept until orchestrator rewire.|
-| `app.knotwork.android.presentation.ui.chat.home.ChatHomeScreen*`, `ChatHomeDebugStatePicker*`, `DebugStateRows*` | Compose surfaces of the redesigned chat home. |
-| `app.knotwork.android.presentation.ui.pipeline.editor.canvas.*` | Gesture / animation / Bezier draw layer.       |
-| `app.knotwork.android.presentation.ui.pipeline.editor.bars.*`   | Editor top / bottom bars (Compose).                                  |
-| `app.knotwork.android.presentation.ui.pipeline.editor.sheet.*`  | Editor bottom sheets (Compose).                                      |
-| `app.knotwork.android.presentation.ui.pipeline.editor.PipelineEditorContent*`, `PipelineEditorScreen*` | Pipeline editor host Composables.        |
-| `app.knotwork.android.presentation.ui.splash.SplashScreen*`     | Splash Composable.                                                   |
-| `app.knotwork.android.presentation.theme.*`           | Material 3 colour / typography constants. Pure declarative data.         |
-| `app.knotwork.android.presentation.state.*`           | Tiny constant-only state types historically used by Compose code.        |
-| `app.knotwork.android.presentation.ui.navigation.*`   | **New.** `AppShellScaffold`, `AppNavGraph`, `TabDestination`, `BottomNavVisibility`, `KnotworkModalRoute`, `NavRoutes` — bottom-nav shell + nav-graph wiring. Pure UI / nav glue; route constants unreachable in JVM tests. |
-| `app.knotwork.android.presentation.ui.about.AboutScreen*`, `AboutAcknowledgments*` | **New.** Single-file Compose About surface plus its private declarative acknowledgments list. |
-| `app.knotwork.android.presentation.ui.more.MoreScreen*` | **New.** Bottom-nav More hub Composable. The sibling `MoreViewModel` / `MoreUiState` remain inside the gate. |
-| `app.knotwork.android.presentation.ui.settings.provider.ProviderPickerScreen*`, `ProviderDetailScreen*` | **New.** Provider picker and per-provider configuration screens — covered by the catalog Roborazzi snapshots, not JVM unit tests. |
-| `app.knotwork.android.data.tools.local.appfunctions.*` | **New.** AppFunctions callee side: the `AgentAppFunctionService` entry point, the service and inventory the compiler generates beside it, and the `SearchAppFunction` body (unit-tested, but in the same package); the service needs the Android 16 AppFunctions host to dispatch. |
-| `app.knotwork.android.data.tools.local.LocalAppFunctionManager`, `SearchTool*`, `DelegateTaskTool*` | Tool-execution Android glue (live HTTP / LLM bridge).                    |
-| `app.knotwork.android.data.logging.CrashlyticsTimberTree*` | Firebase Crashlytics Timber bridge; `getInstance()` paths need Google Play services on Android. |
+| `app.kawkab.android.App`                            | Hilt `Application` subclass; needs Android runtime to instantiate.       |
+| `app.kawkab.android.presentation.ui.MainActivity*`  | Compose host `Activity`; covered by androidTest, not JVM unit tests.      |
+| `app.kawkab.android.presentation.ui.*Screen*`       | Top-level Compose screen files (project convention: `*Screen.kt`).        |
+| `app.kawkab.android.presentation.ui.components.*`   | Reusable Compose components used by multiple screens.                     |
+| `app.kawkab.android.presentation.ui.orchestrator.components.*` | Sub-package of orchestrator Compose components.                |
+| `app.kawkab.android.presentation.ui.chat.legacy.*` (selected) | Legacy chat surface kept until orchestrator rewire.|
+| `app.kawkab.android.presentation.ui.chat.home.ChatHomeScreen*`, `ChatHomeDebugStatePicker*`, `DebugStateRows*` | Compose surfaces of the redesigned chat home. |
+| `app.kawkab.android.presentation.ui.pipeline.editor.canvas.*` | Gesture / animation / Bezier draw layer.       |
+| `app.kawkab.android.presentation.ui.pipeline.editor.bars.*`   | Editor top / bottom bars (Compose).                                  |
+| `app.kawkab.android.presentation.ui.pipeline.editor.sheet.*`  | Editor bottom sheets (Compose).                                      |
+| `app.kawkab.android.presentation.ui.pipeline.editor.PipelineEditorContent*`, `PipelineEditorScreen*` | Pipeline editor host Composables.        |
+| `app.kawkab.android.presentation.ui.splash.SplashScreen*`     | Splash Composable.                                                   |
+| `app.kawkab.android.presentation.theme.*`           | Material 3 colour / typography constants. Pure declarative data.         |
+| `app.kawkab.android.presentation.state.*`           | Tiny constant-only state types historically used by Compose code.        |
+| `app.kawkab.android.presentation.ui.navigation.*`   | **New.** `AppShellScaffold`, `AppNavGraph`, `TabDestination`, `BottomNavVisibility`, `KnotworkModalRoute`, `NavRoutes` — bottom-nav shell + nav-graph wiring. Pure UI / nav glue; route constants unreachable in JVM tests. |
+| `app.kawkab.android.presentation.ui.about.AboutScreen*`, `AboutAcknowledgments*` | **New.** Single-file Compose About surface plus its private declarative acknowledgments list. |
+| `app.kawkab.android.presentation.ui.more.MoreScreen*` | **New.** Bottom-nav More hub Composable. The sibling `MoreViewModel` / `MoreUiState` remain inside the gate. |
+| `app.kawkab.android.presentation.ui.settings.provider.ProviderPickerScreen*`, `ProviderDetailScreen*` | **New.** Provider picker and per-provider configuration screens — covered by the catalog Roborazzi snapshots, not JVM unit tests. |
+| `app.kawkab.android.data.tools.local.appfunctions.*` | **New.** AppFunctions callee side: the `AgentAppFunctionService` entry point, the service and inventory the compiler generates beside it, and the `SearchAppFunction` body (unit-tested, but in the same package); the service needs the Android 16 AppFunctions host to dispatch. |
+| `app.kawkab.android.data.tools.local.LocalAppFunctionManager`, `SearchTool*`, `DelegateTaskTool*` | Tool-execution Android glue (live HTTP / LLM bridge).                    |
+| `app.kawkab.android.data.logging.CrashlyticsTimberTree*` | Firebase Crashlytics Timber bridge; `getInstance()` paths need Google Play services on Android. |
 
 ## Justified zero-coverage packages
 
@@ -190,7 +190,7 @@ mistake them for missing work.
 - **`presentation.theme`** — Material 3 colour / typography constants and a
   thin `Theme` composable. Pure declarative composition; no branching
   business logic to test. Excluded via the
-  `app.knotwork.android.presentation.theme.*` pattern above.
+  `app.kawkab.android.presentation.theme.*` pattern above.
 - **`presentation.ui`** (root entry-points) — `MainActivity` plus the
   `*ScreenKt` host shells under the top-level `presentation/ui/` directory.
   These are Android-runtime-bound Compose roots; their coverage is the

@@ -18,7 +18,7 @@
         errorLine1="        every { context.registerReceiver(any(), any&lt;IntentFilter>()) } answers {"
         errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/test/java/app/knotwork/android/data/repositories/PowerStateRepositoryImplTest.kt"
+            file="src/test/java/app/kawkab/android/data/repositories/PowerStateRepositoryImplTest.kt"
             line="30"
             column="17"/>
     </issue>
@@ -29,7 +29,7 @@
         errorLine1="        every { context.registerReceiver(isNull(), any&lt;IntentFilter>()) } returns initialIntent"
         errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/test/java/app/knotwork/android/data/repositories/PowerStateRepositoryImplTest.kt"
+            file="src/test/java/app/kawkab/android/data/repositories/PowerStateRepositoryImplTest.kt"
             line="41"
             column="17"/>
     </issue>
@@ -40,7 +40,7 @@
         errorLine1="            ShortcutManagerCompat.setDynamicShortcuts(context, specs.map { it.toShortcutInfo() })"
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/java/app/knotwork/android/presentation/shortcuts/AppShortcutPublisher.kt"
+            file="src/main/java/app/kawkab/android/presentation/shortcuts/AppShortcutPublisher.kt"
             line="52"
             column="13"/>
     </issue>

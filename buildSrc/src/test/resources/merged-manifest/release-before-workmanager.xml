@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="app.knotwork.android"
+    package="app.kawkab.android"
     android:versionCode="1"
     android:versionName="1.0" >
 
@@ -15,10 +15,10 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <permission
-        android:name="app.knotwork.android.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+        android:name="app.kawkab.android.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
         android:protectionLevel="signature" />
 
-    <uses-permission android:name="app.knotwork.android.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" /> <!-- Although the *SdkVersion is captured in gradle build files, this is required for non gradle builds -->
+    <uses-permission android:name="app.kawkab.android.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" /> <!-- Although the *SdkVersion is captured in gradle build files, this is required for non gradle builds -->
     <!-- <uses-sdk android:minSdkVersion="14"/> -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" /> <!-- <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" /> -->
     <!-- <queries> -->
@@ -29,7 +29,7 @@
     <!-- <package android:name="com.samsung.android.app.sharelive" /> -->
     <!-- </queries> -->
     <application
-        android:name="app.knotwork.android.App"
+        android:name="app.kawkab.android.App"
         android:allowBackup="true"
         android:appComponentFactory="androidx.core.app.CoreComponentFactory"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -43,7 +43,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Knotwork" >
         <activity
-            android:name="app.knotwork.android.presentation.ui.MainActivity"
+            android:name="app.kawkab.android.presentation.ui.MainActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.Knotwork" >
@@ -55,7 +55,7 @@
         </activity>
 
         <service
-            android:name="app.knotwork.android.data.tools.local.AgentAppFunctionService"
+            android:name="app.kawkab.android.data.tools.local.AgentAppFunctionService"
             android:exported="true"
             android:permission="android.permission.BIND_APP_FUNCTION_SERVICE" >
             <intent-filter>
@@ -63,7 +63,7 @@
             </intent-filter>
         </service>
         <service
-            android:name="app.knotwork.android.data.services.AgentForegroundService"
+            android:name="app.kawkab.android.data.services.AgentForegroundService"
             android:exported="false"
             android:foregroundServiceType="specialUse" >
             <property
@@ -127,7 +127,7 @@
 
         <provider
             android:name="androidx.startup.InitializationProvider"
-            android:authorities="app.knotwork.android.androidx-startup"
+            android:authorities="app.kawkab.android.androidx-startup"
             android:exported="false" >
             <meta-data
                 android:name="androidx.emoji2.text.EmojiCompatInitializer"

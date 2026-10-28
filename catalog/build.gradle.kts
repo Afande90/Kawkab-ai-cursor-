@@ -1,5 +1,5 @@
-import app.knotwork.android.buildtools.LintBaselineGuard
-import app.knotwork.android.buildtools.VerifyNoOrphanedKdocTask
+import app.kawkab.android.buildtools.LintBaselineGuard
+import app.kawkab.android.buildtools.VerifyNoOrphanedKdocTask
 import dev.detekt.gradle.Detekt
 
 plugins {
@@ -11,7 +11,7 @@ plugins {
 }
 
 android {
-    namespace = "app.knotwork.design"
+    namespace = "app.kawkab.design"
     compileSdk {
         version = release(37)
     }

@@ -1,0 +1,75 @@
+package app.kawkab.android.domain.engine
+
+import app.kawkab.android.domain.models.LocalSampling
+import app.kawkab.android.domain.models.RunHeader
+import app.kawkab.android.domain.models.RunSampler
+import app.kawkab.android.domain.repositories.GenerationSettings
+import app.kawkab.android.domain.services.RunEnvironment
+import io.mockk.every
+import io.mockk.mockk
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Test
+
+/**
+ * [RunHeaders]: a fresh header takes the seed source's seed, the settings' sampler
+ * widened through its decimal form, and the environment's versions and device.
+ */
+class RunHeadersTest {
+
+    private val settings: GenerationSettings = mockk {
+        every { temperature } returns flowOf(0.7f)
+        every { topK } returns flowOf(40)
+        every { topP } returns flowOf(0.9f)
+    }
+    private val environment = object : RunEnvironment {
+        override val appVersion = "0.12.0 (17)"
+        override val runtimeVersion = "LiteRT-LM 0.17.1"
+        override val device = "Samsung SM-S938B · Android 16"
+    }
+
+    @Test
+    fun `given the settings and a seed when a run starts then its header holds both and the environment`() = runTest {
+        val header = RunHeaders(settings, { 42 }, environment).fresh()
+
+        assertEquals(
+            RunHeader(
+                seed = 42,
+                // The slider's 0.7, not the 0.699999988079071 a plain toDouble() exposes.
+                sampler = RunSampler(temperature = 0.7, topK = 40, topP = 0.9),
+                appVersion = "0.12.0 (17)",
+                runtimeVersion = "LiteRT-LM 0.17.1",
+                device = "Samsung SM-S938B · Android 16",
+            ),
+            header,
+        )
+    }
+
+    @Test
+    fun `given a recorded seed and sampler when a run starts again then its header takes both`() = runTest {
+        val recorded = LocalSampling(RunSampler(temperature = 0.3, topK = 12, topP = 0.5), seed = 1_482_913)
+
+        val header = RunHeaders(settings, { error("a run started again draws no seed") }, environment)
+            .fresh(samplingOverride = recorded)
+
+        assertEquals(
+            RunHeader(
+                seed = 1_482_913,
+                sampler = recorded.sampler,
+                appVersion = "0.12.0 (17)",
+                runtimeVersion = "LiteRT-LM 0.17.1",
+                device = "Samsung SM-S938B · Android 16",
+            ),
+            header,
+        )
+    }
+
+    @Test
+    fun `given two runs when they start then each draws its own seed`() = runTest {
+        var next = 0
+        val headers = RunHeaders(settings, { ++next }, environment)
+
+        assertEquals(listOf(1, 2), listOf(headers.fresh().seed, headers.fresh().seed))
+    }
+}

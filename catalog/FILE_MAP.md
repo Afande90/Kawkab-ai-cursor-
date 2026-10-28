@@ -19,7 +19,7 @@ removing or reordering one by hand is undone by the next run.
 
 Only Kotlin files appear inside the generated blocks.
 
-Paths below are relative to `src/main/java/app/knotwork/design/`.
+Paths below are relative to `src/main/java/app/kawkab/design/`.
 
 <!-- AUTO-GEN:FILE_MAP -->
 - `a11y/` - accessibility scaffolding (`docs/testing.md`).

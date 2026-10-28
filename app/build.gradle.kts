@@ -1,42 +1,42 @@
-import app.knotwork.android.buildtools.BrowserEditorConstantsGenerator
-import app.knotwork.android.buildtools.BrowserEditorFlatExportGuard
-import app.knotwork.android.buildtools.BrowserEditorImportParityGuard
-import app.knotwork.android.buildtools.BrowserEditorInertControlGuard
-import app.knotwork.android.buildtools.BrowserEditorRuntimeFieldGuard
-import app.knotwork.android.buildtools.CookbookDocsGenerator
-import app.knotwork.android.buildtools.DetektAnalysisModeGuard
-import app.knotwork.android.buildtools.DexInstantiabilityChecker
-import app.knotwork.android.buildtools.DexInvocationChecker
-import app.knotwork.android.buildtools.DocumentationRef
-import app.knotwork.android.buildtools.ExternalAutomationDocsGenerator
-import app.knotwork.android.buildtools.FileMapSpec
-import app.knotwork.android.buildtools.GenerateDocumentationLinksTask
-import app.knotwork.android.buildtools.GenerateFileMapTask
-import app.knotwork.android.buildtools.GitCommitId
-import app.knotwork.android.buildtools.LintBaselineGuard
-import app.knotwork.android.buildtools.PinnedNdk
-import app.knotwork.android.buildtools.R8MappingChecker
-import app.knotwork.android.buildtools.ReleaseVersionChecker
-import app.knotwork.android.buildtools.ReportExternalDocLinksTask
-import app.knotwork.android.buildtools.ScanGitMetadataVocabularyTask
-import app.knotwork.android.buildtools.SettingsHelpDocsGenerator
-import app.knotwork.android.buildtools.StoreListingLengthChecker
-import app.knotwork.android.buildtools.SyncBundledDocsTask
-import app.knotwork.android.buildtools.VerifyBundledDocsTask
-import app.knotwork.android.buildtools.VerifyDialogInventoryTask
-import app.knotwork.android.buildtools.VerifyDocLinksTask
-import app.knotwork.android.buildtools.VerifyDocsHygieneTask
-import app.knotwork.android.buildtools.VerifyDocumentationLinksTask
-import app.knotwork.android.buildtools.VerifyFileMapTask
-import app.knotwork.android.buildtools.VerifyForbiddenVocabularyTask
-import app.knotwork.android.buildtools.VerifyKeepRuleTargetsTask
-import app.knotwork.android.buildtools.VerifyMergedManifestTask
-import app.knotwork.android.buildtools.VerifyMermaidDiagramsTask
-import app.knotwork.android.buildtools.VerifyNoOrphanedKdocTask
-import app.knotwork.android.buildtools.VerifyNoSlf4jProviderTask
-import app.knotwork.android.buildtools.VerifySizeSuppressionsTask
-import app.knotwork.android.buildtools.VerifySupplyChainPinsTask
-import app.knotwork.android.buildtools.VerifyVersionSourcesTask
+import app.kawkab.android.buildtools.BrowserEditorConstantsGenerator
+import app.kawkab.android.buildtools.BrowserEditorFlatExportGuard
+import app.kawkab.android.buildtools.BrowserEditorImportParityGuard
+import app.kawkab.android.buildtools.BrowserEditorInertControlGuard
+import app.kawkab.android.buildtools.BrowserEditorRuntimeFieldGuard
+import app.kawkab.android.buildtools.CookbookDocsGenerator
+import app.kawkab.android.buildtools.DetektAnalysisModeGuard
+import app.kawkab.android.buildtools.DexInstantiabilityChecker
+import app.kawkab.android.buildtools.DexInvocationChecker
+import app.kawkab.android.buildtools.DocumentationRef
+import app.kawkab.android.buildtools.ExternalAutomationDocsGenerator
+import app.kawkab.android.buildtools.FileMapSpec
+import app.kawkab.android.buildtools.GenerateDocumentationLinksTask
+import app.kawkab.android.buildtools.GenerateFileMapTask
+import app.kawkab.android.buildtools.GitCommitId
+import app.kawkab.android.buildtools.LintBaselineGuard
+import app.kawkab.android.buildtools.PinnedNdk
+import app.kawkab.android.buildtools.R8MappingChecker
+import app.kawkab.android.buildtools.ReleaseVersionChecker
+import app.kawkab.android.buildtools.ReportExternalDocLinksTask
+import app.kawkab.android.buildtools.ScanGitMetadataVocabularyTask
+import app.kawkab.android.buildtools.SettingsHelpDocsGenerator
+import app.kawkab.android.buildtools.StoreListingLengthChecker
+import app.kawkab.android.buildtools.SyncBundledDocsTask
+import app.kawkab.android.buildtools.VerifyBundledDocsTask
+import app.kawkab.android.buildtools.VerifyDialogInventoryTask
+import app.kawkab.android.buildtools.VerifyDocLinksTask
+import app.kawkab.android.buildtools.VerifyDocsHygieneTask
+import app.kawkab.android.buildtools.VerifyDocumentationLinksTask
+import app.kawkab.android.buildtools.VerifyFileMapTask
+import app.kawkab.android.buildtools.VerifyForbiddenVocabularyTask
+import app.kawkab.android.buildtools.VerifyKeepRuleTargetsTask
+import app.kawkab.android.buildtools.VerifyMergedManifestTask
+import app.kawkab.android.buildtools.VerifyMermaidDiagramsTask
+import app.kawkab.android.buildtools.VerifyNoOrphanedKdocTask
+import app.kawkab.android.buildtools.VerifyNoSlf4jProviderTask
+import app.kawkab.android.buildtools.VerifySizeSuppressionsTask
+import app.kawkab.android.buildtools.VerifySupplyChainPinsTask
+import app.kawkab.android.buildtools.VerifyVersionSourcesTask
 import com.android.build.api.artifact.ScopedArtifact
 import com.android.build.api.artifact.SingleArtifact
 import com.android.build.api.variant.ScopedArtifacts
@@ -185,7 +185,7 @@ ksp {
 }
 
 android {
-    namespace = "app.knotwork.android"
+    namespace = "app.kawkab.android"
     compileSdk {
         version = release(37)
     }
@@ -198,7 +198,7 @@ android {
     ndkVersion = libs.versions.ndk.get()
 
     defaultConfig {
-        applicationId = "app.knotwork.android"
+        applicationId = "app.kawkab.android"
         minSdk = 34
         targetSdk = 37
         versionCode = 18
@@ -731,15 +731,15 @@ kover {
                     // never matched them either).
                     "*_Impl",
                     "*_Impl$*",
-                    "app.knotwork.android.data.local.AppDatabase",
-                    "app.knotwork.android.data.local.AppDatabase_Impl*",
+                    "app.kawkab.android.data.local.AppDatabase",
+                    "app.kawkab.android.data.local.AppDatabase_Impl*",
                     "*_AutoMigration_*",
-                    "app.knotwork.android.data.local.dao.*",
+                    "app.kawkab.android.data.local.dao.*",
                     // Mic capture is a thin platform-`AudioRecord` wrapper that
                     // cannot run on the JVM; its testable WAV-header logic lives
                     // in `data.audio.WavHeader`, which stays in coverage.
-                    "app.knotwork.android.data.audio.AudioRecorderImpl",
-                    "app.knotwork.android.data.audio.AudioRecorderImpl$*",
+                    "app.kawkab.android.data.audio.AudioRecorderImpl",
+                    "app.kawkab.android.data.audio.AudioRecorderImpl$*",
                     // Compose synthetic singletons + project-convention preview files
                     // (every Compose `@Preview` lives in a `*Preview.kt` file).
                     "*ComposableSingletons*",
@@ -747,38 +747,38 @@ kover {
                     "*Preview",
                     "*PreviewKt",
                     // Hilt DI modules — wiring code, no business logic to cover.
-                    "app.knotwork.android.di.*",
+                    "app.kawkab.android.di.*",
                     // Generated build artefacts.
-                    "app.knotwork.android.BuildConfig",
+                    "app.kawkab.android.BuildConfig",
                     "*.databinding.*",
                     "*.BR",
                     // Android-runtime-bound presentation classes that need
                     // instrumented (androidTest / Compose UI test) coverage,
                     // out of scope for the JVM-only Kover pipeline.
-                    "app.knotwork.android.App",
-                    "app.knotwork.android.presentation.ui.MainActivity",
-                    "app.knotwork.android.presentation.ui.MainActivity$*",
-                    "app.knotwork.android.presentation.ui.*Screen",
-                    "app.knotwork.android.presentation.ui.*ScreenKt",
-                    "app.knotwork.android.presentation.ui.*Screen$*",
+                    "app.kawkab.android.App",
+                    "app.kawkab.android.presentation.ui.MainActivity",
+                    "app.kawkab.android.presentation.ui.MainActivity$*",
+                    "app.kawkab.android.presentation.ui.*Screen",
+                    "app.kawkab.android.presentation.ui.*ScreenKt",
+                    "app.kawkab.android.presentation.ui.*Screen$*",
                     // Legacy chat surface (moved under chat/legacy/ pending the
                     // post-v0.1 orchestrator-rewiring task).
-                    "app.knotwork.android.presentation.ui.chat.legacy.ConsoleFullLogSheet*",
-                    "app.knotwork.android.presentation.ui.chat.legacy.ConsolePanelCollapsed*",
-                    "app.knotwork.android.presentation.ui.chat.legacy.AgentThoughtIndicator*",
-                    "app.knotwork.android.presentation.ui.chat.legacy.ClarificationCard*",
-                    "app.knotwork.android.presentation.ui.chat.legacy.PipelineTraceCard*",
-                    "app.knotwork.android.presentation.ui.chat.legacy.ApprovalBanner*",
-                    "app.knotwork.android.presentation.ui.chat.legacy.ChatScreen*",
+                    "app.kawkab.android.presentation.ui.chat.legacy.ConsoleFullLogSheet*",
+                    "app.kawkab.android.presentation.ui.chat.legacy.ConsolePanelCollapsed*",
+                    "app.kawkab.android.presentation.ui.chat.legacy.AgentThoughtIndicator*",
+                    "app.kawkab.android.presentation.ui.chat.legacy.ClarificationCard*",
+                    "app.kawkab.android.presentation.ui.chat.legacy.PipelineTraceCard*",
+                    "app.kawkab.android.presentation.ui.chat.legacy.ApprovalBanner*",
+                    "app.kawkab.android.presentation.ui.chat.legacy.ChatScreen*",
                     // Redesigned chat-home Composables — Compose surfaces are
                     // covered by `:catalog` Roborazzi snapshots; the
                     // testable VM / state-mapping live next to them and are
                     // included in coverage.
-                    "app.knotwork.android.presentation.ui.chat.home.ChatHomeScreen*",
-                    "app.knotwork.android.presentation.ui.chat.home.ChatHomeDebugStatePicker*",
-                    "app.knotwork.android.presentation.ui.chat.home.DebugStateRows*",
-                    "app.knotwork.android.presentation.ui.components.*",
-                    "app.knotwork.android.presentation.ui.orchestrator.components.*",
+                    "app.kawkab.android.presentation.ui.chat.home.ChatHomeScreen*",
+                    "app.kawkab.android.presentation.ui.chat.home.ChatHomeDebugStatePicker*",
+                    "app.kawkab.android.presentation.ui.chat.home.DebugStateRows*",
+                    "app.kawkab.android.presentation.ui.components.*",
+                    "app.kawkab.android.presentation.ui.orchestrator.components.*",
                     // Pipeline editor Compose layer. Gestures, animations, and
                     // Bezier draw paths are intentionally outside the JVM Kover
                     // scope; the pure-Kotlin core (CanvasTransform, AutoLayout,
@@ -786,14 +786,14 @@ kover {
                     // hooks ARE covered. Screen-level visual coverage rides on the
                     // catalog's PipelineEditorCatalogPageSnapshotTest and the
                     // a11y + release-candidate gate.
-                    "app.knotwork.android.presentation.ui.pipeline.editor.canvas.*",
-                    "app.knotwork.android.presentation.ui.pipeline.editor.bars.*",
-                    "app.knotwork.android.presentation.ui.pipeline.editor.sheet.*",
-                    "app.knotwork.android.presentation.ui.pipeline.editor.PipelineEditorContent*",
-                    "app.knotwork.android.presentation.ui.pipeline.editor.PipelineEditorScreen*",
-                    "app.knotwork.android.presentation.ui.splash.SplashScreen*",
-                    "app.knotwork.android.presentation.theme.*",
-                    "app.knotwork.android.presentation.state.*",
+                    "app.kawkab.android.presentation.ui.pipeline.editor.canvas.*",
+                    "app.kawkab.android.presentation.ui.pipeline.editor.bars.*",
+                    "app.kawkab.android.presentation.ui.pipeline.editor.sheet.*",
+                    "app.kawkab.android.presentation.ui.pipeline.editor.PipelineEditorContent*",
+                    "app.kawkab.android.presentation.ui.pipeline.editor.PipelineEditorScreen*",
+                    "app.kawkab.android.presentation.ui.splash.SplashScreen*",
+                    "app.kawkab.android.presentation.theme.*",
+                    "app.kawkab.android.presentation.state.*",
                     // Additional Compose-surface / nav-glue packages. Same
                     // rationale as the
                     // existing presentation.ui.*Screen exclusions: rendering and
@@ -802,26 +802,26 @@ kover {
                     // AppNavGraph, TabDestination, BottomNavVisibility,
                     // KnotworkModalRoute, NavRoutes) is pure UI wiring; route
                     // constants in NavRoutes are unreachable in JVM tests.
-                    "app.knotwork.android.presentation.ui.navigation.*",
+                    "app.kawkab.android.presentation.ui.navigation.*",
                     // Single static About surface (AboutScreen.kt). The
                     // `AboutAcknowledgments` private object lives in the same
                     // file and is pure declarative data feeding the Composable.
-                    "app.knotwork.android.presentation.ui.about.AboutScreen*",
-                    "app.knotwork.android.presentation.ui.about.AboutAcknowledgments*",
+                    "app.kawkab.android.presentation.ui.about.AboutScreen*",
+                    "app.kawkab.android.presentation.ui.about.AboutAcknowledgments*",
                     // Bottom-nav "More" hub Composable. The MoreViewModel /
                     // MoreUiState in the same package remain inside the gate.
-                    "app.knotwork.android.presentation.ui.more.MoreScreen*",
+                    "app.kawkab.android.presentation.ui.more.MoreScreen*",
                     // Provider picker and detail Compose screens under
                     // presentation/ui/settings/provider — covered by the
                     // catalog snapshot suite, not JVM unit tests.
-                    "app.knotwork.android.presentation.ui.settings.provider.ProviderPickerScreen*",
-                    "app.knotwork.android.presentation.ui.settings.provider.ProviderDetailScreen*",
+                    "app.kawkab.android.presentation.ui.settings.provider.ProviderPickerScreen*",
+                    "app.kawkab.android.presentation.ui.settings.provider.ProviderDetailScreen*",
                     // AppFunctions callee side: the `AgentAppFunctionService`
                     // entry point, the service and inventory the compiler
                     // generates next to it, and the `SearchAppFunction` body
                     // (unit-tested, but sharing the package). The service needs
                     // the Android 16 AppFunctions host to run.
-                    "app.knotwork.android.data.tools.local.appfunctions.*",
+                    "app.kawkab.android.data.tools.local.appfunctions.*",
                     // `data.services.*` is now covered by
                     // Robolectric tests (`AgentForegroundServiceTest`,
                     // `AgentWorkerTest`, `AgentIdleManagerTest`,
@@ -837,9 +837,9 @@ kover {
                     // Tool-execution Android glue (AppFunctions caller, search
                     // tool HTTP client, delegate-task LLM bridge) needs either
                     // an Android runtime or live LLM/HTTP fixtures.
-                    "app.knotwork.android.data.tools.local.LocalAppFunctionManager",
-                    "app.knotwork.android.data.tools.local.SearchTool*",
-                    "app.knotwork.android.data.tools.local.DelegateTaskTool*",
+                    "app.kawkab.android.data.tools.local.LocalAppFunctionManager",
+                    "app.kawkab.android.data.tools.local.SearchTool*",
+                    "app.kawkab.android.data.tools.local.DelegateTaskTool*",
                     // NOTE: `data.tools.local.executors.*` are pure JSON-arg
                     // parsers that delegate to the (excluded) Android-runtime
                     // tools above — they are JVM-unit-testable and covered by
@@ -856,7 +856,7 @@ kover {
                     // `getInstance()` paths are not exercised on the JVM. The
                     // `foss` no-op impl carries no logic and is covered by
                     // `NoOpCrashReportingRepositoryTest` (`src/testFoss`).
-                    "app.knotwork.android.data.logging.CrashlyticsTimberTree*",
+                    "app.kawkab.android.data.logging.CrashlyticsTimberTree*",
                 )
                 // Belt-and-braces: also skip any @Preview-annotated function that
                 // happens to live outside a *Preview.kt file.
@@ -906,15 +906,15 @@ tasks.named("check") { dependsOn("koverVerifyFullDebug") }
 tasks.named("check") { dependsOn("lintFossDebug") }
 
 // Enforces the "no internal FQN" rule for the
-// `app.knotwork.android.*` package. References like
-// `app.knotwork.android.domain.models.NodeType` outside `import`/`package`
+// `app.kawkab.android.*` package. References like
+// `app.kawkab.android.domain.models.NodeType` outside `import`/`package`
 // statements must be replaced with a top-level import + short name. KDoc
 // lines (whitespace-then-`*`) and the `.editorconfig` pinned ktlint rules
 // catch the rest (wildcard imports, unused imports, import ordering).
 val checkNoInternalFqn by tasks.registering {
     group = "verification"
     description =
-        "Fails the build if any internal `app.knotwork.android.*` FQN reference appears in source code " +
+        "Fails the build if any internal `app.kawkab.android.*` FQN reference appears in source code " +
         "outside of `import`/`package` statements or KDoc comments."
     val sourceRoots = listOf(
         "src/main/java",
@@ -1135,36 +1135,36 @@ val dialogInventoryAllowlist = mapOf(
     // ── Hosts. The sanctioned arrangement: the body lives in `:catalog` and
     // the host keeps the wrapper, because scrim, IME and navigation behaviour
     // belong to the screen.
-    "app/src/main/java/app/knotwork/android/presentation/ui/navigation/KnotworkModalRoute.kt" to
+    "app/src/main/java/app/kawkab/android/presentation/ui/navigation/KnotworkModalRoute.kt" to
         "Generic modal-route wrapper; it hosts whatever content a route supplies and composes none itself.",
-    "app/src/main/java/app/knotwork/android/presentation/ui/prompts/PromptLibraryScreen.kt" to
+    "app/src/main/java/app/kawkab/android/presentation/ui/prompts/PromptLibraryScreen.kt" to
         "Hosts the catalog's PromptEditorSheetBody.",
-    "app/src/main/java/app/knotwork/android/presentation/ui/taskmonitor/TaskMonitorScreen.kt" to
+    "app/src/main/java/app/kawkab/android/presentation/ui/taskmonitor/TaskMonitorScreen.kt" to
         "Hosts the catalog's TaskMonitorDetailSheetBody.",
-    "app/src/main/java/app/knotwork/android/presentation/ui/orchestrator/components/PromptPresetPickerDialog.kt" to
+    "app/src/main/java/app/kawkab/android/presentation/ui/orchestrator/components/PromptPresetPickerDialog.kt" to
         "Hosts the catalog's PromptPresetPickerSheet.",
-    "app/src/main/java/app/knotwork/android/presentation/ui/orchestrator/presets/PresetPickerSheet.kt" to
+    "app/src/main/java/app/kawkab/android/presentation/ui/orchestrator/presets/PresetPickerSheet.kt" to
         "Hosts the catalog's PresetPickerSheetBody.",
-    "app/src/main/java/app/knotwork/android/presentation/ui/pipeline/editor/sheet/NodeTypePickerSheet.kt" to
+    "app/src/main/java/app/kawkab/android/presentation/ui/pipeline/editor/sheet/NodeTypePickerSheet.kt" to
         "Hosts the catalog's NodeTypePickerSheetBody. Besides the wrapper it draws only the drag-handle " +
         "mark, because Material's own handle is a TalkBack stop.",
 
     // ── Deliberate deviations. Each composes its own dialog, and each has a
     // reason that is not "nobody got to it".
-    "app/src/main/java/app/knotwork/android/presentation/ui/onboarding/OnboardingScreen.kt" to
+    "app/src/main/java/app/kawkab/android/presentation/ui/onboarding/OnboardingScreen.kt" to
         "Exit confirmation whose affirmative action is a primary button rather than a text button — " +
         "a deliberate weight difference for the one dialog that closes the app. Folding it into " +
         "ConfirmDialog would change how it looks, which is a design decision and not a refactor.",
-    "app/src/main/java/app/knotwork/android/presentation/ui/orchestrator/PipelineLibraryScreen.kt" to
+    "app/src/main/java/app/kawkab/android/presentation/ui/orchestrator/PipelineLibraryScreen.kt" to
         "Three dialogs that are not yes/no questions: delete-with-dependents renders a pluralised " +
         "warning and the list of pipelines that would be left dangling, and the two import dialogs " +
         "offer a choice among several outcomes rather than a confirmation.",
-    "app/src/main/java/app/knotwork/android/presentation/ui/pipeline/editor/PipelineEditorScreen.kt" to
+    "app/src/main/java/app/kawkab/android/presentation/ui/pipeline/editor/PipelineEditorScreen.kt" to
         "The unsaved-changes dialog offers three actions — Save and leave, Discard, Cancel — so it " +
         "is not a ConfirmDialog. Save occupies the confirm slot deliberately; see the note there.",
 
     // ── Known remaining work, recorded rather than hidden.
-    "app/src/main/java/app/knotwork/android/presentation/ui/chat/home/ChatHomeScreen.kt" to
+    "app/src/main/java/app/kawkab/android/presentation/ui/chat/home/ChatHomeScreen.kt" to
         "Two sheets whose bodies are still private composables in `:app` (rename session, new-thread " +
         "pipeline picker). Found by this gate after the hand inventory had already been declared " +
         "complete — which is the argument for the gate. They are the next two to move.",
@@ -1192,21 +1192,21 @@ tasks.named("check") { dependsOn(verifyDialogInventory) }
 // `buildSrc` (`BrowserEditorConstantsGenerator`) and is unit-tested there.
 val browserEditorHtmlFile = file("$rootDir/pipeline-editor.html")
 val browserEditorNodeTypeFile =
-    file("$projectDir/src/main/java/app/knotwork/android/domain/models/NodeType.kt")
+    file("$projectDir/src/main/java/app/kawkab/android/domain/models/NodeType.kt")
 // Every node type's name and one-line description — the app's own texts. Read by
 // this generator (palette label and tooltip) and by the cookbook's (each entry's opening
 // sentence), so neither document keeps a copy of its own.
 val nodeTypeStringsFile = file("$rootDir/catalog/src/main/res/values/strings_node_types.xml")
 val browserEditorDefaultPromptsFile =
-    file("$projectDir/src/main/java/app/knotwork/android/domain/constants/DefaultPrompts.kt")
+    file("$projectDir/src/main/java/app/kawkab/android/domain/constants/DefaultPrompts.kt")
 val browserEditorPromptModuleFile =
-    file("$projectDir/src/main/java/app/knotwork/android/di/PromptTemplateModule.kt")
+    file("$projectDir/src/main/java/app/kawkab/android/di/PromptTemplateModule.kt")
 val browserEditorToolsModuleFile =
-    file("$projectDir/src/main/java/app/knotwork/android/di/LocalToolsModule.kt")
+    file("$projectDir/src/main/java/app/kawkab/android/di/LocalToolsModule.kt")
 // Provider `KEY` constants + tool `TOOL_NAME` constants the generator must resolve.
 val browserEditorClassSourceFiles: Set<File> = buildSet {
-    addAll(fileTree("$projectDir/src/main/java/app/knotwork/android/data/prompt") { include("**/*.kt") }.files)
-    addAll(fileTree("$projectDir/src/main/java/app/knotwork/android/data/tools/local") { include("**/*.kt") }.files)
+    addAll(fileTree("$projectDir/src/main/java/app/kawkab/android/data/prompt") { include("**/*.kt") }.files)
+    addAll(fileTree("$projectDir/src/main/java/app/kawkab/android/data/tools/local") { include("**/*.kt") }.files)
 }
 // The bundled presets and prompt templates the editor carries, plus the catalogue
 // that orders the presets.
@@ -1215,14 +1215,14 @@ val browserEditorPresetFiles: Set<File> =
 val browserEditorTemplateFiles: Set<File> =
     fileTree("$projectDir/src/main/assets/presets/prompts") { include("*.json") }.files
 val browserEditorPresetCatalogFile =
-    file("$projectDir/src/main/java/app/knotwork/android/domain/constants/BundledPresetCatalog.kt")
+    file("$projectDir/src/main/java/app/kawkab/android/domain/constants/BundledPresetCatalog.kt")
 // The app's own reading rules the editor's import is checked against (not generated from).
 val browserEditorSerializerFile =
-    file("$projectDir/src/main/java/app/knotwork/android/domain/pipelineio/PipelineJsonSerializer.kt")
+    file("$projectDir/src/main/java/app/kawkab/android/domain/pipelineio/PipelineJsonSerializer.kt")
 val browserEditorCloudProviderFile =
-    file("$projectDir/src/main/java/app/knotwork/android/domain/models/CloudProvider.kt")
+    file("$projectDir/src/main/java/app/kawkab/android/domain/models/CloudProvider.kt")
 val browserEditorRouteLabelsFile =
-    file("$projectDir/src/main/java/app/knotwork/android/domain/models/RouteLabels.kt")
+    file("$projectDir/src/main/java/app/kawkab/android/domain/models/RouteLabels.kt")
 // Every file whose content feeds the generated blocks; drives up-to-date checks.
 val browserEditorInputFiles: Set<File> = browserEditorClassSourceFiles + browserEditorPresetFiles +
     browserEditorTemplateFiles + setOf(
@@ -1277,11 +1277,11 @@ val generateBrowserEditorConstants by tasks.registering {
 // `verifySettingsHelpDocs` (wired into `check`) fails the build on drift.
 val settingsHelpGuideFile = file("$rootDir/docs/user-guide.md")
 val settingsHelpRegistryFile =
-    file("$projectDir/src/main/java/app/knotwork/android/domain/settings/SettingsRegistry.kt")
+    file("$projectDir/src/main/java/app/kawkab/android/domain/settings/SettingsRegistry.kt")
 val settingsHelpCatalogFile =
-    file("$projectDir/src/main/java/app/knotwork/android/presentation/ui/settings/SettingsHelpCatalog.kt")
+    file("$projectDir/src/main/java/app/kawkab/android/presentation/ui/settings/SettingsHelpCatalog.kt")
 val settingsSearchCatalogFile =
-    file("$projectDir/src/main/java/app/knotwork/android/presentation/ui/settings/SettingsSearchCatalog.kt")
+    file("$projectDir/src/main/java/app/kawkab/android/presentation/ui/settings/SettingsSearchCatalog.kt")
 val settingsHelpStringsFile = file("$projectDir/src/main/res/values/strings_settings_help.xml")
 val settingsNameStringsFiles = listOf(
     file("$projectDir/src/main/res/values/strings_settings_search.xml"),
@@ -1452,11 +1452,11 @@ tasks.named("check") { dependsOn(verifyBrowserEditorConstants) }
 // keeping both tasks configuration-cache compatible.
 val externalAutomationDocsFile = file("$rootDir/docs/external-automation.md")
 val externalAutomationContractFile =
-    file("$projectDir/src/main/java/app/knotwork/android/domain/constants/ExternalAutomationContract.kt")
+    file("$projectDir/src/main/java/app/kawkab/android/domain/constants/ExternalAutomationContract.kt")
 val externalAutomationStatusFile =
-    file("$projectDir/src/main/java/app/knotwork/android/domain/models/ExternalAutomationStatus.kt")
+    file("$projectDir/src/main/java/app/kawkab/android/domain/models/ExternalAutomationStatus.kt")
 val externalAutomationReasonFile =
-    file("$projectDir/src/main/java/app/knotwork/android/domain/models/ExternalAutomationRejectionReason.kt")
+    file("$projectDir/src/main/java/app/kawkab/android/domain/models/ExternalAutomationRejectionReason.kt")
 val externalAutomationInputFiles: Set<File> = setOf(
     externalAutomationContractFile,
     externalAutomationStatusFile,
@@ -1540,17 +1540,17 @@ tasks.named("check") { dependsOn(verifyExternalAutomationDocs) }
 // once; it is tracked rather than half-done here.
 val cookbookDocsFile = file("$rootDir/docs/cookbook.md")
 val cookbookDomainNodeTypeFile =
-    file("$projectDir/src/main/java/app/knotwork/android/domain/models/NodeType.kt")
+    file("$projectDir/src/main/java/app/kawkab/android/domain/models/NodeType.kt")
 val cookbookCatalogNodeTypeFile =
-    file("$rootDir/catalog/src/main/java/app/knotwork/design/components/pipelineeditor/NodeType.kt")
+    file("$rootDir/catalog/src/main/java/app/kawkab/design/components/pipelineeditor/NodeType.kt")
 val cookbookNodePortsFile =
-    file("$rootDir/catalog/src/main/java/app/knotwork/design/components/pipelineeditor/NodePorts.kt")
+    file("$rootDir/catalog/src/main/java/app/kawkab/design/components/pipelineeditor/NodePorts.kt")
 val cookbookNodeContextConfigFile =
-    file("$projectDir/src/main/java/app/knotwork/android/domain/models/NodeContextConfig.kt")
+    file("$projectDir/src/main/java/app/kawkab/android/domain/models/NodeContextConfig.kt")
 val cookbookNodeConfigFile =
-    file("$rootDir/catalog/src/main/java/app/knotwork/design/components/pipelineeditor/NodeConfig.kt")
+    file("$rootDir/catalog/src/main/java/app/kawkab/design/components/pipelineeditor/NodeConfig.kt")
 val cookbookDefaultPromptsFile =
-    file("$projectDir/src/main/java/app/knotwork/android/domain/constants/DefaultPrompts.kt")
+    file("$projectDir/src/main/java/app/kawkab/android/domain/constants/DefaultPrompts.kt")
 val cookbookInputFiles: Set<File> = setOf(
     cookbookDomainNodeTypeFile,
     cookbookCatalogNodeTypeFile,
@@ -1648,38 +1648,38 @@ tasks.named("check") { dependsOn(verifyCookbookDocs) }
 // declares a stamp and is skipped while nothing it reads has changed.
 val fileMapSpecs = listOf(
     FileMapSpec(
-        mapPath = "app/src/main/java/app/knotwork/android/FILE_MAP.md",
+        mapPath = "app/src/main/java/app/kawkab/android/FILE_MAP.md",
         blockId = "FILE_MAP",
-        roots = listOf(FileMapSpec.Root("app/src/main/java/app/knotwork/android")),
+        roots = listOf(FileMapSpec.Root("app/src/main/java/app/kawkab/android")),
         baselineKey = "app-main",
     ),
     FileMapSpec(
-        mapPath = "app/src/main/java/app/knotwork/android/FILE_MAP.md",
+        mapPath = "app/src/main/java/app/kawkab/android/FILE_MAP.md",
         blockId = "FILE_MAP_SOURCE_SETS",
         roots = listOf("full", "foss", "debug", "testFull", "testFoss").map { sourceSet ->
             FileMapSpec.Root(
-                dir = "app/src/$sourceSet/java/app/knotwork/android",
+                dir = "app/src/$sourceSet/java/app/kawkab/android",
                 prefix = "$sourceSet/",
             )
         },
         baselineKey = "app-source-sets",
     ),
     FileMapSpec(
-        mapPath = "app/src/test/java/app/knotwork/android/FILE_MAP.md",
+        mapPath = "app/src/test/java/app/kawkab/android/FILE_MAP.md",
         blockId = "FILE_MAP",
-        roots = listOf(FileMapSpec.Root("app/src/test/java/app/knotwork/android")),
+        roots = listOf(FileMapSpec.Root("app/src/test/java/app/kawkab/android")),
         baselineKey = "app-test",
     ),
     FileMapSpec(
-        mapPath = "app/src/androidTest/java/app/knotwork/android/FILE_MAP.md",
+        mapPath = "app/src/androidTest/java/app/kawkab/android/FILE_MAP.md",
         blockId = "FILE_MAP",
-        roots = listOf(FileMapSpec.Root("app/src/androidTest/java/app/knotwork/android")),
+        roots = listOf(FileMapSpec.Root("app/src/androidTest/java/app/kawkab/android")),
         baselineKey = "app-android-test",
     ),
     FileMapSpec(
         mapPath = "catalog/FILE_MAP.md",
         blockId = "FILE_MAP",
-        roots = listOf(FileMapSpec.Root("catalog/src/main/java/app/knotwork/design")),
+        roots = listOf(FileMapSpec.Root("catalog/src/main/java/app/kawkab/design")),
         baselineKey = "catalog",
     ),
     FileMapSpec(
@@ -1689,7 +1689,7 @@ val fileMapSpecs = listOf(
         // directory does not read as stale, it reads as complete.
         mapPath = "catalog/FILE_MAP.md",
         blockId = "FILE_MAP_TESTS",
-        roots = listOf(FileMapSpec.Root("catalog/src/test/java/app/knotwork/design")),
+        roots = listOf(FileMapSpec.Root("catalog/src/test/java/app/kawkab/design")),
         baselineKey = "catalog-test",
     ),
 )
@@ -1750,10 +1750,10 @@ val documentationLinkSources: FileCollection = files(
     fileTree("$rootDir/docs") { include("**/*.md") },
 )
 
-val documentationLinksPackage = "app.knotwork.android.domain.constants"
+val documentationLinksPackage = "app.kawkab.android.domain.constants"
 
 val documentationLinksFile =
-    file("$rootDir/app/src/main/java/app/knotwork/android/domain/constants/DocumentationLinks.kt")
+    file("$rootDir/app/src/main/java/app/kawkab/android/domain/constants/DocumentationLinks.kt")
 
 val generateDocumentationLinks by tasks.registering(GenerateDocumentationLinksTask::class) {
     group = "build"
@@ -2306,7 +2306,7 @@ val r8ProtectedPackages: List<String> = listOf("com.google.common.flogger.")
 val r8RequiredInstantiableClasses: List<String> = listOf(
     "com.google.protobuf.Any",
     "com.google.protobuf.UnknownFieldSetLite",
-    "app.knotwork.android.data.tools.local.appfunctions.KnotworkAppFunctionService",
+    "app.kawkab.android.data.tools.local.appfunctions.KnotworkAppFunctionService",
 )
 androidComponents {
     onVariants { variant ->
@@ -2725,8 +2725,8 @@ val verifyDocsHygiene by tasks.registering(VerifyDocsHygieneTask::class) {
     // change fixed — passing while covering nothing that mattered.
     requiredPrefixes.set(
         documentationRoots + listOf(
-            "app/src/main/java/app/knotwork/android/FILE_MAP.md",
-            "app/src/test/java/app/knotwork/android/FILE_MAP.md",
+            "app/src/main/java/app/kawkab/android/FILE_MAP.md",
+            "app/src/test/java/app/kawkab/android/FILE_MAP.md",
             "catalog/FILE_MAP.md",
         ),
     )

@@ -18,8 +18,8 @@ instructions stay accurate until the Kawkab docs replace them.
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 ![Version](https://img.shields.io/badge/version-0.12.1-orange.svg)
 ![Android API](https://img.shields.io/badge/Android-API%2034%2B-3DDC84.svg?logo=android)
-[![Google Play](https://img.shields.io/badge/Google%20Play-available-3DDC84.svg?logo=googleplay&logoColor=white)](https://play.google.com/store/apps/details?id=app.knotwork.android)
-[![F-Droid](https://img.shields.io/f-droid/v/app.knotwork.android.svg?logo=fdroid&logoColor=white)](https://f-droid.org/packages/app.knotwork.android/)
+[![Google Play](https://img.shields.io/badge/Google%20Play-available-3DDC84.svg?logo=googleplay&logoColor=white)](https://play.google.com/store/apps/details?id=app.kawkab.android)
+[![F-Droid](https://img.shields.io/f-droid/v/app.kawkab.android.svg?logo=fdroid&logoColor=white)](https://f-droid.org/packages/app.kawkab.android/)
 
 > **An AI agent you build, not just prompt.** A local-first Android agent whose
 > behaviour you assemble from explicit, verifiable blocks — and by default every
@@ -232,7 +232,7 @@ browser's `prefers-color-scheme`.
 
 ### From Google Play
 
-[**Knotwork on Google Play**](https://play.google.com/store/apps/details?id=app.knotwork.android)
+[**Knotwork on Google Play**](https://play.google.com/store/apps/details?id=app.kawkab.android)
 — the simplest route, and the one that updates itself. Requires Android 14+.
 
 The Play build is the `full` flavour described below. Google Play signs the
@@ -245,7 +245,7 @@ Which channel is signed by which key is set out in
 
 ### From F-Droid
 
-[**Knotwork on F-Droid**](https://f-droid.org/packages/app.knotwork.android/)
+[**Knotwork on F-Droid**](https://f-droid.org/packages/app.kawkab.android/)
 — the `foss` flavour, built by F-Droid from source. Requires Android 14+.
 
 F-Droid publishes a version only when its own build matches the APK on the

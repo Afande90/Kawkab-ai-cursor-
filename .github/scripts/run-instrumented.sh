@@ -45,7 +45,7 @@
 # Usable locally against a running emulator, which is the point of keeping it a
 # script rather than an inline YAML block:
 #   GRADLE_TASK=:app:connectedFullDebugAndroidTest \
-#   EXCLUDE_ANNOTATION=app.knotwork.android.testing.DeviceOnlyInstrumentedTest \
+#   EXCLUDE_ANNOTATION=app.kawkab.android.testing.DeviceOnlyInstrumentedTest \
 #   LOG_DIR=build/instrumented-logs .github/scripts/run-instrumented.sh
 
 set -uo pipefail

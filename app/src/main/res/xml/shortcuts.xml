@@ -16,8 +16,8 @@
         <intent
             android:action="android.intent.action.VIEW"
             android:data="knotwork://new-chat"
-            android:targetClass="app.knotwork.android.presentation.ui.MainActivity"
-            android:targetPackage="app.knotwork.android" />
+            android:targetClass="app.kawkab.android.presentation.ui.MainActivity"
+            android:targetPackage="app.kawkab.android" />
     </shortcut>
 
     <shortcut
@@ -29,7 +29,7 @@
         <intent
             android:action="android.intent.action.VIEW"
             android:data="knotwork://pipelines"
-            android:targetClass="app.knotwork.android.presentation.ui.MainActivity"
-            android:targetPackage="app.knotwork.android" />
+            android:targetClass="app.kawkab.android.presentation.ui.MainActivity"
+            android:targetPackage="app.kawkab.android" />
     </shortcut>
 </shortcuts>

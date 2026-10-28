@@ -1,7 +1,7 @@
 # Privacy Policy — Knotwork
 
 **Effective date:** 16 October 2026
-**Applies to:** the Knotwork Android application (package `app.knotwork.android`),
+**Applies to:** the Knotwork Android application (package `app.kawkab.android`),
 both published distributions — `full` and `foss` — from version `0.7.1` onward.
 
 ---

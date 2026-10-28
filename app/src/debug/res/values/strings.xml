@@ -6,5 +6,5 @@
       glance — including in the app switcher and the notification shade, where
       background runs of both would otherwise be indistinguishable.
     -->
-    <string name="app_name">Knotwork Debug</string>
+    <string name="app_name">Kawkab Debug</string>
 </resources>

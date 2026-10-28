@@ -10,8 +10,8 @@
  *
  * The Gradle tasks that drive them are registered in `app/build.gradle.kts`.
  * Most are ad-hoc task blocks; the file-map pair is a pair of typed task
- * classes ([app.knotwork.android.buildtools.GenerateFileMapTask] /
- * [app.knotwork.android.buildtools.VerifyFileMapTask]) declared here, which is
+ * classes ([app.kawkab.android.buildtools.GenerateFileMapTask] /
+ * [app.kawkab.android.buildtools.VerifyFileMapTask]) declared here, which is
  * why this module depends on `gradleApi()`.
  *
  * The `embedded-kotlin` plugin compiles this module with the Kotlin version
@@ -42,12 +42,12 @@ tasks.withType<Test>().configureEach {
     // without these inputs an edit to any of them left `:buildSrc:test` UP-TO-DATE
     // (measured).
     inputs.files(
-        "../app/src/main/java/app/knotwork/android/domain/constants/DefaultPrompts.kt",
-        "../app/src/main/java/app/knotwork/android/domain/models/NodeContextConfig.kt",
-        "../app/src/main/java/app/knotwork/android/domain/models/NodeType.kt",
-        "../catalog/src/main/java/app/knotwork/design/components/pipelineeditor/NodeConfig.kt",
-        "../catalog/src/main/java/app/knotwork/design/components/pipelineeditor/NodePorts.kt",
-        "../catalog/src/main/java/app/knotwork/design/components/pipelineeditor/NodeType.kt",
+        "../app/src/main/java/app/kawkab/android/domain/constants/DefaultPrompts.kt",
+        "../app/src/main/java/app/kawkab/android/domain/models/NodeContextConfig.kt",
+        "../app/src/main/java/app/kawkab/android/domain/models/NodeType.kt",
+        "../catalog/src/main/java/app/kawkab/design/components/pipelineeditor/NodeConfig.kt",
+        "../catalog/src/main/java/app/kawkab/design/components/pipelineeditor/NodePorts.kt",
+        "../catalog/src/main/java/app/kawkab/design/components/pipelineeditor/NodeType.kt",
         "../catalog/src/main/res/values/strings_node_types.xml",
     ).withPropertyName("cookbookGeneratorSources").withPathSensitivity(PathSensitivity.RELATIVE)
 }

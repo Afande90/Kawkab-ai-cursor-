@@ -472,7 +472,7 @@ failure classification — run the CI script itself against a booted
 emulator:
 
 ```bash
-GRADLE_TASK=:app:connectedFullDebugAndroidTest EXCLUDE_ANNOTATION=app.knotwork.android.testing.DeviceOnlyInstrumentedTest LOG_DIR=build/instrumented-logs bash .github/scripts/run-instrumented.sh
+GRADLE_TASK=:app:connectedFullDebugAndroidTest EXCLUDE_ANNOTATION=app.kawkab.android.testing.DeviceOnlyInstrumentedTest LOG_DIR=build/instrumented-logs bash .github/scripts/run-instrumented.sh
 ```
 
 ## What the automated gate does NOT cover

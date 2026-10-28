@@ -42,7 +42,7 @@
         The `<intent>` with the system AppFunctionService action makes the agent
         visible to every package that publishes an `@AppFunction` (the agent does not
         know their applicationIds at compile time). The end-to-end test's target,
-        `app.knotwork.android.toolsprobe`, is also named explicitly — in the debug
+        `app.kawkab.android.toolsprobe`, is also named explicitly — in the debug
         overlay, since the test runs on debug builds and a release build has no
         business seeing a package that exists only on a test device.
     -->
@@ -63,7 +63,7 @@
             journal — which is a `PackageManager` lookup and therefore filtered.
         -->
         <intent>
-            <action android:name="app.knotwork.android.action.RUN_RESULT" />
+            <action android:name="app.kawkab.android.action.RUN_RESULT" />
         </intent>
     </queries>
 
@@ -302,7 +302,7 @@
             tools:targetApi="36"
             tools:ignore="ExportedReceiver">
             <intent-filter>
-                <action android:name="app.knotwork.android.action.RUN_PIPELINE" />
+                <action android:name="app.kawkab.android.action.RUN_PIPELINE" />
             </intent-filter>
         </receiver>
     </application>

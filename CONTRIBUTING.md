@@ -70,7 +70,7 @@ Required toolchain:
 
 Debug and release install side by side:
 
-- The debug build uses the applicationId `app.knotwork.android.debug`
+- The debug build uses the applicationId `app.kawkab.android.debug`
   and the launcher label **Knotwork Debug**, so it never replaces (or
   shares data with) a release build already on the device. Its Firebase
   config is the placeholder in `app/src/debug/google-services.json`,

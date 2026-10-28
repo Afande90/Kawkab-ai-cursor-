@@ -44,7 +44,7 @@ means a document is being generated from a rule nobody is checking.
 | `:app:verifyForbiddenVocabulary`              | Fails if any public text file carries the product's pre-rename name or internal planning numbering (see below). |
 | `:app:verifyNoOrphanedKdoc` + `:catalog:verifyNoOrphanedKdoc` | Fails if a KDoc block documents no declaration — and so silently leaves the one below it undocumented (see below). |
 | `:app:verifyDialogInventory`                  | Fails if a dialog or sheet is composed in `:app` without a recorded reason, putting it out of reach of the design-system baselines (see below). |
-| `:app:checkNoInternalFqn`                     | Custom rule: forbid `app.knotwork.android.*` FQN references in code body (see below). |
+| `:app:checkNoInternalFqn`                     | Custom rule: forbid `app.kawkab.android.*` FQN references in code body (see below). |
 | `:app:verifyBrowserEditorConstants`           | Fails if `pipeline-editor.html` `AUTO-GEN` blocks drift from the domain sources and the bundled presets / prompt templates, if its node forms offer a control for a field no run reads, or if its export leaves out a run-time field it derives (see below). |
 | `:app:verifyDocsHygiene`                      | Custom rule: guard the public docs against LLM tool-call artifacts and internal-document references (see below). |
 | `:app:verifyExternalAutomationDocs`           | Fails if the `docs/external-automation.md` `AUTO-GEN` tables drift from the contract sources (see below). |
@@ -263,7 +263,7 @@ The dead ones were deleted. The ones that remain are listed in
 one line per suppressed rule:
 
 ```text
-app/src/main/java/app/knotwork/android/di/DataModule.kt :: class DataModule :: TooManyFunctions
+app/src/main/java/app/kawkab/android/di/DataModule.kt :: class DataModule :: TooManyFunctions
 ```
 
 `:app:verifySizeSuppressions` (wired into `check`) compares the sources with
@@ -436,7 +436,7 @@ committed baseline. Unlike the checks it protects, the guard is a legitimate gat
 — its verdict is a function of the committed baselines and nothing else.
 
 The pure scanner lives in `buildSrc`
-([`LintBaselineGuard`](../buildSrc/src/main/kotlin/app/knotwork/android/buildtools/LintBaselineGuard.kt))
+([`LintBaselineGuard`](../buildSrc/src/main/kotlin/app/kawkab/android/buildtools/LintBaselineGuard.kt))
 and holds the demoted-id list as its single declaration site: both lint blocks
 read it as `informational += LintBaselineGuard.DEMOTED_ISSUE_IDS`, so the set
 cannot drift between the modules and the guard. Its unit tests are not reachable
@@ -461,7 +461,7 @@ set, it runs as part of `:app:testFullDebugUnitTest` — no extra `check` wiring
 is needed.
 
 The suite lives in
-[`app/src/test/java/app/knotwork/android/architecture/`](../app/src/test/java/app/knotwork/android/architecture)
+[`app/src/test/java/app/kawkab/android/architecture/`](../app/src/test/java/app/kawkab/android/architecture)
 and is pinned to the `app` module's **production** source set
 (`app/src/main`) via the shared `ArchitectureScope`. The pin is deliberate:
 a whole-project Konsist scope would also parse test sources (which
@@ -654,7 +654,7 @@ the source: a contract member with no KDoc fails generation outright, because an
 undocumented member would otherwise publish an empty cell.
 
 The generation logic is a pure string transform in `buildSrc`
-([`ExternalAutomationDocsGenerator`](../buildSrc/src/main/kotlin/app/knotwork/android/buildtools/ExternalAutomationDocsGenerator.kt))
+([`ExternalAutomationDocsGenerator`](../buildSrc/src/main/kotlin/app/kawkab/android/buildtools/ExternalAutomationDocsGenerator.kt))
 and is unit-tested there (`./gradlew -p buildSrc test`), including idempotence,
 per-block drift detection, and the two failure modes above. The gate itself was
 verified by renaming a wire key and watching `check` fail with the drifted block
@@ -694,7 +694,7 @@ Regenerate with:
 ```
 
 Three things the generator cannot read out of the sources are hand-maintained in
-[`CookbookDocsGenerator`](../buildSrc/src/main/kotlin/app/knotwork/android/buildtools/CookbookDocsGenerator.kt):
+[`CookbookDocsGenerator`](../buildSrc/src/main/kotlin/app/kawkab/android/buildtools/CookbookDocsGenerator.kt):
 the reader-facing sentences that continue each type's one-line description (the
 domain KDoc is written for whoever implements an executor, not for whoever wires
 a pipeline), the per-field verdict
@@ -1192,7 +1192,7 @@ drafts that did exactly that: the first emitted **five rows for fifty-six
 settings** with its own check green.
 
 The logic is a pure string transform in `buildSrc`
-([`SettingsHelpDocsGenerator`](../buildSrc/src/main/kotlin/app/knotwork/android/buildtools/SettingsHelpDocsGenerator.kt)),
+([`SettingsHelpDocsGenerator`](../buildSrc/src/main/kotlin/app/kawkab/android/buildtools/SettingsHelpDocsGenerator.kt)),
 unit-tested there including idempotence, drift detection, a missing string
 resource, a display name that lives in another values file, and a crippled
 parser. The gate was verified by editing a help string without regenerating, by
@@ -1447,7 +1447,7 @@ copy) does not trip the guard.
 
 The scanning logic is a pure `Map<path, content> -> List<Violation>`
 transform in `buildSrc`
-([`DocsHygieneChecker`](../buildSrc/src/main/kotlin/app/knotwork/android/buildtools/DocsHygieneChecker.kt)),
+([`DocsHygieneChecker`](../buildSrc/src/main/kotlin/app/kawkab/android/buildtools/DocsHygieneChecker.kt)),
 so it is unit-tested there (`./gradlew -p buildSrc test`) with a fixture for
 every forbidden token and a clean-input case. The forbidden tokens are
 assembled from fragments at runtime so that neither the scanner's own source
@@ -1497,7 +1497,7 @@ it weekly and on demand, and publishes the report to the job summary; it must
 never be added to branch protection's required checks.
 
 Both read the links through one extractor
-([`MarkdownLinks`](../buildSrc/src/main/kotlin/app/knotwork/android/buildtools/MarkdownLinks.kt)),
+([`MarkdownLinks`](../buildSrc/src/main/kotlin/app/kawkab/android/buildtools/MarkdownLinks.kt)),
 so the gate and the report cannot end up disagreeing about what a link is.
 
 ### The two ways a link checker reports zero and is wrong
@@ -1747,7 +1747,7 @@ no gate, because it teaches everyone to distrust it.
 
 The list of known diagram types is a deliberate allowlist: adding a diagram of
 a type nobody has used here yet means adding it to
-[`MermaidBlockChecker`](../buildSrc/src/main/kotlin/app/knotwork/android/buildtools/MermaidBlockChecker.kt),
+[`MermaidBlockChecker`](../buildSrc/src/main/kotlin/app/kawkab/android/buildtools/MermaidBlockChecker.kt),
 and the failure message says so.
 
 ### Observed failing
@@ -2083,7 +2083,7 @@ hand inventory had already declared complete. The pure logic is unit-tested in
 
 ## Internal-FQN guard (`checkNoInternalFqn`)
 
-A fully-qualified `app.knotwork.android.…` reference in a code body is a type
+A fully-qualified `app.kawkab.android.…` reference in a code body is a type
 the file never imports: it hides a dependency from the import list — the one
 place a reader and the Konsist layer rules look for it — and it survives
 a package move as a string nobody searches for. `:app:checkNoInternalFqn` fails
@@ -2095,7 +2095,7 @@ What it deliberately leaves alone:
 - lines that start with `//` or `*` (line comments and the body of a KDoc
   block), where a fully-qualified name is prose;
 - **intent action strings.** Android namespaces an action by the application id
-  (`app.knotwork.android.action.RUN_PIPELINE`), so it reads exactly like an
+  (`app.kawkab.android.action.RUN_PIPELINE`), so it reads exactly like an
   internal name while being wire data that other apps send — nothing an import
   could replace, and frozen once a caller uses it. The action prefix is scrubbed
   from the line before matching rather than exempting the line, so a real
@@ -2215,7 +2215,7 @@ on purpose, since "all zero classes are identity-mapped" would be a vacuous
 pass hiding a dropped dependency.
 
 The parsing is a pure `String -> List<Violation>` transform in `buildSrc`
-([`R8MappingChecker`](../buildSrc/src/main/kotlin/app/knotwork/android/buildtools/R8MappingChecker.kt)),
+([`R8MappingChecker`](../buildSrc/src/main/kotlin/app/kawkab/android/buildtools/R8MappingChecker.kt)),
 unit-tested there (`./gradlew -p buildSrc test`) against an identity-mapped
 fixture, an obfuscated one, an absent-package one, and a member-line shape
 that must not be misparsed as a class. Protected packages are listed in
@@ -2234,7 +2234,7 @@ classpath. `*` and `?` stay within a package segment and `**` crosses them, as i
 ProGuard's syntax; names without a package (`*`, `**$$serializer`) match by
 construction. `-dontwarn` / `-dontnote` are not checked — naming absent classes is
 what they are for. The parser and matcher are
-[`KeepRuleTargets`](../buildSrc/src/main/kotlin/app/knotwork/android/buildtools/KeepRuleTargets.kt),
+[`KeepRuleTargets`](../buildSrc/src/main/kotlin/app/kawkab/android/buildtools/KeepRuleTargets.kt),
 unit-tested in `buildSrc`; the task refuses to pass when it finds no names or no
 classes.
 
@@ -2254,7 +2254,7 @@ packaging them as they are"* and ships them unstripped, so the artefact follows
 the host. The version is pinned in `gradle/libs.versions.toml`, and
 `:app:verify<Variant>PinnedNdk` runs before the strip step of every release build
 and fails unless `ndk/<version>` holds that revision with an `llvm-strip`
-([`PinnedNdk`](../buildSrc/src/main/kotlin/app/knotwork/android/buildtools/PinnedNdk.kt)).
+([`PinnedNdk`](../buildSrc/src/main/kotlin/app/kawkab/android/buildtools/PinnedNdk.kt)).
 `release.yml` installs the same version before building.
 
 **Observed failing** on a host carrying three other NDKs but not the pinned one —
@@ -2387,7 +2387,7 @@ keep any other provider out. They read the Java resources of each release
 variant's runtime classpath (the `android-java-res` view) and fail on a
 `META-INF/services/org.slf4j.spi.SLF4JServiceProvider` file that lists a class —
 the only way an SLF4J 2 provider registers
-([`Slf4jProviders`](../buildSrc/src/main/kotlin/app/knotwork/android/buildtools/Slf4jProviders.kt),
+([`Slf4jProviders`](../buildSrc/src/main/kotlin/app/kawkab/android/buildtools/Slf4jProviders.kt),
 unit-tested in `buildSrc`). They run in `check` and before R8 on every release
 build, and refuse to pass when they receive no resources.
 
@@ -2585,7 +2585,7 @@ class set covers:
 - Generated code (Hilt factories, Room `*_Impl`, AppDatabase, AutoMigrations,
   ComposableSingletons, `BuildConfig`, BR, DataBinding).
 - All `*Preview.kt` files and `@Preview`-annotated functions.
-- Hilt DI modules (`app.knotwork.android.di.*`).
+- Hilt DI modules (`app.kawkab.android.di.*`).
 - `App.kt` and `MainActivity` — Android-runtime-bound bootstrap.
 - All `*Screen` Composables and `presentation.ui.*.components.*`, plus the
   sub-packages `presentation.ui.navigation.*`,

@@ -53,3 +53,17 @@ Knotwork's `:app:verifyDocLinks` treats an inline-code span that looks like a re
   - `buildSrc` `test`: 501 tests
 
 No gate is BLOCKED.
+
+## 2026-10-28 — Rename scope
+
+Task 2 renames the install identity in one commit:
+
+- Packages `app.knotwork.android` and `app.knotwork.design` become `app.kawkab.android` and `app.kawkab.design`, including `tools-probe`, `buildSrc` and the Room schema directory `app.kawkab.android.data.local.AppDatabase`. The schema JSON files do not embed the package name; only the directory does.
+- `applicationId` and `namespace` follow the package.
+- Keystore aliases `knotwork.settings_secrets`, `knotwork.restore_staging`, `knotwork.api_keys` and `knotwork.db_passphrase` become the `kawkab.*` names. The SQLCipher database file stays `agent_database.db`. This is a new install identity, not an upgrade of an installed Knotwork, so the old aliases are not migrated.
+- Launcher name is `Kawkab` (`Kawkab Debug` on the debug variant). The English store title is `Kawkab` because `StoreMetadataTest` requires the English listing to be plain ASCII. The Russian store title is `Kawkab (كوكب)`. Store full descriptions say Kawkab. Fastlane changelogs stay as the historical Knotwork release notes.
+- `NOTICE` keeps the upstream Knotwork copyright and adds a Kawkab header. The About screen lists Knotwork (Apache 2.0) first among acknowledgments.
+- In-app copy that still says Knotwork (onboarding title, theme type names, the `knotwork://` deep-link scheme, the `knotwork_app_functions` asset name, the `.knotwork` backup extension) stays for this commit. Rewriting it would invalidate the screenshot goldens and is not in the spec's rename list. The Arabic launcher string `كوكب` waits for the full `values-ar` pass in task 7, so a partial translation file does not exist yet.
+- Gradle `rootProject.name` stays `android-ai-agent`.
+- One screenshot golden, `catalog/src/test/snapshots/external_automation_journal_call_block_light.png`, was re-recorded in this same commit. The preview action string changed from `app.knotwork.android.action.RUN_PIPELINE` to `app.kawkab.android.action.RUN_PIPELINE`, and that is the only pixel difference. The comparison threshold was not changed. The task requires this rename to be one commit with a green build, so the golden could not wait for a later commit.
+

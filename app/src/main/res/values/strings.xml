@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Knotwork</string>
+    <string name="app_name">Kawkab</string>
 
     <!-- Approval notification (Human-in-the-loop fallback when chat is not visible) -->
     <string name="approval_channel_sensitive_name">Agent Approvals</string>

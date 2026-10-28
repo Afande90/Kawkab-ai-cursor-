@@ -85,8 +85,8 @@ repeat it.
 
 | Constant | Wire key | Meaning |
 | --- | --- | --- |
-| `ACTION_RUN_PIPELINE` | `app.knotwork.android.action.RUN_PIPELINE` | Broadcast action a caller sends to ask the app to run a pipeline. |
-| `ACTION_RUN_RESULT` | `app.knotwork.android.action.RUN_RESULT` | Default broadcast action of the terminal callback. Used when a caller asks for a callback without naming an action of its own. |
+| `ACTION_RUN_PIPELINE` | `app.kawkab.android.action.RUN_PIPELINE` | Broadcast action a caller sends to ask the app to run a pipeline. |
+| `ACTION_RUN_RESULT` | `app.kawkab.android.action.RUN_RESULT` | Default broadcast action of the terminal callback. Used when a caller asks for a callback without naming an action of its own. |
 | `EXTRA_PIPELINE_ID` | `pipeline_id` | Request key: id of the pipeline to run. Mutually exclusive with `EXTRA_PIPELINE_NAME`. |
 | `EXTRA_PIPELINE_NAME` | `pipeline_name` | Request key: user-visible name of the pipeline to run. Mutually exclusive with `EXTRA_PIPELINE_ID`. |
 | `EXTRA_PROMPT` | `prompt` | Request key: the prompt to run the pipeline on, as plain text. Mutually exclusive with `EXTRA_PROMPT_B64`. |
@@ -136,7 +136,7 @@ Three callers, one broadcast. Two things are true of all of them:
   woken by one. Every example below sets the package for that reason, not for
   tidiness.
 - **The package is also which build you are calling.** A debug build installs
-  alongside the release one as `app.knotwork.android.debug`, and the action
+  alongside the release one as `app.kawkab.android.debug`, and the action
   string is identical in both. If you have both installed, the package field is
   the only thing deciding which of them runs your pipeline.
 
@@ -146,10 +146,10 @@ A task action of **System → Send Intent**:
 
 | Field | Value |
 | --- | --- |
-| Action | `app.knotwork.android.action.RUN_PIPELINE` |
+| Action | `app.kawkab.android.action.RUN_PIPELINE` |
 | Extra | `pipeline_name:Morning brief` |
 | Extra | `prompt:%SOMEVARIABLE` |
-| Package | `app.knotwork.android` |
+| Package | `app.kawkab.android` |
 | Target | **Broadcast Receiver** |
 
 Leave *Cat*, *Mime Type*, *Data* and *Class* empty.
@@ -169,7 +169,7 @@ usually the easier one:
   has no field limit either — while Tasker handles the answer.
 
 To receive the callback, use an **Intent Received** event with *Action* set to
-whatever you passed as `return_action` (or `app.knotwork.android.action.RUN_RESULT`
+whatever you passed as `return_action` (or `app.kawkab.android.action.RUN_RESULT`
 if you passed none). Tasker hands each extra to the task as a local variable
 named after its key — lowercased, with anything non-alphanumeric turned into an
 underscore — so the callback's three keys arrive as `%request_id`, `%status` and
@@ -182,8 +182,8 @@ An action of **Send Intent** with *Intent target* set to **Broadcast**:
 
 | Field | Value |
 | --- | --- |
-| Action | `app.knotwork.android.action.RUN_PIPELINE` |
-| Package | `app.knotwork.android` |
+| Action | `app.kawkab.android.action.RUN_PIPELINE` |
+| Package | `app.kawkab.android` |
 | Extra 1 | `pipeline_name` = `Morning brief` (String) |
 | Extra 2 | `prompt` = `Summarise today's calendar` (String) |
 | Extra 3 | `request_id` = `md-0001` (String) |
@@ -212,13 +212,13 @@ keeps the inner quotes intact all the way to the device.
 The minimum call, from a shell:
 
 ```bash
-adb shell "am broadcast -a app.knotwork.android.action.RUN_PIPELINE -p app.knotwork.android --es pipeline_name 'Morning brief' --es prompt 'What is on my calendar today?'"
+adb shell "am broadcast -a app.kawkab.android.action.RUN_PIPELINE -p app.kawkab.android --es pipeline_name 'Morning brief' --es prompt 'What is on my calendar today?'"
 ```
 
 When the text fights your shell's quoting, send it base64-encoded instead:
 
 ```bash
-adb shell "am broadcast -a app.knotwork.android.action.RUN_PIPELINE -p app.knotwork.android --es pipeline_name 'Morning brief' --es prompt_b64 '$(printf %s 'Anything with "quotes", $signs and newlines' | base64 | tr -d '\n')'"
+adb shell "am broadcast -a app.kawkab.android.action.RUN_PIPELINE -p app.kawkab.android --es pipeline_name 'Morning brief' --es prompt_b64 '$(printf %s 'Anything with "quotes", $signs and newlines' | base64 | tr -d '\n')'"
 ```
 
 The `$(...)` still runs on your own machine — the device never sees it — so the

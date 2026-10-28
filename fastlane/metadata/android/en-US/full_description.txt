@@ -1,4 +1,4 @@
-Knotwork is an AI agent that runs its model on the phone. Instead of a prompt box wired to somebody's API, every conversation runs through a pipeline you can open and edit: a graph of typed nodes - input, on-device LLM, optional cloud LLM, tool call, routing, decomposition, evaluation, clarification, output. When a step wants to do something destructive or sensitive, it stops and asks you first - including in the background, where the confirmation arrives as a notification.
+Kawkab is an AI agent that runs its model on the phone. Instead of a prompt box wired to somebody's API, every conversation runs through a pipeline you can open and edit: a graph of typed nodes - input, on-device LLM, optional cloud LLM, tool call, routing, decomposition, evaluation, clarification, output. When a step wants to do something destructive or sensitive, it stops and asks you first - including in the background, where the confirmation arrives as a notification.
 
 WHAT IT DOES
 

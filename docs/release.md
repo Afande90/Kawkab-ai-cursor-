@@ -287,7 +287,7 @@ signing setup changes:
   file and are not affected.
 
   ```bash
-  adb shell pm path app.knotwork.android   # several lines; pull base.apk
+  adb shell pm path app.kawkab.android   # several lines; pull base.apk
   adb pull <path to base.apk> play-base.apk
   apksigner verify --print-certs --min-sdk-version 24 --max-sdk-version 36 play-base.apk
   ```

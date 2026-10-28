@@ -1,0 +1,417 @@
+package app.kawkab.android.data.network
+
+import androidx.work.Data
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequest
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
+import androidx.work.workDataOf
+import app.kawkab.android.data.services.DownloadForegroundBudget
+import app.kawkab.android.data.services.DownloadInterruptionStore
+import app.kawkab.android.data.services.ModelDownloadOutcomeNotifier
+import app.kawkab.android.data.services.ModelDownloadWorker
+import app.kawkab.android.domain.models.DownloadState
+import app.kawkab.android.domain.models.ModelDownloadFailure
+import app.kawkab.android.domain.repositories.InterruptedDownload
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
+import io.mockk.verifyOrder
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+
+/**
+ * Covers the projection of background work onto the download state the UI
+ * speaks, and the enqueue policy behind it.
+ *
+ * The uniqueness policy carries real weight: re-entering the download screen
+ * must attach to the transfer already running rather than start a second copy
+ * of a multi-gigabyte download.
+ */
+@RunWith(RobolectricTestRunner::class)
+class AndroidModelDownloadManagerTest {
+
+    private lateinit var workManager: WorkManager
+    private lateinit var foregroundBudget: DownloadForegroundBudget
+    private lateinit var interruptions: DownloadInterruptionStore
+    private lateinit var notifier: ModelDownloadOutcomeNotifier
+    private lateinit var manager: AndroidModelDownloadManager
+
+    @Before
+    fun setUp() {
+        workManager = mockk(relaxed = true)
+        foregroundBudget = mockk(relaxed = true)
+        interruptions = mockk(relaxed = true)
+        notifier = mockk(relaxed = true)
+        manager = AndroidModelDownloadManager(workManager, foregroundBudget, interruptions, notifier)
+    }
+
+    @Test
+    fun `given a requested download when it is enqueued then the foreground budget starts over`() = runTest {
+        stubWorkInfos(
+            workInfo(
+                WorkInfo.State.SUCCEEDED,
+                output = workDataOf(ModelDownloadWorker.KEY_OUTPUT_PATH to "/models/m.bin"),
+            ),
+        )
+
+        manager.downloadModel("http://example.com/m.bin", "m.bin").toList()
+
+        // The user is on screen at this moment, so Android's own daily count
+        // starts over too — which is what makes resetting here honest.
+        verifyOrder {
+            foregroundBudget.reset()
+            workManager.enqueueUniqueWork(any<String>(), any(), any<OneTimeWorkRequest>())
+        }
+    }
+
+    @Test
+    fun `given a requested download when observed then work is enqueued as unique and kept`() = runTest {
+        stubWorkInfos(
+            workInfo(
+                WorkInfo.State.SUCCEEDED,
+                output = workDataOf(
+                    ModelDownloadWorker.KEY_OUTPUT_PATH to "/models/m.bin",
+                ),
+            ),
+        )
+
+        manager.downloadModel("http://example.com/m.bin", "m.bin").toList()
+
+        verify(exactly = 1) {
+            workManager.enqueueUniqueWork(
+                "model-download-m.bin",
+                ExistingWorkPolicy.KEEP,
+                any<OneTimeWorkRequest>(),
+            )
+        }
+    }
+
+    @Test
+    fun `given a run from enqueued to success when observed then states mirror the transfer`() = runTest {
+        stubWorkInfos(
+            workInfo(WorkInfo.State.ENQUEUED),
+            workInfo(WorkInfo.State.RUNNING, progress = workDataOf(ModelDownloadWorker.KEY_PROGRESS to 42)),
+            workInfo(
+                WorkInfo.State.SUCCEEDED,
+                output = workDataOf(ModelDownloadWorker.KEY_OUTPUT_PATH to "/models/m.bin"),
+            ),
+        )
+
+        val states = manager.downloadModel("http://example.com/m.bin", "m.bin").toList()
+
+        assertEquals(
+            listOf(
+                DownloadState.Pending,
+                DownloadState.Downloading(42),
+                DownloadState.Success("/models/m.bin"),
+            ),
+            states,
+        )
+    }
+
+    @Test
+    fun `given a running worker with no progress yet when observed then it reports zero`() = runTest {
+        stubWorkInfos(workInfo(WorkInfo.State.RUNNING))
+
+        val states = manager.downloadModel("http://example.com/m.bin", "m.bin").toList()
+
+        assertEquals(listOf(DownloadState.Downloading(0)), states)
+    }
+
+    @Test
+    fun `given the network drops mid-download when the worker is re-queued then the percent holds`() = runTest {
+        stubWorkInfos(
+            workInfo(WorkInfo.State.RUNNING, progress = workDataOf(ModelDownloadWorker.KEY_PROGRESS to 26)),
+            // Losing the network stops the worker; WorkManager clears its
+            // progress and re-queues it behind the network constraint.
+            workInfo(WorkInfo.State.ENQUEUED),
+            // It comes back and resumes — briefly before the first percent tick.
+            workInfo(WorkInfo.State.RUNNING),
+            workInfo(WorkInfo.State.RUNNING, progress = workDataOf(ModelDownloadWorker.KEY_PROGRESS to 31)),
+        )
+
+        val states = manager.downloadModel("http://example.com/m.bin", "m.bin").toList()
+
+        // The bytes never left the disk, so the figure must not fall back to
+        // zero and tell the user they lost 26 % of a multi-gigabyte download.
+        assertEquals(
+            listOf(DownloadState.Downloading(26), DownloadState.Downloading(31)),
+            states,
+        )
+    }
+
+    @Test
+    fun `given a failed worker when observed then the message and HTTP status survive`() = runTest {
+        stubWorkInfos(
+            workInfo(
+                WorkInfo.State.FAILED,
+                output = workDataOf(
+                    ModelDownloadWorker.KEY_ERROR to "Server returned code: 401",
+                    ModelDownloadWorker.KEY_ERROR_CODE to 401,
+                ),
+            ),
+        )
+
+        val states = manager.downloadModel("http://example.com/m.bin", "m.bin").toList()
+
+        val error = (states.single() as DownloadState.Error).error as AndroidModelDownloadManager.DownloadError
+        assertEquals("Server returned code: 401", error.message)
+        // The Discover screen branches on this to offer the token flow.
+        assertEquals(401, error.code)
+    }
+
+    @Test
+    fun `given a transport failure when observed then no HTTP status is invented`() = runTest {
+        stubWorkInfos(
+            workInfo(
+                WorkInfo.State.FAILED,
+                output = workDataOf(
+                    ModelDownloadWorker.KEY_ERROR to "Network timeout",
+                    ModelDownloadWorker.KEY_ERROR_CODE to ModelDownloadWorker.NO_HTTP_CODE,
+                ),
+            ),
+        )
+
+        val states = manager.downloadModel("http://example.com/m.bin", "m.bin").toList()
+
+        val error = (states.single() as DownloadState.Error).error as AndroidModelDownloadManager.DownloadError
+        assertEquals(null, error.code)
+        assertEquals(ModelDownloadFailure.OTHER, error.failure)
+    }
+
+    @Test
+    fun `given a file that failed its checksum when observed then the failure is named`() = runTest {
+        stubWorkInfos(
+            workInfo(
+                WorkInfo.State.FAILED,
+                output = workDataOf(
+                    ModelDownloadWorker.KEY_ERROR to "did not match",
+                    ModelDownloadWorker.KEY_ERROR_CODE to ModelDownloadWorker.NO_HTTP_CODE,
+                    ModelDownloadWorker.KEY_FAILURE to "CHECKSUM_MISMATCH",
+                ),
+            ),
+        )
+
+        val states = manager.downloadModel("http://example.com/m.bin", "m.bin").toList()
+
+        // A screen words this itself — free text is not something to branch on.
+        val error = (states.single() as DownloadState.Error).error as AndroidModelDownloadManager.DownloadError
+        assertEquals(ModelDownloadFailure.CHECKSUM_MISMATCH, error.failure)
+    }
+
+    @Test
+    fun `given a failure name this build does not know when observed then it reads as any other failure`() = runTest {
+        stubWorkInfos(
+            workInfo(
+                WorkInfo.State.FAILED,
+                output = workDataOf(
+                    ModelDownloadWorker.KEY_ERROR to "x",
+                    ModelDownloadWorker.KEY_FAILURE to "FROM_A_LATER_BUILD",
+                ),
+            ),
+        )
+
+        val states = manager.downloadModel("http://example.com/m.bin", "m.bin").toList()
+
+        val error = (states.single() as DownloadState.Error).error as AndroidModelDownloadManager.DownloadError
+        assertEquals(ModelDownloadFailure.OTHER, error.failure)
+    }
+
+    @Test
+    fun `given a cancelled download when observed then the stream ends without a terminal state`() = runTest {
+        stubWorkInfos(
+            workInfo(WorkInfo.State.RUNNING, progress = workDataOf(ModelDownloadWorker.KEY_PROGRESS to 12)),
+            workInfo(WorkInfo.State.CANCELLED),
+        )
+
+        val states = manager.downloadModel("http://example.com/m.bin", "m.bin").toList()
+
+        // The user who cancelled needs neither an error nor a success.
+        assertEquals(listOf(DownloadState.Downloading(12)), states)
+    }
+
+    @Test
+    fun `given no work info yet when observed then the stream keeps waiting`() = runTest {
+        every { workManager.getWorkInfosForUniqueWorkFlow(any()) } returns flowOf(
+            emptyList(),
+            listOf(workInfo(WorkInfo.State.RUNNING, progress = workDataOf(ModelDownloadWorker.KEY_PROGRESS to 7))),
+        )
+
+        val states = manager.downloadModel("http://example.com/m.bin", "m.bin").toList()
+
+        // An empty list means the observation raced the enqueue — reporting a
+        // finished download there would strand the caller.
+        assertEquals(listOf(DownloadState.Downloading(7)), states)
+    }
+
+    @Test
+    fun `given nothing running when observing only then the stream ends without enqueueing`() = runTest {
+        stubWorkInfos(
+            workInfo(
+                WorkInfo.State.SUCCEEDED,
+                output = workDataOf(
+                    ModelDownloadWorker.KEY_OUTPUT_PATH to "/models/m.bin",
+                ),
+            ),
+        )
+
+        val states = manager.observeDownload("m.bin").toList()
+
+        // Restoring a screen must not resurrect a download that already ended…
+        assertEquals(emptyList<DownloadState>(), states)
+        // …nor start one.
+        verify(exactly = 0) {
+            workManager.enqueueUniqueWork(any<String>(), any<ExistingWorkPolicy>(), any<OneTimeWorkRequest>())
+        }
+    }
+
+    @Test
+    fun `given a live download when observing only then it is followed to its terminal state`() = runTest {
+        stubWorkInfos(
+            workInfo(WorkInfo.State.RUNNING, progress = workDataOf(ModelDownloadWorker.KEY_PROGRESS to 64)),
+            workInfo(
+                WorkInfo.State.SUCCEEDED,
+                output = workDataOf(ModelDownloadWorker.KEY_OUTPUT_PATH to "/models/m.bin"),
+            ),
+        )
+
+        val states = manager.observeDownload("m.bin").toList()
+
+        assertEquals(
+            listOf(DownloadState.Downloading(64), DownloadState.Success("/models/m.bin")),
+            states,
+        )
+    }
+
+    @Test
+    fun `given a tagged live download when enumerating then its file name comes back`() = runTest {
+        every { workManager.getWorkInfosByTagFlow(any()) } returns flowOf(
+            listOf(
+                workInfo(
+                    WorkInfo.State.RUNNING,
+                    progress = workDataOf(ModelDownloadWorker.KEY_PROGRESS to 12),
+                    tags = setOf("model-download", "model-download-file:m.bin"),
+                ),
+            ),
+        )
+
+        val active = manager.observeActiveDownload().toList().single()
+
+        // The file name is what a returning screen cannot know on its own, and
+        // WorkInfo exposes tags but not input data — hence the tag.
+        assertEquals("m.bin", active?.fileName)
+        assertEquals(DownloadState.Downloading(12), active?.state)
+    }
+
+    @Test
+    fun `given only finished work when enumerating then nothing is reported as active`() = runTest {
+        every { workManager.getWorkInfosByTagFlow(any()) } returns flowOf(
+            listOf(workInfo(WorkInfo.State.SUCCEEDED, tags = setOf("model-download-file:m.bin"))),
+        )
+
+        assertEquals(listOf(null), manager.observeActiveDownload().toList())
+    }
+
+    @Test
+    fun `given a cancel request when issued then the unique work is cancelled by file name`() {
+        manager.cancelDownload("m.bin")
+
+        verify(exactly = 1) { workManager.cancelUniqueWork("model-download-m.bin") }
+    }
+
+    @Test
+    fun `given a download that stopped when it is started again then why it stopped is dropped first`() = runTest {
+        stubWorkInfos(workInfo(WorkInfo.State.CANCELLED))
+
+        manager.downloadModel("http://example.com/m.bin", "m.bin").toList()
+
+        // Starting it again answers the notice: the pause it continues, the mismatch it downloads past.
+        verifyOrder {
+            interruptions.clear("m.bin")
+            notifier.dismiss("m.bin")
+            workManager.enqueueUniqueWork("model-download-m.bin", any<ExistingWorkPolicy>(), any<OneTimeWorkRequest>())
+        }
+    }
+
+    @Test
+    fun `given a stopped download when it is cancelled then why it stopped and its notice go`() {
+        manager.cancelDownload("m.bin")
+
+        verify(exactly = 1) { interruptions.clear("m.bin") }
+        verify(exactly = 1) { notifier.dismiss("m.bin") }
+    }
+
+    @Test
+    fun `given an interruption a screen showed when acknowledged then its record and notice go`() {
+        manager.acknowledgeInterruption("m.bin")
+
+        verify(exactly = 1) { interruptions.clear("m.bin") }
+        verify(exactly = 1) { notifier.dismiss("m.bin") }
+        verify(exactly = 0) { workManager.cancelUniqueWork(any()) }
+    }
+
+    @Test
+    fun `given recorded interruptions when observed then the store's records come through`() = runTest {
+        val stopped =
+            InterruptedDownload("m.bin", "http://example.com/m.bin", ModelDownloadFailure.PAUSED_TIME_LIMIT, "x")
+        every { interruptions.observe() } returns flowOf(listOf(stopped))
+
+        assertEquals(listOf(listOf(stopped)), manager.observeInterruptedDownloads().toList())
+    }
+
+    @Test
+    fun `given a download for a nested name when enqueued then the work name stays unique per file`() = runTest {
+        stubWorkInfos(workInfo(WorkInfo.State.CANCELLED))
+
+        manager.downloadModel("http://example.com/m.bin", "q4/model.litertlm").toList()
+
+        verify {
+            workManager.enqueueUniqueWork(
+                "model-download-q4/model.litertlm",
+                ExistingWorkPolicy.KEEP,
+                any<OneTimeWorkRequest>(),
+            )
+        }
+    }
+
+    @Test
+    fun `given an HTTP status when read then only 401 and 403 are refusals for access`() {
+        val refused = listOf(null, 400, 401, 403, 404, 416, 500)
+            .filter { AndroidModelDownloadManager.DownloadError("x", code = it).accessRefused }
+
+        assertEquals(listOf(401, 403), refused)
+    }
+
+    @Test
+    fun `given why a download stopped when read then only a pause and a checksum mismatch were recorded`() {
+        val recorded = ModelDownloadFailure.entries
+            .filter { AndroidModelDownloadManager.DownloadError("x", failure = it).recordedInterruption }
+            .toSet()
+
+        assertEquals(setOf(ModelDownloadFailure.CHECKSUM_MISMATCH, ModelDownloadFailure.PAUSED_TIME_LIMIT), recorded)
+    }
+
+    private fun stubWorkInfos(vararg infos: WorkInfo) {
+        val frames = infos.map { listOf(it) }.toTypedArray()
+        every { workManager.getWorkInfosForUniqueWorkFlow(any()) } returns flowOf(*frames)
+    }
+
+    private fun workInfo(
+        state: WorkInfo.State,
+        progress: Data = Data.EMPTY,
+        output: Data = Data.EMPTY,
+        tags: Set<String> = emptySet(),
+    ): WorkInfo = mockk {
+        every { this@mockk.state } returns state
+        every { this@mockk.progress } returns progress
+        every { outputData } returns output
+        every { this@mockk.tags } returns tags
+    }
+}
