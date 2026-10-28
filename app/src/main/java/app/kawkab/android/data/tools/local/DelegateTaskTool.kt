@@ -18,8 +18,8 @@ import javax.inject.Inject
 
 /**
  * A specialized tool designed for the main (local) AI agent to delegate complex or
- * specialized tasks to powerful external Large Language Models (LLMs) such as Claude,
- * OpenAI, or Gemini, through the same client factory and model resolver as a Cloud node.
+ * specialized tasks to powerful external Large Language Models (LLMs) such as Gemini,
+ * OpenAI, or DeepSeek, through the same client factory and model resolver as a Cloud node.
  *
  * This class exposes a function that the local agent can call. When called,
  * it routes the prompt to the specified external model, awaits the response asynchronously,

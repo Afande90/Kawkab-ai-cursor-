@@ -78,11 +78,11 @@ class ProviderDetailProjectionTest {
 
     @Test
     fun `given a built-in list and a saved model it no longer offers then the note says which is used instead`() {
-        val state = view(ProviderId.Anthropic, ProviderDetailUiState(apiKey = "sk-1", model = "claude-3-opus"))
+        val state = view(ProviderId.Google, ProviderDetailUiState(apiKey = "sk-1", model = "gemini-2.5-pro"))
 
-        assertEquals("claude-3-opus", state.model.value)
+        assertEquals("gemini-2.5-pro", state.model.value)
         assertEquals(
-            "claude-3-opus is no longer offered — runs use claude-sonnet-4-6. Choose a model above.",
+            "gemini-2.5-pro is no longer offered — runs use gemini-3-flash-preview. Choose a model above.",
             state.model.note,
         )
     }

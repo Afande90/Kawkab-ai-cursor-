@@ -164,7 +164,7 @@ naming:
     active: true
     ignoreAnnotated: ['Composable']
 
-# Enforce the KDoc rule from CLAUDE.md ("every public
+# Enforce the KDoc rule ("every public
 # class/interface/method/property must have exhaustive KDoc"). Scope is
 # intentionally narrow: only `domain/` (business contracts) and
 # `data/repositories/` (concrete repository implementations) — UI layers are

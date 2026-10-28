@@ -46,7 +46,7 @@ class PipelineJsonSerializerTest {
                 y = 80f,
                 label = "Brain",
                 systemPrompt = "You are an agent.",
-                cloudProvider = "anthropic",
+                cloudProvider = "google",
                 contextConfig = NodeContextConfig(
                     chatHistory = true,
                     originalTask = true,
@@ -121,7 +121,7 @@ class PipelineJsonSerializerTest {
         // Field-level checks for representative node types
         val cloud = parsed.nodes.first { it.type == NodeType.CLOUD }
         assertEquals("Brain", cloud.label)
-        assertEquals("anthropic", cloud.cloudProvider)
+        assertEquals("google", cloud.cloudProvider)
         assertEquals("You are an agent.", cloud.systemPrompt)
         assertEquals(false, cloud.contextConfig.longTermMemory)
 
@@ -399,7 +399,7 @@ class PipelineJsonSerializerTest {
     }
 
     /** A one-node document: a CLOUD node with the given `contextConfig` block and provider id. */
-    private fun cloudNodeDocument(contextConfig: String, cloudProvider: String = "anthropic") = """
+    private fun cloudNodeDocument(contextConfig: String, cloudProvider: String = "google") = """
         {
           "schemaVersion": 1, "id":"p", "name":"x", "updatedAt": 0,
           "nodes":[{"id":"n1","type":"CLOUD","position":{"x":0,"y":0},
@@ -493,7 +493,7 @@ class PipelineJsonSerializerTest {
 
     @Test
     fun `given known provider ids in any letter case when parse then the import succeeds and keeps them`() {
-        listOf("Anthropic", "GEMINI", "auto", "AUTO", "ollama").forEach { id ->
+        listOf("Google", "GEMINI", "auto", "AUTO", "ollama").forEach { id ->
             assertEquals(id, parsedNode(cloudNodeDocument("{}", cloudProvider = id)).cloudProvider)
         }
     }
@@ -546,8 +546,8 @@ class PipelineJsonSerializerTest {
     @Test
     fun `serialize then parse round-trips the rich nodeConfig payload`() {
         val payload = """
-            {"v":1,"type":"CLOUD","title":"Brain","provider":"ANTHROPIC",
-             "model":"claude","systemPrompt":"You are an agent.",
+            {"v":1,"type":"CLOUD","title":"Brain","provider":"GOOGLE",
+             "model":"gemini","systemPrompt":"You are an agent.",
              "temperature":0.7,"maxTokens":1024,"timeoutMs":30000}
         """.trimIndent()
         val graph = graphWithCloudConfigJson(payload)
@@ -561,11 +561,11 @@ class PipelineJsonSerializerTest {
         assertNotNull(cloud.configJson)
         val parsed = JSONObject(cloud.configJson!!)
         assertEquals(1, parsed.getInt("v"))
-        assertEquals("ANTHROPIC", parsed.getString("provider"))
+        assertEquals("GOOGLE", parsed.getString("provider"))
         assertEquals(0.7, parsed.getDouble("temperature"), 0.0001)
         assertEquals(1024, parsed.getInt("maxTokens"))
         // The flat config remains authoritative for the runtime.
-        assertEquals("anthropic", cloud.cloudProvider)
+        assertEquals("google", cloud.cloudProvider)
     }
 
     @Test
@@ -629,7 +629,7 @@ class PipelineJsonSerializerTest {
                 x = 1f,
                 y = 0f,
                 systemPrompt = "You are an agent.",
-                cloudProvider = "anthropic",
+                cloudProvider = "google",
                 contextConfig = NodeContextConfig.defaultForType(NodeType.CLOUD),
                 configJson = configJson,
             ),

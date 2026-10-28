@@ -102,7 +102,7 @@ internal object VerificationFixtures {
             visit = visit,
             call = 0,
             depth = 0,
-            provider = "anthropic",
+            provider = "google",
             model = null,
         )
 

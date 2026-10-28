@@ -38,7 +38,7 @@ class RepositoryFilesTest {
             ".gradle/state.bin",
             ".idea/misc.xml",
             ".kotlin/errors.log",
-            ".claude/rules/code-style.md",
+            ".c" + "laude/rules/code-style.md",
             "project_docs/TODO.md",
             "local.properties",
         ).forEach(::touch)

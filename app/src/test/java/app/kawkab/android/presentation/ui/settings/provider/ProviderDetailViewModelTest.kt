@@ -116,22 +116,22 @@ class ProviderDetailViewModelTest {
 
     @Test
     fun `given a provider with a built-in list when bind then the model runs use flows into state`() = runTest {
-        every { apiKeyRepository.getApiKey(CloudProvider.ANTHROPIC) } returns flowOf("sk-ant")
-        val saved = MutableStateFlow<String?>("claude-3-opus")
-        every { apiKeyRepository.getModel(CloudProvider.ANTHROPIC) } returns saved
+        every { apiKeyRepository.getApiKey(CloudProvider.GOOGLE) } returns flowOf("sk-ant")
+        val saved = MutableStateFlow<String?>("gemini-2.5-pro")
+        every { apiKeyRepository.getModel(CloudProvider.GOOGLE) } returns saved
 
-        viewModel.bind(ProviderId.Anthropic)
+        viewModel.bind(ProviderId.Google)
         advanceUntilIdle()
 
         assertEquals(
-            CloudModelInUse("claude-sonnet-4-6", CloudModelFallback.NoLongerOffered("claude-3-opus")),
+            CloudModelInUse("gemini-3-flash-preview", CloudModelFallback.NoLongerOffered("gemini-2.5-pro")),
             viewModel.uiState.value.modelInUse,
         )
 
-        saved.value = "claude-opus-4-6"
+        saved.value = "gemini-2.5-flash"
         advanceUntilIdle()
 
-        assertEquals(CloudModelInUse("claude-opus-4-6"), viewModel.uiState.value.modelInUse)
+        assertEquals(CloudModelInUse("gemini-2.5-flash"), viewModel.uiState.value.modelInUse)
     }
 
     @Test

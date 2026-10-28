@@ -194,7 +194,7 @@ class RunRecordPersistenceTest {
             visit = 0,
             call = 0,
             depth = 0,
-            provider = "anthropic",
+            provider = "google",
             model = null,
         )
 

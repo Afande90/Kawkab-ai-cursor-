@@ -1,6 +1,5 @@
 package app.kawkab.android.data.engine
 
-import ai.koog.prompt.executor.clients.anthropic.AnthropicModels
 import ai.koog.prompt.executor.clients.deepseek.DeepSeekModels
 import ai.koog.prompt.executor.clients.google.GoogleModels
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
@@ -12,7 +11,7 @@ import java.lang.reflect.Modifier
 
 /**
  * The cloud model lists against Koog's own catalogue: every model the app offers is one of Koog's chat
- * constants, and every chat constant Koog declares for the four providers it lists is either offered or
+ * constants, and every chat constant Koog declares for the three providers it lists is either offered or
  * left out here with a reason.
  *
  * The lists were written by hand and fell behind silently: a Koog upgrade added 22 chat models and the
@@ -28,7 +27,6 @@ class CloudModelListGuardTest {
      */
     private val koogChatModels: Map<CloudProvider, List<LLModel>> = mapOf(
         CloudProvider.OPENAI to constantsOf(OpenAIModels.Chat::class.java),
-        CloudProvider.ANTHROPIC to constantsOf(AnthropicModels::class.java),
         CloudProvider.GOOGLE to constantsOf(GoogleModels::class.java),
         CloudProvider.DEEPSEEK to constantsOf(DeepSeekModels::class.java),
     )
@@ -53,11 +51,6 @@ class CloudModelListGuardTest {
             OpenAIModels.Chat.GPT5_4Nano to "shutdown announced for 2027-04-01",
             OpenAIModels.Chat.GPT5_5Pro to "Responses API only, and no request to it has been measured",
         ),
-        CloudProvider.ANTHROPIC to mapOf(
-            AnthropicModels.Sonnet_4 to "retired 2026-06-15 (Anthropic model deprecations page)",
-            AnthropicModels.Opus_4 to "retired 2026-06-15 (Anthropic model deprecations page)",
-            AnthropicModels.Opus_4_1 to "retired 2026-08-05 (Anthropic model deprecations page)",
-        ),
         CloudProvider.GOOGLE to mapOf(
             GoogleModels.Gemini2_5Pro to "answers 404 to a key that had not used it (measured 2026-10-12)",
             GoogleModels.Gemini2_0FlashLite001 to "retired: answers 404 (measured 2026-10-12)",
@@ -71,7 +64,6 @@ class CloudModelListGuardTest {
     fun `given Koog's catalogue then every provider's chat constants are found`() {
         // Not vacuous: reflection that found nothing would let every other test here pass.
         assertTrue(OpenAIModels.Chat.GPT5_4 in koogChatModels.getValue(CloudProvider.OPENAI))
-        assertTrue(AnthropicModels.Sonnet_4_6 in koogChatModels.getValue(CloudProvider.ANTHROPIC))
         assertTrue(GoogleModels.Gemini3_Flash_Preview in koogChatModels.getValue(CloudProvider.GOOGLE))
         assertTrue(DeepSeekModels.DeepSeekV4Flash in koogChatModels.getValue(CloudProvider.DEEPSEEK))
     }

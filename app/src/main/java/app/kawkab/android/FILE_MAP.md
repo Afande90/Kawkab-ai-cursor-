@@ -494,7 +494,7 @@ Only Kotlin files appear inside the generated blocks.
     - `ChatSession.kt` - Chat session model.
     - `ClarificationOutcome.kt` - Typed result of the live clarification wait (`Answered` / `TimedOut`) — moves the timeout policy to the clarification executor.
     - `ClarificationRequest.kt` - Domain model describing a clarification question issued by the agent (id, question, options, timeoutMs).
-    - `CloudProvider.kt` - Typed enum identifying the cloud LLM providers the agent can dispatch to (`openai`, `anthropic`, `google`, `deepseek`, `ollama`); owns `fromId` parsing with legacy `"gemini"` alias and the `AUTO_KEY` UI sentinel; each constant declares its credential shape (`usesApiKey`, `usesBaseUrl`).
+    - `CloudProvider.kt` - Typed enum identifying the cloud LLM providers the agent can dispatch to (`openai`, `google`, `deepseek`, `ollama`); owns `fromId` parsing with legacy `"gemini"` alias and the `AUTO_KEY` UI sentinel; each constant declares its credential shape (`usesApiKey`, `usesBaseUrl`).
     - `ConnectionModel.kt` - Connection model.
     - `ConsoleEvent.kt` - Domain model of a single agent-console entry (`timestamp`, `type`, `message`, per-run `seq`) with `ConsoleEventType` sealed interface (`NodeExecution`, `ToolCall`, `MemoryAccess`, `SystemMessage`, `Error`, `StructuredOutputRepair`, `CloudRetry`, `HistoryCompression`, `RunCeiling`, `StuckDetector`).
     - `CustomModelLink.kt` - A pasted model link checked before anything downloads: `Accepted` (link + file name = path's last segment without query/fragment), `Blank`, or `NotLitertlm`; shared by the Models screen and onboarding.

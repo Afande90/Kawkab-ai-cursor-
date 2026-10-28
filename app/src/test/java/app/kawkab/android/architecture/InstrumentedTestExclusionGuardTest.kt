@@ -121,7 +121,7 @@ class InstrumentedTestExclusionGuardTest {
          * Konsist scope over the instrumented source set. Pinned to the single
          * directory rather than the whole project for the same reason as
          * [ArchitectureScope]: a project-wide scope also parses stale git
-         * worktrees under `.claude/worktrees/`, which would make the verdict
+         * worktrees under `.gemini/worktrees/`, which would make the verdict
          * depend on the developer's machine.
          */
         val instrumentedScope: KoScope = Konsist.scopeFromDirectory("app/src/androidTest")

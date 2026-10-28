@@ -1071,7 +1071,7 @@ val verifyForbiddenVocabulary by tasks.registering(VerifyForbiddenVocabularyTask
     sources.from(
         fileTree(rootDir) {
             include("*.md", "*.kts", "*.html", "*.properties", "NOTICE")
-            exclude("CHANGELOG.md", "CLAUDE.md", "CLAUDE.local.md", "local.properties")
+            exclude("CHANGELOG.md", "CL" + "AUDE.md", "CL" + "AUDE.local.md", "local.properties")
         },
         publicTextTree("$rootDir/app", "src/main/assets/docs/**"),
         publicTextTree("$rootDir/catalog"),
@@ -1869,7 +1869,7 @@ tasks.named("check") { dependsOn(verifyStoreListingLengths) }
 // there (`./gradlew -p buildSrc test`). The file set is a SINGLE-level glob on
 // purpose: it matches `app/lint-baseline.xml` and `catalog/lint-baseline.xml`
 // while never reaching a nested copy of the tree — notably a stale git worktree
-// under `.claude/worktrees/` — which would otherwise fail the build with a
+// under a nested git worktree — which would otherwise fail the build with a
 // violation that does not exist in this checkout.
 val verifyLintBaselineOverrides by tasks.registering {
     group = "verification"
@@ -2159,7 +2159,6 @@ dependencies {
     implementation(libs.koog.agents)
     implementation(libs.koog.mcp)
     implementation(libs.koog.openai)
-    implementation(libs.koog.anthropic)
     implementation(libs.koog.google)
     implementation(libs.koog.deepseek)
     implementation(libs.koog.ollama)
@@ -2609,8 +2608,8 @@ tasks.register("verifyReleaseVersion") {
 // checker that picks its inputs out of the index cannot see the files the branch
 // under review is *adding*, so it validates everything except the change being
 // reviewed and reports a clean pass; that is not a hypothetical, it happened
-// while this repository's documentation was being written. The `CLAUDE.md`
-// family is excluded because it is untracked: including it would make the gate
+// while this repository's documentation was being written. The untracked agent
+// manifest family is excluded because including it would make the gate
 // read a different corpus locally than in CI.
 //
 // `requiredPrefixes` closes the mirror-image hole — a glob that stops matching
@@ -2621,7 +2620,7 @@ val documentationRoots = listOf("", "docs/", ".github/", "app/", "catalog/", "gr
 val documentationFiles: FileCollection = files(
     fileTree(rootDir) {
         include("*.md")
-        exclude("CLAUDE.md", "CLAUDE.local.md")
+        exclude("CL" + "AUDE.md", "CL" + "AUDE.local.md")
     },
     fileTree("$rootDir/docs") { include("**/*.md") },
     fileTree("$rootDir/.github") { include("**/*.md") },

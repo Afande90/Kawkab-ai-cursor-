@@ -72,7 +72,7 @@ class OpenAiCompatibleClientsTest {
     @Test
     fun `given a provider not reached through the OpenAI API when configured then it is refused`() {
         try {
-            OpenAiCompatibleClients.settings(CloudProvider.ANTHROPIC, null, CloudClientTimeouts.CONFIG)
+            OpenAiCompatibleClients.settings(CloudProvider.GOOGLE, null, CloudClientTimeouts.CONFIG)
             fail("expected a refusal")
         } catch (_: IllegalArgumentException) {
             // expected

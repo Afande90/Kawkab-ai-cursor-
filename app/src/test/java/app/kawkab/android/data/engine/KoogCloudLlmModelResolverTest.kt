@@ -1,6 +1,6 @@
 package app.kawkab.android.data.engine
 
-import ai.koog.prompt.executor.clients.anthropic.AnthropicModels
+import ai.koog.prompt.executor.clients.google.GoogleModels
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.llm.LLMCapability
 import ai.koog.prompt.llm.LLMProvider
@@ -48,16 +48,16 @@ class KoogCloudLlmModelResolverTest {
     fun `given nothing saved then the provider's default constant is sent`() = runTest {
         assertSame(OpenAIModels.Chat.GPT5_4, resolver(CloudProvider.OPENAI, null).resolveModel(CloudProvider.OPENAI))
         assertSame(
-            AnthropicModels.Sonnet_4_6,
-            resolver(CloudProvider.ANTHROPIC, null).resolveModel(CloudProvider.ANTHROPIC),
+            GoogleModels.Gemini3_Flash_Preview,
+            resolver(CloudProvider.GOOGLE, null).resolveModel(CloudProvider.GOOGLE),
         )
     }
 
     @Test
     fun `given a saved model no longer offered then the default is sent, as the screen says`() = runTest {
-        val model = resolver(CloudProvider.ANTHROPIC, "claude-3-opus").resolveModel(CloudProvider.ANTHROPIC)
+        val model = resolver(CloudProvider.GOOGLE, "gemini-2.5-pro").resolveModel(CloudProvider.GOOGLE)
 
-        assertSame(AnthropicModels.Sonnet_4_6, model)
+        assertSame(GoogleModels.Gemini3_Flash_Preview, model)
     }
 
     @Test

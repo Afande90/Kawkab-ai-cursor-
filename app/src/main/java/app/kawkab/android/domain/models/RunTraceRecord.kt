@@ -210,7 +210,7 @@ sealed class RunTraceRecord {
      * @property visit Zero-based visit index of the node within its run invocation.
      * @property call Zero-based index of this call among the visit's model calls.
      * @property depth Pipeline-nesting level of the run.
-     * @property provider The provider id (e.g. `anthropic`).
+     * @property provider The provider id (e.g. `google`).
      * @property model The model id the provider was asked for, or `null` when the
      *   calling node does not know it.
      */

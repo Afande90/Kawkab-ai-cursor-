@@ -51,7 +51,7 @@ downloads exactly that. Choosing by hand, the two presets are **Gemma 4 E2B** an
 
 ### Which cloud providers are supported?
 
-Hosted: OpenAI, Anthropic, Google Gemini, DeepSeek, OpenRouter and Groq, each with
+Hosted: OpenAI, Google Gemini, DeepSeek, OpenRouter and Groq, each with
 your own key. Your own server: **Ollama**, or any server that speaks the OpenAI
 API. All of them are opt-in. They live under **Settings → Models → External
 providers**, and **Test connection** on each provider's screen checks the key and

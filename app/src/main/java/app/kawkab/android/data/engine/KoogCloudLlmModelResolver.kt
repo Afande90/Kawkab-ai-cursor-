@@ -36,7 +36,7 @@ class KoogCloudLlmModelResolver @Inject constructor(
     override suspend fun resolveModel(provider: CloudProvider): Any {
         val inUse = modelCatalog.modelInUse(provider, apiKeyRepository.getModel(provider).first())
         return when (provider) {
-            CloudProvider.OPENAI, CloudProvider.ANTHROPIC, CloudProvider.GOOGLE, CloudProvider.DEEPSEEK ->
+            CloudProvider.OPENAI, CloudProvider.GOOGLE, CloudProvider.DEEPSEEK ->
                 builtInModel(provider, checkNotNull(inUse) { "No default model for '${provider.id}'" }.id)
             CloudProvider.OLLAMA -> LLModel(
                 provider = LLMProvider.Ollama,

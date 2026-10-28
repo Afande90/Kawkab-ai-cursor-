@@ -86,8 +86,8 @@ class DelegateTaskExecutorTest {
     fun `given several providers are set up when targetModel is null then the first in order is used`() = runTest {
         // Given
         every { apiKeyRepository.getApiKey(CloudProvider.GOOGLE) } returns flowOf("g-test")
-        every { apiKeyRepository.getApiKey(CloudProvider.ANTHROPIC) } returns flowOf("a-test")
-        val first = CloudProvider.entries.first { it == CloudProvider.ANTHROPIC || it == CloudProvider.GOOGLE }
+        every { apiKeyRepository.getApiKey(CloudProvider.GOOGLE) } returns flowOf("a-test")
+        val first = CloudProvider.entries.first { it == CloudProvider.GOOGLE || it == CloudProvider.GOOGLE }
         coEvery { delegateTaskTool.executeDelegation("Task", first.id) } returns "Success"
 
         // When
@@ -111,8 +111,8 @@ class DelegateTaskExecutorTest {
     @Test
     fun `given underlying tool returns error string when execute then returns same error string`() = runTest {
         // Given — executor is a pass-through, even error messages are forwarded verbatim.
-        val arguments = """{"taskDescription":"Task","targetModel":"anthropic"}"""
-        val errorMessage = "Error: Client for anthropic could not be initialized"
+        val arguments = """{"taskDescription":"Task","targetModel":"google"}"""
+        val errorMessage = "Error: Client for google could not be initialized"
         coEvery { delegateTaskTool.executeDelegation(any(), any()) } returns errorMessage
 
         // When
@@ -125,7 +125,7 @@ class DelegateTaskExecutorTest {
     @Test
     fun `given JSON missing taskDescription when execute then throws JSONException`() {
         // Given
-        val arguments = """{"targetModel":"anthropic"}"""
+        val arguments = """{"targetModel":"google"}"""
 
         // When / Then
         assertThrows(JSONException::class.java) {
@@ -147,7 +147,7 @@ class DelegateTaskExecutorTest {
     @Test
     fun `given underlying tool throws when execute then exception propagates`() {
         // Given
-        val arguments = """{"taskDescription":"Task","targetModel":"anthropic"}"""
+        val arguments = """{"taskDescription":"Task","targetModel":"google"}"""
         coEvery { delegateTaskTool.executeDelegation(any(), any()) } throws RuntimeException("Network error")
 
         // When / Then

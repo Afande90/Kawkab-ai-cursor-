@@ -25,7 +25,7 @@ class BrowserEditorImportParityGuardTest {
     private val cloudProvider = """
         fun fromId(id: String?): CloudProvider? = when (id?.lowercase()) {
             null -> null
-            "anthropic" -> ANTHROPIC
+            "deepseek" -> DEEPSEEK
             "google", "gemini" -> GOOGLE
             else -> null
         }
@@ -51,7 +51,7 @@ class BrowserEditorImportParityGuardTest {
         reader: String = "const flag = v => wireBool(v) ?? true;\n" +
             "return { chatHistory: flag(raw.chatHistory), nodeInput: true, longTermMemory: flag(raw.longTermMemory) };",
         resolver: String = "switch (String(flatId ?? '').toLowerCase()) {\n" +
-            " case 'anthropic': return 'ANTHROPIC';\n case 'google':\n case 'gemini': return 'GOOGLE';\n" +
+            " case 'deepseek': return 'DEEPSEEK';\n case 'google':\n case 'gemini': return 'GOOGLE';\n" +
             " default: return null; }",
         cloud: String = "return wireToTile(flatId) ?? 'AUTO';",
         engine: String = "return wireToTile(flatId) ?? '';",
@@ -148,7 +148,7 @@ class BrowserEditorImportParityGuardTest {
     @Test
     fun `given a case-sensitive resolver missing an alias when checked then both are reported`() {
         val html = editor(
-            resolver = "switch (flatId) { case 'anthropic': return 'ANTHROPIC'; case 'google': return 'GOOGLE'; }",
+            resolver = "switch (flatId) { case 'deepseek': return 'DEEPSEEK'; case 'google': return 'GOOGLE'; }",
         )
 
         assertEquals(
@@ -162,7 +162,7 @@ class BrowserEditorImportParityGuardTest {
 
     @Test
     fun `given a provider reader with its own switch when checked then it is reported`() {
-        val html = editor(engine = "switch (flatId) { case 'anthropic': return 'ANTHROPIC'; default: return ''; }")
+        val html = editor(engine = "switch (flatId) { case 'deepseek': return 'DEEPSEEK'; default: return ''; }")
 
         assertEquals(listOf("flatToEngineProvider does not resolve provider ids through wireToTile"), mismatches(html))
     }

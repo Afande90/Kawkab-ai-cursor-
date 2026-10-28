@@ -66,14 +66,19 @@ class KoogStructuredInferenceClientFactoryTest {
 
     @Test
     fun `given a repair asking for a lowered temperature when infer then the request carries none`() = runTest {
-        // Claude 4.7 and later answer a non-default temperature with a 400, which would fail the
+        // A hosted model can answer a non-default temperature with a 400, which would fail the
         // repair that is meant to fix the answer; every provider gets its own default instead.
-        val client = FakeStreamingClient(flowOf(StreamFrame.TextDelta("{}")))
-        coEvery { clientFactory.createClient(CloudProvider.ANTHROPIC, any()) } returns client
-        coEvery { modelResolver.resolveModel(CloudProvider.ANTHROPIC) } returns
-            LLModel(LLMProvider.Anthropic, "claude-opus-5", listOf(LLMCapability.Temperature))
+        val client = FakeStreamingClient(
+            flowOf(
+                StreamFrame.TextDelta("{}"),
+                StreamFrame.End(finishReason = "stop", metaInfo = ResponseMetaInfo.Empty),
+            ),
+        )
+        coEvery { clientFactory.createClient(CloudProvider.GOOGLE, any()) } returns client
+        coEvery { modelResolver.resolveModel(CloudProvider.GOOGLE) } returns
+            LLModel(LLMProvider.Google, "gemini-3.1-pro-preview", listOf(LLMCapability.Temperature))
 
-        factory.create(CloudProvider.ANTHROPIC) {
+        factory.create(CloudProvider.GOOGLE) {
         }!!.infer("prompt", temperature = StructuredOutputGate.REPAIR_TEMPERATURE)
 
         assertNull(client.lastPrompt?.params?.temperature)

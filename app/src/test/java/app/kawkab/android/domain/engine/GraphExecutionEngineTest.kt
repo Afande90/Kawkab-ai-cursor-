@@ -2,7 +2,7 @@ package app.kawkab.android.domain.engine
 
 import ai.koog.prompt.Prompt
 import ai.koog.prompt.executor.clients.LLMClient
-import ai.koog.prompt.executor.clients.anthropic.AnthropicModels
+import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.message.ResponseMetaInfo
 import ai.koog.prompt.streaming.StreamFrame
@@ -191,7 +191,7 @@ class GraphExecutionEngineTest {
         clarificationRepository = mockk()
         // The resolver is exercised whenever a CLOUD node fires; default to a sensible
         // Koog model so each individual test does not have to wire it up.
-        coEvery { cloudLlmModelResolver.resolveModel(any()) } returns AnthropicModels.Sonnet_4_5
+        coEvery { cloudLlmModelResolver.resolveModel(any()) } returns OpenAIModels.Chat.GPT4o
         // Tests that exercise a CLOUD node stub `createClient` for the provider they use;
         // any other provider stays unanswered, so an unexpected route fails loudly.
 
@@ -1697,20 +1697,22 @@ class GraphExecutionEngineTest {
     fun `given INPUT-CLARIFICATION-CLOUD-OUTPUT when user replies then answer flows into response`() = runTest {
         every { settingsRepository.pipelineMaxSteps } returns flowOf(15)
 
-        // Wire CLOUD to a mocked Anthropic client so we can capture the prompt it
+        // Wire CLOUD to a mocked Google client so we can capture the prompt it
         // receives and verify that the user's clarification reply flows downstream.
-        val mockAnthropicClient: LLMClient = mockk(relaxed = true)
+        val mockGoogleClient: LLMClient = mockk(relaxed = true)
         val capturedPrompt = slot<Prompt>()
         coEvery {
-            mockAnthropicClient.executeStreaming(capture(capturedPrompt), any<LLModel>())
-        } returns flowOf(StreamFrame.TextDelta("cloud_response_for_user_reply"))
-        coEvery { koogClientFactory.createClient(CloudProvider.ANTHROPIC, any()) } returns mockAnthropicClient
+            mockGoogleClient.executeStreaming(capture(capturedPrompt), any<LLModel>())
+        } returns flowOf(
+            StreamFrame.TextDelta("cloud_response_for_user_reply"),
+            StreamFrame.End(finishReason = "stop", metaInfo = ResponseMetaInfo.Empty),
+        )
+        coEvery { koogClientFactory.createClient(CloudProvider.GOOGLE, any()) } returns mockGoogleClient
 
-        every { apiKeyRepository.getApiKey(CloudProvider.ANTHROPIC) } returns flowOf("anthropic-test-key")
-        every { apiKeyRepository.getModel(CloudProvider.ANTHROPIC) } returns flowOf("claude-sonnet-4-5")
-        // Other providers are unconfigured so the auto-selection path also lands on Anthropic.
+        every { apiKeyRepository.getApiKey(CloudProvider.GOOGLE) } returns flowOf("google-test-key")
+        every { apiKeyRepository.getModel(CloudProvider.GOOGLE) } returns flowOf("gemini-2.5-flash")
+        // Other providers are unconfigured so the auto-selection path also lands on Google.
         every { apiKeyRepository.getApiKey(CloudProvider.OPENAI) } returns flowOf(null)
-        every { apiKeyRepository.getApiKey(CloudProvider.GOOGLE) } returns flowOf(null)
         every { apiKeyRepository.getApiKey(CloudProvider.DEEPSEEK) } returns flowOf(null)
 
         // CLARIFICATION uses llmEngine to generate the JSON question; OUTPUT has no
@@ -1735,7 +1737,7 @@ class GraphExecutionEngineTest {
             type = NodeType.CLOUD,
             x = 0f,
             y = 0f,
-            cloudProvider = "anthropic",
+            cloudProvider = "google",
             systemPrompt = "Answer the user.",
         )
         val outputNode = NodeModel("output_1", NodeType.OUTPUT, 0f, 0f, systemPrompt = null)
@@ -1760,7 +1762,7 @@ class GraphExecutionEngineTest {
         coVerify { clarificationRepository.requestAnswer(any()) }
 
         // The CLOUD node was invoked with the user's reply embedded in its prompt.
-        coVerify { mockAnthropicClient.executeStreaming(any<Prompt>(), any<LLModel>()) }
+        coVerify { mockGoogleClient.executeStreaming(any<Prompt>(), any<LLModel>()) }
         val cloudPromptText = capturedPrompt.captured.messages.joinToString("\n") { it.textContent() }
         assertTrue(
             "Cloud prompt must contain the clarification reply, was: $cloudPromptText",
@@ -2298,17 +2300,19 @@ class GraphExecutionEngineTest {
 
         // Cloud client mock — captures the prompt the CLOUD node receives so we
         // can assert that the full-context wrap reached the cloud LLM.
-        val mockAnthropicClient: LLMClient = mockk(relaxed = true)
+        val mockGoogleClient: LLMClient = mockk(relaxed = true)
         val capturedCloudPrompt = slot<Prompt>()
         coEvery {
-            mockAnthropicClient.executeStreaming(capture(capturedCloudPrompt), any<LLModel>())
-        } returns flowOf(StreamFrame.TextDelta("cloud_answer"))
-        coEvery { koogClientFactory.createClient(CloudProvider.ANTHROPIC, any()) } returns mockAnthropicClient
+            mockGoogleClient.executeStreaming(capture(capturedCloudPrompt), any<LLModel>())
+        } returns flowOf(
+            StreamFrame.TextDelta("cloud_answer"),
+            StreamFrame.End(finishReason = "stop", metaInfo = ResponseMetaInfo.Empty),
+        )
+        coEvery { koogClientFactory.createClient(CloudProvider.GOOGLE, any()) } returns mockGoogleClient
 
-        every { apiKeyRepository.getApiKey(CloudProvider.ANTHROPIC) } returns flowOf("anthropic-test-key")
-        every { apiKeyRepository.getModel(CloudProvider.ANTHROPIC) } returns flowOf("claude-sonnet-4-5")
+        every { apiKeyRepository.getApiKey(CloudProvider.GOOGLE) } returns flowOf("google-test-key")
+        every { apiKeyRepository.getModel(CloudProvider.GOOGLE) } returns flowOf("gemini-2.5-flash")
         every { apiKeyRepository.getApiKey(CloudProvider.OPENAI) } returns flowOf(null)
-        every { apiKeyRepository.getApiKey(CloudProvider.GOOGLE) } returns flowOf(null)
         every { apiKeyRepository.getApiKey(CloudProvider.DEEPSEEK) } returns flowOf(null)
 
         // Two LITE_RT consumers fire in order:
@@ -2345,7 +2349,7 @@ class GraphExecutionEngineTest {
             type = NodeType.CLOUD,
             x = 0f,
             y = 0f,
-            cloudProvider = "anthropic",
+            cloudProvider = "google",
             systemPrompt = "Answer the user.",
             contextConfig = NodeContextConfig.ALL_ENABLED,
         )
@@ -2418,7 +2422,7 @@ class GraphExecutionEngineTest {
         // ─── Assert: CLOUD received the full context wrap (ALL_ENABLED). The
         // cloud client serialises every prompt message into its own field, so
         // we collapse them into a single string for substring assertions.
-        coVerify { mockAnthropicClient.executeStreaming(any<Prompt>(), any<LLModel>()) }
+        coVerify { mockGoogleClient.executeStreaming(any<Prompt>(), any<LLModel>()) }
         val cloudPromptText = capturedCloudPrompt.captured.messages.joinToString("\n") { it.textContent() }
         assertTrue(
             "CLOUD prompt missing Original Task block: $cloudPromptText",
@@ -2458,12 +2462,14 @@ class GraphExecutionEngineTest {
             val cloudClient: LLMClient = mockk(relaxed = true)
             val cloudPrompt = slot<Prompt>()
             coEvery { cloudClient.executeStreaming(capture(cloudPrompt), any<LLModel>()) } returns
-                flowOf(StreamFrame.TextDelta("cloud_answer"))
-            coEvery { koogClientFactory.createClient(CloudProvider.ANTHROPIC, any()) } returns cloudClient
-            every { apiKeyRepository.getApiKey(CloudProvider.ANTHROPIC) } returns flowOf("anthropic-test-key")
-            every { apiKeyRepository.getModel(CloudProvider.ANTHROPIC) } returns flowOf("claude-sonnet-4-5")
+                flowOf(
+                    StreamFrame.TextDelta("cloud_answer"),
+                    StreamFrame.End(finishReason = "stop", metaInfo = ResponseMetaInfo.Empty),
+                )
+            coEvery { koogClientFactory.createClient(CloudProvider.GOOGLE, any()) } returns cloudClient
+            every { apiKeyRepository.getApiKey(CloudProvider.GOOGLE) } returns flowOf("google-test-key")
+            every { apiKeyRepository.getModel(CloudProvider.GOOGLE) } returns flowOf("gemini-2.5-flash")
             every { apiKeyRepository.getApiKey(CloudProvider.OPENAI) } returns flowOf(null)
-            every { apiKeyRepository.getApiKey(CloudProvider.GOOGLE) } returns flowOf(null)
             every { apiKeyRepository.getApiKey(CloudProvider.DEEPSEEK) } returns flowOf(null)
 
             val localPrompts = mutableListOf<String>()

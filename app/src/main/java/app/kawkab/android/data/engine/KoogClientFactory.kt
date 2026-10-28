@@ -3,8 +3,6 @@ package app.kawkab.android.data.engine
 import ai.koog.http.client.KoogHttpClient
 import ai.koog.http.client.ktor.KtorKoogHttpClient
 import ai.koog.prompt.executor.clients.LLMClient
-import ai.koog.prompt.executor.clients.anthropic.AnthropicClientSettings
-import ai.koog.prompt.executor.clients.anthropic.AnthropicLLMClient
 import ai.koog.prompt.executor.clients.deepseek.DeepSeekClientSettings
 import ai.koog.prompt.executor.clients.deepseek.DeepSeekLLMClient
 import ai.koog.prompt.executor.clients.google.GoogleClientSettings
@@ -173,11 +171,6 @@ class KoogClientFactory @Inject constructor(
         CloudProvider.OPENAI -> OpenAILLMClient(
             apiKey = granted.requireKey(),
             settings = OpenAIClientSettings(timeoutConfig = CloudClientTimeouts.CONFIG),
-            httpClientFactory = http,
-        )
-        CloudProvider.ANTHROPIC -> AnthropicLLMClient(
-            apiKey = granted.requireKey(),
-            settings = AnthropicClientSettings(timeoutConfig = CloudClientTimeouts.CONFIG),
             httpClientFactory = http,
         )
         CloudProvider.GOOGLE -> GoogleLLMClient(

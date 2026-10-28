@@ -863,7 +863,7 @@ internal class GoldenTraceHarness(
         return object : ApiKeyRepository by strict {
             override fun getApiKey(provider: CloudProvider): Flow<String?> = when (provider) {
                 CloudProvider.OPENAI -> flowOf("golden-openai-key")
-                CloudProvider.GOOGLE, CloudProvider.ANTHROPIC, CloudProvider.DEEPSEEK -> flowOf(null)
+                CloudProvider.GOOGLE, CloudProvider.GOOGLE, CloudProvider.DEEPSEEK -> flowOf(null)
                 else -> strict.getApiKey(provider)
             }
         }

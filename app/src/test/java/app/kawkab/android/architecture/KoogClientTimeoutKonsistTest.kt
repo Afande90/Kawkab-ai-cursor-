@@ -43,10 +43,10 @@ class KoogClientTimeoutKonsistTest {
     @Test
     fun `the census finds the construction sites it claims to`() {
         // Keeps the rule above from passing vacuously: both factories must be seen, the
-        // chat one with its five providers.
+        // chat one with its four providers.
         val byFile = constructions().groupBy { it.file.substringAfterLast('/') }
 
-        assertEquals("chat clients seen: ${byFile["KoogClientFactory.kt"]}", 5, byFile["KoogClientFactory.kt"]?.size)
+        assertEquals("chat clients seen: ${byFile["KoogClientFactory.kt"]}", 4, byFile["KoogClientFactory.kt"]?.size)
         val embedding = byFile["KoogEmbedderFactory.kt"]
         assertEquals("embedding clients seen: $embedding", 2, embedding?.size)
         // OpenRouter, Groq and a server the user runs share one client class, built with a

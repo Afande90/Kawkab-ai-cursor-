@@ -18,7 +18,7 @@ class KoogCloudModelCatalogTest {
 
     /** The providers whose model is picked from a built-in list. */
     private val listed =
-        listOf(CloudProvider.OPENAI, CloudProvider.ANTHROPIC, CloudProvider.GOOGLE, CloudProvider.DEEPSEEK)
+        listOf(CloudProvider.OPENAI, CloudProvider.GOOGLE, CloudProvider.DEEPSEEK)
 
     @Test
     fun `given a provider with a built-in list then its default is one of the models it offers`() {
@@ -67,10 +67,10 @@ class KoogCloudModelCatalogTest {
 
     @Test
     fun `given a built-in list and a model it no longer offers then runs use the default and say why`() {
-        val inUse = catalog.modelInUse(CloudProvider.ANTHROPIC, "claude-3-opus")
+        val inUse = catalog.modelInUse(CloudProvider.GOOGLE, "gemini-2.5-pro")
 
         assertEquals(
-            CloudModelInUse("claude-sonnet-4-6", CloudModelFallback.NoLongerOffered("claude-3-opus")),
+            CloudModelInUse("gemini-3-flash-preview", CloudModelFallback.NoLongerOffered("gemini-2.5-pro")),
             inUse,
         )
     }

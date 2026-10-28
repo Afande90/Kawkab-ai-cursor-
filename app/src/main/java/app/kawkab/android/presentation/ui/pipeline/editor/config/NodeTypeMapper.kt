@@ -84,7 +84,6 @@ internal object CloudProviderMapper {
     fun toDomain(provider: CatalogCloudProvider): DomainCloudProvider? = when (provider) {
         CatalogCloudProvider.AUTO -> null
         CatalogCloudProvider.OPEN_AI -> DomainCloudProvider.OPENAI
-        CatalogCloudProvider.ANTHROPIC -> DomainCloudProvider.ANTHROPIC
         CatalogCloudProvider.GOOGLE -> DomainCloudProvider.GOOGLE
         CatalogCloudProvider.DEEPSEEK -> DomainCloudProvider.DEEPSEEK
         CatalogCloudProvider.OPENROUTER -> DomainCloudProvider.OPENROUTER
@@ -136,7 +135,6 @@ internal object CloudProviderMapper {
      */
     fun toCatalog(provider: DomainCloudProvider?): CatalogCloudProvider = when (provider) {
         DomainCloudProvider.OPENAI -> CatalogCloudProvider.OPEN_AI
-        DomainCloudProvider.ANTHROPIC -> CatalogCloudProvider.ANTHROPIC
         DomainCloudProvider.GOOGLE -> CatalogCloudProvider.GOOGLE
         DomainCloudProvider.DEEPSEEK -> CatalogCloudProvider.DEEPSEEK
         DomainCloudProvider.OPENROUTER -> CatalogCloudProvider.OPENROUTER

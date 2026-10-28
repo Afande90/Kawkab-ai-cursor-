@@ -75,7 +75,7 @@ private val GENERATION_ENTRIES = listOf(
 
 private val MODELS_ENTRIES = listOf(
     setting("LOCAL_MODEL_BACKEND", BASIC, BACKEND, hubBasic = true, syn = listOf("npu", "gpu", "litert")),
-    link(BASIC, "Provider list", syn = listOf("openai", "anthropic", "cloud", "providers")),
+    link(BASIC, "Provider list", syn = listOf("openai", "google", "cloud", "providers")),
     link(ADVANCED, "Pipelines", key = "DEFAULT_PIPELINE_ID", syn = listOf("pipeline", "default")),
 )
 

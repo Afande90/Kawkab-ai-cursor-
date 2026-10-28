@@ -25,7 +25,7 @@ class CloudProviderTest {
     @Test
     fun `given uppercase id when fromId is called then matching is case-insensitive`() {
         assertEquals(CloudProvider.OPENAI, CloudProvider.fromId("OPENAI"))
-        assertEquals(CloudProvider.ANTHROPIC, CloudProvider.fromId("Anthropic"))
+        assertEquals(CloudProvider.GOOGLE, CloudProvider.fromId("Google"))
     }
 
     @Test

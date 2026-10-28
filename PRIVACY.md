@@ -112,7 +112,7 @@ from the first launch.
 
 If a pipeline step runs on a cloud provider and you have set it up, the text
 that step processes — the prompt and the relevant conversation context — is sent
-to the provider you selected: OpenAI, Anthropic, Google Gemini, DeepSeek,
+to the provider you selected: OpenAI, Google Gemini, DeepSeek,
 OpenRouter or Groq with your own API key, or a server you run and name by its
 address — Ollama, or any server that speaks the OpenAI API (vLLM, LM Studio,
 llama.cpp). Attachments are never sent to a cloud provider (section 4).
@@ -427,7 +427,7 @@ The app contacts a third party only along the paths in section 3. Depending on
 what you configure — and, for the first entry below, on nothing at all — those
 may be:
 
-- The cloud model provider you set up (OpenAI, Anthropic, Google, DeepSeek,
+- The cloud model provider you set up (OpenAI, Google, DeepSeek,
   OpenRouter — and the model company it routes to — or Groq, with your key; or a
   server you run and name by its address), for pipeline steps, memory embeddings
   (OpenAI or Ollama only) or `delegate_task`.

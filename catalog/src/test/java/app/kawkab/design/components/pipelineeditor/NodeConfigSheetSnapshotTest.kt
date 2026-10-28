@@ -269,7 +269,7 @@ class NodeConfigSheetSnapshotTest {
         val AUTO_ROW = ProviderChoiceRowUi(
             value = CloudProvider.AUTO,
             name = "Auto",
-            line = "first configured of Google, Anthropic, OpenAI, DeepSeek",
+            line = "first configured of Google, OpenAI, DeepSeek",
             here = true,
         )
 
@@ -278,7 +278,6 @@ class NodeConfigSheetSnapshotTest {
         /** Every provider as the sheet lists it with [CHOICES]. */
         val PROVIDER_ROWS = listOf(
             ProviderChoiceRowUi(CloudProvider.OPEN_AI, "OpenAI", "gpt-4o-mini", here = true),
-            ProviderChoiceRowUi(CloudProvider.ANTHROPIC, "Anthropic", NOT_HERE, here = false),
             ProviderChoiceRowUi(CloudProvider.GOOGLE, "Google", NOT_HERE, here = false),
             ProviderChoiceRowUi(CloudProvider.DEEPSEEK, "DeepSeek", NOT_HERE, here = false),
             ProviderChoiceRowUi(CloudProvider.OPENROUTER, "OpenRouter", NOT_HERE, here = false),

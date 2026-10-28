@@ -3,7 +3,6 @@ package app.kawkab.android.data.engine
 import ai.koog.http.client.KoogHttpClient
 import ai.koog.http.client.get
 import ai.koog.http.client.ktor.KtorKoogHttpClient
-import ai.koog.prompt.executor.clients.anthropic.AnthropicClientSettings
 import ai.koog.prompt.executor.clients.deepseek.DeepSeekClientSettings
 import ai.koog.prompt.executor.clients.google.GoogleClientSettings
 import ai.koog.prompt.executor.clients.openai.OpenAIClientSettings
@@ -184,7 +183,6 @@ class KoogProviderConnectionChecker @Inject constructor(
          */
         fun listingUrl(provider: CloudProvider, baseUrl: String?): String? = when (provider) {
             CloudProvider.OPENAI -> OpenAIClientSettings().let { join(it.baseUrl, it.modelsPath) }
-            CloudProvider.ANTHROPIC -> AnthropicClientSettings().let { join(it.baseUrl, it.modelsPath) }
             CloudProvider.GOOGLE -> GoogleClientSettings().let { join(it.baseUrl, it.defaultPath) }
             CloudProvider.DEEPSEEK -> DeepSeekClientSettings().let { join(it.baseUrl, it.modelsPath) }
             CloudProvider.OLLAMA -> baseUrl?.let { join(it, OLLAMA_TAGS_PATH) }

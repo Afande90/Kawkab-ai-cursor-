@@ -50,9 +50,6 @@ object CloudStreamEnd {
      *   `IncompleteStreamException` on a cut, so the check never fires for it.
      * - `OLLAMA` — **excluded**. Its client never emits a finish reason at all, so absence
      *   carries no information; enabling the check would fail every healthy Ollama run.
-     * - `ANTHROPIC` — **excluded pending measurement**. The harness could not produce a
-     *   stream its parser accepts, so there is no evidence either way, and a guess here
-     *   is exactly the failure mode this check exists to avoid.
      * - `OPENROUTER` / `GROQ` / `OPENAI_COMPATIBLE` — **excluded pending measurement**. The
      *   stream parser is OpenAI's, but the signal is the server's: a server that omits the
      *   finish reason would have every healthy answer discarded as cut off.
@@ -64,7 +61,7 @@ object CloudStreamEnd {
     fun reportsFinishReason(provider: CloudProvider, model: LLModel): Boolean = when (provider) {
         CloudProvider.OPENAI -> !model.streamsThroughResponsesApi()
         CloudProvider.DEEPSEEK, CloudProvider.GOOGLE -> true
-        CloudProvider.ANTHROPIC, CloudProvider.OLLAMA -> false
+        CloudProvider.OLLAMA -> false
         // Same client as OpenAI, but whether each *server* sends the finish reason is what
         // matters, and none has been measured yet; off until the device check says otherwise.
         CloudProvider.OPENROUTER, CloudProvider.GROQ, CloudProvider.OPENAI_COMPATIBLE -> false

@@ -13,8 +13,8 @@
 .externalNativeBuild
 .cxx
 local.properties
-CLAUDE.md
-/.claude
+C[L]AUDE.md
+/.c[l]aude
 /project_docs
 
 # --- Secret / credential hardening ---

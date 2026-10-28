@@ -633,7 +633,7 @@ Add a constant to
 [`domain/models/CloudProvider.kt`](../app/src/main/java/app/kawkab/android/domain/models/CloudProvider.kt)
 with a stable wire-id (the lowercase string used in pipeline JSON,
 e.g. `"mistral"`). Existing values are
-`OPENAI`, `ANTHROPIC`, `GOOGLE`, `DEEPSEEK`, `OPENROUTER`, `GROQ`, `OLLAMA`,
+`OPENAI`, `GOOGLE`, `DEEPSEEK`, `OPENROUTER`, `GROQ`, `OLLAMA`,
 `OPENAI_COMPATIBLE`.
 
 The constant also declares how the provider is reached: `usesApiKey` (a key
@@ -789,9 +789,8 @@ Return `false` when you have no evidence, and say why in the KDoc:
 - **A client that never emits a finish reason** (Koog's Ollama client) —
   returning `true` fails *every healthy run*, because absence carries no
   information.
-- **A client you could not test** (Anthropic, whose parser rejected the
-  crafted SSE fixture) — the existing entries record "excluded pending
-  measurement" rather than a guess, and so should yours.
+- **A client you could not test** — record "excluded pending measurement"
+  rather than a guess, as the existing unmeasured entries do.
 
 The answer can depend on the model, not only the provider: Koog's OpenAI
 client sends a model that supports only the Responses API through that API,

@@ -9,7 +9,7 @@ import ai.koog.prompt.executor.clients.ConnectionTimeoutConfig
  * `timeoutConfig`. Reflection is the only route — Koog keeps `settings` private — but it
  * fails loudly rather than silently if Koog renames the field on an upgrade.
  *
- * Only clients that keep a `settings` object answer it (OpenAI, Anthropic, Google,
+ * Only clients that keep a `settings` object answer it (OpenAI, Google, Google,
  * DeepSeek). `OllamaClient` hands the values straight to its HTTP client and keeps
  * none, which is why `KoogClientTimeoutKonsistTest` checks the construction sites
  * instead.

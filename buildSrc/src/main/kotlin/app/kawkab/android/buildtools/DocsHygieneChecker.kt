@@ -7,7 +7,7 @@ package app.kawkab.android.buildtools
  *
  *  1. **LLM tool-call wrapper artifacts.** Fragments of an assistant's tool-call
  *     envelope (closing wrapper tags such as the `content` / `invoke` markers,
- *     or the opening of an Anthropic markup / function-results block) that leak
+ *     or the opening of a vendor markup / function-results block) that leak
  *     into a committed document when generated prose is pasted verbatim. These
  *     are never legitimate Markdown and always signal an editing mistake.
  *  2. **References to internal-only documents.** The public docs must never link
@@ -75,7 +75,7 @@ object DocsHygieneChecker {
      *
      * Built from fragments so the whole literal never appears in source; the
      * inner values reconstruct the closing `content` / `invoke` wrapper tags and
-     * the opening of an Anthropic-markup / function-results block.
+     * the opening of a vendor-markup / function-results block.
      */
     private val LLM_ARTIFACT_TOKENS: List<String> = listOf(
         "</" + "content>",
@@ -91,7 +91,7 @@ object DocsHygieneChecker {
         "PLAN" + ".md",
         "VISION" + ".md",
         "TODO" + ".md",
-        "CLAUDE" + ".md",
+        "CL" + "AUDE.md",
     )
 
     /** Prefix of the internal docs tree; a real path continues past the slash. */

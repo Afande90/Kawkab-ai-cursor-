@@ -15,7 +15,6 @@ import app.kawkab.android.domain.models.ProviderId
  */
 fun ProviderId.displayName(): String = when (this) {
     ProviderId.OpenAi -> "OpenAI"
-    ProviderId.Anthropic -> "Anthropic"
     ProviderId.Google -> "Google"
     ProviderId.DeepSeek -> "DeepSeek"
     ProviderId.OpenRouter -> "OpenRouter"

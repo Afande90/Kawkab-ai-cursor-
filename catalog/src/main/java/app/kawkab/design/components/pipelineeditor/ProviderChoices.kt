@@ -411,7 +411,6 @@ private fun ChoiceLine(line: String, here: Boolean) {
 /** A provider's own name. Product names, never translated. */
 internal fun CloudProvider.displayName(): String = when (this) {
     CloudProvider.OPEN_AI -> "OpenAI"
-    CloudProvider.ANTHROPIC -> "Anthropic"
     CloudProvider.GOOGLE -> "Google"
     CloudProvider.DEEPSEEK -> "DeepSeek"
     CloudProvider.OPENROUTER -> "OpenRouter"

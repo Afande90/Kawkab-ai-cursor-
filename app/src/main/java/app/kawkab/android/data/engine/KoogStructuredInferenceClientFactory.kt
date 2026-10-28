@@ -35,10 +35,10 @@ import ai.koog.prompt.dsl.prompt as buildPrompt
  * repairs it with the same configured budget.
  *
  * **No temperature, on repairs either.** The gate asks for a lowered temperature on a
- * repair, and the request does not carry it: Claude 4.7 and later answer a temperature
- * other than the default with a 400 (Anthropic's documentation), so a repair would fail
- * where it should fix the answer. Each provider's own default applies, as on a first
- * attempt; the on-device path keeps the lowered temperature.
+ * repair, and the request does not carry it. A hosted provider can reject a temperature
+ * other than its default, so a repair would fail where it should fix the answer. Each
+ * provider's own default applies, as on a first attempt; the on-device path keeps the
+ * lowered temperature.
  *
  * **A cut stream is a failure.** An answer that ends without the finish reason its provider
  * always sends ([CloudStreamEnd]) is thrown as a [CloudStreamCutOffException] rather than

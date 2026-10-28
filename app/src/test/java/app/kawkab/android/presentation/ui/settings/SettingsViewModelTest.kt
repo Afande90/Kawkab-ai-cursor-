@@ -146,8 +146,8 @@ class SettingsViewModelTest {
 
         every { apiKeys.getApiKey(CloudProvider.OPENAI) } returns MutableStateFlow<String?>(null)
         every { apiKeys.getModel(CloudProvider.OPENAI) } returns MutableStateFlow<String?>(null)
-        every { apiKeys.getApiKey(CloudProvider.ANTHROPIC) } returns MutableStateFlow<String?>(null)
-        every { apiKeys.getModel(CloudProvider.ANTHROPIC) } returns MutableStateFlow<String?>(null)
+        every { apiKeys.getApiKey(CloudProvider.GOOGLE) } returns MutableStateFlow<String?>(null)
+        every { apiKeys.getModel(CloudProvider.GOOGLE) } returns MutableStateFlow<String?>(null)
         every { apiKeys.getApiKey(CloudProvider.GOOGLE) } returns MutableStateFlow<String?>(null)
         every { apiKeys.getModel(CloudProvider.GOOGLE) } returns MutableStateFlow<String?>(null)
         every { apiKeys.getApiKey(CloudProvider.DEEPSEEK) } returns MutableStateFlow<String?>(null)

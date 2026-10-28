@@ -15,8 +15,8 @@ package app.kawkab.android.buildtools
  * - the node's *Input data* flags were read by two different rules — `0` / `null` shown
  *   as off while the app read them as **on** — so long-term memory and tool results
  *   showed off on a cloud node the app sent them to;
- * - provider ids were matched case-sensitively, so `"Anthropic"` showed as on-device
- *   while the app called Anthropic;
+ * - provider ids were matched case-sensitively, so `"Gemini"` showed as on-device
+ *   while the app called Google;
  * - branch labels were matched case-sensitively, so an IF edge labelled `false` hung
  *   from the True socket while the app took it for every message without the keyword.
  *

@@ -5608,7 +5608,7 @@
     /* -------------------------------------------------------------------- *
      *  Cloud providers and tool registry
      *  Provider list mirrors app.kawkab.android.domain.models.CloudProvider
-     *  (openai / anthropic / google / deepseek / ollama) plus the `auto`
+     *  (openai / google / deepseek / ollama) plus the `auto`
      *  UI sentinel (CloudProvider.AUTO_KEY). KEEP IN SYNC with that enum.
      *
      *  AVAILABLE_TOOLS mirrors the LocalToolExecutor registry multibound in
@@ -5620,7 +5620,6 @@
     const CLOUD_PROVIDERS = [
         { id: 'auto',      label: 'Auto' },
         { id: 'openai',    label: 'OpenAI' },
-        { id: 'anthropic', label: 'Anthropic' },
         { id: 'google',    label: 'Google' },
         { id: 'deepseek',  label: 'DeepSeek' },
         { id: 'openrouter', label: 'OpenRouter' },
@@ -5780,7 +5779,6 @@
     // value (persisted as the flat `cloudProvider = "auto"` sentinel).
     const PROVIDER_OPTIONS = [
         { id: 'OPEN_AI',    label: 'OpenAI',     group: 'Hosted' },
-        { id: 'ANTHROPIC',  label: 'Anthropic',  group: 'Hosted' },
         { id: 'GOOGLE',     label: 'Google',     group: 'Hosted' },
         { id: 'DEEPSEEK',   label: 'DeepSeek',   group: 'Hosted' },
         { id: 'OPENROUTER', label: 'OpenRouter', group: 'Hosted' },
@@ -5789,7 +5787,7 @@
         { id: 'OPENAI_COMPATIBLE', label: 'OpenAI-compatible server', group: 'Your own server' },
     ];
     const CLOUD_PROVIDER_OPTIONS = [
-        { id: 'AUTO', label: 'Auto — first configured of Google, Anthropic, OpenAI, DeepSeek' },
+        { id: 'AUTO', label: 'Auto — first configured of Google, OpenAI, DeepSeek' },
         ...PROVIDER_OPTIONS,
     ];
 
@@ -5809,7 +5807,6 @@
     function wireToTile(flatId) {
         switch (String(flatId ?? '').toLowerCase()) {
             case 'openai':    return 'OPEN_AI';
-            case 'anthropic': return 'ANTHROPIC';
             case 'google':
             case 'gemini':    return 'GOOGLE';
             case 'deepseek':  return 'DEEPSEEK';
@@ -5837,7 +5834,6 @@
         }
         switch (provider) {
             case 'OPEN_AI':   return 'openai';
-            case 'ANTHROPIC': return 'anthropic';
             case 'GOOGLE':    return 'google';
             case 'DEEPSEEK':  return 'deepseek';
             case 'OPENROUTER': return 'openrouter';

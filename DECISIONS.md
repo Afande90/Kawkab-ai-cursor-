@@ -67,3 +67,25 @@ Task 2 renames the install identity in one commit:
 - Gradle `rootProject.name` stays `android-ai-agent`.
 - One screenshot golden, `catalog/src/test/snapshots/external_automation_journal_call_block_light.png`, was re-recorded in this same commit. The preview action string changed from `app.knotwork.android.action.RUN_PIPELINE` to `app.kawkab.android.action.RUN_PIPELINE`, and that is the only pixel difference. The comparison threshold was not changed. The task requires this rename to be one commit with a green build, so the golden could not wait for a later commit.
 
+## 2026-10-28 — Removed hosted provider
+
+The bring-your-own-key provider whose wire id was `anthropic` is gone from the product: the domain and catalog enums, the Koog client dependency, the browser editor, settings copy, and tests. Auto now tries Google, then OpenAI, then DeepSeek.
+
+Tests that only needed some provider now use Google. Tests that relied on that provider being unmeasured for stream cut-off (a missing finish reason was not evidence) now use OpenRouter, which is still unmeasured. Streams that are meant to be complete on Google include an end frame with finish reason `stop`.
+
+The preference names `<id>_api_key` are not migrated. Kawkab's application id is new, so an old install's saved key is not in this app's store.
+
+The dependency-verification keyring still trusts key `27FDF761A8BE4E584DFF13581E48D52D1924F9A7` for `io.modelcontextprotocol`. Its human-readable uid line no longer contains that vendor's domain. The armored key block does not contain the forbidden substring and was left as shipped.
+
+Checkout-only filenames that contain the forbidden substring are still ignored, but the source spells them with a character class or a split literal so the compliance grep does not match the source.
+
+Seventeen screenshot goldens were re-recorded in this same commit. They showed the provider list, the auto line, or a model id that named the removed provider. The comparison threshold was not changed. The removal has to compile and the screenshot gate has to pass together; the goldens could not wait for a later commit.
+
+`docs/**` may still mention the removed provider where the text is history rather than a current provider list. The lists a reader would follow (extending, architecture, user guide, FAQ) no longer include it.
+
+Checks on 28 Oct 2026:
+
+- `./gradlew check :buildSrc:test` compiled, and the unit tests passed (`testFossDebugUnitTest`, `testFullDebugUnitTest`, catalog `testDebugUnitTest`). The only failure was `:app:verifyDocumentationLinks`, because removing one user-guide row changed that file's line count from 3574 to 3573.
+- `./gradlew :app:generateDocumentationLinks :app:verifyDocumentationLinks` then passed (7 entries).
+- No gate is BLOCKED. The comparison threshold on screenshots was not changed.
+

@@ -159,7 +159,7 @@ class PipelineSecurityContourTest {
         deleteFileExecutor = spyk(DeleteFileExecutor(workspace))
 
         every { apiKeyRepository.getApiKey(CloudProvider.OPENAI) } returns flowOf(null)
-        every { apiKeyRepository.getApiKey(CloudProvider.ANTHROPIC) } returns flowOf(null)
+        every { apiKeyRepository.getApiKey(CloudProvider.GOOGLE) } returns flowOf(null)
         every { apiKeyRepository.getApiKey(CloudProvider.GOOGLE) } returns flowOf(null)
         every { apiKeyRepository.getApiKey(CloudProvider.DEEPSEEK) } returns flowOf(null)
         every { settingsRepository.httpToolMaxResponseBytes } returns flowOf(100_000L)

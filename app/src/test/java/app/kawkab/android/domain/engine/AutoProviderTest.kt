@@ -19,7 +19,7 @@ class AutoProviderTest {
 
     @Test
     fun `given keys for several providers when resolved then the first of the order wins`() = runTest {
-        assertEquals(CloudProvider.ANTHROPIC, AutoProvider.resolve(keys(CloudProvider.OPENAI, CloudProvider.ANTHROPIC)))
+        assertEquals(CloudProvider.GOOGLE, AutoProvider.resolve(keys(CloudProvider.OPENAI, CloudProvider.GOOGLE)))
         assertEquals(CloudProvider.GOOGLE, AutoProvider.resolve(keys(CloudProvider.DEEPSEEK, CloudProvider.GOOGLE)))
     }
 
@@ -30,7 +30,7 @@ class AutoProviderTest {
             AutoProvider.resolve(keys(CloudProvider.OPENROUTER, CloudProvider.GROQ, CloudProvider.OPENAI_COMPATIBLE)),
         )
         assertEquals(
-            listOf(CloudProvider.GOOGLE, CloudProvider.ANTHROPIC, CloudProvider.OPENAI, CloudProvider.DEEPSEEK),
+            listOf(CloudProvider.GOOGLE, CloudProvider.OPENAI, CloudProvider.DEEPSEEK),
             AutoProvider.ORDER,
         )
     }

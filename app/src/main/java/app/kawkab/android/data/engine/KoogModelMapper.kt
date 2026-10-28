@@ -1,6 +1,5 @@
 package app.kawkab.android.data.engine
 
-import ai.koog.prompt.executor.clients.anthropic.AnthropicModels
 import ai.koog.prompt.executor.clients.deepseek.DeepSeekModels
 import ai.koog.prompt.executor.clients.google.GoogleModels
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
@@ -16,7 +15,7 @@ import app.kawkab.android.domain.models.CloudProvider
  * saved maps back to its constant through [offeredModels]; [KoogCloudModelCatalog] decides what
  * a saved id that is not offered falls back to.
  *
- * Every chat constant Koog declares for these four providers is either offered here or left out
+ * Every chat constant Koog declares for these three providers is either offered here or left out
  * with a reason: `CloudModelListGuardTest` holds the two in step, so a Koog upgrade fails the
  * build until its new models are sorted.
  */
@@ -56,22 +55,6 @@ object KoogModelMapper {
         ),
     )
 
-    private val ANTHROPIC = Offer(
-        default = AnthropicModels.Sonnet_4_6,
-        offered = listOf(
-            AnthropicModels.Haiku_4_5,
-            AnthropicModels.Sonnet_4_5,
-            AnthropicModels.Sonnet_4_6,
-            AnthropicModels.Sonnet_5,
-            AnthropicModels.Opus_4_5,
-            AnthropicModels.Opus_4_6,
-            AnthropicModels.Opus_4_7,
-            AnthropicModels.Opus_4_8,
-            AnthropicModels.Opus_5,
-            AnthropicModels.Fable_5,
-        ),
-    )
-
     private val GOOGLE = Offer(
         default = GoogleModels.Gemini3_Flash_Preview,
         offered = listOf(
@@ -98,7 +81,6 @@ object KoogModelMapper {
     /** The offer of [provider], or `null` for a provider whose model is typed. */
     private fun offerOf(provider: CloudProvider): Offer? = when (provider) {
         CloudProvider.OPENAI -> OPENAI
-        CloudProvider.ANTHROPIC -> ANTHROPIC
         CloudProvider.GOOGLE -> GOOGLE
         CloudProvider.DEEPSEEK -> DEEPSEEK
         CloudProvider.OPENROUTER, CloudProvider.GROQ, CloudProvider.OLLAMA, CloudProvider.OPENAI_COMPATIBLE -> null

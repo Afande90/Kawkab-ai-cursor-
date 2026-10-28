@@ -246,21 +246,21 @@ details.
   does not provide; the app now carries Bouncy Castle's implementation (MIT,
   about 10–35 KB once shrunk). `THIRD_PARTY_LICENSES.txt` quotes its notice. The
   archive format is described in [docs/backup-format.md](docs/backup-format.md).
-- **Current cloud models to choose from.** The model lists of OpenAI, Anthropic,
+- **Current cloud models to choose from.** The model lists of OpenAI,
   Google and DeepSeek now follow the client library the app is built on: GPT-5.4
-  Mini, GPT-5.5 and GPT-5.6 Sol, Terra and Luna; Claude Sonnet 4.6, Sonnet 5,
+  Mini, GPT-5.5 and GPT-5.6 Sol, Terra and Luna; a hosted model Sonnet 4.6, Sonnet 5,
   Opus 4.7, Opus 4.8, Opus 5 and Fable 5; Gemini 3.5 Flash, 3.5 Flash-Lite, 3.6
   Flash and 3.7 Flash; DeepSeek V4 Flash Vision. Models their providers have
   retired are gone: GPT-5 Codex, GPT-5.1 Codex and Codex Max, GPT-5.2 Codex,
-  Claude Sonnet 4, Opus 4 and Opus 4.1, and Gemini 2.5 Pro, which Google keeps for
+  a hosted model Sonnet 4, Opus 4 and Opus 4.1, and Gemini 2.5 Pro, which Google keeps for
   earlier users only. So are o1, o3-mini, o4-mini and GPT-4.1 nano, which OpenAI
   shuts down on 23 October 2026. A saved choice that left the list runs on the
   provider's default, and the provider's screen says so.
-- **Anthropic's default model is Claude Sonnet 4.6.** Anthropic retires Sonnet
+- **A provider's default model is a hosted model Sonnet 4.6.** a hosted provider retires Sonnet
   4.5, the default until now, on 30 November 2026. A model you chose yourself
   stays as it is.
 - **A provider's settings name the model your runs use.** With no model chosen
-  for OpenAI, Anthropic, Google or DeepSeek, the list stayed blank while runs
+  for OpenAI, Google or DeepSeek, the list stayed blank while runs
   used the provider's default, and a saved model the app no longer offers was
   swapped for that default without a word. A note under the list now names the
   model runs use, and the provider's row in Settings and the node sheet show the
@@ -421,7 +421,7 @@ details.
   could not be installed. It now marks only files that are on the phone.
 - **A cloud model's repair no longer sends a temperature.** When a Tool,
   Decomposition or other structured step on a cloud model got an answer that did
-  not parse, the second try asked the provider for a low temperature. Claude 4.7
+  not parse, the second try asked the provider for a low temperature. a hosted model 4.7
   and later refuse any temperature but their default, so the try meant to fix the
   answer would fail instead. The cloud try now uses each provider's default; the
   on-device model still repairs at a low temperature.
@@ -453,7 +453,7 @@ details.
   it. The same change fixes a step that failed without an error message: the run
   carried on as if the step had answered, and now stops there.
 - **Tool and Decomposition steps on a cloud model get their second try back.** On
-  OpenAI, Anthropic, Google and DeepSeek the app assumed the provider would answer
+  OpenAI, Google and DeepSeek the app assumed the provider would answer
   in valid JSON and skipped the repair attempts — but nothing in the request asked
   the provider for JSON. A prose answer failed the step at once, or a fixed-tool
   step ran its tool with that prose as the arguments. These steps now get the same
@@ -466,8 +466,8 @@ details.
   Completions; an answer cut short on the Responses API still fails the step.
 - **`delegate_task` goes where it says it will.** The tool tells the model that,
   unless it names a provider, the first one set up on the device answers; a call
-  that named none went to Anthropic instead — and failed for anyone without an
-  Anthropic key. It now goes to that first provider.
+  that named none went to a hosted provider instead — and failed for anyone without an
+  a hosted provider key. It now goes to that first provider.
 - **The NPU is no longer offered as an inference backend.** LiteRT-LM needs a
   vendor dispatch library and a model compiled for the chip to use the NPU; the
   app ships neither, so choosing NPU ran the model on CPU — about three times
@@ -3066,7 +3066,7 @@ details.
   provider is given to answer, and what the resulting error messages mean; that
   a cloud answer cut off mid-stream is discarded rather than shown as a
   finished reply — and, honestly, that this protection covers OpenAI, DeepSeek
-  and Google but **not** Ollama or Anthropic, with the reason for each; that
+  and Google but **not** Ollama or with the reason for each; that
   a question can take a different route through a routed pipeline depending on
   what is already in the conversation, and how to make that repeatable; and
   that leaving the app can end a background run within seconds unless the app
@@ -5248,7 +5248,7 @@ hardening** that raised the enforced Kover gate to 75 % (executor / DAO / Robole
 - **`data.tools.local.executors` unit-test suite**.
   Added GWT-style JUnit + MockK coverage for `DelegateTaskExecutor`,
   `ScheduleTaskExecutor`, and `SearchToolExecutor` — happy path, JSON
-  default branches (`targetModel` → `anthropic`, `intervalHours` /
+  default branches (`targetModel` → `hosted`, `intervalHours` /
   `delayMinutes` → `0`, `lang` → `en`), blank-query short-circuit,
   malformed / missing-field JSON, and downstream-exception propagation.
   The package was excluded from Kover reporting up to now; the
@@ -5686,7 +5686,7 @@ of README hero shots regenerated from new Roborazzi baselines.
     crashing the app at startup. `KoogClientFactory` now constructs
     a single `KtorKoogHttpClient.Factory()` instance and passes it
     explicitly to every cloud / Ollama `LLMClient` constructor
-    (`OpenAILLMClient`, `AnthropicLLMClient`, `GoogleLLMClient`,
+    (`OpenAILLMClient`, `a hosted providerLLMClient`, `GoogleLLMClient`,
     `DeepSeekLLMClient`, `OllamaClient`), bypassing the broken SPI
     lookup. `app/build.gradle.kts` already pulls in
     `libs.koog.http.client.ktor` so the factory class is on the
@@ -6348,7 +6348,7 @@ of README hero shots regenerated from new Roborazzi baselines.
     keystore is provisioned), targeting `arm64-v8a` only (every
     `minSdk = 36` device is 64-bit). v0.1 APK weighs in well above the
     initial 30 MB target — the on-device LiteRT-LM runtime, the
-    bundled cloud-provider SDKs (OpenAI / Anthropic / Google /
+    bundled cloud-provider SDKs (OpenAI  / Google /
     DeepSeek / Ollama via Koog), and the un-shrunk DEX classes
     dominate. Switching to Android App Bundle + R8 minification is
     tracked as the v0.2 size-reduction work; the APK size is documented
@@ -6923,7 +6923,7 @@ that produced the initial 0.1.0 snapshot.
 - **AppFunctions Jetpack** integration for on-device tool calling.
 - **Model Context Protocol (MCP)** client for connecting external tool
   servers.
-- Optional cloud LLM providers — OpenAI, Anthropic, Google (Gemini),
+- Optional cloud LLM providers — OpenAI, Google (Gemini),
   DeepSeek and Ollama — all opt-in and bring-your-own-key.
 - Visual pipeline orchestrator inside the app for editing typed
   node graphs (input, local LLM, cloud LLM, tool, routing,

@@ -22,7 +22,7 @@ enum class NodeType {
     /** On-device LiteRT-LM inference. */
     LITE_RT,
 
-    /** External cloud LLM (OpenAI / Anthropic / Google / Compatible). */
+    /** External cloud LLM (OpenAI / Google / Compatible). */
     CLOUD,
 
     /** Multi-class intent router — one out-port per declared class. */

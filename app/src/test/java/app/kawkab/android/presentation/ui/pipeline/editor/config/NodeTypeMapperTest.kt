@@ -56,7 +56,7 @@ class NodeTypeMapperTest {
     fun `given primary cloud providers when round-trip then identity`() {
         listOf(
             CatalogCloudProvider.OPEN_AI,
-            CatalogCloudProvider.ANTHROPIC,
+            CatalogCloudProvider.GOOGLE,
             CatalogCloudProvider.GOOGLE,
         ).forEach { c ->
             val domain = CloudProviderMapper.toDomain(c)
@@ -92,7 +92,7 @@ class NodeTypeMapperTest {
     fun `given null or concrete wire id when fromWireId then mapped tile`() {
         // null = legacy "no provider" → OpenAI default (distinct from auto).
         assertEquals(CatalogCloudProvider.OPEN_AI, CloudProviderMapper.fromWireId(null))
-        assertEquals(CatalogCloudProvider.ANTHROPIC, CloudProviderMapper.fromWireId("anthropic"))
+        assertEquals(CatalogCloudProvider.GOOGLE, CloudProviderMapper.fromWireId("google"))
         assertEquals(CatalogCloudProvider.OLLAMA, CloudProviderMapper.fromWireId("ollama"))
     }
 

@@ -163,7 +163,7 @@ class CloudLlmNodeExecutor @Inject constructor(
         // one this executor used to throw away: the delta count below sees only the
         // answer, while a loop's real cost is dominated by the prompt being re-sent
         // on every call. Stays null for a provider that reports no usage — measured
-        // in Koog 1.1.1: OpenAI (which asks for `include_usage`), Anthropic and
+        // in Koog 1.1.1: OpenAI (which asks for `include_usage`) and
         // Google populate it, DeepSeek only if its API volunteers it, and the Ollama
         // client emits no end frame at all.
         var reportedTokenCount: Int? = null

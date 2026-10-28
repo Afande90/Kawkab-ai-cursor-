@@ -14,9 +14,6 @@ enum class ProviderId(
     /** OpenAI (GPT family). */
     OpenAi(CloudProvider.OPENAI),
 
-    /** Anthropic (Claude family). */
-    Anthropic(CloudProvider.ANTHROPIC),
-
     /** Google AI Studio / Gemini family. */
     Google(CloudProvider.GOOGLE),
 

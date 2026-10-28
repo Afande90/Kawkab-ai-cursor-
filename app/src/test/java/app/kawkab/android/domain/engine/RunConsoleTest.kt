@@ -220,13 +220,13 @@ class RunConsoleTest {
     @Test
     fun `given a cloud call when recorded then only the provider and model are kept`() = runTest {
         console().recordModelCall(
-            PendingModelCall.Cloud(nodeId = "n", nodeType = "CLOUD", visit = 0, call = 0, "anthropic", "claude"),
+            PendingModelCall.Cloud(nodeId = "n", nodeType = "CLOUD", visit = 0, call = 0, "google", "gemini"),
             modelSha256 = "ignored",
         )
 
         val record = appended.single() as RunTraceRecord.CloudModelCall
-        assertEquals("anthropic", record.provider)
-        assertEquals("claude", record.model)
+        assertEquals("google", record.provider)
+        assertEquals("gemini", record.model)
     }
 
     @Test
@@ -235,7 +235,7 @@ class RunConsoleTest {
             val console = console(runId = null)
 
             console.recordModelCall(
-                PendingModelCall.Cloud(nodeId = "n", nodeType = "CLOUD", visit = 0, call = 0, "anthropic", null),
+                PendingModelCall.Cloud(nodeId = "n", nodeType = "CLOUD", visit = 0, call = 0, "google", null),
                 modelSha256 = null,
             )
             console.push(ConsoleEventType.NodeExecution, "✓ CLOUD in 1ms")

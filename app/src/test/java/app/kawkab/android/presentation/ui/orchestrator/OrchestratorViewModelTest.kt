@@ -1580,7 +1580,7 @@ class OrchestratorViewModelTest {
             every { apiKeyRepository.getApiKey(any()) } answers {
                 flowOf(
                     if (firstArg<CloudProvider>() in
-                        setOf(CloudProvider.OPENAI, CloudProvider.ANTHROPIC)
+                        setOf(CloudProvider.OPENAI, CloudProvider.GOOGLE)
                     ) {
                         "k"
                     } else {
@@ -1590,14 +1590,14 @@ class OrchestratorViewModelTest {
             }
             every { apiKeyRepository.getBaseUrl(any()) } returns flowOf(null)
             every { apiKeyRepository.getModel(any()) } answers {
-                flowOf(if (firstArg<CloudProvider>() == CloudProvider.ANTHROPIC) "claude-3-opus" else null)
+                flowOf(if (firstArg<CloudProvider>() == CloudProvider.GOOGLE) "gemini-2.5-pro" else null)
             }
             val vm = buildViewModel()
 
             val availability = vm.nodeSheet.loadProviderAvailability()
 
             assertEquals(
-                mapOf(CloudProvider.OPENAI to "gpt-5.4", CloudProvider.ANTHROPIC to "claude-sonnet-4-6"),
+                mapOf(CloudProvider.OPENAI to "gpt-5.4", CloudProvider.GOOGLE to "gemini-3-flash-preview"),
                 availability.models,
             )
         }

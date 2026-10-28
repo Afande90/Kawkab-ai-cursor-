@@ -20,7 +20,7 @@ import javax.inject.Singleton
  * fixed regardless of which subset of flags is enabled. The deterministic
  * order matters because:
  *
- *  1. Prompt caches downstream (Anthropic, OpenAI, on-device LiteRT) hash a
+ *  1. Prompt caches downstream (OpenAI, on-device LiteRT) hash a
  *     prefix of the prompt; reordering blocks would invalidate the cache.
  *  2. LLMs are sensitive to position effects — keeping the user-facing
  *     payload (`Previous Node Output`) at the end mirrors a typical

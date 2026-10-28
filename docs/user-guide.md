@@ -1452,7 +1452,7 @@ device is marked **not configured on this device** and can still be chosen: a
 pipeline can run on another device. The line under the field says what happens
 if it is not set up where the pipeline runs — a Cloud node fails and names the
 reason; another node runs on the on-device model and writes a console line.
-**Auto** uses the first configured of Google, Anthropic, OpenAI and DeepSeek —
+**Auto** uses the first configured of Google, OpenAI and DeepSeek —
 never OpenRouter, Groq or your own server — and the field shows which one that
 is on this device.
 
@@ -2640,7 +2640,7 @@ The active on-device model, its backend, and external cloud providers.
 - **Manage** — opens the full Models browser to discover and install on-device
   models.
 - **External providers** *(Basic link)* — one row per provider, in this order:
-  the hosted ones (**OpenAI**, **Anthropic**, **Google**, **DeepSeek**,
+  the hosted ones (**OpenAI**, **Google**, **DeepSeek**,
   **OpenRouter**, **Groq**), then the servers you run (**Ollama**, an
   **OpenAI-compatible server**). A row shows the masked key fingerprint — or, for
   a server you run, its address and a **LAN** pill — and the model its runs use; tap
@@ -2660,7 +2660,7 @@ A provider's screen shows its fields in the order you fill them, with
 **Test connection** between what it reads and what it fills: address → key →
 **Test connection** → model.
 
-- **OpenAI, Anthropic, Google, DeepSeek** — an API key, and a model from a
+- **OpenAI, Google, DeepSeek** — an API key, and a model from a
   built-in list. With none chosen, runs use the provider's default, and a note
   under the list names it. A saved model the list no longer offers — retired by
   its provider, say — is replaced by the default too, and the note says so.
@@ -2768,7 +2768,6 @@ working setups:
 | **OpenAI**, **DeepSeek** | Yes — measured. |
 | **Google** | Yes — its client reports a broken stream as an error on its own. |
 | **Ollama** | **No.** Its client never sends the finishing marker at all, so its absence proves nothing; checking for it would fail every healthy run. |
-| **Anthropic** | **No.** We could not produce a trustworthy test either way, and guessing is exactly the failure this check exists to prevent. |
 | **OpenRouter**, **Groq**, **OpenAI-compatible server** | **No — not yet measured.** Whether each server sends the marker is checked on a device before it is relied on. |
 
 For the rows marked **No**, a connection that drops mid-answer can still leave you
@@ -2936,7 +2935,7 @@ Basic:
   unattended.
 - **Block network from local model** — when on, no model request leaves this
   device or your own network:
-  - **Hosted providers** (OpenAI, Anthropic, Google, DeepSeek, OpenRouter,
+  - **Hosted providers** (OpenAI, Google, DeepSeek, OpenRouter,
     Groq) are refused even with a key saved — for Cloud steps, `delegate_task`
     and memory alike.
     If OpenAI is your **Embedding model**, memory switches to the on-device

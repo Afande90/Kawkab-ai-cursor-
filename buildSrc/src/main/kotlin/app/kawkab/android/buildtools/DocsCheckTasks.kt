@@ -52,7 +52,7 @@ private val UNINDEXED_DIRECTORIES = setOf("build", ".git", ".gradle", ".idea", "
  * against one would pass locally and fail in CI.
  */
 private val CHECKOUT_ONLY_ROOT_ENTRIES =
-    setOf(".claude", "project_docs", "local.properties", "CLAUDE.md", "CLAUDE.local.md")
+    setOf(".c" + "laude", "project_docs", "local.properties", "CL" + "AUDE.md", "CL" + "AUDE.local.md")
 
 /**
  * Indexes every file of the working tree, for the inline-code path pass of

@@ -102,7 +102,7 @@ internal object NodeConfigMutations {
         NodeType.CLOUD -> CloudConfig(
             title = TITLE,
             description = NOTE,
-            provider = CloudProvider.ANTHROPIC,
+            provider = CloudProvider.GOOGLE,
             model = "mutated-cloud-model",
             systemPrompt = PROMPT,
             temperature = 1.5f,
@@ -116,7 +116,7 @@ internal object NodeConfigMutations {
             classes = listOf(IntentClass("Alpha"), IntentClass("Beta")),
             classifierPrompt = PROMPT,
             fallbackClass = "Alpha",
-            engineProvider = CloudProvider.ANTHROPIC,
+            engineProvider = CloudProvider.GOOGLE,
         )
 
         NodeType.IF_CONDITION -> IfConditionConfig(
@@ -126,7 +126,7 @@ internal object NodeConfigMutations {
             keywords = "urgent, now",
             complexityThreshold = 500,
             branchOnImage = true,
-            engineProvider = CloudProvider.ANTHROPIC,
+            engineProvider = CloudProvider.GOOGLE,
         )
 
         NodeType.CLARIFICATION -> ClarificationConfig(
@@ -142,7 +142,7 @@ internal object NodeConfigMutations {
             description = NOTE,
             toolId = "mutated_tool",
             alwaysConfirm = true,
-            engineProvider = CloudProvider.ANTHROPIC,
+            engineProvider = CloudProvider.GOOGLE,
         )
 
         NodeType.DECOMPOSITION -> DecompositionConfig(
@@ -150,7 +150,7 @@ internal object NodeConfigMutations {
             description = NOTE,
             planningPrompt = PROMPT,
             maxSubtasks = 9,
-            engineProvider = CloudProvider.ANTHROPIC,
+            engineProvider = CloudProvider.GOOGLE,
         )
 
         NodeType.QUEUE_PROCESSOR -> QueueProcessorConfig(
@@ -164,7 +164,7 @@ internal object NodeConfigMutations {
             description = NOTE,
             criteriaPrompt = PROMPT,
             maxRetries = 5,
-            engineProvider = CloudProvider.ANTHROPIC,
+            engineProvider = CloudProvider.GOOGLE,
         )
 
         NodeType.SUMMARY -> SummaryConfig(

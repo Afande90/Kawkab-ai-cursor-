@@ -98,7 +98,7 @@ https://github.com/user-attachments/assets/2ea06de5-6832-4e0c-ad48-430f375d8b72
 ## Highlights
 
 - On-device inference through LiteRT-LM: faster with a GPU, slower on CPU
-  alone. Cloud providers (OpenAI, Anthropic, Google Gemini, DeepSeek,
+  alone. Cloud providers (OpenAI, Google Gemini, DeepSeek,
   OpenRouter, Groq) and a server you run (Ollama, or any OpenAI-compatible one —
   vLLM, LM Studio, llama.cpp) are optional and use your own key. **Test
   connection** checks a provider or an MCP server without sending a prompt.

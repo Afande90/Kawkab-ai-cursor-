@@ -358,7 +358,6 @@ class KoogProviderConnectionCheckerTest {
         val checker = checker()
 
         assertEquals("api.openai.com", checker.destination(CloudProvider.OPENAI, null))
-        assertEquals("api.anthropic.com", checker.destination(CloudProvider.ANTHROPIC, null))
         assertEquals("generativelanguage.googleapis.com", checker.destination(CloudProvider.GOOGLE, null))
         assertEquals("api.deepseek.com", checker.destination(CloudProvider.DEEPSEEK, null))
         assertEquals("openrouter.ai", checker.destination(CloudProvider.OPENROUTER, "ignored"))

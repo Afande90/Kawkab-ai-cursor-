@@ -104,7 +104,7 @@ internal class CloudRetryPolicy(
 
     /** Defaults of the backoff shape, shared with the settings-driven wrapper. */
     companion object {
-        /** HTTP statuses that mean "the same request may succeed later". 529: Anthropic overloaded. */
+        /** HTTP statuses that mean "the same request may succeed later". 529: provider overloaded. */
         val RETRYABLE_STATUSES: Set<Int> = setOf(429, 500, 502, 503, 504, 529)
 
         /** Backoff growth between retries. */

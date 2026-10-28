@@ -66,11 +66,11 @@ class DelegateTaskToolTest {
     fun `given a client when executeDelegation then the privacy indicator records the call`() = runTest {
         // A delegated task goes to a cloud provider — the indicator must not keep saying
         // "no network calls" while it does.
-        givenClient(CloudProvider.ANTHROPIC, mockClient)
+        givenClient(CloudProvider.GOOGLE, mockClient)
         coEvery { mockClient.executeStreaming(any<Prompt>(), any<LLModel>()) } returns
             kotlinx.coroutines.flow.flowOf(StreamFrame.TextDelta("done"))
 
-        delegateTaskTool.executeDelegation("Summarise this", "anthropic")
+        delegateTaskTool.executeDelegation("Summarise this", "google")
 
         assertNotNull("the delegated call left without being recorded", networkActivity.lastOutboundAt.value)
     }
@@ -80,11 +80,11 @@ class DelegateTaskToolTest {
         runTest {
             val tracker = mockk<NetworkActivityTracker>(relaxed = true)
             val tool = tool(tracker)
-            givenClient(CloudProvider.ANTHROPIC, mockClient)
+            givenClient(CloudProvider.GOOGLE, mockClient)
             coEvery { mockClient.executeStreaming(any<Prompt>(), any<LLModel>()) } returns
                 kotlinx.coroutines.flow.flowOf(StreamFrame.TextDelta("a"), StreamFrame.TextDelta("b"))
 
-            tool.executeDelegation("Summarise this", "anthropic")
+            tool.executeDelegation("Summarise this", "google")
 
             // Once before the call, once per frame.
             verify(exactly = 3) { tracker.recordOutbound() }
@@ -92,10 +92,10 @@ class DelegateTaskToolTest {
 
     @Test
     fun `given no client can be built when executeDelegation then nothing is recorded`() = runTest {
-        givenClient(CloudProvider.ANTHROPIC, null)
-        coEvery { cloudLlmClientFactory.unavailabilityOf(CloudProvider.ANTHROPIC) } returns null
+        givenClient(CloudProvider.GOOGLE, null)
+        coEvery { cloudLlmClientFactory.unavailabilityOf(CloudProvider.GOOGLE) } returns null
 
-        delegateTaskTool.executeDelegation("Summarise this", "anthropic")
+        delegateTaskTool.executeDelegation("Summarise this", "google")
 
         assertNull(networkActivity.lastOutboundAt.value)
     }
@@ -105,15 +105,18 @@ class DelegateTaskToolTest {
         // Given — an answer far longer than the 100-character preview the tool once returned,
         // when the full text went to long-term memory instead of to the caller.
         val answer = "Here is your hello world app. ".repeat(20).trim()
-        givenClient(CloudProvider.ANTHROPIC, mockClient)
+        givenClient(CloudProvider.GOOGLE, mockClient)
         coEvery { mockClient.executeStreaming(any<Prompt>(), any<LLModel>()) } returns
-            kotlinx.coroutines.flow.flowOf(StreamFrame.TextDelta(answer))
+            kotlinx.coroutines.flow.flowOf(
+                StreamFrame.TextDelta(answer),
+                StreamFrame.End(finishReason = "stop", metaInfo = ResponseMetaInfo.Empty),
+            )
 
         // When
-        val result = delegateTaskTool.executeDelegation("Write a hello world app", "anthropic")
+        val result = delegateTaskTool.executeDelegation("Write a hello world app", "google")
 
         // Then
-        assertEquals("Success: Task completed by 'anthropic'. Response:\n$answer", result)
+        assertEquals("Success: Task completed by 'google'. Response:\n$answer", result)
     }
 
     @Test
@@ -145,10 +148,10 @@ class DelegateTaskToolTest {
 
     @Test
     fun `executeDelegation returns error when client cannot be initialized`() = runTest {
-        givenClient(CloudProvider.ANTHROPIC, null)
-        coEvery { cloudLlmClientFactory.unavailabilityOf(CloudProvider.ANTHROPIC) } returns
+        givenClient(CloudProvider.GOOGLE, null)
+        coEvery { cloudLlmClientFactory.unavailabilityOf(CloudProvider.GOOGLE) } returns
             CloudClientUnavailability.MissingCredentials
-        val result = delegateTaskTool.executeDelegation("Task", "anthropic")
+        val result = delegateTaskTool.executeDelegation("Task", "google")
         assertTrue(result.startsWith("Error: Client for"))
         assertTrue(result.contains("no API key"))
     }
@@ -170,25 +173,25 @@ class DelegateTaskToolTest {
     @Test
     fun `given the factory reports no cause when executeDelegation then the error still points at settings`() =
         runTest {
-            givenClient(CloudProvider.ANTHROPIC, null)
-            coEvery { cloudLlmClientFactory.unavailabilityOf(CloudProvider.ANTHROPIC) } returns null
+            givenClient(CloudProvider.GOOGLE, null)
+            coEvery { cloudLlmClientFactory.unavailabilityOf(CloudProvider.GOOGLE) } returns null
 
-            val result = delegateTaskTool.executeDelegation("Task", "anthropic")
+            val result = delegateTaskTool.executeDelegation("Task", "google")
 
-            assertTrue(result.startsWith("Error: Client for 'anthropic'"))
+            assertTrue(result.startsWith("Error: Client for 'google'"))
             assertTrue(result.contains("settings"))
         }
 
     @Test
     fun `executeDelegation returns error when client throws exception`() {
         runTest {
-            givenClient(CloudProvider.ANTHROPIC, mockClient)
+            givenClient(CloudProvider.GOOGLE, mockClient)
             coEvery { mockClient.models() } returns emptyList()
             every { mockClient.llmProvider() } returns mockk(relaxed = true)
             coEvery { mockClient.executeStreaming(any<Prompt>(), any<LLModel>()) } throws
                 RuntimeException("Network error")
 
-            val result = delegateTaskTool.executeDelegation("Task", "anthropic")
+            val result = delegateTaskTool.executeDelegation("Task", "google")
 
             assertTrue(result.startsWith("Error: Task delegation failed"))
         }
@@ -251,14 +254,14 @@ class DelegateTaskToolTest {
     @Test
     fun `given a provider whose missing finish reason proves nothing when executeDelegation then the answer stands`() =
         runTest {
-            // Anthropic is not measured: a cut there still reads as a short answer, as on a Cloud node.
-            givenClient(CloudProvider.ANTHROPIC, mockClient)
+            // OpenRouter is not measured: a cut there still reads as a short answer, as on a Cloud node.
+            givenClient(CloudProvider.OPENROUTER, mockClient)
             coEvery { mockClient.executeStreaming(any<Prompt>(), any<LLModel>()) } returns
                 flowOf(StreamFrame.TextDelta("Short answer."), cut())
 
-            val result = delegateTaskTool.executeDelegation("Summarise this", "anthropic")
+            val result = delegateTaskTool.executeDelegation("Summarise this", "openrouter")
 
-            assertEquals("Success: Task completed by 'anthropic'. Response:\nShort answer.", result)
+            assertEquals("Success: Task completed by 'openrouter'. Response:\nShort answer.", result)
         }
 
     /** The end frame an OpenAI-compatible stream carries when its connection was cut. */

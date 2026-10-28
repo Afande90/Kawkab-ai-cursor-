@@ -2,7 +2,6 @@ package app.kawkab.android.domain.engine.executors
 
 import ai.koog.prompt.Prompt
 import ai.koog.prompt.executor.clients.LLMClient
-import ai.koog.prompt.executor.clients.anthropic.AnthropicModels
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.llm.LLModel
 import ai.koog.prompt.message.ResponseMetaInfo
@@ -64,11 +63,10 @@ class CloudLlmNodeExecutorTest {
         networkActivityTracker = mockk(relaxed = true)
 
         every { settingsRepository.systemPromptPrefix } returns flowOf("")
-        every { apiKeyRepository.getApiKey(CloudProvider.ANTHROPIC) } returns flowOf("anthropic-key")
+        every { apiKeyRepository.getApiKey(CloudProvider.GOOGLE) } returns flowOf("google-key")
         every { apiKeyRepository.getApiKey(CloudProvider.OPENAI) } returns flowOf(null)
-        every { apiKeyRepository.getApiKey(CloudProvider.GOOGLE) } returns flowOf(null)
         every { apiKeyRepository.getApiKey(CloudProvider.DEEPSEEK) } returns flowOf(null)
-        every { apiKeyRepository.getModel(CloudProvider.ANTHROPIC) } returns flowOf("claude-sonnet-4-5")
+        every { apiKeyRepository.getModel(CloudProvider.GOOGLE) } returns flowOf("gemini-2.5-flash")
 
         executor = CloudLlmNodeExecutor(
             settingsRepository,
@@ -84,13 +82,13 @@ class CloudLlmNodeExecutorTest {
     fun `execute forwards inputText verbatim without refetching context`() = runTest {
         // Defect 1 regression guard for the cloud path: NodeContextBuilder is the single
         // source of truth, so the executor must consume `inputText` as-is.
-        val node = NodeModel("1", NodeType.CLOUD, 0f, 0f, cloudProvider = "anthropic", systemPrompt = "Sys")
+        val node = NodeModel("1", NodeType.CLOUD, 0f, 0f, cloudProvider = "google", systemPrompt = "Sys")
         val client: LLMClient = mockk(relaxed = true)
         val capturedPrompt = slot<Prompt>()
         coEvery { client.executeStreaming(capture(capturedPrompt), any<LLModel>()) } returns
             flowOf(StreamFrame.TextDelta("ok"))
-        coEvery { clientFactory.createClient(CloudProvider.ANTHROPIC, any()) } returns client
-        coEvery { modelResolver.resolveModel(CloudProvider.ANTHROPIC) } returns AnthropicModels.Sonnet_4_5
+        coEvery { clientFactory.createClient(CloudProvider.GOOGLE, any()) } returns client
+        coEvery { modelResolver.resolveModel(CloudProvider.GOOGLE) } returns OpenAIModels.Chat.GPT4o
 
         val assembledContext = "--- Original Task ---\nQ\n\n--- Previous Node Output ---\nU"
         executor.execute(node, assembledContext, "s1", "Q").toList()
@@ -105,15 +103,16 @@ class CloudLlmNodeExecutorTest {
         // Defect 7: each StreamFrame.TextDelta is one cloud-side token; counting by
         // `+= 1` keeps the metric symmetric with the local LiteRT executor and avoids
         // length-based inflation.
-        val node = NodeModel("1", NodeType.CLOUD, 0f, 0f, cloudProvider = "anthropic")
+        val node = NodeModel("1", NodeType.CLOUD, 0f, 0f, cloudProvider = "google")
         val client: LLMClient = mockk(relaxed = true)
         coEvery { client.executeStreaming(any(), any<LLModel>()) } returns flowOf(
             StreamFrame.TextDelta("a"),
             StreamFrame.TextDelta("bbb"),
             StreamFrame.TextDelta("cc"),
+            StreamFrame.End(finishReason = "stop", metaInfo = ResponseMetaInfo.Empty),
         )
-        coEvery { clientFactory.createClient(CloudProvider.ANTHROPIC, any()) } returns client
-        coEvery { modelResolver.resolveModel(CloudProvider.ANTHROPIC) } returns AnthropicModels.Sonnet_4_5
+        coEvery { clientFactory.createClient(CloudProvider.GOOGLE, any()) } returns client
+        coEvery { modelResolver.resolveModel(CloudProvider.GOOGLE) } returns OpenAIModels.Chat.GPT4o
 
         val outputs = executor.execute(node, "input", "s1", "Q").toList()
         val result = outputs.filterIsInstance<NodeOutput.Result>().single().result
@@ -125,15 +124,15 @@ class CloudLlmNodeExecutorTest {
         runTest {
             // Once before the call and once per frame: recorded at the start alone, a
             // three-minute answer would read "no network calls in last 2 m" mid-stream.
-            val node = NodeModel("1", NodeType.CLOUD, 0f, 0f, cloudProvider = "anthropic")
+            val node = NodeModel("1", NodeType.CLOUD, 0f, 0f, cloudProvider = "google")
             val client: LLMClient = mockk(relaxed = true)
             coEvery { client.executeStreaming(any(), any<LLModel>()) } returns flowOf(
                 StreamFrame.TextDelta("a"),
                 StreamFrame.TextDelta("b"),
                 StreamFrame.TextDelta("c"),
             )
-            coEvery { clientFactory.createClient(CloudProvider.ANTHROPIC, any()) } returns client
-            coEvery { modelResolver.resolveModel(CloudProvider.ANTHROPIC) } returns AnthropicModels.Sonnet_4_5
+            coEvery { clientFactory.createClient(CloudProvider.GOOGLE, any()) } returns client
+            coEvery { modelResolver.resolveModel(CloudProvider.GOOGLE) } returns OpenAIModels.Chat.GPT4o
 
             executor.execute(node, "input", "s1", "Q").toList()
 
@@ -145,11 +144,11 @@ class CloudLlmNodeExecutorTest {
         // Regression guard: an unreachable provider must terminate the node through
         // `error`, never through `outputText`. The previous version of this test asserted
         // the opposite — it pinned the defect in place, because a result whose outputText
-        // reads "Error: anthropic not configured" and whose error is null is a *success*
+        // reads "Error: google not configured" and whose error is null is a *success*
         // to GraphExecutionEngine, which then forwarded that sentence to the next node.
-        val node = NodeModel("1", NodeType.CLOUD, 0f, 0f, cloudProvider = "anthropic")
-        coEvery { clientFactory.createClient(CloudProvider.ANTHROPIC, any()) } returns null
-        coEvery { clientFactory.unavailabilityOf(CloudProvider.ANTHROPIC) } returns
+        val node = NodeModel("1", NodeType.CLOUD, 0f, 0f, cloudProvider = "google")
+        coEvery { clientFactory.createClient(CloudProvider.GOOGLE, any()) } returns null
+        coEvery { clientFactory.unavailabilityOf(CloudProvider.GOOGLE) } returns
             CloudClientUnavailability.MissingCredentials
 
         val outputs = executor.execute(node, "input", "s1", "Q").toList()
@@ -168,9 +167,9 @@ class CloudLlmNodeExecutorTest {
     fun `given local-only mode when execute then the error names the restriction not a missing key`() = runTest {
         // The factory returns null for both "blocked by policy" and "no credentials";
         // reporting the latter when the former is true sends the user to the wrong screen.
-        val node = NodeModel("1", NodeType.CLOUD, 0f, 0f, cloudProvider = "anthropic")
-        coEvery { clientFactory.createClient(CloudProvider.ANTHROPIC, any()) } returns null
-        coEvery { clientFactory.unavailabilityOf(CloudProvider.ANTHROPIC) } returns
+        val node = NodeModel("1", NodeType.CLOUD, 0f, 0f, cloudProvider = "google")
+        coEvery { clientFactory.createClient(CloudProvider.GOOGLE, any()) } returns null
+        coEvery { clientFactory.unavailabilityOf(CloudProvider.GOOGLE) } returns
             CloudClientUnavailability.BlockedByLocalOnlyMode
 
         val error = executeForError(node)
@@ -213,9 +212,9 @@ class CloudLlmNodeExecutorTest {
 
     @Test
     fun `given the factory reports no cause when execute then the node still fails with a neutral reason`() = runTest {
-        val node = NodeModel("1", NodeType.CLOUD, 0f, 0f, cloudProvider = "anthropic")
-        coEvery { clientFactory.createClient(CloudProvider.ANTHROPIC, any()) } returns null
-        coEvery { clientFactory.unavailabilityOf(CloudProvider.ANTHROPIC) } returns null
+        val node = NodeModel("1", NodeType.CLOUD, 0f, 0f, cloudProvider = "google")
+        coEvery { clientFactory.createClient(CloudProvider.GOOGLE, any()) } returns null
+        coEvery { clientFactory.unavailabilityOf(CloudProvider.GOOGLE) } returns null
 
         val error = executeForError(node)
 
@@ -228,7 +227,7 @@ class CloudLlmNodeExecutorTest {
     @Test
     fun `given no provider selected and no keys when execute then the node fails`() = runTest {
         val node = NodeModel("1", NodeType.CLOUD, 0f, 0f, cloudProvider = CloudProvider.AUTO_KEY)
-        every { apiKeyRepository.getApiKey(CloudProvider.ANTHROPIC) } returns flowOf(null)
+        every { apiKeyRepository.getApiKey(CloudProvider.GOOGLE) } returns flowOf(null)
 
         val outputs = executor.execute(node, "input", "s1", "Q").toList()
 
@@ -242,7 +241,7 @@ class CloudLlmNodeExecutorTest {
         // The node sheet shows "AUTO" as Auto (it compares ignoring case); the run
         // must treat it the same way instead of as an unknown provider.
         val node = NodeModel("1", NodeType.CLOUD, 0f, 0f, cloudProvider = "AUTO")
-        every { apiKeyRepository.getApiKey(CloudProvider.ANTHROPIC) } returns flowOf(null)
+        every { apiKeyRepository.getApiKey(CloudProvider.GOOGLE) } returns flowOf(null)
 
         executor.execute(node, "input", "s1", "Q").toList()
 
@@ -264,7 +263,7 @@ class CloudLlmNodeExecutorTest {
             StreamFrame.End(finishReason = null, metaInfo = ResponseMetaInfo.Empty),
         )
         coEvery { clientFactory.createClient(CloudProvider.DEEPSEEK, any()) } returns client
-        coEvery { modelResolver.resolveModel(CloudProvider.DEEPSEEK) } returns AnthropicModels.Sonnet_4_5
+        coEvery { modelResolver.resolveModel(CloudProvider.DEEPSEEK) } returns OpenAIModels.Chat.GPT4o
 
         val result = executor.execute(node, "input", "s1", "Q").toList()
             .filterIsInstance<NodeOutput.Result>().single().result
@@ -283,7 +282,7 @@ class CloudLlmNodeExecutorTest {
             StreamFrame.End(finishReason = "stop", metaInfo = ResponseMetaInfo.Empty),
         )
         coEvery { clientFactory.createClient(CloudProvider.DEEPSEEK, any()) } returns client
-        coEvery { modelResolver.resolveModel(CloudProvider.DEEPSEEK) } returns AnthropicModels.Sonnet_4_5
+        coEvery { modelResolver.resolveModel(CloudProvider.DEEPSEEK) } returns OpenAIModels.Chat.GPT4o
 
         val result = executor.execute(node, "input", "s1", "Q").toList()
             .filterIsInstance<NodeOutput.Result>().single().result
@@ -313,7 +312,7 @@ class CloudLlmNodeExecutorTest {
             ),
         )
         coEvery { clientFactory.createClient(CloudProvider.DEEPSEEK, any()) } returns client
-        coEvery { modelResolver.resolveModel(CloudProvider.DEEPSEEK) } returns AnthropicModels.Sonnet_4_5
+        coEvery { modelResolver.resolveModel(CloudProvider.DEEPSEEK) } returns OpenAIModels.Chat.GPT4o
 
         val result = executor.execute(node, "input", "s1", "Q").toList()
             .filterIsInstance<NodeOutput.Result>().single().result
@@ -338,7 +337,7 @@ class CloudLlmNodeExecutorTest {
             ),
         )
         coEvery { clientFactory.createClient(CloudProvider.DEEPSEEK, any()) } returns client
-        coEvery { modelResolver.resolveModel(CloudProvider.DEEPSEEK) } returns AnthropicModels.Sonnet_4_5
+        coEvery { modelResolver.resolveModel(CloudProvider.DEEPSEEK) } returns OpenAIModels.Chat.GPT4o
 
         val result = executor.execute(node, "input", "s1", "Q").toList()
             .filterIsInstance<NodeOutput.Result>().single().result
@@ -362,7 +361,7 @@ class CloudLlmNodeExecutorTest {
             StreamFrame.End(finishReason = null, metaInfo = ResponseMetaInfo.Empty),
         )
         coEvery { clientFactory.createClient(CloudProvider.OLLAMA, any()) } returns client
-        coEvery { modelResolver.resolveModel(CloudProvider.OLLAMA) } returns AnthropicModels.Sonnet_4_5
+        coEvery { modelResolver.resolveModel(CloudProvider.OLLAMA) } returns OpenAIModels.Chat.GPT4o
 
         val result = executor.execute(node, "input", "s1", "Q").toList()
             .filterIsInstance<NodeOutput.Result>().single().result
@@ -391,7 +390,7 @@ class CloudLlmNodeExecutorTest {
             ),
         )
         coEvery { clientFactory.createClient(CloudProvider.DEEPSEEK, any()) } returns client
-        coEvery { modelResolver.resolveModel(CloudProvider.DEEPSEEK) } returns AnthropicModels.Sonnet_4_5
+        coEvery { modelResolver.resolveModel(CloudProvider.DEEPSEEK) } returns OpenAIModels.Chat.GPT4o
 
         executor.execute(node, "input", "s1", "Q").toList()
 
@@ -410,7 +409,7 @@ class CloudLlmNodeExecutorTest {
             StreamFrame.End(finishReason = null, metaInfo = ResponseMetaInfo.Empty),
         )
         coEvery { clientFactory.createClient(CloudProvider.OLLAMA, any()) } returns client
-        coEvery { modelResolver.resolveModel(CloudProvider.OLLAMA) } returns AnthropicModels.Sonnet_4_5
+        coEvery { modelResolver.resolveModel(CloudProvider.OLLAMA) } returns OpenAIModels.Chat.GPT4o
 
         val result = executor.execute(node, "input", "s1", "Q").toList()
             .filterIsInstance<NodeOutput.Result>().single().result
@@ -465,11 +464,14 @@ class CloudLlmNodeExecutorTest {
         // KoogClientFactory / KoogModelMapper directly, this test setup would no longer
         // be sufficient to drive it (it would still pass at runtime but the architectural
         // intent would be lost — see the package-level guard test for compile-time enforcement).
-        val node = NodeModel("1", NodeType.CLOUD, 0f, 0f, cloudProvider = "anthropic")
+        val node = NodeModel("1", NodeType.CLOUD, 0f, 0f, cloudProvider = "google")
         val client: LLMClient = mockk(relaxed = true)
-        coEvery { client.executeStreaming(any(), any<LLModel>()) } returns flowOf(StreamFrame.TextDelta("hi"))
-        coEvery { clientFactory.createClient(CloudProvider.ANTHROPIC, any()) } returns client
-        coEvery { modelResolver.resolveModel(CloudProvider.ANTHROPIC) } returns AnthropicModels.Sonnet_4_5
+        coEvery { client.executeStreaming(any(), any<LLModel>()) } returns flowOf(
+            StreamFrame.TextDelta("hi"),
+            StreamFrame.End(finishReason = "stop", metaInfo = ResponseMetaInfo.Empty),
+        )
+        coEvery { clientFactory.createClient(CloudProvider.GOOGLE, any()) } returns client
+        coEvery { modelResolver.resolveModel(CloudProvider.GOOGLE) } returns OpenAIModels.Chat.GPT4o
 
         val outputs = executor.execute(node, "input", "s1", "Q").toList()
         val result = outputs.filterIsInstance<NodeOutput.Result>().single().result
@@ -483,15 +485,15 @@ class CloudLlmNodeExecutorTest {
         // and 3 s while the user saw nothing until the very end. Asserting the
         // ORDER of the emissions is what pins that: the console line has to come
         // out before the tokens it preceded in real time.
-        val node = NodeModel("1", NodeType.CLOUD, 0f, 0f, cloudProvider = "anthropic")
+        val node = NodeModel("1", NodeType.CLOUD, 0f, 0f, cloudProvider = "google")
         val client: LLMClient = mockk(relaxed = true)
         val capturedListener = slot<CloudRetryListener>()
-        coEvery { clientFactory.createClient(CloudProvider.ANTHROPIC, capture(capturedListener)) } returns client
-        coEvery { modelResolver.resolveModel(CloudProvider.ANTHROPIC) } returns AnthropicModels.Sonnet_4_5
+        coEvery { clientFactory.createClient(CloudProvider.GOOGLE, capture(capturedListener)) } returns client
+        coEvery { modelResolver.resolveModel(CloudProvider.GOOGLE) } returns OpenAIModels.Chat.GPT4o
         // Fire the retry callback at the moment the provider is first called —
         // i.e. before any token exists — exactly as the retry wrapper does.
         coEvery { client.executeStreaming(any(), any<LLModel>()) } answers {
-            capturedListener.captured.onRetry(provider = "anthropic", attempt = 1, maxRetries = 2)
+            capturedListener.captured.onRetry(provider = "google", attempt = 1, maxRetries = 2)
             flowOf(StreamFrame.TextDelta("answer"))
         }
 
@@ -507,6 +509,6 @@ class CloudLlmNodeExecutorTest {
             retryIndex < firstTokenIndex,
         )
         val line = (outputs[retryIndex] as NodeOutput.Console).message
-        assertEquals("Cloud retry 1/2 for anthropic", line)
+        assertEquals("Cloud retry 1/2 for google", line)
     }
 }

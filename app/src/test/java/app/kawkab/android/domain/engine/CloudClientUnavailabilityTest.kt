@@ -13,9 +13,9 @@ class CloudClientUnavailabilityTest {
 
     @Test
     fun `given missing credentials for a hosted provider when worded then it asks for an API key`() {
-        val message = CloudClientUnavailability.MissingCredentials.message(CloudProvider.ANTHROPIC)
+        val message = CloudClientUnavailability.MissingCredentials.message(CloudProvider.GOOGLE)
 
-        assertTrue(message.contains("'anthropic'"))
+        assertTrue(message.contains("'google'"))
         assertTrue(message.contains("no API key"))
     }
 

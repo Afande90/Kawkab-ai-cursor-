@@ -108,12 +108,12 @@ class RecordingNodeInferenceTest {
         every { engine.generateResponseStream(any(), any(), any()) } returns flowOf("x")
         val inference = RecordingNodeInference(tree, node, visit = 0)
 
-        inference.cloudCall("anthropic", "claude")
+        inference.cloudCall("google", "gemini")
         inference.local(engine, "p").toList()
 
         val drained = inference.drain()
         assertEquals(listOf(0, 1), drained.map { it.call })
-        assertEquals(PendingModelCall.Cloud("llm", "LITE_RT", 0, 0, "anthropic", "claude"), drained.first())
+        assertEquals(PendingModelCall.Cloud("llm", "LITE_RT", 0, 0, "google", "gemini"), drained.first())
     }
 
     @Test

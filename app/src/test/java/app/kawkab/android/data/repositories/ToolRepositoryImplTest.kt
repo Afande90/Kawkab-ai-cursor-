@@ -351,7 +351,7 @@ class ToolRepositoryImplTest {
         // We use `delegate_task` because it is advertised only when at least one cloud
         // API key is configured, and the test setup deliberately omits it from the
         // executor map.
-        every { apiKeyRepository.getApiKey(CloudProvider.ANTHROPIC) } returns flowOf("anthropic-test-key")
+        every { apiKeyRepository.getApiKey(CloudProvider.GOOGLE) } returns flowOf("google-test-key")
         coEvery { mcpClient.getTools() } returns emptyList()
         val toolName = "delegate_task"
 
@@ -384,7 +384,7 @@ class ToolRepositoryImplTest {
     @Test
     fun `given builtin delegate_task when getRisk then returns SENSITIVE`() = runTest {
         // delegate_task is only advertised when a cloud API key is present.
-        every { apiKeyRepository.getApiKey(CloudProvider.ANTHROPIC) } returns flowOf("anthropic-test-key")
+        every { apiKeyRepository.getApiKey(CloudProvider.GOOGLE) } returns flowOf("google-test-key")
         coEvery { mcpClient.getTools() } returns emptyList()
 
         val risk = repository.getRisk("delegate_task")

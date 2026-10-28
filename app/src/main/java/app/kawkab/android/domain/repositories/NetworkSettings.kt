@@ -70,7 +70,7 @@ interface NetworkSettings {
     /**
      * Local-only mode flag ("Block network from local model"). When `true`, no
      * model request leaves the device or the user's network: `ModelNetworkGate`
-     * refuses every hosted cloud provider (OpenAI / Anthropic / Google / DeepSeek)
+     * refuses every hosted cloud provider (OpenAI / Google / DeepSeek)
      * for chat, `delegate_task` and memory embeddings alike, and admits Ollama only
      * when its host is `localhost` or a loopback / private IPv4 literal, whatever
      * the scheme ([app.kawkab.android.domain.services.LocalOnlyPolicy]). Tools

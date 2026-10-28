@@ -4,20 +4,19 @@ import app.kawkab.design.components.misc.TestProbeTone
 import app.kawkab.design.components.misc.TestProbeUi
 
 /**
- * Preview fixtures of the external providers: the Models list with all eight rows, the *Add
+ * Preview fixtures of the external providers: the Models list with all seven rows, the *Add
  * provider* picker, each provider form in its states, and the model list. Stateless test data;
  * every string arrives resolved, as it does in production.
  */
 internal object ProviderPreview {
 
     /**
-     * All eight providers, each row in one of its states: configured, no key, no address, and
+     * All seven providers, each row in one of its states: configured, no key, no address, and
      * a key saved with no model where the provider has no default.
      */
     fun modelsProvidersEight(): ModelsSettingsViewState = SettingsPreview.models().copy(
         providers = listOf(
             ProviderRowState("openai", "OpenAI", "sk-…3a9f", "gpt-4o-mini", null, false),
-            ProviderRowState("anthropic", "Anthropic", null, null, null, false),
             ProviderRowState("google", "Google", null, null, null, false),
             ProviderRowState("deepseek", "DeepSeek", null, null, null, false),
             ProviderRowState("openrouter", "OpenRouter", "sk-or-…7c21", null, null, false, modelMissing = true),
@@ -94,13 +93,13 @@ internal object ProviderPreview {
      * the model runs use instead.
      */
     fun providerDetailModelNoLongerOffered(): ProviderDetailViewState = providerDetail().copy(
-        title = "Anthropic",
-        apiKey = ProviderKeyUi(label = "Anthropic API key", value = "sk-ant-api03-7c1d"),
+        title = "OpenAI",
+        apiKey = ProviderKeyUi(label = "OpenAI API key", value = "sk-proj-7c1d"),
         model = ProviderModelUi(
-            label = "Anthropic model",
-            value = "claude-opus-4-1",
-            options = listOf("claude-haiku-4-5", "claude-sonnet-4-5", "claude-opus-4-6"),
-            note = "claude-opus-4-1 is no longer offered — runs use claude-sonnet-4-5. Choose a model above.",
+            label = "OpenAI model",
+            value = "gpt-4.1-preview",
+            options = listOf("gpt-4o", "gpt-4o-mini", "gpt-4.1"),
+            note = "gpt-4.1-preview is no longer offered — runs use gpt-4o. Choose a model above.",
         ),
     )
 
@@ -235,7 +234,7 @@ internal object ProviderPreview {
             "nvidia/llama-3.3-nemotron-super-49b-v1:free",
             "deepcogito/cogito-v2-preview-llama-3.3-70b",
             "thedrummer/anubis-70b-v1.1-llama-3.3",
-            "anthropic/claude-sonnet-4.5",
+            "qwen/qwen-2.5-72b-instruct",
             "google/gemini-2.5-flash",
         ),
         selected = "meta-llama/llama-3.3-70b-instruct:free",
@@ -298,7 +297,6 @@ internal object ProviderPreview {
                 title = "Hosted",
                 rows = listOf(
                     ProviderPickerRowUi(id = "OpenAi", title = "OpenAI", added = true),
-                    ProviderPickerRowUi(id = "Anthropic", title = "Anthropic"),
                     ProviderPickerRowUi(id = "Google", title = "Google"),
                     ProviderPickerRowUi(id = "DeepSeek", title = "DeepSeek"),
                     ProviderPickerRowUi(id = "OpenRouter", title = "OpenRouter", added = true),

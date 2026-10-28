@@ -39,7 +39,7 @@ class KoogClientFactoryTimeoutTest {
         settingsRepository = mockk(relaxed = true)
 
         every { apiKeyRepository.getApiKey(CloudProvider.OPENAI) } returns flowOf("k")
-        every { apiKeyRepository.getApiKey(CloudProvider.ANTHROPIC) } returns flowOf("k")
+        every { apiKeyRepository.getApiKey(CloudProvider.GOOGLE) } returns flowOf("k")
         every { apiKeyRepository.getApiKey(CloudProvider.GOOGLE) } returns flowOf("k")
         every { apiKeyRepository.getApiKey(CloudProvider.DEEPSEEK) } returns flowOf("k")
         every { settingsRepository.blockNetworkFromLocalModel } returns flowOf(false)
@@ -58,7 +58,7 @@ class KoogClientFactoryTimeoutTest {
     fun `given any BYOK provider when a client is built then our deadlines replace Koog defaults`() = runTest {
         val providers = listOf(
             CloudProvider.OPENAI,
-            CloudProvider.ANTHROPIC,
+            CloudProvider.GOOGLE,
             CloudProvider.GOOGLE,
             CloudProvider.DEEPSEEK,
         )

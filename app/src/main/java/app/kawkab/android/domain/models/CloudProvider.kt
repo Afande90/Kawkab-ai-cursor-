@@ -45,9 +45,6 @@ enum class CloudProvider(
     /** OpenAI (GPT family). */
     OPENAI("openai", usesApiKey = true, usesBaseUrl = false, requiresModel = false),
 
-    /** Anthropic (Claude family). */
-    ANTHROPIC("anthropic", usesApiKey = true, usesBaseUrl = false, requiresModel = false),
-
     /** Google AI Studio / Gemini family. */
     GOOGLE("google", usesApiKey = true, usesBaseUrl = false, requiresModel = false),
 
@@ -95,7 +92,6 @@ enum class CloudProvider(
         fun fromId(id: String?): CloudProvider? = when (id?.lowercase()) {
             null -> null
             "openai" -> OPENAI
-            "anthropic" -> ANTHROPIC
             "google", "gemini" -> GOOGLE
             "deepseek" -> DEEPSEEK
             "openrouter" -> OPENROUTER

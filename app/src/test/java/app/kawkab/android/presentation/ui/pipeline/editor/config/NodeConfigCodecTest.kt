@@ -153,8 +153,8 @@ class NodeConfigCodecTest {
         val source = node(NodeType.CLOUD, "Cloud")
         val config = CloudConfig(
             title = "Cloud",
-            provider = app.kawkab.design.components.pipelineeditor.CloudProvider.ANTHROPIC,
-            model = "claude-opus-4-7",
+            provider = app.kawkab.design.components.pipelineeditor.CloudProvider.GOOGLE,
+            model = "gemini-3.1-pro-preview",
             systemPrompt = "You are helpful.",
             temperature = 0.3f,
             maxTokens = 2048,
@@ -162,8 +162,8 @@ class NodeConfigCodecTest {
         )
         val applied = NodeConfigCodec.apply(source, config)
         val decoded = NodeConfigCodec.decode(applied) as CloudConfig
-        assertEquals(app.kawkab.design.components.pipelineeditor.CloudProvider.ANTHROPIC, decoded.provider)
-        assertEquals("claude-opus-4-7", decoded.model)
+        assertEquals(app.kawkab.design.components.pipelineeditor.CloudProvider.GOOGLE, decoded.provider)
+        assertEquals("gemini-3.1-pro-preview", decoded.model)
         assertEquals(2048, decoded.maxTokens)
         assertEquals(45_000, decoded.timeoutMs)
     }

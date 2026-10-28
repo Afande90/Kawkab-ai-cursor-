@@ -32,7 +32,7 @@ class CloudCallNotingClientTest {
         runTest {
             val asked = mutableListOf<Pair<String, Float?>>()
             val client = CloudCallNotingClient(
-                provider = "anthropic",
+                provider = "google",
                 inference = inference,
                 client = StructuredInferenceClient { prompt, temperature ->
                     asked += prompt to temperature
@@ -45,6 +45,6 @@ class CloudCallNotingClientTest {
 
             assertEquals("answer", first)
             assertEquals(listOf("route this" to null, "route this again" to 0.1f), asked)
-            assertEquals(listOf("anthropic" to null, "anthropic" to null), notes)
+            assertEquals(listOf("google" to null, "google" to null), notes)
         }
 }

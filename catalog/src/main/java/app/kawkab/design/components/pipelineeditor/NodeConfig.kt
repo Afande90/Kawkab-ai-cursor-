@@ -44,7 +44,6 @@ data class LocalModelOption(val id: String, val displayName: String, val isActiv
  */
 enum class CloudProvider {
     OPEN_AI,
-    ANTHROPIC,
     GOOGLE,
     DEEPSEEK,
     OPENROUTER,

@@ -536,7 +536,7 @@ The collaborators, each covering one concern:
 |--------------------|-----------------------------------------------------------------------------------------------|
 | `INPUT`            | Entry point. Echoes the user's original message downstream. Exactly one per graph.            |
 | `LITE_RT`          | On-device LLM call via LiteRT-LM. Streams tokens as `Flow<String>`.                           |
-| `CLOUD`            | Cloud LLM call. Provider (OpenAI / Anthropic / Google / DeepSeek / OpenRouter / Groq / Ollama / OpenAI-compatible server) selected by param. |
+| `CLOUD`            | Cloud LLM call. Provider (OpenAI / Google / DeepSeek / OpenRouter / Groq / Ollama / OpenAI-compatible server) selected by param. |
 | `OUTPUT`           | Final answer to the user. Optionally wraps upstream text with a system prompt.                |
 | `SUMMARY`          | Condenses tool results / multi-turn output into a single message.                             |
 | `INTENT_ROUTER`    | Routes execution down one branch based on classified intent.                                  |
@@ -1320,7 +1320,7 @@ send-time check then refuses.
 
 ### 4.4. Cloud LLM providers
 
-Cloud providers (`openai`, `anthropic`, `google`, `deepseek`, `openrouter`,
+Cloud providers (`openai`, `google`, `deepseek`, `openrouter`,
 `groq`, `ollama`, `openai_compatible`) implement the `CloudLlmProvider` interface
 in `domain`. OpenRouter, Groq and a server the user runs are Koog's own OpenAI
 client with other settings (`data/engine/OpenAiCompatibleClients`): OpenRouter and

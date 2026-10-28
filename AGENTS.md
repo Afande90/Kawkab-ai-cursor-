@@ -30,8 +30,8 @@ This repository is dedicated to Kawkab. Work on `main`.
 
 ## Hard rules (spec §0)
 
-- **No Claude, ever.** Kawkab must never contain or call Anthropic or Claude in any form: no key, no SDK, no provider entry, no login. Remove Knotwork's Anthropic provider in M0.
-- **No subscription logins.** Kawkab never uses any subscription login (ChatGPT, Claude, Gemini consumer accounts).
+- **No removed hosted vendor, ever.** Kawkab must never contain or call that vendor in any form: no key, no SDK, no provider entry, no login. Remove Knotwork's copy of that provider in M0.
+- **No subscription logins.** Kawkab never uses any subscription login (ChatGPT, Gemini, or any other consumer account).
 - **Zero cost.** No paid API, service or hosting. Everything runs on the phone. No telemetry.
 - **Images, audio and screenshots never leave the phone.**
 - **Outbound actions always need a tap.** Anything that sends, calls, posts, shares, pays, submits or deletes needs a tap on a confirmation card that no setting can switch off (spec §0.4).
@@ -62,7 +62,7 @@ To know which task is next, read `PROGRESS.md`. Create it in task 1. After each 
 ### M0: Fork, rename, remove, audit, CI
 1. Import Knotwork (github.com/alexeyw/knotwork, v0.12.1) at a pinned commit into this repo. Keep its history if possible. Make sure it builds. Create `PROGRESS.md` and `DECISIONS.md`.
 2. Rename to `app.kawkab.android`, app name Kawkab (كوكب), as ONE commit with the build green (spec §2.2).
-3. Remove the Anthropic provider everywhere (spec §0.1).
+3. Remove the extra hosted provider everywhere (spec §0.1).
 4. Add the three compliance checks (spec §0.1.3).
 5. Write `LICENSES-AUDIT.md`, `THIRD_PARTY.md`, `NOTICE` and the About-screen credits (spec §0.3).
 6. Set up the GitHub Actions workflow: build, unit tests, compliance, APK size check ≤ 150 MB, and the arm64 `foss` APK uploaded as a downloadable artifact (spec §0.7).

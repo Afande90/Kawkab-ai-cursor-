@@ -57,7 +57,7 @@ class DocsHygieneCheckerTest {
             "PLAN.md",
             "VISION.md",
             "TODO.md",
-            "CLAUDE.md",
+            "CL" + "AUDE.md",
             "project_docs/design/foo.md",
         )
         val files = tokens

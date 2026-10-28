@@ -652,7 +652,7 @@ A model file downloaded from Hugging Face is checked before it becomes a model.
 
 ### API keys for cloud providers
 
-- Keys for optional cloud LLM providers (OpenAI, Anthropic, Google, DeepSeek,
+- Keys for optional cloud LLM providers (OpenAI, Google, DeepSeek,
   OpenRouter, Groq, and an OpenAI-compatible server you run, if it uses one) —
   and the addresses of servers you run — are stored exclusively in the same kind
   of Keystore-backed encrypted store as the database passphrase (AES-256-GCM

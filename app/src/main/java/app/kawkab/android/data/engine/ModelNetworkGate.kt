@@ -40,7 +40,7 @@ import javax.inject.Singleton
 class ModelNetworkGate @Inject constructor(private val networkSettings: NetworkSettings) {
 
     /**
-     * Decides whether a hosted cloud provider (OpenAI, Anthropic, Google, DeepSeek, OpenRouter,
+     * Decides whether a hosted cloud provider (OpenAI, Google, DeepSeek, OpenRouter,
      * Groq) may be reached. Credentials are the caller's concern; this answers only the policy
      * question.
      *

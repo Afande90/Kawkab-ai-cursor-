@@ -79,7 +79,7 @@ class ModelsSettingsDelegateTest {
         assertTrue(rows.getValue(ProviderId.OpenRouter).modelMissing)
         assertFalse(rows.getValue(ProviderId.Groq).modelMissing)
         assertFalse("OpenAI has a default model.", rows.getValue(ProviderId.OpenAi).modelMissing)
-        assertFalse("Nothing saved, nothing missing yet.", rows.getValue(ProviderId.Anthropic).modelMissing)
+        assertFalse("Nothing saved, nothing missing yet.", rows.getValue(ProviderId.Google).modelMissing)
     }
 
     @Test
@@ -96,10 +96,10 @@ class ModelsSettingsDelegateTest {
     @Test
     fun `given saved models when summarised then each row names the model its runs use`() = runTest {
         keys[CloudProvider.OPENAI] = "sk-1"
-        keys[CloudProvider.ANTHROPIC] = "sk-2"
-        models[CloudProvider.ANTHROPIC] = "claude-3-opus"
         keys[CloudProvider.GOOGLE] = "AIza"
-        models[CloudProvider.GOOGLE] = "gemini-2.5-flash"
+        models[CloudProvider.GOOGLE] = "gemini-2.5-pro"
+        keys[CloudProvider.DEEPSEEK] = "sk-ds"
+        models[CloudProvider.DEEPSEEK] = "deepseek-v4-flash"
         addresses[CloudProvider.OLLAMA] = "http://192.168.1.20:11434"
 
         val rows = summaries()
@@ -107,10 +107,10 @@ class ModelsSettingsDelegateTest {
         assertEquals("Nothing chosen: the default.", "gpt-5.4", rows.getValue(ProviderId.OpenAi).model)
         assertEquals(
             "A choice the app no longer offers is not what runs use.",
-            "claude-sonnet-4-6",
-            rows.getValue(ProviderId.Anthropic).model,
+            "gemini-3-flash-preview",
+            rows.getValue(ProviderId.Google).model,
         )
-        assertEquals("gemini-2.5-flash", rows.getValue(ProviderId.Google).model)
+        assertEquals("deepseek-v4-flash", rows.getValue(ProviderId.DeepSeek).model)
         assertEquals("llama3", rows.getValue(ProviderId.Ollama).model)
         assertNull("No default and nothing chosen.", rows.getValue(ProviderId.OpenRouter).model)
     }

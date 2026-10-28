@@ -40,8 +40,6 @@ class ApiKeyManagerTest {
         val SHIPPED_ENTRIES: Map<String, suspend (ApiKeyManager) -> Unit> = mapOf(
             "openai_api_key" to { m -> m.setApiKey(CloudProvider.OPENAI, "v") },
             "openai_model" to { m -> m.setModel(CloudProvider.OPENAI, "v") },
-            "anthropic_api_key" to { m -> m.setApiKey(CloudProvider.ANTHROPIC, "v") },
-            "anthropic_model" to { m -> m.setModel(CloudProvider.ANTHROPIC, "v") },
             "google_api_key" to { m -> m.setApiKey(CloudProvider.GOOGLE, "v") },
             "google_model" to { m -> m.setModel(CloudProvider.GOOGLE, "v") },
             "deepseek_api_key" to { m -> m.setApiKey(CloudProvider.DEEPSEEK, "v") },
@@ -106,9 +104,9 @@ class ApiKeyManagerTest {
     @Test
     fun `given a stored key that does not authenticate when read then treated as unset and dropped`() = runTest {
         manager().setApiKey(CloudProvider.OPENAI, "sk-test-123")
-        manager().setApiKey(CloudProvider.ANTHROPIC, "sk-ant")
+        manager().setApiKey(CloudProvider.GOOGLE, "sk-ant")
         // A blob sealed for another slot fails the tag check, as a tampered one would.
-        prefs.values[OPENAI_KEY] = prefs.values.getValue("anthropic_api_key")
+        prefs.values[OPENAI_KEY] = prefs.values.getValue("google_api_key")
 
         assertNull(manager().getApiKey(CloudProvider.OPENAI).first())
         assertFalse(prefs.values.containsKey(OPENAI_KEY))
@@ -174,11 +172,11 @@ class ApiKeyManagerTest {
     @Test
     fun `given updated key when flow observed then emits the new value`() = runTest {
         val subject = manager()
-        subject.setApiKey(CloudProvider.ANTHROPIC, "first")
+        subject.setApiKey(CloudProvider.GOOGLE, "first")
 
-        subject.setApiKey(CloudProvider.ANTHROPIC, "second")
+        subject.setApiKey(CloudProvider.GOOGLE, "second")
 
-        assertEquals("second", subject.getApiKey(CloudProvider.ANTHROPIC).first())
+        assertEquals("second", subject.getApiKey(CloudProvider.GOOGLE).first())
     }
 
     @Test
@@ -213,7 +211,7 @@ class ApiKeyManagerTest {
         val subject = manager()
         subject.setApiKey(CloudProvider.OPENAI, "sk-openai")
 
-        assertNull(subject.getApiKey(CloudProvider.ANTHROPIC).first())
+        assertNull(subject.getApiKey(CloudProvider.GOOGLE).first())
         assertNull(subject.getModel(CloudProvider.OPENAI).first())
     }
 
@@ -279,7 +277,7 @@ class ApiKeyManagerTest {
     fun `given entries a backup carried when restored then each is written and readers see it`() = runTest {
         // Given — this phone already has a key for another provider, and an observer of the restored one.
         val subject = manager()
-        subject.setApiKey(CloudProvider.ANTHROPIC, "sk-ant-kept")
+        subject.setApiKey(CloudProvider.GOOGLE, "sk-ant-kept")
         val observed = subject.getApiKey(CloudProvider.OPENAI)
 
         // When
@@ -298,7 +296,7 @@ class ApiKeyManagerTest {
         assertEquals("sk-restored", observed.first())
         assertEquals("gpt-5.4", manager().getModel(CloudProvider.OPENAI).first())
         assertEquals(8192, manager().getOllamaContextWindowSize().first())
-        assertEquals("sk-ant-kept", manager().getApiKey(CloudProvider.ANTHROPIC).first())
+        assertEquals("sk-ant-kept", manager().getApiKey(CloudProvider.GOOGLE).first())
         assertFalse(prefs.values.containsKey("not_an_entry_of_this_store"))
     }
 

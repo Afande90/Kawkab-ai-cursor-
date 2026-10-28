@@ -473,7 +473,6 @@ internal object SettingsPreview {
 
     private fun providers(): List<ProviderRowState> = listOf(
         ProviderRowState("openai", "OpenAI", "sk-…3a9f", "gpt-4o-mini", null, false),
-        ProviderRowState("anthropic", "Anthropic", "sk-ant-…b21c", "claude-sonnet-4", null, false),
         ProviderRowState("google", "Google", null, null, null, false),
         ProviderRowState("ollama", "Ollama", "192.168.1.42:11434", "mistral-7b · 4096", "192.168.1.42:11434", true),
     )

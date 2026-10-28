@@ -23,7 +23,6 @@ object AutoProvider {
      */
     val ORDER: List<CloudProvider> = listOf(
         CloudProvider.GOOGLE,
-        CloudProvider.ANTHROPIC,
         CloudProvider.OPENAI,
         CloudProvider.DEEPSEEK,
     )

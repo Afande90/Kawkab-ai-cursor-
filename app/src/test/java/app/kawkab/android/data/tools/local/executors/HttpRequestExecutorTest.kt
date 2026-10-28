@@ -240,7 +240,7 @@ class HttpRequestExecutorTest {
     @Test
     fun `given a stored key in the body when execute then refuses without a request`() = runTest {
         allow(server.hostName)
-        every { apiKeys.getApiKey(CloudProvider.ANTHROPIC) } returns flowOf("sk-ant-secret")
+        every { apiKeys.getApiKey(CloudProvider.GOOGLE) } returns flowOf("sk-ant-secret")
 
         val result = run(
             """{"method":"POST","url":"${server.url("/")}","body":"payload=sk-ant-secret"}""",

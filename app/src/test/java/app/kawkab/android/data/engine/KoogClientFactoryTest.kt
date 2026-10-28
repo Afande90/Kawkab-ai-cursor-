@@ -59,13 +59,6 @@ class KoogClientFactoryTest {
     }
 
     @Test
-    fun `createClient(ANTHROPIC) returns executor when key is present`() = runTest {
-        coEvery { apiKeyRepository.getApiKey(CloudProvider.ANTHROPIC) } returns flowOf("test-key")
-        val executor = factory.createClient(CloudProvider.ANTHROPIC)
-        assertNotNull(executor)
-    }
-
-    @Test
     fun `createClient(GOOGLE) returns executor when key is present`() = runTest {
         coEvery { apiKeyRepository.getApiKey(CloudProvider.GOOGLE) } returns flowOf("test-key")
         val executor = factory.createClient(CloudProvider.GOOGLE)
@@ -100,13 +93,6 @@ class KoogClientFactoryTest {
         coEvery { apiKeyRepository.getApiKey(CloudProvider.OPENAI) } returns flowOf("test-key")
         val executor = factory.createClient(CloudProvider.OPENAI)
         assertNull(executor)
-    }
-
-    @Test
-    fun `createClient(ANTHROPIC) returns null when local-only mode is on`() = runTest {
-        every { settingsRepository.blockNetworkFromLocalModel } returns MutableStateFlow(true)
-        coEvery { apiKeyRepository.getApiKey(CloudProvider.ANTHROPIC) } returns flowOf("test-key")
-        assertNull(factory.createClient(CloudProvider.ANTHROPIC))
     }
 
     @Test

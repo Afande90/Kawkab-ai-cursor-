@@ -16,7 +16,7 @@ import java.io.File
  *   constrained by these rules.
  * - It excludes anything outside the module's real source tree. The project
  *   root can contain unrelated copies of the codebase — notably stale git
- *   worktrees under `.claude/worktrees/` from parallel sessions — which a
+ *   worktrees under `.gemini/worktrees/` from parallel sessions — which a
  *   whole-project scope would parse and then flag with spurious, environment
  *   dependent violations. Pinning to a single directory subtree keeps the
  *   guard deterministic across machines and CI.

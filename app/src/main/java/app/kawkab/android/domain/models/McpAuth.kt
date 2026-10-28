@@ -40,7 +40,7 @@ sealed interface McpAuth {
     /**
      * Single custom header carrying an API key — e.g.
      * `X-API-Key: <value>`. The header name is user-supplied so the
-     * scheme covers vendor-specific names (`Anthropic-Api-Key`,
+     * scheme covers vendor-specific names (`X-Api-Key`,
      * `Asana-Token`, etc.) without forcing them into a Bearer wrapper.
      *
      * @property headerName name of the header the key is sent under.
