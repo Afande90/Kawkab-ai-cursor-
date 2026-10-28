@@ -1,0 +1,5 @@
+Back up what you made (chats, memory, pipelines, settings and files) into one file locked with your password, and restore it on this phone or a new one.
+
+New providers: OpenRouter, Groq and any server that speaks the OpenAI API. Test a connection before you use it. Cloud model lists are current.
+
+A downloaded model is checked against the hash Hugging Face publishes. Every run records its seed and can be verified. Memory takes corrections.

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Error / failure messages surfaced through Snackbars, inline banners, or
+    feedback callbacks across the app.
+
+    Keys follow `errors_<feature>_<purpose>` so error strings stay grouped by
+    the surface that emits them while remaining in a single localisation
+    file. Generic fallbacks live under `errors_generic_*`.
+-->
+<resources>
+    <!-- Generic fallbacks -->
+    <string name="errors_generic_unexpected">An unexpected error occurred</string>
+
+    <!-- Chat feature -->
+    <string name="errors_chat_pipeline_removed">The pipeline was deleted. Default pipeline is used now.</string>
+
+    <!-- Orchestrator feature -->
+    <string name="errors_orchestrator_cycle_detected">Cannot connect: Cycle detected</string>
+    <string name="errors_orchestrator_at_least_one_source">At least one data source must remain enabled</string>
+    <string name="errors_orchestrator_pipeline_not_found">Pipeline not found</string>
+    <string name="errors_orchestrator_validation_missing_input">Missing INPUT node</string>
+    <string name="errors_orchestrator_validation_missing_output">Missing OUTPUT node</string>
+    <string name="errors_orchestrator_validation_multiple_inputs">Multiple INPUT nodes are not allowed</string>
+    <string name="errors_orchestrator_validation_multiple_outputs">Multiple OUTPUT nodes are not allowed</string>
+    <string name="errors_orchestrator_validation_has_cycles">Pipeline contains cycles</string>
+    <string name="errors_orchestrator_validation_disconnected_input">INPUT node is not connected</string>
+    <string name="errors_orchestrator_validation_disconnected_output">OUTPUT node is not connected</string>
+    <string name="errors_orchestrator_validation_unreachable_node">Some nodes are unreachable from INPUT</string>
+    <string name="errors_orchestrator_validation_dead_end">Some nodes do not reach OUTPUT</string>
+    <string name="errors_orchestrator_validation_node_no_sources">Node \"%1$s\" will not receive any data — enable at least one source</string>
+    <string name="errors_orchestrator_validation_missing_target_pipeline">Pipeline node \"%1$s\" has no target pipeline selected</string>
+    <string name="errors_orchestrator_validation_target_pipeline_not_found">Pipeline node \"%1$s\" references a pipeline that no longer exists</string>
+    <string name="errors_orchestrator_validation_pipeline_cycle">Pipelines reference each other in a cycle: %1$s</string>
+    <string name="errors_orchestrator_validation_pipeline_nesting_too_deep">Pipeline nesting is deeper than the limit of %1$d</string>
+    <string name="errors_orchestrator_validation_missing_skill">Skill node \"%1$s\" has no skill selected</string>
+    <string name="errors_orchestrator_validation_skill_not_found">Skill node \"%1$s\" references a skill that no longer exists</string>
+
+    <!-- Settings feature -->
+    <!--
+        The legacy `errors_settings_*` strings were removed
+        once `SettingsViewModel` switched to the typed [TestProbeResult]
+        envelope (failure copy now lives inside `settings_row_test_backend_failed`
+        and is reused by the snackbar surface).
+    -->
+</resources>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    `full`-flavour manifest overlay. Merged on top of the shared `main`
+    manifest for the full-distribution build only; the `foss` (F-Droid) build
+    has no Firebase on its classpath and therefore carries none of these
+    entries.
+
+    Firebase Crashlytics auto-collection is disabled by default to enforce the
+    opt-in flow. The runtime `CrashReportingRepository.setEnabled(true)` flips
+    the Crashlytics flag on once the user accepts the in-app consent dialog, and
+    Firebase persists that choice across launches until it is cleared.
+
+    The Analytics flag is never overridden at runtime: the `full` build declares
+    no Analytics SDK and logs no analytics events. The meta-data entry stays as
+    belt-and-braces in case the artifact ever returns transitively.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <meta-data
+            android:name="firebase_crashlytics_collection_enabled"
+            android:value="false" />
+        <meta-data
+            android:name="firebase_analytics_collection_enabled"
+            android:value="false" />
+    </application>
+</manifest>

@@ -1,0 +1,736 @@
+# Directory Map: app/src/test/java/app/knotwork/android
+
+This file maps the local unit-test package — the suite `./gradlew check` runs.
+
+**Generated.** The tree below is rebuilt by `./gradlew :app:generateFileMap`
+from the source tree itself, and `:app:verifyFileMap` fails `./gradlew check`
+when the committed file no longer matches it. A *description* is yours to edit —
+it is carried across regenerations by path. Entries themselves are not: adding,
+removing or reordering one by hand is undone by the next run.
+
+Only Kotlin files appear inside the generated blocks.
+
+<!-- AUTO-GEN:FILE_MAP -->
+- `architecture/` - Structural guards run as tests: the Konsist layer rules and the censuses that pin an invariant to the code. `docs/static-analysis.md` says what each one enforces, and `ArchitectureGuardsDocumentedTest` keeps that table complete.
+  - `AppFunctionServiceManifestGuardTest.kt` - Every AppFunctions entry point is registered in its module's manifest exactly as the compiler generated it, and nothing else is registered as an AppFunctions service.
+  - `ArchitectureGuardsDocumentedTest.kt` - Holds the Konsist table of `docs/static-analysis.md` to the suite it describes.
+  - `ArchitectureScope.kt` - Shared Konsist scope for the architecture guard suite.
+  - `BackedUpSecretsGuardTest.kt` - Every owner of entries in a Keystore-backed store tells the backup what it holds.
+  - `BundledDocumentationRoutingGuardTest.kt` - Keeps a document that ships in the app from opening in the browser.
+  - `CloudStreamEndCallersGuardTest.kt` - Census of the code that turns a cloud model's stream into an answer — every caller of `executeStreaming` — and the rule that each asks `CloudStreamEnd` whether the stream was cut off.
+  - `ComposableUseCaseKonsistTest.kt` - Konsist guard for the presentation rule "Composables observe a ViewModel / UiState, never the use-case layer directly".
+  - `ComposeTestRuleV2GuardTest.kt` - Keeps the instrumented tests on the v2 Compose test APIs.
+  - `ContentUriReadInventoryTest.kt` - Inventory of every production file that opens a URI through `ContentResolver`, with where that URI comes from.
+  - `CrashReportingConsentOwnerTest.kt` - Only the app's release-only observer turns the crash collector on or off.
+  - `DomainPurityKonsistTest.kt` - Konsist guard enforcing the strictest project rule for the `domain` layer: it is pure Kotlin with **zero** Android/framework imports, so it can be compiled and unit-tested off-device.
+  - `DownloadStartCallSiteGuardTest.kt` - Census of the places that start a model download — which is also where the download's foreground-time budget starts over.
+  - `EntrySurfaceLimitsDocumentsTest.kt` - Pins every number the public documents quote about the entry surfaces' limits to the constant that enforces it.
+  - `ExportedComponentInventoryTest.kt` - Census of every component the app's source manifests export, and the permission each one demands of its caller.
+  - `ExportedEntryExtrasGuardTest.kt` - Every component exported **without a permission** reads its caller's extras only inside a function that catches `RuntimeException`.
+  - `FdroidSigningStripGuardTest.kt` - Pins the release signing assignment in `app/build.gradle.kts` to a shape F-Droid's build server removes whole.
+  - `FirebaseIsolationKonsistTest.kt` - Konsist guard keeping the Firebase SDK out of the shared `main` source set.
+  - `HitlDispatchKonsistTest.kt` - Census of the seams through which a tool call can take effect, and of the one channel through which a human answer can reach the gate in front of them.
+  - `ImageAttachmentEntryCensusTest.kt` - Census of the production files that start runs through `AgentOrchestratorUseCase`, with whether each can attach an image — and, if it can, proof that it asks the multimodal pre-flight (`CheckImageAttachmentUseCase`) first.
+  - `InstrumentedTestExclusionGuardTest.kt` - Guard over the **instrumented-test exclusion list** — the set of instrumented tests the automated emulator runs deliberately do not execute.
+  - `JournalExportNoNetworkKonsistTest.kt` - Konsist guard on the journal exports: **the journal leaves the device only in the user's own hands.**
+  - `KoogClientTimeoutKonsistTest.kt` - Census of every place production code constructs a Koog model client, requiring each to pass the shared deadlines, `CloudClientTimeouts.CONFIG`.
+  - `LayerDependencyKonsistTest.kt` - Konsist architecture guard enforcing the project's Clean Architecture dependency rule: dependencies flow strictly inward, `data` -> `domain` <- `presentation`, and `domain` depends on neither sibling.
+  - `LocalInferenceSeamKonsistTest.kt` - Census of the places that call the on-device model directly.
+  - `NetworkClientImports.kt` - The import prefixes that mean "this file can speak to the network", shared by every guard that asks the question: the allow-list `NetworkEgressInventoryKonsistTest` and the three deny-lists (`JournalExportNoNetworkKonsistTest`, `PromptPackNoNetworkKonsistTest`, `UsageTelemetryNoNetworkKonsistTest`).
+  - `NetworkEgressInventoryKonsistTest.kt` - Allow-list guard over every file that can open a network connection.
+  - `NotificationIdSourceGuardTest.kt` - Keeps `app.knotwork.android.domain.constants.NotificationIds` the only place a notification id is decided.
+  - `NotificationLockScreenGuardTest.kt` - Keeps every notification that carries what the user or the model wrote down to its title where the system hides sensitive content (`lockScreenVersion`).
+  - `OutboundBroadcastCensusTest.kt` - Census of the places the app sends a broadcast.
+  - `PathContainmentGuardTest.kt` - A path prefix test lives in exactly one production file: `PathContainment`.
+  - `PersistentStorageInventoryGuardTest.kt` - Every place the app keeps data between runs is in `StorageRoot`, with two decisions written down: nothing of it leaves the device through Android backup or device transfer, and whether the recovery wipe (*Erase data*) erases it.
+  - `PipelineBindingCensusTest.kt` - Census of every place the domain stores a pipeline id, each with a decision: is it a binding the Replace confirmation must list, or not, and why.
+  - `PolicyDocumentClaimsTest.kt` - Sentences of the privacy policy, the threat model and the bundled FAQ that the code once contradicted, pinned to what the code does now.
+  - `PreferenceKeyCensus.kt` - Every preference key the production code declares, read from the sources: the name and value type of each `<type>PreferencesKey("name")` call (`ProductionSources`, comments removed).
+  - `PreferenceStorageSnapshotTest.kt` - Snapshot of what the app keeps in its preferences storage: the name and value type of every DataStore key, and the names of the files the settings live in.
+  - `ProductionSources.kt` - The module's production Kotlin sources as text, for the guards that census a name or an idiom rather than a type (`HitlDispatchKonsistTest`, `TranscriptJoinKonsistTest`).
+  - `PromptPackNoNetworkKonsistTest.kt` - Konsist guard enforcing the provenance rule of prompt packs: **a pack is imported from a local file the user picked, never fetched.**
+  - `RawExecSqlGuardTest.kt` - No production code runs a statement through SQLCipher's `rawExecSQL`.
+  - `RegexConstructionKonsistTest.kt` - Census of how production code builds a regular expression: every pattern must be a **string literal in the source**, and anything spliced into it at runtime must pass through `Regex.escape` (or `Pattern.quote`).
+  - `RepositoryPlacementKonsistTest.kt` - Konsist guard enforcing the repository placement convention from the api-conventions rule: the abstraction (`<Noun>Repository` interface) is owned by the `domain` layer, and its implementation (`<Noun>RepositoryImpl`) lives in the `data` layer.
+  - `RunTraceExportNoNetworkKonsistTest.kt` - Konsist guard on the run trace export: **a run's trace leaves the device only in the user's own hands.**
+  - `SettingsCompositeConsumersTest.kt` - Ratchet on the production files that depend on the whole `SettingsRepository` composite: a new file may not, and the list of files that still do can only shrink.
+  - `SettingsSingletonScopeTest.kt` - Every production class that implements a settings section is scoped `@Singleton` on the class itself, not only through its Hilt bindings.
+  - `SnackbarHostGuardTest.kt` - Every snackbar in the app renders through `KnotworkSnackbarHost`, and every host has a place.
+  - `SurfaceBindingReadersTest.kt` - Only the callers that need a binding **after** its pipeline is gone read the raw surface binding; everything that starts a run from a surface, or shows it as ready, reads the existence-checked one.
+  - `TabRootEntryGuardTest.kt` - Structural guard over the one navigation invariant the closed test bought us:
+  - `TimberMessageTemplateKonsistTest.kt` - Census of the message every `WARN`-and-above Timber call writes: it must be a **string literal without templates**, with anything dynamic passed as a format argument.
+  - `TimeLimitedForegroundServiceGuardTest.kt` - Keeps every foreground service with an Android time limit under a budget that stops it before the limit runs out.
+  - `TopBarInsetGuardTest.kt` - Structural guard: **a bar at the top of a screen applies the status-bar inset, or a named parent applies it for it.**
+  - `TranscriptJoinKonsistTest.kt` - Census of the idiom that let stored content forge a turn of its own inside a prompt: a speaker label and a message body spliced into one string template, `"${message.role.name}: ${message.content}"`.
+  - `TransientCacheDirectoryGuardTest.kt` - Every directory the app creates under its cache is an entry of `TransientCacheDirectory` — and therefore swept by the daily maintenance pass.
+  - `UsageTelemetryNoNetworkKonsistTest.kt` - Konsist guard enforcing the core privacy promise of the local usage-telemetry feature: **nothing on the telemetry path may make a network call.**
+  - `VerificationToolIsolationKonsistTest.kt` - The check of a past run cannot run a tool.
+  - `WorkspaceToolsDocumentedTest.kt` - Pins the three places that enumerate the tools able to read and write the agent's workspace to the tools that actually can.
+- `data/` - Tests for the data layer.
+  - `audio/` - Tests for voice-input capture and the WAV header builder.
+    - `WavHeaderTest.kt` - Unit tests for `WavHeader`, the pure 44-byte canonical PCM WAV header builder.
+  - `backup/` - Backup archive format: key derivation, header, chunk streams, container, tamper matrix and the format-1 fixture.
+    - `Argon2idBackupKeyDerivationTest.kt` - `Argon2idBackupKeyDerivation` and the raw `argon2id` it runs on: the RFC 9106 test vector, the split into two keys, Unicode normalisation of the password, and the refusal of parameters the heap cannot spare.
+    - `BackupArchiveReaderTest.kt` - `BackupArchiveWriter` and `BackupArchiveReader` together: named entries survive, compressed or stored; the writer refuses a name the reader would refuse; the reader refuses a crafted entry list; and an archive is authenticated to its end before the reader reports the last entry.
+    - `BackupContentCollectorTest.kt` - `BackupContentCollector`: the snapshot is taken under a fresh 32-byte key into the given file; the manifest counts what the app holds and lists the models with their current hash and source; settings come from DataStore; the encrypted stores' entries are merged per store, secrets only when asked.
+    - `BackupDecryptingInputStreamTest.kt` - `BackupDecryptingInputStream` against `BackupEncryptingOutputStream`: content of every size around the chunk boundary survives the round trip, and every way of altering the file — a changed byte, chunks swapped, a chunk from another archive, a relabelled last chunk, a cut at any point, bytes appended, another key — is reported with its own reason and hands out no content it did not authenticate.
+    - `BackupEncryptingOutputStreamTest.kt` - `BackupEncryptingOutputStream`: the archive opens with the header it was given, every chunk but the last holds exactly one chunk of content, only `BackupEncryptingOutputStream.finish` flags a chunk as last, and nothing can be written after it.
+    - `BackupExporterImplTest.kt` - `BackupExporterImpl` end to end, against a scripted content source and the real format: the archive opens with the password and holds every entry in order, secrets only when asked; progress runs through the three steps to the total; cancelled, the file reads as incomplete; a failing document and failing data are told apart (no space among them); the database snapshot never outlives the export.
+    - `BackupFileSourceTest.kt` - `BackupFileSource`: regular files of both directories become entries under their prefixes, sorted; unfinished writes and symbolic links stay out; a path that cannot be an entry name is counted, not written; a missing directory is simply empty.
+    - `BackupFormatV1FixtureTest.kt` - Reads the committed format-1 archive `src/test/resources/backup/format-1.knotwork` — the regression anchor of the public format (`docs/backup-format.md`).
+    - `BackupHeaderCodecTest.kt` - `BackupHeaderCodec`: the header survives a round trip, its MAC tells a wrong key, and every field a reader cannot trust before the password is bounded — each failure with its own reason.
+    - `BackupLocalDataCounterTest.kt` - `BackupLocalDataCounter`: counts what a backup taken now would hold, files from the same listing it uses.
+    - `BackupRestorerImplTest.kt` - `BackupRestorerImpl` with `RestoreStager` and `RestoreFinisher` over real archives, a real DataStore and a Keystore-backed store on a fake cipher; the database step is a recording fake (the real one is tested on a device).
+    - `BackupTestArchives.kt` - Builders shared by the archive tests: fixed keys and headers, an archive of given content, and the byte ranges of its chunk frames — so a test can cut, swap or alter one frame exactly.
+    - `PendingRestoreApplierTest.kt` - `PendingRestoreApplier` moves a committed restore's database and files into place, does nothing without the commit, and finishes a start that stopped half-way — a second run changes nothing.
+    - `PreferenceBackupPolicyTest.kt` - `PreferenceBackupPolicy` decides every setting the production code declares, and nothing else — so a new setting does not build until someone says whether it travels.
+    - `PreferencesBackupJsonTest.kt` - `PreferencesBackupJson`: every type is written with its name, a float reads back as the same float, and only settings the policy lets travel are written.
+    - `RestoredPreferencesMigrationTest.kt` - `RestoredPreferencesMigration` writes a committed restore's settings over this phone's: travelling settings are replaced, those that stay are kept, those that reset are cleared — and it never fails the DataStore.
+    - `SafBackupDocumentsTest.kt` - `SafBackupDocuments`: a document is remembered as unfinished from the moment it is opened until it is finished or deleted; a provider's refusal is a `false`, never a crash; and the start-up clean-up never deletes the document a backup in this process is still writing.
+    - `SqlCipherDatabaseSnapshotterTest.kt` - What `SqlCipherDatabaseSnapshotter` decides before it opens anything: a key that is not 32 bytes is refused, and a phone without room for the copy is reported full.
+    - `StagedDatabasePreparerFailureTest.kt` - How `SqlCipherStagedDatabasePreparer` names a failure of the staged database's work: a full disk anywhere in the chain is the phone being full, never a damaged archive; anything else is a database that cannot be used.
+  - `engine/` - Tests for the inference engines, client factories and the task queue.
+    - `CloudModelListGuardTest.kt` - The cloud model lists against Koog's own catalogue: every model the app offers is one of Koog's chat constants, and every chat constant Koog declares for the four providers it lists is either offered or left out here with a reason.
+    - `KoogClientFactoryTest.kt` - Tests for KoogClientFactory.
+    - `KoogClientFactoryTimeoutTest.kt` - Guards the network deadlines applied to cloud clients.
+    - `KoogCloudLlmModelResolverTest.kt` - Unit tests for `KoogCloudLlmModelResolver` — the model object a Cloud node sends, resolved from the saved id through `KoogCloudModelCatalog`, the same answer the screens show.
+    - `KoogCloudModelCatalogTest.kt` - Unit tests for `KoogCloudModelCatalog` — which model a run of each provider uses for what the user saved, the answer every screen naming a provider's model and the resolver share.
+    - `KoogProviderConnectionCheckerTest.kt` - `KoogProviderConnectionChecker` on the wire: the request each provider's check sends, what it makes of the answer, and that a refused check sends nothing and tells the privacy indicator nothing.
+    - `KoogStructuredInferenceClientFactoryTest.kt` - Unit tests for `KoogStructuredInferenceClientFactory` — the cloud-backed `app.knotwork.android.domain.engine.structured.StructuredInferenceClient` seam for the structured-output gate.
+    - `KoogTimeoutReflection.kt` - Reads the `ConnectionTimeoutConfig` a Koog provider client was built with.
+    - `KoogTransportFactoryTest.kt` - Unit tests for `KoogTransportFactory`.
+    - `LiteRTLlmEngineTest.kt` - Tests for LiteRTLlmEngine.
+    - `LocalOnlyPolicyParserAgreementTest.kt` - Checks `LocalOnlyPolicy` against the parser that actually opens the connection.
+    - `MediaPipeTextEmbeddingEngineTest.kt` - Tests for MediaPipeTextEmbeddingEngine.
+    - `ModelHopRuleTest.kt` - Unit tests for `ModelHopRule`: where one request of a model client may go.
+    - `ModelNetworkGateTest.kt` - Unit tests for `ModelNetworkGate` — the single decision every model client asks before it is built.
+    - `OpenAiCompatibleClientsTest.kt` - Unit tests for `OpenAiCompatibleClients`: the addresses, paths, headers and deadlines the three OpenAI-compatible providers are built with.
+    - `OpenAiCompatibleServerEndToEndTest.kt` - A server the user runs, reached on the wire through the production `KoogClientFactory` and `KoogCloudLlmModelResolver`: the address the way vLLM and LM Studio document it (ending in `/v1`), the paths, the key or its absence, and the model list.
+    - `OpenAiResponsesStreamEndToEndTest.kt` - A CLOUD node answered by OpenAI, end to end: Koog's real OpenAI client against a local server, the real `CloudLlmNodeExecutor`, and the model `KoogCloudLlmModelResolver` resolves for a saved id.
+    - `OpenClAccelerationProbeTest.kt` - Covers the two-step OpenCL detection and, above all, its failure discipline: the probe exists so a *missing* GPU never reaches the native engine, so any path that let an error escape would defeat its entire purpose.
+    - `retry/` - Tests for the cloud retry wrapping.
+      - `CloudRetryEndToEndTest.kt` - The retry policy measured on the wire: a real Koog client, built by the production `KoogClientFactory` and therefore wrapped and transported exactly as a Cloud node's is, against a local server that answers with scripted failures.
+      - `CloudRetryPolicyTest.kt` - Unit tests for `CloudRetryPolicy`: which failures are retried, and after how long.
+      - `CloudRetryWrapperTest.kt` - Unit tests for `CloudRetryWrapper` and the `RetryObservingLLMClient` it interposes.
+      - `RetryAfterHintTest.kt` - Unit tests for `RetryAfterHint`: every form a provider uses to say how long to wait.
+      - `RetryingCloudLlmClientTest.kt` - Unit tests for `RetryingCloudLlmClient`: the loop around the policy — when it waits, what it reports, and what it throws.
+    - `RunEnvironmentSourcesTest.kt` - The data-layer sources of a run header: `SecureRandomRunSeedSource` draws seeds in the range a run seed lives in, and `AndroidRunEnvironment` names the app, the runtime and the device the way a header and an export show them.
+    - `TaskQueueManagerImplTest.kt` - Unit tests for `TaskQueueManagerImpl`: enqueuing a task processes it and updates the session state without a race or a deadlock.
+  - `local/` - Tests for Room, DataStore, the encrypted stores and the filesystem-backed stores.
+    - `AgentWorkspaceImplTest.kt` - Verifies the `AgentWorkspaceImpl` foundation: the path-traversal containment boundary (the single canonicalisation gate), the per-file and total-size quotas at their exact boundaries, the text/binary read distinction, and the overwrite semantics — each surfaced as a typed `WorkspaceError`.
+    - `ApiKeyManagerTest.kt` - Tests for ApiKeyManager.
+    - `AppDatabaseMigrationTest.kt` - Verifies the Room migration scripts on the JVM, starting with `MIGRATION_17_18`.
+    - `AttachmentStoreImplTest.kt` - Verifies `AttachmentStoreImpl`: aspect-preserving downscale to the longest-side cap (never a square crop), JPEG re-encode, ingest of invalid bytes, the content-URI ingest path, and the delete / list surface used by retention.
+    - `AudioCaptureStoreImplTest.kt` - Unit tests for `AudioCaptureStoreImpl`, the ephemeral voice-input clip store.
+    - `ConvertersTest.kt` - Unit tests for `Converters`, focusing on the `NodeContextConfig` JSON round trip and its legacy-row fallback contract.
+    - `crypto/` - Tests for the Keystore-backed secret storage and its AES-GCM framing.
+      - `AesGcmCodecTest.kt` - Exercises the full AES-GCM framing matrix of `AesGcmCodec` with a software AES key — the same code path production uses with Android-Keystore-backed keys, minus the key residency.
+      - `FakeAeadCipher.kt` - Deterministic `AeadCipher` stand-in for JVM unit tests.
+      - `InMemorySharedPreferences.kt` - Minimal map-backed `SharedPreferences` for JVM unit tests.
+      - `KeystoreBackedPrefsStoreTest.kt` - Verifies the storage semantics of `KeystoreBackedPrefsStore` against a `FakeAeadCipher`: framing, slot binding via associated data, the absent-vs-unreadable distinction, and the destroy contract.
+      - `SecretReadFailureTest.kt` - Unit coverage for `SecretReadFailure`.
+    - `dao/` - Room DAO tests against a real in-memory database, for queries whose correctness lives in their SQL.
+      - `PendingInteractionDaoTest.kt` - `PendingInteractionDao` against a real (in-memory) Room database, for the two queries whose correctness lives in their SQL rather than in any Kotlin a mock could stand in for: finding a parked approval by the request it parks, and writing a decision only onto the record of the request it answers.
+      - `PipelineRunDaoRateCountTest.kt` - The count behind the scheduling tool's hourly ceiling, against a real (in-memory) Room database — its correctness is the SQL itself.
+    - `DatabaseResetServiceImplTest.kt` - Verifies that `DatabaseResetServiceImpl` deletes both halves of the encrypted-database state — the database file and the stored passphrase — in a single quiesced wipe operation, and refuses to destroy the passphrase while the database file survives.
+    - `DeferredPassphraseOpenHelperFactoryTest.kt` - Verifies the deferral contract of `DeferredPassphraseOpenHelperFactory`: no passphrase access during factory/helper construction (i.e. during Hilt provision), lazy delegate creation on first database access, no caching of failed construction (Retry support), and WAL-flag replay.
+    - `DownloadedModelFilesImplTest.kt` - `DownloadedModelFilesImpl` against the real external-files directory: what it lists is exactly the model files the downloader writes there, and none of the directory's other occupants.
+    - `EmbeddingBlobCodecTest.kt` - Unit tests for `EmbeddingBlobCodec` — the binary wire format of the `memory_chunks.embedding` BLOB column.
+    - `EncryptedDbPassphraseProviderTest.kt` - Verifies the loss-protection invariant of `EncryptedDbPassphraseProvider`: the passphrase is generated only when no database file exists, and any failure to read it back while the database is present surfaces as `DbPassphraseUnavailableException` instead of a silent regeneration that would destroy the user's encrypted data.
+    - `ImageCaptureStoreImplTest.kt` - Verifies `ImageCaptureStoreImpl`: the camera's full-resolution original — the only copy that keeps its EXIF — is deleted on every way out of the store, and a URI that is not one of its captures can reach no file.
+    - `McpServerCollisionCheckTest.kt` - Pure-Kotlin unit coverage for `McpServerCollisionCheck.detectCollision`.
+    - `migrations/` - Guards on the registered list of Room schema migrations.
+      - `AppDatabaseMigrationChainTest.kt` - Guards `ALL_MIGRATIONS`, the one list of schema migrations the database builder registers.
+      - `MigrationStepGuardTest.kt` - Runs every step of `ALL_MIGRATIONS` on real SQLite and validates the schema it leaves against the schema Room exported for the step's target version — one test case per step, in `check`.
+    - `PathContainmentTest.kt` - Verifies `PathContainment` on a real filesystem: `..`, a sibling sharing the root's name as a prefix, and a symlink out are all refused — the three ways a prefix test on the string as written lets a path escape.
+    - `settings/` - Tests of the settings section stores' shared read helper.
+      - `PreferencesOrEmptyTest.kt` - `preferencesOrEmpty`: readable preferences pass through, an `IOException` becomes empty preferences, any other failure propagates.
+      - `ToolSettingsStoreTest.kt` - `ToolSettingsStore`'s MCP server list as an observer sees it while a server changes, on a real file-backed DataStore.
+    - `SettingsManagerTest.kt` - Tests for SettingsManager.
+    - `StreamingModelFileHasherTest.kt` - `StreamingModelFileHasher` against real files: the digest must be the plain SHA-256 of the bytes whatever the chunking, and a file that cannot be read or changes mid-read must yield no hash at all.
+    - `TagsCsvTest.kt` - Unit tests for the shared `TagsCsv` codec.
+    - `TestSettingsManager.kt` - Builds a `SettingsManager` from its section stores over `dataStore`, the way Hilt wires it: one instance of each store, shared by the composite.
+    - `TransientCacheSweeperImplTest.kt` - Verifies `TransientCacheSweeperImpl` on a real filesystem: every registered handoff directory is swept, only past the shared retention, a share slot counts as fresh while its copy is, and nothing outside the registry is touched.
+    - `WorkspaceShareCopiesTest.kt` - Unit tests for `WorkspaceShareCopies` on its own, for what the workspace tests cannot reach: a copy that fails half-way leaves nothing staged.
+    - `WorkspaceTreeTest.kt` - Unit tests for `WorkspaceTree.isRealEntry` — the link check behind every walk of the workspace (listing, quota, pruning).
+  - `logging/` - Tests for the application-level Timber sinks.
+    - `CrashlyticsTimberTreeTest.kt` - Unit tests for `CrashlyticsTimberTree`.
+  - `mappers/` - Tests for the entity ↔ domain mappers.
+    - `ChatMessageMapperTest.kt` - Tests for ChatMessageMapper.
+    - `ChatSessionMapperTest.kt` - Unit tests for the `ChatSessionEntity` ↔ `ChatSession` mapper.
+    - `HuggingFaceModelMapperTest.kt` - Unit tests for `HuggingFaceModelMapper` — the pure DTO → domain projection covering tag/license/gated parsing, `.litertlm` filtering, resolve-URL construction and installed-flag stamping.
+    - `LocalModelMapperTest.kt` - Unit tests for `LocalModelEntity` and `LocalModel` mapping extensions.
+  - `mcp/` - Tests for the MCP client and the single connection pool.
+    - `KoogMcpClientSessionTest.kt` - Session-lifecycle regression tests for `KoogMcpClient`, covering a defect found by a directed on-device MCP test: on the device a tool call failed with `-32000 No valid session ID provided`, and the wire capture showed sessions being opened and abandoned faster than anything was using them.
+    - `KoogMcpClientTest.kt` - Tests for KoogMcpClient.
+    - `KoogMcpConnectionCheckerTest.kt` - `KoogMcpConnectionChecker` against a stub MCP server, through the real `KoogMcpClient`: what a check of a form finds, that it leaves no session behind, and that a refused check opens nothing.
+    - `McpConnectionPoolTest.kt` - Unit tests for `McpConnectionPool` — the single owner of live MCP connections.
+  - `network/` - Tests for the OkHttp guards, the download path and the Hugging Face client.
+    - `AndroidModelDownloadManagerTest.kt` - Tests for AndroidModelDownloadManager.
+    - `ConnectionFailureClassifierTest.kt` - Unit tests for `ConnectionFailureClassifier`.
+    - `huggingface/` - Tests for the Hugging Face Hub client.
+      - `HuggingFaceModelApiTest.kt` - Unit tests for `HuggingFaceModelApi`'s part in the More tab's privacy indicator.
+    - `ResumableFileDownloaderTest.kt` - Covers the streaming downloader, with the weight on the paths that only matter once a transfer can be interrupted: resuming a partial file, refusing to resume when that would corrupt the result, and never letting an unfinished transfer sit at the final file name where it would pass for an installed model.
+    - `SharedHttpClientTest.kt` - The shared client's cleartext guard sees **every hop**, redirects included.
+  - `prompt/` - Tests for the built-in `PromptVariableProvider` implementations.
+    - `DateVariableProviderTest.kt` - Unit tests for `DateVariableProvider`.
+    - `DeviceVariableProviderTest.kt` - `DeviceVariableProvider`: the `$DEVICE` descriptor, whose format a run header shares through `DeviceVariableProvider.describe`.
+    - `MemorySummaryVariableProviderTest.kt` - Unit tests for `MemorySummaryVariableProvider`.
+    - `ModelVariableProviderTest.kt` - Unit tests for `ModelVariableProvider`.
+    - `TimeVariableProviderTest.kt` - Unit tests for `TimeVariableProvider`.
+    - `ToolsVariableProviderTest.kt` - Unit tests for `ToolsVariableProvider`.
+  - `repositories/` - Tests for the repository implementations.
+    - `AssetBundledDocumentationRepositoryTest.kt` - Verifies `AssetBundledDocumentationRepository` against the **real** generated assets rather than a fixture.
+    - `BackgroundPromptRepositoryImplTest.kt` - `BackgroundPromptRepositoryImpl` against a real (in-memory) Room database: the encrypted home of the prompts queued background runs execute.
+    - `ChatArchivePersistenceTest.kt` - Drives the chat-archive stack — `ArchiveChatUseCase` / `UnarchiveChatUseCase` → `ChatRepositoryImpl` → `ChatDao` — against a **real in-memory Room database**, so the SQL itself is under test and not just the call routing the mocked repository tests cover.
+    - `ChatRepositoryImplTest.kt` - Unit tests for `ChatRepositoryImpl`. Session deletion must go through the single transactional DAO method — messages, run records (no FK cascade) and the session row die together or not at all.
+    - `ClarificationRepositoryImplTest.kt` - Unit tests for `ClarificationRepositoryImpl`.
+    - `ExternalAutomationJournalRepositoryImplTest.kt` - Verifies `ExternalAutomationJournalRepositoryImpl` against a real in-memory Room database: the status / target mapping round-trips, the rate ceiling counts and admits atomically, repeated refusals collapse, retention applies both limits, and an undecodable row is dropped on read.
+    - `IdentityRepositoryImplTest.kt` - Unit tests for the static-format portion of `IdentityRepositoryImpl`.
+    - `LocalModelFileHashPersistenceTest.kt` - The model file hash through `LocalModelRepositoryImpl`, a real (in-memory) Room database and real files: a stored hash vouches for a file only while the file still has the stamp the hash was computed at.
+    - `LocalModelRepositoryImplTest.kt` - Tests for LocalModelRepositoryImpl.
+    - `LocalPipelinePresetRepositoryImplTest.kt` - Unit tests for `LocalPipelinePresetRepositoryImpl`.
+    - `LocalPipelineRepositoryImplTest.kt` - Tests for LocalPipelineRepositoryImpl.
+    - `LocalPromptPresetRepositoryImplTest.kt` - Unit tests for `LocalPromptPresetRepositoryImpl`.
+    - `McpRoutingMatrixTest.kt` - Guard for the class of defect behind "the risk comes from one server, the call goes to another": two resolvers answering "which server serves this name?" for the approval gate and for the dispatch, and disagreeing.
+    - `McpServerRepositoryImplTest.kt` - Unit tests for `McpServerRepositoryImpl`.
+    - `MemoryConsolidationPersistenceTest.kt` - Verifies the compaction write path against a **real** in-memory Room database rather than a mocked DAO: consolidation must leave the store holding the summary and nothing it replaced.
+    - `MemoryRepositoryImplTest.kt` - Tests for MemoryRepositoryImpl.
+    - `MemorySupersedePersistenceTest.kt` - Verifies the supersede write path against a **real** in-memory Room database: a newer statement replaces a chunk in place and the replaced text survives as an earlier version, an update of a pinned chunk waits beside it, and both kinds of link go with their chunks.
+    - `MetricsRepositoryImplTest.kt` - Tests for `MetricsRepositoryImpl`: per-node aggregation and live-inference updates.
+    - `ModelDiscoveryRepositoryImplTest.kt` - Unit tests for `ModelDiscoveryRepositoryImpl` backed by a `MockWebServer` instance standing in for the Hugging Face Hub.
+    - `ModelPerformanceRepositoryImplTest.kt` - Unit tests for `ModelPerformanceRepositoryImpl`.
+    - `NetworkActivityTrackerImplTest.kt` - Unit tests for `NetworkActivityTrackerImpl`.
+    - `NetworkStateRepositoryImplTest.kt` - Tests for NetworkStateRepositoryImpl.
+    - `PendingInteractionRepositoryImplTest.kt` - Unit tests for `PendingInteractionRepositoryImpl`.
+    - `PipelineRunRepositoryImplTest.kt` - Unit tests for `PipelineRunRepositoryImpl`: entity↔domain mapping, the terminal-guard plumbing (every mutating call must pass the terminal status list to the DAO), the ownership-filtered orphan query, and the best-effort contract (storage failures are absorbed, never propagated).
+    - `PowerStateRepositoryImplTest.kt` - Tests for PowerStateRepositoryImpl.
+    - `RunRecordPersistenceTest.kt` - What makes a run checkable, through the repositories and a real (in-memory) Room database: the run header, the hashed node records and the model calls come back exactly as written, in one `seq` order, and go with their run.
+    - `RunTraceRepositoryImplTest.kt` - Unit tests for `RunTraceRepositoryImpl` — the buffered write path of the persistent run trace.
+    - `ShareAdmissionRepositoryImplTest.kt` - Tests for `ShareAdmissionRepositoryImpl` against a real preferences DataStore on disk — the atomicity the share ceiling rests on is DataStore's, so a mocked store would prove nothing about it.
+    - `SkillRepositoryImplTest.kt` - Unit tests for `SkillRepositoryImpl`.
+    - `ToolRepositoryImplTest.kt` - Tests for ToolRepositoryImpl.
+    - `TriggerJournalRepositoryImplTest.kt` - Verifies `TriggerJournalRepositoryImpl` against a real in-memory Room database: the verdict / source / run-outcome mapping round-trips, the two-phase outcome write, newest-first ordering, retention, and the tolerant decode that drops a corrupt row.
+    - `TriggerRepositoryImplTest.kt` - Unit tests for `TriggerRepositoryImpl` — entity ↔ domain mapping (condition encoded via `TriggerConditionCodec`) and the undecodable-row skip contract.
+    - `UsageTelemetryRepositoryImplTest.kt` - Verifies the on-device `UsageTelemetryRepositoryImpl` against a real in-memory Room database: opt-in gating, per-pipeline / per-outcome / per-kind tallies, the daily-active set, the write-once onboarding markers with their first-value attribution rules, and reset.
+  - `services/` - Tests for the WorkManager-backed schedulers and workers.
+    - `AgentForegroundServiceTest.kt` - Robolectric coverage for `AgentForegroundService` — the foreground service that keeps the LiteRT engine alive while the agent is running.
+    - `AgentIdleManagerTest.kt` - Tests for AgentIdleManager.
+    - `AgentPowerManagerTest.kt` - Tests for AgentPowerManager.
+    - `AgentWorkerTest.kt` - Tests for AgentWorker.
+    - `AttachmentOrphanCleanupWorkerTest.kt` - Robolectric coverage for the daily file-maintenance `AttachmentOrphanCleanupWorker`: both passes run, and a failure asks WorkManager to retry.
+    - `ChargingTriggerSweepWorkerTest.kt` - Robolectric coverage for `ChargingTriggerSweepWorker` — the one-shot worker `PowerConnectionReceiver` enqueues on a power edge to fire charging triggers immediately.
+    - `DownloadedModelInstallerTest.kt` - Covers the one place a downloaded file becomes a model: the file is checked against the hash its source published before it reaches its final name, a file that fails is deleted and never registered, and a file with nothing to check against is installed as unchecked.
+    - `DownloadForegroundBudgetTest.kt` - Covers the foreground-time budget that keeps a model download under Android's daily `dataSync` limit: what it books, when it runs out, and that the count outlives the process that measured it.
+    - `DownloadInterruptionStoreTest.kt` - Covers the record of why a model download stopped: it is kept until cleared, one per file, read back across instances (the worker writes it, a screen opened later reads it), and a record this build cannot read is left out rather than failing the screen.
+    - `embedding/` - Tests for the embedding service layer.
+      - `CloudEmbeddingProviderTest.kt` - Unit tests for `CloudEmbeddingProvider`.
+      - `DefaultKoogEmbedderFactoryTest.kt` - Unit tests for `DefaultKoogEmbedderFactory`.
+      - `OllamaEmbeddingProviderTest.kt` - Unit tests for `OllamaEmbeddingProvider`.
+      - `UseEmbeddingProviderTest.kt` - Unit tests for `UseEmbeddingProvider`.
+    - `ExternalAutomationCallbackSenderTest.kt` - Robolectric coverage for `ExternalAutomationCallbackSender` — the outbound half of the contract.
+    - `MemoryCompactionSchedulerTest.kt` - Unit tests for `MemoryCompactionScheduler`.
+    - `MemoryCompactionWorkerTest.kt` - Robolectric coverage for the `@HiltWorker`-annotated `MemoryCompactionWorker`.
+    - `MemoryReembedWorkerTest.kt` - Robolectric coverage for the `@HiltWorker`-annotated `MemoryReembedWorker`.
+    - `ModelDownloadOutcomeNotifierTest.kt` - Covers the notice that a model download stopped: which stops post one, what it says, that each file has its own slot in the registry's family, that it goes when asked, and that nothing is posted without the permission.
+    - `ModelDownloadWorkerTest.kt` - Covers the download worker's policy decisions: what it does with the token, what it does once the bytes are on disk, and — the part that decides whether a flaky network costs the user their progress — when a failure is worth another attempt.
+    - `ModelFileHashWorkerTest.kt` - Robolectric coverage for the `@HiltWorker`-annotated `ModelFileHashWorker`, mirroring `MemoryReembedWorkerTest`: the mocked use case reaches the worker through a manual `WorkerFactory`.
+    - `PendingInteractionMaintenanceWorkerTest.kt` - Robolectric coverage for the `@HiltWorker`-annotated `PendingInteractionMaintenanceWorker`.
+    - `RunRetentionSchedulerTest.kt` - Unit tests for `RunRetentionScheduler`: the daily retention job is enqueued under its unique name with the KEEP policy (idempotent cold-start scheduling) and carries the charging + idle + battery-not-low maintenance constraints.
+    - `RunRetentionWorkerTest.kt` - Robolectric coverage for the `@HiltWorker`-annotated `RunRetentionWorker`.
+    - `TriggerWatchWorkerTest.kt` - Robolectric coverage for the `@HiltWorker`-annotated `TriggerWatchWorker`, including the self-cancel reclaim path.
+    - `WorkManagerMemoryReembedSchedulerTest.kt` - Unit tests for `WorkManagerMemoryReembedScheduler`.
+    - `WorkManagerModelFileHashSchedulerTest.kt` - `WorkManagerModelFileHashScheduler`: a registration chains a pass, and the start-up re-arm schedules one only for unhashed files without ever crashing start-up.
+    - `WorkManagerTaskSchedulerTest.kt` - Unit tests for `WorkManagerTaskScheduler`.
+    - `WorkManagerTriggerSchedulerTest.kt` - Unit tests for `WorkManagerTriggerScheduler` — the mapping from a `Trigger`'s condition onto a periodic WorkManager request, plus register/cancel/sync.
+  - `tools/` - Tests for the tool layer.
+    - `local/` - Tests for the local tool catalogue, the AppFunction manager and the argument codec.
+      - `AppFunctionDataCodecTest.kt` - Unit tests for `AppFunctionDataCodec`.
+      - `appfunctions/` - Tests for the callee-side `@AppFunction` wrappers.
+        - `SearchAppFunctionTest.kt` - Unit tests for `SearchAppFunction`.
+      - `DelegateTaskToolTest.kt` - Tests for DelegateTaskTool.
+      - `executors/` - Tests for the `LocalToolExecutor` implementations.
+        - `AppendFileExecutorTest.kt` - Unit tests for `AppendFileExecutor`.
+        - `DelegateTaskExecutorTest.kt` - Unit tests for `DelegateTaskExecutor`.
+        - `DeleteFileExecutorTest.kt` - Unit tests for `DeleteFileExecutor`.
+        - `EditFileExecutorTest.kt` - Unit tests for `EditFileExecutor`.
+        - `FindFilesExecutorTest.kt` - Unit tests for `FindFilesExecutor`: glob filtering over the workspace listing, the no-match and missing-argument paths, the result cap, and error mapping.
+        - `HttpRequestExecutorTest.kt` - Unit tests for `HttpRequestExecutor`, the outbound HTTP tool.
+        - `ListFilesExecutorTest.kt` - Unit tests for `ListFilesExecutor`: formatting and stable order, the optional sub-directory filter (validated through the containment gate), empty states, the result cap, and error mapping.
+        - `ReadFileExecutorTest.kt` - Unit tests for `ReadFileExecutor`.
+        - `ScheduleTaskExecutorTest.kt` - Unit tests for `ScheduleTaskExecutor`.
+        - `SearchToolExecutorTest.kt` - Unit tests for `SearchToolExecutor`.
+        - `WriteFileExecutorTest.kt` - Unit tests for `WriteFileExecutor`.
+      - `LocalAppFunctionManagerTest.kt` - Unit tests for `LocalAppFunctionManager`.
+      - `SearchToolTest.kt` - Unit tests for `SearchTool`.
+- `domain/` - Tests for the domain layer.
+  - `backup/` - Backup format contract: key-derivation bounds and the entry-name rule.
+    - `BackupEntryNameTest.kt` - `BackupEntryName`: relative file paths in any script pass; every name that could leave the directory it is unpacked into, or hide a character, is refused.
+    - `BackupKdfParamsTest.kt` - `BackupKdfParams.isAcceptable`: the writer's parameters and every bound are accepted, one step past any bound is refused.
+    - `BackupManifestJsonTest.kt` - `BackupManifestJson`: a manifest survives the round trip, unknown keys are ignored, optional fields are omitted rather than written empty, and anything else is refused with its reason.
+  - `connection/` - Tests of the connection-check rules: the address rule and the preconditions a Test button is disabled by.
+    - `ConnectionPreconditionsTest.kt` - Unit tests for `ConnectionPreconditions` — why a Test button is disabled, and the first thing a check asks.
+    - `EndpointRuleTest.kt` - Unit tests for `EndpointRule` — the one decision the address gate, the per-hop check and the settings form read.
+  - `constants/` - Tests for the domain-level constants.
+    - `DefaultPromptsTest.kt` - Smoke + contract coverage for `DefaultPrompts`.
+    - `DocumentationLinksTest.kt` - Drift guard for the generated `DocumentationLinks` registry as the app reads it.
+    - `ModelDiscoveryConstantsTest.kt` - `ModelDiscoveryConstants.isHuggingFaceUrl`: Hugging Face itself over `https`, the one address the downloader sends a saved token to — never a look-alike host, a CDN link or cleartext.
+    - `NotificationIdsTest.kt` - Pins the property `NotificationIds` exists for: no two notification families, and no family and fixed id, can ever produce the same notification id.
+    - `OnboardingModelCatalogTest.kt` - Unit tests for `OnboardingModelCatalog`.
+    - `OnboardingScenarioCatalogTest.kt` - Pins the onboarding scenario wiring: the set of scenarios, their preset / model / surface mapping, gallery order, and the `OnboardingScenarioCatalog.byId` lookup.
+    - `PipelineExecutionDefaultsTest.kt` - Pins the engine-side timing/log constants exposed by `PipelineExecutionDefaults`.
+    - `RepositoryLinksTest.kt` - Unit tests for `RepositoryLinks`.
+    - `SettingsDefaultsTest.kt` - Pins the numeric values exposed by `SettingsDefaults` so a silent edit to a default value is caught at test time rather than at runtime by an end user.
+    - `TimeAndIdConstantsTest.kt` - Pins the time-unit and notification-id constants exposed by `TimeAndIdConstants`.
+  - `engine/` - Tests for the graph execution engine and its supporting abstractions.
+    - `AutoProviderTest.kt` - Unit tests for `AutoProvider` — what a node set to "auto" runs on.
+    - `ChatHistoryWindowPlannerTest.kt` - Unit tests for `ChatHistoryWindowPlanner` — the pure planner that decides how a session's chat history is split into a summarised prefix and a verbatim live window.
+    - `CheckpointReplayTest.kt` - Unit coverage for `CheckpointReplay`.
+    - `CloudClientUnavailabilityTest.kt` - Unit tests for `CloudClientUnavailability.message` — each cause must name the setting that resolves it and must not borrow another cause's remedy.
+    - `CloudErrorSanitizerTest.kt` - Unit tests for `CloudErrorSanitizer`.
+    - `CloudStreamEndTest.kt` - `CloudStreamEnd`: which providers' missing finish reason means a cut answer — by measurement, per provider and, on OpenAI, per endpoint — and that a finish reason always means a whole one.
+    - `DefaultPipelineFactoryTest.kt` - Unit tests for `DefaultPipelineFactory`.
+    - `executors/` - Tests for the per-`NodeType` `NodeExecutor` strategies.
+      - `ClarificationNodeExecutorTest.kt` - Unit tests for `ClarificationNodeExecutor`.
+      - `CloudLlmNodeExecutorTest.kt` - Unit tests for `CloudLlmNodeExecutor`.
+      - `IfConditionNodeExecutorTest.kt` - Unit tests for `IfConditionNodeExecutor`.
+      - `InputNodeExecutorTest.kt` - Unit tests for `InputNodeExecutor`.
+      - `LiteRtNodeExecutorTest.kt` - Unit tests for `LiteRtNodeExecutor`.
+      - `NodeOutputTestHelpers.kt` - Shared test helpers: convenience filters returning the typed payloads carried by `NodeOutput` elements.
+      - `OutputNodeExecutorTest.kt` - Unit tests for `OutputNodeExecutor`.
+      - `PipelineNodeExecutorTest.kt` - Tests for PipelineNodeExecutor (sub-pipeline execution, depth ceiling, error mapping).
+      - `QueueProcessorNodeExecutorTest.kt` - Unit tests for `QueueProcessorNodeExecutor`.
+      - `SkillNodeExecutorTest.kt` - Unit tests for `SkillNodeExecutor`.
+      - `SystemNodeExecutorTest.kt` - Unit tests for `SystemNodeExecutor`.
+      - `ToolCallParserTest.kt` - Unit tests for `ToolCallParser`, the non-repair tool-call parser used by `SkillNodeExecutor`.
+      - `ToolInvocationGateTest.kt` - Unit tests for `ToolInvocationGate`: a decision recorded on a parked request is the one the resumed run applies, whatever the policy, risk or `alwaysConfirm` say on resume; the record is consumed before any early exit.
+      - `ToolNodeExecutorTest.kt` - Tests for ToolNodeExecutor.
+    - `golden/` - Golden-trace harness: runs every bundled preset, published recipe and test fixture through the real `GraphExecutionEngine` and all node executors under a scripted model, and compares the normal-form trace with the files under `app/src/test/golden/traces/` (`docs/testing.md` § Golden run traces).
+      - `GoldenEvent.kt` - One entry of a golden run trace: a single header line plus named multi-line text blocks.
+      - `GoldenModel.kt` - The scripted model of the golden harness, behind every seam a node can reach a model through: the on-device `LlmInferenceEngine`, the cloud client a `CLOUD` node streams from, and the cloud structured-inference client a router or tool node may use.
+      - `GoldenNodeTracker.kt` - Knows which node of which pipeline the engine is executing right now, so the scripted model can answer "per node and per visit" although the model seam receives nothing but a prompt.
+      - `GoldenPendingInteractionRepository.kt` - In-memory store of parked interactions for the golden harness; records what the engine parks and deletes.
+      - `GoldenPipelineRunRepository.kt` - In-memory run store of the golden harness that records every write the engine and the `PIPELINE` executor make to run records.
+      - `GoldenPipelineSources.kt` - Loads the pipelines and skills the golden harness runs, through the same parsers the app uses for each format.
+      - `GoldenRunTraceRepository.kt` - In-memory persistent run trace of the golden harness; records every append and flush.
+      - `GoldenScenario.kt` - One scripted run of one shipped pipeline through the real `GraphExecutionEngine`, and the name of the golden file its trace is compared with.
+      - `GoldenScenarios.kt` - The catalogue of golden scenarios: every bundled preset, every published recipe and every fixture, each with at least one scenario, plus the branch and suspension scenarios the engine's control flow needs pinned.
+      - `GoldenStrict.kt` - Strict stand-in for an interface whose members a golden run must not reach: every call raises a harness violation.
+      - `GoldenToolRepository.kt` - Tool catalogue of the golden harness: a fixed set of the app's built-in tool names, each answering with a recorded output instead of acting on the world.
+      - `GoldenTraceCatalogueTest.kt` - Keeps the golden-trace catalogue complete, so the gate cannot quietly stop covering what ships.
+      - `GoldenTraceDiff.kt` - Explains a golden-trace mismatch in a few lines: where the first difference is, what both sides say around it, and how to see the whole diff.
+      - `GoldenTraceHarness.kt` - Runs one `GoldenScenario` through the production `GraphExecutionEngine` and returns its normal-form trace.
+      - `GoldenTraceHarnessTest.kt` - Pins the one harness behaviour no golden trace can show: a run that does not finish fails the scenario instead of hanging the test task.
+      - `GoldenTraceRenderer.kt` - Renders the normal form of a golden trace — the exact text committed under `app/src/test/golden/traces/`.
+      - `GoldenTraceRendererTest.kt` - Pins the parts of the golden-trace format a reviewer relies on when reading a diff: blocks, trailing whitespace, chunking, the failure message, and how a script resolves an answer.
+      - `GoldenTraceTest.kt` - Golden-trace regression gate: every shipped pipeline, run through the real engine under a scripted model, must produce exactly the trace committed for it.
+    - `GraphExecutionEngineTest.kt` - Tests for GraphExecutionEngine.
+    - `GraphRoutingTest.kt` - Unit coverage for `GraphRouting`.
+    - `LiveNodeStepTest.kt` - Unit coverage for `LiveNodeStep`.
+    - `MemoryAccessLogFormatterTest.kt` - Unit tests for `MemoryAccessLogFormatter` — the pure formatter behind the `MemoryAccess` console event.
+    - `MemoryRetrievalQueryResolverTest.kt` - Unit tests for `MemoryRetrievalQueryResolver` — the `RunOrigin` × declared-query matrix of the retrieval-key contract (`docs/architecture.md`).
+    - `ModelAuthorshipTest.kt` - `ModelAuthorship`: which text a run carries forward was written by a model.
+    - `NodeContextBuilderTest.kt` - Exhaustive test for `NodeContextBuilder` — the single source of truth for how pipeline context blocks are concatenated into a node's executor input.
+    - `NodeInputComposerTest.kt` - Unit coverage for `NodeInputComposer`.
+    - `PeakHeapSamplerTest.kt` - Unit tests for `PeakHeapSampler`.
+    - `PipelineSecurityContourTest.kt` - Cross-cutting security-contour test: drives the security guards of the file-workspace and outbound-HTTP tool surfaces through a **real** `GraphExecutionEngine` (only the LLM token stream is stubbed), proving they hold when wired into an executing pipeline rather than only in their isolated executor unit tests.
+    - `QueueCursorTest.kt` - Unit coverage for `QueueCursor`.
+    - `RecordingNodeInferenceTest.kt` - `RecordingNodeInference`: every on-device call of a visit runs on the run's sampler and a seed derived from the run seed, and is kept — with what the engine ran on — until the engine drains it into the trace.
+    - `retry/` - Tests for the retry observability seam.
+      - `CollectingCloudRetryListenerTest.kt` - Unit tests for `CollectingCloudRetryListener` — the buffer that lets the cloud node executor drain retries into console lines after the call completes.
+    - `RunConsoleTest.kt` - Unit coverage for `RunConsole`.
+    - `RunHeadersTest.kt` - `RunHeaders`: a fresh header takes the seed source's seed, the settings' sampler widened through its decimal form, and the environment's versions and device.
+    - `RunRecordWriterTest.kt` - Unit coverage for `RunRecordWriter`.
+    - `RunSeedsTest.kt` - `RunSeeds`: one run seed reproduces every call's seed, and every coordinate of a call — tree path, node, visit, call — changes it.
+    - `structured/` - Tests for the structured-output validate-and-repair layer.
+      - `CloudCallNotingClientTest.kt` - `CloudCallNotingClient`: each call a cloud-backed structured node makes is noted with the node's inference, then made unchanged.
+      - `CollectingRepairListenerTest.kt` - Unit tests for `CollectingRepairListener`.
+      - `EngineStructuredInferenceClientTest.kt` - Unit tests for `EngineStructuredInferenceClient`.
+      - `JsonPayloadExtractorTest.kt` - Unit tests for `JsonPayloadExtractor`, covering each packaging a local model may wrap a JSON payload in — bare, fenced, and embedded in prose — for both object and array shapes, plus the non-JSON fallback.
+      - `ReasoningBlockSplitterTest.kt` - Unit tests for `ReasoningBlockSplitter`.
+      - `StructuredOutputGateTest.kt` - Unit tests for `StructuredOutputGate`: each output form (JSON object, JSON array, constrained token), extraction from every payload packaging, the repair loop fixing on a later attempt, exhaustion producing a fully-populated `GateResult.Failed`, the lowered repair temperature, repair-listener notifications, and cancellation propagation.
+    - `stuck/` - Tests for the graph stuck-detector.
+      - `GraphStuckDetectorTest.kt` - Unit tests for `GraphStuckDetector`.
+    - `TestGraphExecutionEngine.kt` - Builds a `GraphExecutionEngine` for a test from the flat list of dependencies the test fakes.
+    - `TraceHashingTest.kt` - `TraceHashing` is plain SHA-256 over UTF-8 — what a reader of an exported trace recomputes with any tool.
+  - `memoryio/` - Tests for the long-term-memory export/import gateway.
+    - `MemoryJsonSerializerTest.kt` - Unit tests for `MemoryJsonSerializer` — the serialize → parse round-trip, the provenance / tag fidelity, and the never-throwing failure paths.
+    - `MemorySourceJsonTest.kt` - Unit tests for `MemorySourceJson` — the shared `MemorySource` ↔ JSON codec used by both the Room column converter and the memory export file.
+  - `models/` - Tests for the domain entity models.
+    - `AppErrorTest.kt` - Tests for AppError.
+    - `CloudProviderTest.kt` - Unit tests for `CloudProvider` — the canonical typed identifier for cloud LLM providers.
+    - `CustomModelLinkTest.kt` - Unit tests for `CustomModelLink.parse` — the one check a pasted model link passes before anything downloads, and the one place its file name comes from.
+    - `DownloadedModelCheckTest.kt` - The rule that decides whether a downloaded model file may be installed, and the comparison that later tells a checked model from an unchecked one.
+    - `ExternalAutomationOutcomeMapperTest.kt` - Verifies `externalAutomationStatusForTerminal` — the deliberately coarse mapping from the app's four terminal statuses onto the two settled statuses the third-party contract publishes.
+    - `LocalBackendTest.kt` - Unit tests for `LocalBackend` — the typed identifier for the on-device LiteRT backend.
+    - `ModelPerformanceSampleTest.kt` - Unit tests for `ModelPerformanceSample`.
+    - `NodeContextConfigTest.kt` - Locks the contract that legacy nodes (created before the `context_config` column) keep receiving the full pipeline context.
+    - `OnboardingJourneyTest.kt` - Verifies the derived figures and first-value attribution rules of `OnboardingJourney` — the pure half of the repeatable "< 10 minutes to first value" measurement.
+    - `PipelineGraphContentHashTest.kt` - Unit tests for `PipelineGraph.contentHash` — the checkpoint-invalidation contract of the persistent pipeline-run records.
+    - `PipelineGraphValidationTest.kt` - Cycle detection in `PipelineGraph.isValidDAG` / `PipelineGraph.validate`.
+    - `PipelinePresetTest.kt` - Tests for `PipelinePreset` and `PresetCategory`.
+    - `ResultTest.kt` - Tests for Result.
+    - `RouteLabelsTest.kt` - `RouteLabels`: the branch labels a run follows, and the one rule that matches them.
+    - `RunBudgetLedgerTest.kt` - Unit tests for `RunBudgetLedger` — the run-tree spend ledger every autonomous ceiling is charged against.
+    - `RunNoticeCauseTest.kt` - The live-only advisory raised while a run is still going.
+    - `RunTerminationReasonTest.kt` - Unit tests for `RunTerminationReason` and its persisted discriminator.
+    - `RunTreeContextTest.kt` - Unit coverage for `RunTreeContext`.
+    - `RunTreeIdsTest.kt` - `RunTreeIds`: a child run id is derived from its parent, node and visit, and read back.
+    - `ToolApprovalPolicyTest.kt` - Unit tests for `ToolApprovalPolicy`.
+    - `TriggerTelemetryTest.kt` - Pins the stable `telemetryKind` strings for every `TriggerCondition` variant.
+  - `pipelineio/` - Tests for the pipeline import/export gateway.
+    - `CookbookRecipeValidationTest.kt` - Validates the pipeline recipes published in `docs/recipes/`, which [docs/cookbook.md] tells a reader to download and import.
+    - `ImportedPipelineClaimsTest.kt` - `ImportedPipelineClaims` — an imported pipeline's `uses · …` hints keep only the tools its own TOOL nodes call.
+    - `PipelineBundleIdRemapperTest.kt` - Tests for `PipelineBundleIdRemapper` — the "import as copy" id rewrite.
+    - `PipelineBundleJsonSerializerTest.kt` - Tests for `PipelineBundleJsonSerializer` — the envelope round-trip and every parse-time invariant (referential integrity, duplicate ids, limits, schema aggregation).
+    - `PipelineBundleTestFixtures.kt` - Shared builders for pipeline-bundle tests: a structurally valid linear graph `INPUT → [PIPELINE(target)…] → OUTPUT` whose PIPELINE nodes name arbitrary targets, so referential-integrity, closure-walk and remap behaviour can be exercised without hand-writing JSON in every test.
+    - `PipelineJsonSerializerHostileDocumentTest.kt` - `PipelineJsonSerializer` against documents that are well-formed and hostile.
+    - `PipelineJsonSerializerTest.kt` - Tests for `PipelineJsonSerializer`.
+    - `PipelinePresetCatalogValidationTest.kt` - Catalogue-level validation for the bundled pipeline-preset JSON files that ship under `app/src/main/assets/presets/pipelines/`.
+    - `PipelinePresetJsonSerializerTest.kt` - Tests for `PipelinePresetJsonSerializer`.
+    - `PipelineSamplePromptJsonTest.kt` - `PipelineSamplePromptJson` — the wire shape of a pipeline's sample prompts, including the ceilings that keep a file from filling the new-chat screen.
+  - `preset/` - Integration tests over the bundled pipeline and prompt presets, the showcase compositions, skill report writing and nested-pipeline resume.
+    - `NestedResumeIntegrationTest.kt` - End-to-end integration test for **resume across a sub-pipeline boundary** — the nested human-in-the-loop scenario the composition feature has to get right (the scenario behind the nested-HITL fix).
+    - `PipelinePresetIntegrationTest.kt` - End-to-end integration test for the **pipeline-preset** path
+    - `PromptPresetIntegrationTest.kt` - End-to-end integration test for the **prompt-preset** path
+    - `ShowcaseCompositionIntegrationTest.kt` - End-to-end integration test for the **composed** bundled Showcase agent: the task loop whose four subtask branches now run as sub-pipelines through `PIPELINE` nodes.
+    - `ShowcaseResearchToFilePresetIntegrationTest.kt` - End-to-end integration test for the bundled `showcase_research_to_file` preset: the "research → file in the user's hands" loop the phase exists to prove.
+    - `SkillReportWriterIntegrationTest.kt` - End-to-end integration test for a **`SKILL` node bound to the bundled Report Writer skill** — the tie between skill execution and the agent's workspace file tools.
+  - `prompt/` - Tests for the prompt templating layer.
+    - `ChatTranscriptTest.kt` - Unit tests for `ChatTranscript` — the one rule by which stored content is laid into a model's line-oriented lists without being able to open a line of its own.
+    - `ForgedTurnFixture.kt` - Shared fixture for the transcript-forgery tests: message content that tries to open a turn of its own after each of the eight line terminators a tokenizer may render as a line break, and a splitter that honours all eight.
+    - `PromptTemplateEngineIntegrationTest.kt` - Integration tests for `PromptTemplateEngine` wired with the real built-in `app.knotwork.android.domain.prompt.PromptVariableProvider` implementations (`$DATE`, `$TIME`, `$TOOLS`).
+    - `PromptTemplateEngineTest.kt` - Tests for PromptTemplateEngine.
+  - `promptio/` - Tests for the prompt-preset export/import gateway.
+    - `PromptPresetCatalogValidationTest.kt` - Catalogue-level validation for the bundled prompt-preset JSON files that ship under `app/src/main/assets/presets/prompts/`.
+    - `PromptPresetJsonSerializerTest.kt` - Unit tests pinning the round-trip contract of `PromptPresetJsonSerializer`.
+  - `promptpack/` - Tests for prompt-pack parsing and its frontmatter.
+    - `PromptPackFrontmatterParserTest.kt` - Pins the accepted grammar of `PromptPackFrontmatterParser`.
+    - `PromptPackMarkdownSerializerTest.kt` - Contract tests for `PromptPackMarkdownSerializer`.
+  - `report/` - Tests for the content-report composer.
+    - `ContentReportComposerTest.kt` - Unit tests for `ContentReportComposer`.
+  - `repositories/` - Tests of the definitions the domain repository contracts carry beside their accessors.
+    - `ApiKeyRepositoryTest.kt` - Unit tests for the definitions `ApiKeyRepository` carries beside its accessors: `requiredCredential` and `isConfigured`.
+  - `services/` - Tests for the domain service interfaces and their pure helpers.
+    - `ChatHistoryCompressionCoordinatorTest.kt` - Unit tests for `ChatHistoryCompressionCoordinator`.
+    - `CleartextPolicyTest.kt` - Unit tests for `CleartextPolicy` — the rule that replaced the hand-written IP list in `network_security_config.xml`.
+    - `CompactionCoverageVerifierTest.kt` - Unit tests for `CompactionCoverageVerifier`.
+    - `EmbeddingProviderResolverTest.kt` - Unit tests for `EmbeddingProviderResolver`.
+    - `HttpRequestPolicyTest.kt` - Unit tests for `HttpRequestPolicy` — the pure security policy behind the `http_request` tool.
+    - `KMeansClustererTest.kt` - Unit tests for `KMeansClusterer`.
+    - `LocalOnlyPolicyTest.kt` - Unit tests for `LocalOnlyPolicy` — which model endpoints stay reachable while "Block network from local model" is on.
+    - `McpToolRoutingTest.kt` - Pins the one rule for which MCP server answers a tool name: a device tool wins, then the first server in the user's order with the name switched on.
+    - `MemoryAutoExtractionCoordinatorTest.kt` - Unit tests for `MemoryAutoExtractionCoordinator`.
+    - `MemoryRerankerTest.kt` - Unit tests for `MemoryReranker`.
+    - `MemorySearchStatsTrackerTest.kt` - Unit tests for `MemorySearchStatsTracker` — the session-scoped rolling window behind the Settings AVG SCORE stat cell.
+    - `MemorySupersedeFixture.kt` - The supersede fixture (`src/test/resources/memory/supersede_pairs.json`): pairs of a stored memory fact and a newly extracted one, each labelled with what the new fact is and the verdict the supersede judge must give, plus the embedding of every fact as recorded from the app's bundled on-device embedder.
+    - `MemorySupersedeFixtureTest.kt` - Holds the supersede fixture to what it claims: recorded from the embedder the app ships, reproducible with the app's own cosine, labelled consistently — and showing the reason the supersede rule asks a model rather than a threshold.
+    - `MemorySupersedeJudgeTest.kt` - Unit tests for `MemorySupersedeJudge`: verdict parsing through the real `StructuredOutputGate`, the fail-to-keep-both contract, cancellation, and the prompt layout that keeps a fact from opening a line of its own.
+    - `MemoryVectorSimilarityTest.kt` - Unit tests for `MemoryVectorSimilarity` — the metric every stage of the memory subsystem shares, plus the near-duplicate threshold expressed in it.
+    - `PipelineCompositionValidatorTest.kt` - Tests for PipelineCompositionValidator (cycles, depth limit, dangling targets).
+    - `ScheduledTaskTagTest.kt` - Verifies `ScheduledTaskTag`: the label a scheduled task carries is the only thing the task monitor can say about it (a queued task's input data is not readable), so it has to survive a round trip through a plain tag string and degrade to `null` — never to a wrong label — on anything it does not recognise.
+    - `WorkspaceGlobTest.kt` - Unit tests for `WorkspaceGlob`, pinning the documented glob semantics: `*` stays within a path segment, `**` crosses directories, `?` matches a single non-separator character, and everything else is literal.
+    - `WorkspaceNamePolicyTest.kt` - Unit tests for `WorkspaceNamePolicy`: which characters a new name may not carry, the byte limits at their exact boundaries (in UTF-8, not characters), and the two renderings of a forbidden character — replaced on import, escaped in a listing.
+    - `WorkspaceTextEditTest.kt` - Unit tests for `WorkspaceTextEdit`.
+  - `settings/` - Tests for the settings registry and its metadata.
+    - `SettingsRegistryTest.kt` - Unit tests for `SettingsRegistry` — the single source of truth for the settings information architecture.
+    - `SettingsSearchEngineTest.kt` - Unit tests for `SettingsSearchEngine` and the `anchorKey` helper.
+  - `skillio/` - Tests for the skill export/import gateway.
+    - `SkillJsonSerializerTest.kt` - Round-trip and edge-case contract for `SkillJsonSerializer`.
+  - `text/` - Tests for the pure text helpers.
+    - `ApprovalRequestTextTest.kt` - `toDisplaySafeExcerpt` — the rule an approval applies to the request it shows next to the call: display-safe like every quoted value, and cut on a word so the excerpt does not end in half of one.
+    - `DeeplyNestedImportTest.kt` - Every import parser answers a deeply nested document with a failure instead of throwing.
+    - `ImportedTextTest.kt` - `toDisplaySafe` — the one rule every importer uses to quote a file back into the app's own sentence: every kind of line break, control and bidi character out, whitespace collapsed, length clamped without splitting a character.
+    - `ImportMessageSafetyTest.kt` - Every way an importer can refuse a file, fed a value written to take over the error message.
+    - `JsonNestingTest.kt` - Unit tests for `JsonNesting` — the bracket count that runs before an import is parsed.
+    - `TitleTextTest.kt` - Unit tests for the shared single-line-title helpers.
+  - `triggerio/` - Tests for the trigger export/import gateway.
+    - `TriggerConditionCodecTest.kt` - Unit tests for `TriggerConditionCodec` — the single source of truth for the `TriggerCondition` ↔ JSON wire shape persisted in `triggers.conditionJson`.
+  - `usecases/` - Tests for the use cases.
+    - `AgentOrchestratorUseCaseTest.kt` - Tests for AgentOrchestratorUseCase.
+    - `AppInitializationUseCaseTest.kt` - Unit tests for `AppInitializationUseCase`.
+    - `ApprovalRequestAddressingTest.kt` - The decision channel end to end, from the surface that shows a request to the gate that waits on one: a real `SubmitApprovalDecisionUseCase` in front of a real `ToolInvocationGate`.
+    - `ApprovalRequestContextFixtures.kt` - Stand-ins for `ResolveApprovalRequestContextUseCase` in tests that build the approval gate but are not about what an approval shows.
+    - `ArchiveChatUseCaseTest.kt` - Unit tests for `ArchiveChatUseCase`.
+    - `AttachmentMessageContentTest.kt` - Unit tests for `AttachmentMessageContent`, the shared image-only message contract used by both the composer and the share target.
+    - `automation/` - Tests for the external-automation use cases.
+      - `AuthorizeExternalAutomationRequestUseCaseTest.kt` - Unit tests for `AuthorizeExternalAutomationRequestUseCase` — the security model of the external entry point.
+      - `BuildExternalAutomationJournalExportUseCaseTest.kt` - Verifies that `BuildExternalAutomationJournalExportUseCase` renders the request journal into a correct JSON document: the header, every status and refusal reason as the discriminator already published as the callback contract, the two sender columns kept apart, and the caller's order preserved.
+      - `HandleExternalAutomationRequestUseCaseTest.kt` - Verifies the security guarantees of the external-automation entry point.
+      - `ParseExternalAutomationRequestUseCaseTest.kt` - Unit tests for `ParseExternalAutomationRequestUseCase`.
+    - `BackUpToDocumentUseCaseTest.kt` - `BackUpToDocumentUseCase`: a saved backup is finished and measured; a failed, refused, cancelled or broken one deletes its unfinished document — and only a complete one is ever kept.
+    - `BuildDynamicShortcutsUseCaseTest.kt` - Unit tests for `BuildDynamicShortcutsUseCase`: recency ordering, the count cap, label clamping, and the blank-name / non-positive-cap guards.
+    - `BuildTriggerJournalExportUseCaseTest.kt` - Verifies that `BuildTriggerJournalExportUseCase` renders the journal snapshot into a correct JSON document: the header (schema, local-only, count), the discriminator strings of every verdict and run outcome, the typed skip reason and failure error, and that the caller's order is preserved verbatim.
+    - `BuildUsageTelemetryExportUseCaseTest.kt` - Verifies that `BuildUsageTelemetryExportUseCase` renders the on-device statistics into a correct text + JSON document, resolves pipeline names, and carries the local-only marker.
+    - `CalculateUsageRetentionUseCaseTest.kt` - Verifies every boundary of the pre-committed retention definitions (`UsageRetention`): the window edges, the previous-window comparison, which pipelines count as live, the streak rule, what counts as a break the user returned from, and the first-week figure.
+    - `CancelScheduledTasksUseCaseTest.kt` - Unit tests for `CancelScheduledTasksUseCase` — the escape hatch from a task that keeps re-scheduling itself.
+    - `CheckImageAttachmentUseCaseTest.kt` - Unit tests for `CheckImageAttachmentUseCase`: each of the three refusals, their precedence, and the pass — the one decision both the composer and the share target ask.
+    - `CleanupOrphanAttachmentsUseCaseTest.kt` - Unit tests for `CleanupOrphanAttachmentsUseCase` — the backstop sweep that deletes attachment files no chat message references.
+    - `CleanupPipelineRunsUseCaseTest.kt` - Unit tests for `CleanupPipelineRunsUseCase`: the two retention settings are read fresh per pass, the max-age cutoff is derived from the configured day count, and the outcome counters mirror what the repositories report.
+    - `CleanupTriggerJournalUseCaseTest.kt` - Unit tests for `CleanupTriggerJournalUseCase`: it derives the age cutoff from the configured window and delegates the bounded pass to the repository.
+    - `ClearAllMemoryUseCaseTest.kt` - Unit tests for `ClearAllMemoryUseCase`.
+    - `CompressChatHistoryUseCaseTest.kt` - Unit tests for `CompressChatHistoryUseCase` — the background pass that summarises the older tail of a long session.
+    - `ComputeModelFileHashesUseCaseTest.kt` - `ComputeModelFileHashesUseCase`: one pass hashes every file the registry lists as needing it, stores each result, and leaves an unreadable file for the next pass.
+    - `CreatePipelineUseCaseTest.kt` - Unit tests for `CreatePipelineUseCase`.
+    - `DeletePipelineUseCaseTest.kt` - Unit tests for `DeletePipelineUseCase`.
+    - `DuplicatePipelineUseCaseTest.kt` - Unit tests for `DuplicatePipelineUseCase`.
+    - `EstimateCompactionUseCaseTest.kt` - Unit tests for `EstimateCompactionUseCase`.
+    - `EvaluateIfConditionUseCaseTest.kt` - Tests for `EvaluateIfConditionUseCase`, including the structured-output gate path (constrained `{"True","False"}` token with repair).
+    - `EvaluateTriggerFiringUseCaseTest.kt` - Unit tests for `EvaluateTriggerFiringUseCase` — the pure fire/skip/re-arm decision core.
+    - `ExportBackupUseCaseTest.kt` - `ExportBackupUseCase`: a password of at least twelve characters, counted as code points, reaches the exporter; a shorter one is refused before anything is written, and the stream is closed either way.
+    - `ExportChatUseCaseTest.kt` - Unit tests for `ExportChatUseCase`.
+    - `ExportMemoryBaseUseCaseTest.kt` - Unit tests for `ExportMemoryBaseUseCase`.
+    - `ExportPipelineBundleUseCaseTest.kt` - Tests for `ExportPipelineBundleUseCase` — the dependency-closure walk with diamond/cycle collapse, the library-then-preset resolution order, and the fail-fast guards.
+    - `FindPipelineBindingsUseCaseTest.kt` - `FindPipelineBindingsUseCase` — every id-keyed binding, one source at a time.
+    - `FindPipelinesUsingSkillUseCaseTest.kt` - The skill-usage scan is wired now but dormant until the SKILL node ships (no `PipelineGraph` node can reference a skill yet), so it must return empty for every skill regardless of the saved pipelines.
+    - `FireTriggerUseCaseTest.kt` - Unit tests for `FireTriggerUseCase` — the worker-side orchestration that loads a trigger, defers the decision to `EvaluateTriggerFiringUseCase`, acts (resolve the bound session, enqueue, mark fired, disarm event triggers, re-arm, or auto-disable), and — the focus of the journal write-point tests — records exactly one evaluation verdict per evaluated trigger.
+    - `GetContextWindowUseCaseTest.kt` - Tests for GetContextWindowUseCase.
+    - `GetDiscoverableModelDetailUseCaseTest.kt` - Unit tests for `GetDiscoverableModelDetailUseCase`.
+    - `GetModelPerformanceUseCaseTest.kt` - Unit tests for `GetModelPerformanceUseCase`.
+    - `ImportPipelineBundleUseCaseTest.kt` - Tests for `ImportPipelineBundleUseCase` — the prepare (parse + validate + collision-detect) and persist (id policy + atomic write) steps.
+    - `ImportPipelineUseCaseTest.kt` - Tests for `ImportPipelineUseCase`.
+    - `InitializeAppUseCaseTest.kt` - Tests for InitializeAppUseCase.
+    - `InspectBackupDocumentUseCaseTest.kt` - `InspectBackupDocumentUseCase`: a readable backup comes back with its name, size and header; one this build cannot read comes back with its name and why, not as a failure; a file that cannot be read at all fails.
+    - `InstallDiscoveredModelUseCaseTest.kt` - Unit tests for `InstallDiscoveredModelUseCase`.
+    - `JournalDayGrouperTest.kt` - Unit tests for `JournalDayGrouper` — the day-bucketing and timestamp arithmetic shared by the trigger evaluation journal and the external-automation request journal.
+    - `LaunchSharePipelineUseCaseTest.kt` - Unit tests for `LaunchSharePipelineUseCase`: the empty / unbound guards, the text-only, image-only and failed-ingest launch branches, and the single-chat session-reuse toggle.
+    - `LaunchTilePipelineUseCaseTest.kt` - Unit tests for `LaunchTilePipelineUseCase`, covering the bound (enqueue a background run) and unbound (no-op) branches.
+    - `LoadModelUseCaseTest.kt` - Tests for LoadModelUseCase.
+    - `LoadPipelineFromPresetUseCaseTest.kt` - Unit tests for `LoadPipelineFromPresetUseCase`, including a composed parent preset (`INPUT` → `PIPELINE` → `OUTPUT`) that must validate cleanly.
+    - `LoadPipelineUseCaseTest.kt` - Tests for LoadPipelineUseCase.
+    - `MemoryCompactionUseCaseTest.kt` - Unit tests for `MemoryCompactionUseCase`.
+    - `MemoryExportImportRoundTripTest.kt` - End-to-end round-trip coverage for the memory export/import feature Export → wipe → import (Replace) → assert the store is byte-for-byte identical.
+    - `MemoryExtractionUseCaseTest.kt` - Unit tests for `MemoryExtractionUseCase`.
+    - `MemoryImportUseCaseTest.kt` - Unit tests for `MemoryImportUseCase` — Merge / Replace strategies, the provider-mismatch re-embed scheduling, and the empty-document Replace guard.
+    - `NotifyStaleTriggersUseCaseTest.kt` - Unit tests for `NotifyStaleTriggersUseCase`: an overdue trigger is announced once per silence, a healthy one never, and a new sign of life starts the next silence.
+    - `ObserveTriggerHealthInputsUseCaseTest.kt` - Unit tests for `ObserveTriggerHealthInputsUseCase`: it forwards the reactive per-trigger health-inputs stream from the journal repository.
+    - `ObserveTriggerJournalUseCaseTest.kt` - Unit tests for `ObserveTriggerJournalUseCase`: it forwards the reactive journal stream for the requested trigger.
+    - `ParkedRunResumerTest.kt` - Unit tests for `ParkedRunResumer` — the shared submission tail of the background-HITL decision use cases.
+    - `ParseSharedContentUseCaseTest.kt` - Unit tests for `ParseSharedContentUseCase`, covering the text / image / mixed / empty branches and the MIME-type guard against a non-image stream.
+    - `PrepareInferenceBackendUseCaseTest.kt` - Covers the first-install backend decision: who may change it, what evidence is required before the GPU is trusted, and how a wrong guess is undone.
+    - `promptpack/` - Tests for the prompt-pack use cases.
+      - `ExportPromptPackUseCaseTest.kt` - Tests for rendering a saved prompt into its file form.
+      - `ImportPromptPackUseCaseTest.kt` - Tests for `ImportPromptPackUseCase` — the three things the parser deliberately leaves to the caller: where an id comes from, what happens when it is taken, and that an imported file can never claim the read-only catalogue.
+      - `ResolvePromptPackCollisionUseCaseTest.kt` - Tests for the two ways a re-import collision can be resolved.
+    - `RecomputePendingEmbeddingsUseCaseTest.kt` - Unit tests for `RecomputePendingEmbeddingsUseCase` — the background re-embed pass run by the worker.
+    - `RecordTriggerEvaluationUseCaseTest.kt` - Unit tests for `RecordTriggerEvaluationUseCase`: it stamps the record's id and timestamp, persists exactly one evaluation, and normalises the run id so only a fired verdict retains it.
+    - `RecordTriggerHitlEventUseCaseTest.kt` - Unit tests for `RecordTriggerHitlEventUseCase`: it normalises the reporting run to the root of its run tree — the id a journal row actually carries — and forwards the event unchanged.
+    - `RecordTriggerRunOutcomeUseCaseTest.kt` - Unit tests for `RecordTriggerRunOutcomeUseCase`: it forwards the run outcome to the journal keyed by run id.
+    - `RediscoverDownloadedModelsUseCaseTest.kt` - Covers which model files on disk the start-up pass registers again: exactly the ones no registry row names by path or by name.
+    - `ReembedAllMemoriesUseCaseTest.kt` - Unit tests for `ReembedAllMemoriesUseCase`.
+    - `RegisterDownloadedModelUseCaseTest.kt` - Covers the upsert semantics of registering a downloaded file: the write runs on every completed download, including re-downloads of a file the user already has, so "insert once, refresh afterwards" is the whole contract.
+    - `RenamePipelineUseCaseTest.kt` - Unit tests for `RenamePipelineUseCase`.
+    - `ResetLockedDatabaseUseCaseTest.kt` - Unit tests for `ResetLockedDatabaseUseCase`: the recovery wipe erases the database first, then the plain-text content that belongs to it — workspace, attachments, transient copies — and touches no file when the database survives.
+    - `ResetSamplingDefaultsUseCaseTest.kt` - Unit tests for `ResetSamplingDefaultsUseCase`.
+    - `ResetToRecommendedDefaultsUseCaseTest.kt` - Unit tests for `ResetToRecommendedDefaultsUseCase`.
+    - `ResolveApprovalRequestContextUseCaseTest.kt` - `ResolveApprovalRequestContextUseCase` — what an approval shows next to the call: the ROOT run's recorded request, labelled by where it came from, made display-safe, and never a reason for the approval itself to fail.
+    - `ResolveDocumentationLinkUseCaseTest.kt` - Unit tests for `ResolveDocumentationLinkUseCase`.
+    - `ResolveEntryInferenceUseCaseTest.kt` - Unit tests for `ResolveEntryInferenceUseCase`, over two-node `INPUT` → entry graphs, one per entry node type.
+    - `ResolveLaunchableSurfacePipelineUseCaseTest.kt` - Unit tests for `ResolveLaunchableSurfacePipelineUseCase`: a surface runs only a pipeline that exists.
+    - `ResolveRunCeilingsUseCaseTest.kt` - Unit tests for `ResolveRunCeilingsUseCase` — which configured numbers apply to a run, decided from its origin.
+    - `ResolveSurfacePipelineUseCaseTest.kt` - Unit tests for `ResolveSurfacePipelineUseCase`, confirming each surface reads its own binding flow and passes through `null` (the inert default).
+    - `ResumePipelineRunUseCaseTest.kt` - Behavioural coverage for `ResumePipelineRunUseCase` — every resume precondition (status, prompt presence, age window, graph identity) and the happy path that re-enqueues the run as a resume-flagged `AgentTask`.
+    - `RetrieveRelevantMemoryUseCaseTest.kt` - Tests for RetrieveRelevantMemoryUseCase.
+    - `RunBenchmarkUseCaseTest.kt` - Unit tests for `RunBenchmarkUseCase`.
+    - `RunRateCeilingTest.kt` - Unit tests for `RunRateCeiling` — the shared runaway-guard arithmetic.
+    - `SaveMessageToMemoryUseCaseTest.kt` - Unit tests for `SaveMessageToMemoryUseCase` — the direct-wrapper manual save path behind the chat "Save to memory" action.
+    - `SavePipelineAsPresetUseCaseTest.kt` - Unit tests for `SavePipelineAsPresetUseCase`.
+    - `SavePipelineUseCaseTest.kt` - Tests for SavePipelineUseCase.
+    - `SavePromptAsPresetUseCaseTest.kt` - Unit tests for `SavePromptAsPresetUseCase`.
+    - `SaveTriggerUseCaseTest.kt` - Unit tests for `SaveTriggerUseCase` — the domain owner of a trigger's runtime lifecycle fields (`armed` / `lastFiredAt` / `createdAt`).
+    - `ScheduleTaskUseCaseTest.kt` - Tests for ScheduleTaskUseCase.
+    - `SearchDiscoverableModelsUseCaseTest.kt` - Unit tests for `SearchDiscoverableModelsUseCase`.
+    - `SeedBundledSkillsUseCaseTest.kt` - Verifies that bundled-skill seeding is idempotent: running it repeatedly inserts each bundled skill exactly once (upsert by stable id), so an upgrading user who launches many times never accumulates duplicates.
+    - `SetSurfacePipelineUseCaseTest.kt` - Unit tests for `SetSurfacePipelineUseCase`, confirming each surface writes to its own binding and that `null` clears it.
+    - `SetUpScenarioUseCaseTest.kt` - Unit tests for `SetUpScenarioUseCase` — the one-tap onboarding set-up orchestration.
+    - `StageRestoreFromDocumentUseCaseTest.kt` - `StageRestoreFromDocumentUseCase`: the picked document's stream and the password go to the restorer as given.
+    - `SubmitApprovalDecisionUseCaseTest.kt` - Unit tests for `SubmitApprovalDecisionUseCase` — the single entry point of the user's approve / deny decision across both waiting phases.
+    - `SubmitCeilingDecisionUseCaseTest.kt` - Unit tests for `SubmitCeilingDecisionUseCase`.
+    - `SubmitClarificationAnswerUseCaseTest.kt` - Unit tests for `SubmitClarificationAnswerUseCase` — the single entry point of the user's clarification answer across both waiting phases.
+    - `SummarizeRestoreUseCaseTest.kt` - `SummarizeRestoreUseCase`: this phone's counts as they are, and of the backup's models only those whose file is not here — a registered model with its file missing still has to be downloaded.
+    - `SyncTriggersUseCaseTest.kt` - Unit tests for `SyncTriggersUseCase` — the one-shot reconcile that hands the current active-trigger snapshot to the scheduler.
+    - `TestBackendUseCaseTest.kt` - Covers the fixed-prompt backend probe, including the caller-supplied model path added for the onboarding acceleration check — where the model that was just installed is not necessarily the active one yet, so resolving through "active model" would measure the wrong thing (or nothing at all).
+    - `TranscribeAudioUseCaseTest.kt` - Unit tests for `TranscribeAudioUseCase` covering every branch of the voice-input transcription pre-flight: the engine-busy gate, the active-model audio-capability checks, the success path, and the failure paths — plus the ephemeral-clip cleanup contract.
+    - `TriggerHealthEvaluatorTest.kt` - Unit tests for `TriggerHealthEvaluator`: the pure derivation of a trigger's health badge from its journal facts and the current time, covering the inactive short-circuits, the staleness threshold per condition, the last-run-error signal, and the stale-over-errored precedence.
+    - `TriggerJournalGrouperTest.kt` - Unit tests for `TriggerJournalGrouper`: day bucketing, the relative-vs-absolute timestamp choice, moment-time extraction and order preservation, all against a fixed clock and zone.
+    - `TriggerRunOutcomeMapperTest.kt` - Unit tests for `triggerRunOutcomeForTerminal` — the pure mapping from a run's terminal state to the trigger-journal outcome vocabulary.
+    - `UnarchiveChatUseCaseTest.kt` - Unit tests for `UnarchiveChatUseCase`.
+    - `workspace/` - Tests for the agent-workspace use cases.
+      - `DeleteWorkspaceFilesUseCaseTest.kt` - Verifies `DeleteWorkspaceFilesUseCase` deletes every path independently and partitions the outcomes.
+      - `ExportWorkspaceFileUseCaseTest.kt` - Verifies `ExportWorkspaceFileUseCase` forwards the path and sink to the workspace.
+      - `ImportFileToWorkspaceUseCaseTest.kt` - Verifies `ImportFileToWorkspaceUseCase`'s collision policy, basename sanitisation and free-name logic.
+      - `ListWorkspaceUseCaseTest.kt` - Verifies that `ListWorkspaceUseCase` bundles the listing + usage and short-circuits on failure.
+      - `PreviewWorkspaceFileUseCaseTest.kt` - Verifies `PreviewWorkspaceFileUseCase` delegates with the fixed preview budget.
+  - `verification/` - Tests of the run check: the plan's refusals and visit kinds, the repeat and its stops, the reproducibility policy, and the check end to end on a golden-harness run with the tool catalogue refusing calls.
+    - `DescribeRunUseCaseTest.kt` - `DescribeRunUseCase`: what the run header shows — the model files the calls used, how much a cloud model answered, the digest, the promise, and whether the check and the start-again are offered — from one reading of the run.
+    - `ExportRunTraceUseCaseTest.kt` - The run trace export — `ExportRunTraceUseCase` over `BuildRunTraceExportUseCase`: the header, every record of every run in tree order with its hashes and the full prompts, and the digest; a run recorded before headers as records only; nothing for a run still going.
+    - `PlanRunAgainWithSeedUseCaseTest.kt` - `PlanRunAgainWithSeedUseCase`: offered for a finished chat or share run without an image, on the pipeline it executed, with its own seed and sampler — and otherwise named why not.
+    - `PlanRunVerificationUseCaseTest.kt` - `PlanRunVerificationUseCase`: whether a finished run can be checked here now, and the plan — every visit in run order, sub-pipelines in place, each with the calls it repeats or the reason it does not.
+    - `RecordedRunTreeTest.kt` - `RecordedRunTree` and `ReadRecordedRunTreeUseCase`: one reading of a run tree, so the check, the digest and the export place each sub-pipeline run under the same `PIPELINE` visit — the one that failed and left no record included.
+    - `RunAgainWithSeedGoldenTest.kt` - "Run again with this seed" end to end, on runs the real engine made: the golden harness runs `showcase_full_agent` / `task-every-subpipeline` — a router, a decomposition, four sub-pipelines, two of them running a tool — as a recorded run with its own seed and sampler, plans starting it again from the record, and runs the request it gets.
+    - `RunDigestTest.kt` - `RunDigest`: one hash for what a finished run produced — the same for a repeat with the same content, whatever its ids, times, seeds or console lines, and different as soon as one node's or one call's text differs, sub-pipelines included.
+    - `RunReproducibilityPolicyTest.kt` - `RunReproducibilityPolicy` promises only what was measured on the reference device: CPU and GPU (GPU at the same window) on the same device; not the NPU, not an image, not a cloud model, not a run recorded before seeds.
+    - `RunVerificationGoldenTest.kt` - The run check end to end, on a run the real engine made: the golden harness runs `showcase_full_agent` / `task-every-subpipeline` — a router, a decomposition, four sub-pipelines, two of them running a tool — and the check then plans and repeats it from the recorded trace alone.
+    - `VerificationFixtures.kt` - Records for the verification tests: a finished run with a header, and model calls and node records shaped as the engine writes them.
+    - `VerifyRunUseCaseTest.kt` - `VerifyRunUseCase`: each recorded call is sent again from its own prompt with its own sampler and seed, on the model it ran on, and its answer compared by SHA-256.
+- `editor/` - Guard over the browser pipeline editor: its context configuration must still mirror the domain sources.
+  - `BrowserEditorContextConfigGuardTest.kt` - Drift guard for the browser pipeline editor's hand-maintained `defaultContextConfig(typeId)` JS function in `pipeline-editor.html`.
+- `integration/` - Background-run integration tests wiring real components end to end — the trigger path, the external-automation path and the autonomy cycle.
+  - `BackgroundAutonomyCycleIntegrationTest.kt` - End-to-end JVM integration test of the background-autonomy cycle:
+  - `ExternalAutomationBackgroundRunIntegrationTest.kt` - End-to-end JVM integration test of the **external request → background run → callback** arc: the entry point another app on the device broadcasts to.
+  - `JournalExportReader.kt` - **The** reader of the exported journal documents — the offline consumer the export formats exist for, written once and pointed at every producer.
+  - `JournalExportRoundTripTest.kt` - The round-trip guarantee of the journal exports: **one document, one parse.**
+  - `TriggerBackgroundRunIntegrationTest.kt` - End-to-end JVM integration test of the **automation-trigger → background run → notification → result-in-chat** arc — the privacy-sensitive surface automation triggers add on top of the persisted background-run infrastructure.
+- `presentation/` - Tests for the presentation layer.
+  - `common/` - Tests for the cross-feature presentation utilities.
+    - `BoundedTextTest.kt` - `readTextWithin` — an import reads the picked file only up to its ceiling, and stops reading there rather than after the whole file is in memory — plus the heap-derived ceiling for memory files.
+    - `HitlRequestMappingTest.kt` - `toHitlRequestContext` — the one translation the approval card and the approval notification both read: every source keeps its meaning, a trigger keeps its name (or its lack of one), and the text and flags pass unchanged.
+  - `notifications/` - Tests for the notification channels and notifiers.
+    - `ApprovalNotificationManagerTest.kt` - Robolectric coverage for `ApprovalNotificationManager` — the Human-in-the-loop gate that surfaces tool-approval prompts in the system shade when the user is not actively viewing the requesting chat session.
+    - `ClarificationNotificationManagerTest.kt` - Robolectric coverage for `ClarificationNotificationManager`: the parked run's question is the model's, written from the conversation, so where the system hides sensitive content the notification shows its title alone.
+    - `NotificationFamilyIsolationTest.kt` - The notification families are posted by three managers that know nothing of each other; these tests pin what they share — the id space — against the real `NotificationManager`.
+    - `ScheduledTaskNotifierImplTest.kt` - Robolectric coverage for `ScheduledTaskNotifierImpl` — the notifier that announces scheduled-run outcomes ("Task completed" / "Task failed") with a deep-link into the bound chat session.
+  - `receivers/` - Tests for the broadcast receivers, including the external-automation entry point.
+    - `AgentApprovalReceiverTest.kt` - Robolectric coverage for `AgentApprovalReceiver` — the broadcast receiver that routes the Approve / Deny notification actions through `SubmitApprovalDecisionUseCase` (live gate or parked record) and re-posts persistent notifications on `ApprovalAction.REPOST`.
+    - `ApprovalActionTest.kt` - Unit tests for `ApprovalAction`: round-trip parsing and rejection of unknown actions.
+    - `ExternalAutomationReceiverTest.kt` - Robolectric coverage for `ExternalAutomationReceiver` — the exported entry point a third-party automation app broadcasts to.
+  - `run/` - Tests for the run-lifecycle collaborators in `presentation/run/`.
+    - `RunOutcomeAnnouncerImplTest.kt` - Coverage for `RunOutcomeAnnouncerImpl` — the line a stopped run leaves in the chat it ran in.
+  - `share/` - Tests for the share-target entry point: reading a caller's share extras without crashing.
+    - `SharedIntentFieldsTest.kt` - Unit tests for `SharedIntentFields.read` — the only place `ShareReceiverActivity` touches a caller's extras.
+  - `startup/` - Tests for the cold-start upkeep: every step failing in turn leaves the others running.
+    - `StartupMaintenanceTest.kt` - `StartupMaintenance` must survive every one of its steps failing — the case it was written for is a database whose key is lost, where the trigger sync threw `DbPassphraseUnavailableException` out of `MainActivity` and killed the process before the splash could show *Erase data*, on every launch.
+  - `ui/` - Tests for the screens and their ViewModels.
+    - `about/` - Tests for the About surface.
+      - `AboutAcknowledgmentsTest.kt` - Drift guard for the hand-maintained `AboutAcknowledgments` list surfaced on the About screen.
+      - `AboutLinksTest.kt` - Drift guard for the outbound links of the About screen (`AboutLinks`).
+    - `automation/` - Tests for the external-automation settings surface.
+      - `ExternalAutomationJournalViewModelTest.kt` - Verifies that the external-automation journal screen reports the contract's posture and its request log faithfully.
+    - `chat/` - Tests for the chat surface.
+      - `archive/` - Tests for the chat archive.
+        - `ArchivedAtLabelTest.kt` - Unit tests for the archived-at bucket ladder.
+        - `ChatArchiveViewModelTest.kt` - Unit tests for `ChatArchiveViewModel` and the state → view-state projection.
+      - `home/` - Tests for the chat home screen and its console pane.
+        - `ApprovalPolicyDocumentsTest.kt` - Pins the sentences that describe the approval gate's mechanics to the code that implements them.
+        - `ChatHomeConsoleDelegateTest.kt` - Isolated unit tests for `ChatHomeConsoleDelegate` — the console-pane responsibility extracted from `ChatHomeViewModel`.
+        - `ChatHomeConsoleMappingTest.kt` - Unit coverage for the pure-Kotlin mappers in `ChatHomeConsoleMapping`.
+        - `ChatHomeConsoleStreamingTest.kt` - Coverage for `ChatHomeViewModel` console pane aggregation: how the orchestrator-emitted `ConsoleLog` / `PipelineTrace` / `NodeIO` states are projected into the three console-pane tabs, and how Clear / Copy / Tab callbacks interact with the resulting flows.
+        - `ChatHomeMockFactoryCoverageTest.kt` - Guards the instrumented mock factory against a one-shot event flow it does not stub.
+        - `ChatHomeRunDelegateTest.kt` - `ChatHomeRunDelegate`: the strip follows the console's run, a long check asks first and a short one starts, the check's events fill the sheet, a start-again asks then hands the recorded seed to the send path, and the export renders before its sheet opens.
+        - `ChatHomeStateMappingTest.kt` - Pure-Kotlin unit tests for `ChatHomeScreenState.toViewState` — the boundary mapper between the aggregated screen state owned by `:app` and the `app.knotwork.design.screens.chat.ChatHomeViewState` consumed by the stateless `ChatHomeContent` in `:catalog`.
+        - `ChatHomeViewModelTest.kt` - Unit-tests for `ChatHomeViewModel`.
+        - `ConsoleCopyPayloadsTest.kt` - Unit tests for `ConsoleCopyPayloads`.
+        - `ContentReportIssueUrlTest.kt` - Unit tests for `contentReportIssueUrl`.
+        - `RunDisplayTest.kt` - The run strip's projection of a run: numbers written for reading, the line and fields per case, the promise's wording, the actions' reasons, and when a check asks first.
+        - `VerificationProgressTest.kt` - `VerificationProgress`: the check's sheet frame by frame — the first repeated visit checking, calls advancing within a visit, a settled visit handing over to the next, the time left shrinking, and each ending leaving the visits it never reached as "not checked".
+    - `common/` - Tests for the shared presentation helpers.
+      - `ConnectionTestTest.kt` - Unit tests for `ConnectionTest`, the state of a Test connection row.
+      - `JournalExportDelegateTest.kt` - Behaviour of the shared journal-export half of the two journal ViewModels.
+      - `JournalExportShareTest.kt` - The share half of the journal export — the part that touches the platform and therefore cannot be reached from the delegate's own tests.
+      - `RunTerminationCopyMapperTest.kt` - Guards the single vocabulary of a stopped run.
+      - `TestSubjectTest.kt` - Every state of a test row resolved into its words — the copy the design hand-off fixed, per subject: a hosted provider, a server the user runs, an MCP server.
+      - `UiTextTest.kt` - Unit tests for `UiText`.
+    - `components/` - Tests for the pure helpers behind the app-side composables.
+      - `TextFieldValueExtTest.kt` - Unit tests for `insertAtCursor`.
+    - `discover/` - Tests for the model-discovery surface.
+      - `DiscoverDetailViewModelTest.kt` - Unit tests for `DiscoverDetailViewModel`.
+      - `DiscoverViewModelTest.kt` - Unit tests for `DiscoverViewModel`.
+    - `files/` - Tests for the agent-workspace Files surface.
+      - `FilesMessengerTest.kt` - Unit coverage for `FilesMessenger` — the single owner of what the Files screen says when an operation does not go through.
+      - `FilesScreenMappingTest.kt` - Verifies the pure `FilesUiState.toViewState()` projection used by `FilesScreen`.
+      - `FilesViewModelTest.kt` - Unit tests for `FilesViewModel`.
+    - `memory/` - Tests for the long-term-memory surface.
+      - `MemoryScreenMappingTest.kt` - Unit tests for `toViewState` — the pure projection from `MemoryUiState` to the catalog `MemoryViewState` (filtering, grouping, breakdown, detail labels).
+      - `MemoryViewModelTest.kt` - Tests for MemoryViewModel.
+    - `models/` - Tests for the local-models surface and its performance formatting.
+      - `ModelsStateMappingTest.kt` - Verifies `ModelsUiState.toViewState(...)` — the mapper bridging the data layer projection onto the catalog `ModelsViewState`.
+      - `ModelsViewModelTest.kt` - Tests for ModelsViewModel.
+      - `PerformanceFormattingTest.kt` - Unit tests for the performance-figure formatting helpers.
+    - `monitoring/` - Tests for the observability surface.
+      - `MonitoringViewModelTest.kt` - Tests for MonitoringViewModel.
+    - `more/` - Tests for the More tab.
+      - `MoreFormattersTest.kt` - Unit tests for the pure-Kotlin formatter helpers feeding the More tab subtitle counters and footer pill.
+      - `MoreViewModelTest.kt` - Unit tests for `MoreViewModel` — drives the `combine` + `reduceUiState` projection that powers the More tab's live subtitle counters and footer privacy pill.
+    - `navigation/` - Tests for the navigation graph, routes and deep links.
+      - `BottomNavVisibilityTest.kt` - Table-driven test for `shouldShowBottomNav`.
+      - `DeepLinkRouterTest.kt` - JVM tests for the `knotwork://triggers/{id}` branch of `navigateToDeepLink` — the overdue-trigger notification's tap.
+      - `NavRoutesTest.kt` - Unit tests for `NavRoutes` — guards against accidental route collisions, blank routes, and silently broken deep-link / argument contracts.
+      - `TabOwnershipTest.kt` - Unit tests for `owningTabRoute` / `isTabRootStack` — the two pure functions that replaced the hand-maintained `route → tab` table.
+    - `onboarding/` - Tests for the onboarding flow.
+      - `OnboardingViewModelTest.kt` - Verifies the orchestrated scenario / download / warm flow layered on top of the `hasCompletedOnboarding` persistence.
+    - `orchestrator/` - Tests for the pipeline-library surface.
+      - `components/` - Tests for the pipeline-library components.
+        - `PromptPresetPickerDialogTest.kt` - Pure-logic tests for the filter helper backing `PromptPresetPickerDialog`.
+      - `OrchestratorViewModelTest.kt` - Tests for OrchestratorViewModel.
+      - `PipelineBindingsTextTest.kt` - The Replace confirmation's lines for what is bound to a pipeline.
+      - `presets/` - Tests for the preset gallery and its graph-flow preview.
+        - `GraphFlowPreviewTest.kt` - Unit tests for the preset graph-flow preview.
+        - `PipelinePresetsViewModelTest.kt` - Unit tests for `PipelinePresetsViewModel`.
+      - `ProviderAvailabilityTest.kt` - Unit tests for `toProviderChoices` — what the node sheet's provider fields are told.
+    - `pipeline/` - Tests for the pipeline editor surface.
+      - `editor/` - Tests for the editor screen and its state.
+        - `canvas/` - Tests for the canvas geometry and hit-testing.
+          - `EditorHitTestTest.kt` - Unit tests for the editor's canvas-space hit-test geometry — the maths behind connection creation.
+          - `ImportedRoutingDisplayTest.kt` - The canvas draws an imported branching node's edges from the port the run takes them by.
+        - `config/` - Tests for the node-configuration codec and its type mapping.
+          - `BundledPresetEditabilityTest.kt` - Proves every node of every bundled pipeline preset opens **cleanly** in the editor's `NodeConfigSheet` — decoded by `NodeConfigCodec` and accepted by `NodeConfigValidation` with zero field errors.
+          - `CookbookRuntimeReachTest.kt` - Holds the published claim "this configuration field reaches the run" against what `NodeConfigCodec` actually does.
+          - `NodeConfigCodecTest.kt` - Unit tests for `NodeConfigCodec`.
+          - `NodeConfigMutations.kt` - One configuration per node type with every field moved off its default, plus the view of a stored node the engine reads.
+          - `NodeConfigRuntimeAuthorityTest.kt` - Guards the rule "the configuration sheet shows the value the run uses" for every field of every node type.
+          - `NodeTypeMapperTest.kt` - Unit tests for the editor `NodeType` mapping.
+        - `core/` - Tests for auto-layout, edge geometry and undo/redo.
+          - `AutoLayoutTest.kt` - Unit tests for the editor auto-layout.
+          - `BezierEdgeTest.kt` - Unit tests for the Bézier edge geometry.
+          - `CanvasTransformTest.kt` - Pure-Kotlin tests for `CanvasTransform`.
+          - `EditorStateFramingTest.kt` - Tests for `EditorState.frameIfNeeded` and `EditorState.requestFit` — how a pipeline is framed when it opens.
+          - `EditorUndoRedoTest.kt` - Unit tests for the editor undo/redo stack.
+          - `MiniMapGeometryTest.kt` - Pure-Kotlin tests for `MiniMapGeometry`.
+          - `ShippedPipelineLayoutTest.kt` - Guards the layout of every pipeline the project ships as a file: the bundled presets under `src/main/assets/presets/pipelines/` and the cookbook recipes under `docs/recipes/`.
+          - `ValidationAutoFixTest.kt` - Pure-Kotlin tests for `ValidationAutoFix` recipes.
+    - `prompts/` - Tests for the prompt library.
+      - `PromptLibraryViewModelTest.kt` - Unit tests for `PromptLibraryViewModel`.
+    - `settings/` - Tests for the settings screens and their catalogues.
+      - `backup/` - Tests for the *Backup & restore* screen's ViewModel.
+        - `AfterRestoreViewModelTest.kt` - `AfterRestoreViewModel`: the sheet from the report, the snackbar when nothing is left to do, the downloads it starts — one at a time — and *Done*.
+        - `BackupViewModelTest.kt` - `BackupViewModel`: the password rule as the designer wrote it, the picker, the work and its three endings — saved, failed, cancelled — and Back inside a route.
+        - `RestoreViewModelTest.kt` - `RestoreViewModel`: the picked file and what is wrong with it, the password and its check, every failure in the user's terms, the summary, the typed confirm and the commit — and that nothing staged outlives a cancel or a close.
+      - `ExternalAutomationRowSummaryTest.kt` - Unit tests for the pure half of the external-automation Background rows.
+      - `MemorySettingsDelegateTest.kt` - Unit tests for `MemorySettingsDelegate` — the memory import's last step, where a failure meets the user.
+      - `ModelsSettingsDelegateTest.kt` - The provider rows of Settings → Models, as `ModelsSettingsDelegate` summarises them: one per provider in the order every provider surface uses, and the one state no row had before — a key saved with no model, for a provider that has no default.
+      - `PendingMemoryImportTest.kt` - Unit tests for `PendingMemoryImport.warnings` — which notices the memory-import dialog raises about a staged file, and in what order.
+      - `provider/` - Tests for the cloud-provider editor.
+        - `ProviderDetailProjectionTest.kt` - Coverage for the projection that feeds the catalog's provider detail surface.
+        - `ProviderDetailViewModelTest.kt` - Unit tests for `ProviderDetailViewModel` — the standalone editor backing the Settings → External providers detail screen.
+        - `ProviderPickerViewModelTest.kt` - Unit tests for `ProviderPickerViewModel` — which providers the picker marks *added*.
+      - `runlimits/` - Tests for the run-limits surface.
+        - `RunLimitsViewModelTest.kt` - Covers the one piece of real logic on the run-limits screen: when a background ceiling stops following the interactive one.
+        - `TokenLimitScaleTest.kt` - The token track is logarithmic because the range spans three orders of magnitude.
+      - `SettingsHelpCatalogTest.kt` - The completeness gate for settings help text.
+      - `SettingsSearchAnchorSyncTest.kt` - Drift guard tying the deep-link highlight anchors back to the settings registry.
+      - `SettingsSearchCatalogTest.kt` - Drift guard for the settings-search index bridge.
+      - `SettingsViewModelTest.kt` - Tests for SettingsViewModel.
+      - `ToolCeilingUnitsTest.kt` - Round-trip guard for the tool / workspace ceiling unit conversions.
+      - `usage/` - Tests for the on-device usage-statistics surface.
+        - `UsageTelemetryViewModelTest.kt` - Verifies the `UsageTelemetryViewModel` state aggregation, opt-in, export and reset wiring.
+    - `skills/` - Tests for the skill library.
+      - `SkillLibraryViewModelTest.kt` - Unit tests for `SkillLibraryViewModel`.
+    - `splash/` - Tests for the splash and initialisation path.
+      - `SplashStateMappingTest.kt` - Verifies the `SplashUiState.toViewState(...)` mapper that bridges the app-side cold-start projection to the catalog `SplashViewState` consumed by `SplashContent`.
+      - `SplashViewModelTest.kt` - Verifies that `SplashViewModel` folds `InitProgress` emissions into the UI state correctly across the success path, the failed path, the retry path, and the data-locked recovery flow (typed-confirm full reset).
+    - `taskmonitor/` - Tests for the task monitor.
+      - `TaskMonitorViewModelTest.kt` - Tests for TaskMonitorViewModel.
+    - `tools/` - Tests for the Tools surface, the MCP server editor and the domain allowlist.
+      - `AllowedDomainsViewModelTest.kt` - Unit tests for `AllowedDomainsViewModel` — the add-field feedback computation (delegated to `HttpRequestPolicy.normalizeDomain`) and the add / remove persistence gestures.
+      - `McpServerConfigSaveFlowTest.kt` - Saving the MCP server form, as the Tools screen beneath it sees it: the real `ToolsViewModel`, `McpServerConfigViewModel` and `McpServerRepositoryImpl` over one connection pool, with only the MCP client and the settings faked.
+      - `McpServerConfigViewModelTest.kt` - Unit tests for `McpServerConfigViewModel`.
+      - `ToolRiskResolutionTest.kt` - Guards the one rule the Tools list and the tool-detail screen must agree on: which tools the approval gate resolves from an override, and which it resolves from the code.
+      - `ToolsUiStateTest.kt` - The Tools screen's "not offered to the agent" line must tell the story the agent lives in: these cases mirror the ones `ToolRepositoryImplTest` pins for the agent's catalogue.
+      - `ToolsViewModelTest.kt` - Tests for ToolsViewModel.
+    - `triggers/` - Tests for the triggers surface.
+      - `TriggerConditionFormatterTest.kt` - Unit tests for `TriggerConditionFormatter` — the pure mapping from a domain `TriggerCondition` to a `TriggerConditionLabel`.
+      - `TriggerSilenceLabelTest.kt` - Unit tests for `TriggerSilenceLabel`: a moment from today is a bare time, one from an earlier day carries its date.
+      - `TriggersViewModelTest.kt` - Unit tests for `TriggersViewModel`.
+- `store/` - Tests over the store-listing metadata — the limits Google Play enforces after a release, not before.
+  - `StoreMetadataTest.kt` - Guards the store metadata under `fastlane/metadata/android/`, which is the single source both Google Play and F-Droid read.
+<!-- /AUTO-GEN:FILE_MAP -->

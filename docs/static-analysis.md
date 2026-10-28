@@ -1,0 +1,2693 @@
+# Static Analysis & Coverage — Permanent Rules
+
+This document is the source of truth for the project's quality gates. Every
+PR must pass the gate below, which is also wired as the required CI job on
+`pull_request → main`. Failing any sub-task blocks the merge.
+
+> Test-coverage measurement and thresholds live alongside the rules here;
+> the per-package baseline numbers used to seed the thresholds are kept in
+> [`coverage-baseline.md`](coverage-baseline.md).
+
+---
+
+## `./gradlew check :buildSrc:test`
+
+Two tasks, not one, and the second is not optional:
+
+```bash
+./gradlew check :buildSrc:test
+```
+
+`buildSrc` is a **separate build**. Its tasks are not reachable from this one,
+so no amount of wiring inside `check` can pull them in — which is why CI spells
+both out on the command line, and why running only `check` locally is a narrower
+gate than the one that decides the merge.
+
+That gap has bitten: three `CookbookDocsGeneratorTest` cases sat red on a phase
+branch through two merges while every local `./gradlew check` reported success.
+The build-logic module holds the generators and scanners behind the cookbook,
+the file maps, the docs gates and the lint-baseline guard — a red test there
+means a document is being generated from a rule nobody is checking.
+
+`check` alone invokes (transitively):
+
+| Sub-task                                      | Purpose                                                                 |
+|-----------------------------------------------|-------------------------------------------------------------------------|
+| `:app:detekt`                                 | Kotlin static analysis. Fails on any unsuppressed finding.              |
+| `:app:detektFullDebug` + `:app:detektFossDebug` | Type-resolution gate (the rules the plain task cannot run, one per flavour). See below. |
+| `:catalog:detektDebug`                        | The same gate over the design system, with two catalog settings layered on top. See below. |
+| `:app:ktlintCheck`                            | Kotlin formatting & idiomatic style rules. Run `ktlintFormat` to fix.  |
+| `:app:lintFullDebug` + `:app:lintFossDebug`   | Android Lint over both distribution flavours + library dependencies. `:catalog:lint` runs too. |
+| `:app:testFullDebugUnitTest`                      | JVM unit tests for the debug variant.                                   |
+| `:app:koverVerifyFullDebug`                       | Test-coverage threshold enforcement.                                    |
+| `:app:verifyStoreListingLengths`                  | Play store-listing fields against Google's character limits. Rejection otherwise lands in the Play Console, after a signed release (see below). |
+| `:app:verifyForbiddenVocabulary`              | Fails if any public text file carries the product's pre-rename name or internal planning numbering (see below). |
+| `:app:verifyNoOrphanedKdoc` + `:catalog:verifyNoOrphanedKdoc` | Fails if a KDoc block documents no declaration — and so silently leaves the one below it undocumented (see below). |
+| `:app:verifyDialogInventory`                  | Fails if a dialog or sheet is composed in `:app` without a recorded reason, putting it out of reach of the design-system baselines (see below). |
+| `:app:checkNoInternalFqn`                     | Custom rule: forbid `app.knotwork.android.*` FQN references in code body (see below). |
+| `:app:verifyBrowserEditorConstants`           | Fails if `pipeline-editor.html` `AUTO-GEN` blocks drift from the domain sources and the bundled presets / prompt templates, if its node forms offer a control for a field no run reads, or if its export leaves out a run-time field it derives (see below). |
+| `:app:verifyDocsHygiene`                      | Custom rule: guard the public docs against LLM tool-call artifacts and internal-document references (see below). |
+| `:app:verifyExternalAutomationDocs`           | Fails if the `docs/external-automation.md` `AUTO-GEN` tables drift from the contract sources (see below). |
+| `:app:verifySettingsHelpDocs`                 | Fails if the settings reference table in `docs/user-guide.md` drifts from the shipped help strings (see below). |
+| `:app:verifyCookbookDocs`                     | Fails if the node reference in `docs/cookbook.md` drifts from the node sources (see below). |
+| `:app:verifyFileMap`                          | Fails if a generated `FILE_MAP.md` drifts from the Kotlin sources, or an undocumented-file count grows past its ratchet (see below). |
+| `:app:verifyDocLinks`                         | Fails if a relative link, an `#anchor` or an inline-code repository path anywhere in the documentation leads nowhere (see below). External `http` links are reported, not gated. |
+| `:app:verifyMermaidDiagrams`                  | Fails if an embedded Mermaid diagram is structurally broken (see below). |
+| `:app:verifyBundledDocs`                      | Fails if a document bundled into the app drifted from `docs/`, carries something the in-app renderer cannot show, or holds a link that would not resolve offline (see below). |
+| `:app:verifyDocumentationLinks`               | Fails if the app's registry of documentation links drifts from its build-side list, names a document or heading that does not resolve, or points at a heading that is not unique (see below). |
+| `:app:verifyVersionSources`                   | Fails if any hand-written copy of the version — README badge and prose, the CHANGELOG heading and links, `SECURITY.md`, the roadmap's release line — disagrees with the declared `versionName` (see below). |
+| `:app:verifySupplyChainPins`                  | Fails if a GitHub Action is referenced by anything but a full commit SHA with a version comment, the Gradle wrapper loses its distribution checksum, or dependency verification is switched off, holds an ignored key, or trusts a non-organisation key across a namespace (see below). |
+| `:app:verifyFullReleaseMergedManifest` + `:app:verifyFossReleaseMergedManifest` | Fails if a shipping variant's merged manifest gains or loses a permission, an exported component or a `queries` entry its committed expectation does not list, or declares anything the expectation forbids with an `absent` line — for `foss`, any Firebase, Play-services or data-transport element (see below). |
+| `:app:testFullDebugUnitTest` (`CookbookRuntimeReachTest`, `CookbookRecipeValidationTest`) | Fails if the cookbook's run-time verdicts disagree with `NodeConfigCodec`, or a published recipe no longer imports (see below). |
+| `:app:testFullDebugUnitTest` (`SettingsHelpCatalogTest`) | Fails if a registered setting has no help decision, or its text is blank, over-long, duplicated or in a forbidden register (see below). |
+| `:app:verifyLintBaselineOverrides`            | Custom rule: fail if a lint baseline suppresses a check demoted to informational severity (see below). |
+| `:app:verifyDetektAnalysisMode`               | Custom rule: fail if `detekt.yml` activates a rule that only runs under type resolution (see below). |
+| `:app:verifySizeSuppressions`                 | Fails if a size or complexity suppression is missing from its committed list, or a listed one is gone from the sources. The list only shrinks (see below). |
+| `:app:testFullDebugUnitTest` (Konsist suite)      | Architecture guard: Clean-Architecture layer boundaries (see below).        |
+| `:app:testFullDebugUnitTest` (`TopBarInsetGuardTest`) | Fails if a bar at the top of a screen neither applies the status-bar inset nor names the parent that does (see below). |
+| `:app:testFullDebugUnitTest` (`BundledDocumentationRoutingGuardTest`) | Fails if a call that can open a document bundled into the app passes no in-app reader, and so sends it to the browser (see below). |
+| `:app:testFullDebugUnitTest` (`CloudModelListGuardTest`) | Fails if a cloud model the app offers is not one of Koog's chat constants, or a chat constant Koog declares is neither offered nor left out with a reason (see below). |
+| `:app:testFullDebugUnitTest` (`ShippedPipelineLayoutTest`) | Fails if two node cards overlap in a bundled pipeline preset or a cookbook recipe (see below). |
+| `:app:testFullDebugUnitTest` (`GoldenTraceTest`, `GoldenTraceCatalogueTest`) | Fails if running a bundled preset, a cookbook recipe or a test fixture through the real engine produces a trace that differs from its committed golden file, or a pipeline file, a node type or a golden file falls out of the catalogue (see below). |
+| `:catalog:verifyRoborazziDebug`               | Fails if a design-system screenshot differs from its committed baseline (see below). |
+
+Pre-flight tip: run `./gradlew :app:ktlintFormat` first to auto-fix the
+safely-correctable subset before invoking `check`.
+
+---
+
+## Detekt — Kotlin rules
+
+Plugin: `dev.detekt`, 2.x line (required for Kotlin 2.4.x / AGP 9.x
+compatibility). The exact version is pinned in
+[`gradle/libs.versions.toml`](../gradle/libs.versions.toml) under the `detekt`
+key — that catalog entry, not this page, is the source of truth. Configuration:
+[`config/detekt/detekt.yml`](../config/detekt/detekt.yml), layered on top of
+detekt's bundled defaults via `buildUponDefaultConfig = true` in
+`app/build.gradle.kts`.
+
+**That file may only hold rules that run without type resolution.** Detekt 2.x
+splits its rules by what they need to answer, and a rule implementing
+`dev.detekt.api.RequiresAnalysisApi` is skipped by the plain `:app:detekt` task
+*in silence* — no error, no warning, no report entry. The rules that need it
+live in the type-resolution gate below, and
+[`:app:verifyDetektAnalysisMode`](#detekt-analysis-mode-guard) fails the build
+if one is put back here.
+
+**Strict mode**: `detekt { ignoreFailures = false }`. The default
+`failOnSeverity = Error` means any rule emitting at `severity: error`
+(everything we enable) fails the build. The legacy 1.x top-level
+`failFast: true` switch was removed in detekt 1.22 and is intentionally not
+used.
+
+### Tuned thresholds & disabled rules
+
+| Rule                              | Setting                           | Why                                                                             |
+|-----------------------------------|-----------------------------------|---------------------------------------------------------------------------------|
+| `complexity.LongMethod`           | `allowedLines: 120`               | Graph-execution loops, JSON serialisers, pipeline factories genuinely run long. |
+| `complexity.LongMethod`           | `ignoreAnnotated: ['Composable']` | `@Composable` trees are declarative; ktlint handles formatting.                 |
+| `complexity.CyclomaticComplexMethod` | `allowedComplexity: 25`        | Orchestrator branches over node/provider/error states.                          |
+| `complexity.CyclomaticComplexMethod` | `ignoreAnnotated: ['Composable']` | Composables aggregate conditional rendering.                                    |
+| `complexity.LargeClass`           | `excludes: presentation/ui/**`    | `*Screen` files host many top-level composables.                                |
+| `complexity.TooManyFunctions`     | `allowedFunctionsPer*: 25`        | DAOs, Repository contracts, Hilt modules naturally expose >11 functions.        |
+| `complexity.LongParameterList`    | `allowedFunctionParameters: 10`, `allowedConstructorParameters: 14` | Composable slot APIs commonly take many lambdas; Hilt assembles long constructor lists. Lives in the type-resolution gate. |
+| `style.MagicNumber`               | tuned excludes + named-arg ignore | See `MagicNumber` block in YAML for rationale; `AppDatabase.kt` is excluded.    |
+| `style.MaxLineLength`             | `maxLineLength: 120`, comments excluded | Code lines ≤ 120 are enforced by ktlint too; KDoc references unavoidably overshoot.|
+| `style.ReturnCount`               | `max: 5`                          | Multi-return early-exit is idiomatic Kotlin.                                    |
+| `style.ThrowsCount`               | `max: 4`                          | Per-field schema validators want specific error messages per case.              |
+| `style.LoopWithTooManyJumpStatements` | disabled                      | Pipeline / graph traversal legitimately uses multiple `break/continue`.         |
+| `exceptions.TooGenericExceptionCaught` | disabled                     | LLM SDK / native / Android-IO call sites have an open exception surface.        |
+| `exceptions.SwallowedException`   | disabled                          | Catching → mapping to `Result.failure(domainError)` is the boundary contract.   |
+| `naming.FunctionNaming`           | `ignoreAnnotated: ['Composable']` | Compose convention is PascalCase.                                               |
+| `comments.UndocumentedPublic*`    | scoped to `domain/` and `data/repositories/` | Enforces the project rule that public API in `domain/` and `data/repositories/` carries KDoc. |
+
+### Adding an intentional suppression
+
+When a finding is genuinely intentional, suppress it at the **narrowest
+scope** with a reason:
+
+```kotlin
+// Reason: the validate() function accumulates a fixed set of structural
+// checks into a single list. Each branch is one independent rule;
+// extracting helpers would mostly rename, not decompose, the cyclomatic count.
+@Suppress("CyclomaticComplexMethod")
+fun validate(): List<PipelineValidationError> { … }
+```
+
+Bare `@Suppress("X")` without a reason comment is rejected in code review.
+
+**Not for the size and complexity rules.** `LargeClass`, `TooManyFunctions`,
+`LongMethod`, `CyclomaticComplexMethod` and `LongParameterList` cannot be
+suppressed by adding an annotation: the
+[size-suppression ratchet](#size-suppression-ratchet-verifysizesuppressions)
+fails the build. Split the code instead.
+
+**Reports**:
+- `app/build/reports/detekt/detekt.html` — visual checklist.
+- `app/build/reports/detekt/detekt.xml` — checkstyle-compatible for CI parsers.
+
+### Type-resolution gate (`detektFullDebug` + `detektFossDebug`)
+
+Detekt 2.x splits its rules by what they need in order to answer. A rule that
+only walks the syntax tree runs anywhere; a rule that needs resolved types
+implements `dev.detekt.api.RequiresAnalysisApi` and runs only in `full`
+analysis mode. **A rule of the second kind, configured into a `light`-mode run,
+is skipped without a word** — no error, no warning, no entry in the report. Of
+detekt 2.x's rules, 93 are of the second kind.
+
+That is not a hypothetical. Four rules sat in `detekt.yml` — `LongParameterList`,
+`UnusedImport`, `UnusedPrivateFunction`, `UnusedPrivateProperty` — each with a
+comment explaining its threshold, and none of them had ever run: an
+18-parameter constructor passed `:app:detekt` clean. When they were finally
+executed they had 52 findings waiting.
+
+So the plugin-generated type-resolution tasks for each flavour's debug variant
+(`:app:detektFullDebug` / `:app:detektFossDebug`) are rewired in
+`app/build.gradle.kts` to
+[`config/detekt/detekt-type-resolution.yml`](../config/detekt/detekt-type-resolution.yml)
+and added to `check`. Both flavours run so the gate also covers the
+flavour-specific sources (`src/full` / `src/foss`), which the plain task's
+`source` never reached either.
+
+**`:catalog` runs the gate too** (`:catalog:detektDebug`, in `check`), with
+[`config/detekt/detekt-type-resolution-catalog.yml`](../config/detekt/detekt-type-resolution-catalog.yml)
+layered on top. It holds two settings the design system needs and the app does not:
+a defaulted parameter does not count toward `LongParameterList`, because a screen's
+callbacks are one constructor of defaulted lambdas, one per user action; and a
+`@Preview` function is not reported as unused, because only the IDE calls one. Until
+it was wired, the catalog's plain `detekt` task ran in `light` mode and so checked
+none of the four rules. The first run found 104 findings: 63 of them were the two
+patterns above, and the remaining 41 were 39 unused imports and two dead private
+functions, all removed.
+
+| Rule                                    | What it catches                                                        |
+|-----------------------------------------|------------------------------------------------------------------------|
+| `coroutines.SuspendFunSwallowedCancellation` | `runCatching` wrapping suspend calls, and `try`/`catch` in suspend functions that catches `CancellationException` (or a superclass such as `Exception` / `Throwable`) without immediately re-throwing. |
+| `complexity.LongParameterList`          | >10 function parameters, >14 constructor parameters; `@Composable` exempt. |
+| `style.UnusedImport`                    | Imports no longer referenced — ktlint's own check cannot see through extension-property imports. |
+| `style.UnusedPrivateFunction`           | Dead private/internal functions.                                        |
+
+**Why not simply run the strict config under type resolution.** Measured on
+this repository, that surfaces 296 findings, 263 of them from rules the project
+never declared it wants (`InjectDispatcher` alone accounts for 131). Adopting
+them is a deliberate piece of work, not a side effect of making four declared
+rules run. Full-config type-resolution analysis remains available for that
+triage via `:app:detektMain` / `:app:detektRelease` (not part of the gate).
+
+**One rule is deliberately parked.** `style.UnusedPrivateProperty` belongs to
+the same family but is not enabled: in the pinned detekt version it does not
+count a reference made from a *property initializer*, so
+
+```kotlin
+class C(private val dep: Dep) { val holder = Holder(dep = dep) }  // `dep` reported unused
+```
+
+On this repository that is 24 of its 29 findings — every dependency a ViewModel
+forwards into a delegate built as a property initializer. Enabling it would mean
+24 `@Suppress` annotations asserting something untrue about live code. The five
+genuine findings it did surface were fixed by hand.
+
+**Compliant cancellation patterns**: a dedicated first catch clause
+`catch (e: CancellationException) { throw e }` before the generic catch, or a
+`try`/`finally` without a catch. `runCatching` must never wrap suspend calls.
+
+**Known blind spot**: `SuspendFunSwallowedCancellation` does not analyse
+`try`/`catch` blocks nested inside non-suspend inline lambdas (e.g.
+`forEach { ... }`), because the enclosing function literal is not itself
+suspend-typed. Reviewers must still check those sites manually.
+
+### Detekt analysis-mode guard
+
+`:app:verifyDetektAnalysisMode` (wired into `check`) is what keeps the split
+above from silently rotting. It reads the rules
+[`config/detekt/detekt.yml`](../config/detekt/detekt.yml) explicitly activates,
+resolves which rule classes on detekt's own classpath implement
+`RequiresAnalysisApi`, and fails when the two sets intersect — i.e. when a rule
+has been added to the light-mode config that the `detekt` task would skip
+without saying so.
+
+It reads the rule set from the `detekt` configuration's jars rather than from a
+list pinned in the repository, so an upgrade that moves a rule across the
+boundary is caught by the next build. It also fails when that scan comes back
+empty, because a guard with nothing to compare against passes everything —
+which is precisely the failure mode it exists to prevent.
+
+Scope is stated rather than implied: the guard judges the rules this repository
+*declares*, not the ones detekt's bundled defaults switch on underneath them.
+Those defaults do include rules requiring the Analysis API, and the light-mode
+task skips them in the same silence; adopting them is the 296-finding triage
+described above, and a guard should not force it by failing the build. The
+enforceable promise is the narrower one: a rule the project went to the trouble
+of naming and tuning actually runs.
+
+Implementation: `buildSrc/.../DetektAnalysisModeGuard.kt`, unit-tested via
+`./gradlew -p buildSrc test`.
+
+### Size-suppression ratchet (`verifySizeSuppressions`)
+
+Five rules measure how big or tangled a declaration is: `LargeClass`,
+`TooManyFunctions`, `LongMethod`, `CyclomaticComplexMethod` and
+`LongParameterList`. Suppressing one is a standing exception to a threshold.
+Each such exception was meant to be temporary, and nothing ever removed one.
+
+Nothing noticed when one stopped working either. When they were first counted,
+126 of the 155 suppressed no finding at all. There were three reasons:
+
+- The code had shrunk under the threshold.
+- The rule ignores that declaration anyway (`@Composable` functions,
+  `presentation/ui/**` for `LargeClass`).
+- The rule never runs on that source set.
+
+The dead ones were deleted. The ones that remain are listed in
+[`config/detekt/size-suppressions.txt`](../config/detekt/size-suppressions.txt),
+one line per suppressed rule:
+
+```text
+app/src/main/java/app/knotwork/android/di/DataModule.kt :: class DataModule :: TooManyFunctions
+```
+
+`:app:verifySizeSuppressions` (wired into `check`) compares the sources with
+that list:
+
+- **A suppression that is not listed fails the build.** Split the code instead.
+  Moving a suppression to another declaration counts as a new one, because the
+  entry names the declaration, not a line number.
+- **A listed entry that is gone fails it too.** Delete the line in the same
+  change that removed the annotation. That is how the list shrinks.
+
+It reads `@Suppress` and `@SuppressWarnings` at any use-site target, including
+`@file:`. It recognises every rule-id spelling detekt accepts, such as
+`complexity:LongMethod` and `detekt.complexity.LongMethod`. Suppressing the
+whole `complexity` set, or `all`, counts as all five rules. Comments and string
+literals are skipped: the first count included an annotation that was really
+part of a test fixture's source text. An argument that is not a plain string
+literal fails the build instead of being guessed.
+
+It scans the sources and build scripts of every module, test sets included. A
+suppression where the rule never runs is exactly the dead kind.
+
+**What it cannot see:**
+
+- **A line added to the list.** The build cannot tell a new line from an old
+  one, so the list growing is caught in review, as a raised threshold would be.
+- **A listed suppression that has gone dead.** Telling live from dead means
+  running detekt with the annotation removed. That stays a manual probe:
+  rename the rule ids in all annotations, run every detekt task with
+  `--continue`, and match the findings to the annotations.
+- **A raised threshold or a new `excludes` path** in `config/detekt/`. Those are
+  configuration edits and are reviewed as such.
+
+**Where `LongParameterList` does not run.** It runs only in the type-resolution
+tasks of `:app` and `:catalog` (where a defaulted parameter is not counted), and
+their source is the debug variant's production code (`src/main` plus the
+build-type and flavour directories). It checks nothing in `buildSrc` or any
+test set, suppressed or not.
+
+**Observed failing.** One suppression was added to `NodeContextBuilder.build`
+and one listed suppression was removed from `DefaultPipelineFactory.create`. The
+task named both: the first under "Not listed", the second under "Listed but
+gone". Implementation: `buildSrc/.../SizeSuppressionRatchet.kt`, unit-tested in
+`SizeSuppressionRatchetTest`. A test fails if string literals or the
+`detekt:` prefix stop being handled.
+
+---
+
+## ktlint — formatting & idiomatic style
+
+Plugin: `org.jlleitschuh.gradle.ktlint` `14.2.0`, bundled engine `1.5.0`.
+Strict mode: `ktlint { ignoreFailures.set(false) }`. Rule overrides live in
+[`.editorconfig`](../.editorconfig):
+
+- `ktlint_function_naming_ignore_when_annotated_with = Composable` — Compose
+  PascalCase is allowed.
+- `ktlint_standard_backing-property-naming = disabled` — the `_uiState`
+  /`uiState` ViewModel pattern is project-wide.
+
+Run `./gradlew :app:ktlintFormat` for the auto-fixable subset; remaining
+issues are reported by `:app:ktlintCheck`.
+
+**Reports**:
+- `app/build/reports/ktlint/ktlintMainSourceSetCheck/*` (HTML + plain).
+
+---
+
+## Android Lint
+
+Provided by the Android Gradle Plugin (version pinned in
+[`gradle/libs.versions.toml`](../gradle/libs.versions.toml)). Strict mode is
+configured identically in `app/build.gradle.kts` and `catalog/build.gradle.kts`:
+
+```kotlin
+android {
+    lint {
+        baseline = file("lint-baseline.xml")
+        abortOnError = true
+        warningsAsErrors = true
+        checkDependencies = true
+    }
+}
+```
+
+`lint-baseline.xml` grandfathers existing issues so only **newly introduced**
+warnings or errors fail the build. Regenerate the baseline only after a
+deliberate batch of fixes:
+
+```bash
+./gradlew :app:updateLintBaseline    # rewrites the baseline; commit it.
+```
+
+> **Regenerating also re-absorbs the informational checks below.** Lint records
+> informational findings into a baseline exactly as it records errors, and a
+> baselined finding disappears from the report — which would silently empty the
+> dependency-drift signal while the build stays green. `verifyLintBaselineOverrides`
+> fails the build if that happens, naming the lines to delete. Prefer editing the
+> baseline by hand over regenerating it wholesale.
+
+### Version-freshness checks report, they do not gate
+
+Four checks are demoted to **informational** severity in both modules:
+
+| Check | Answers from |
+|-------|--------------|
+| `GradleDependency`          | an external version index |
+| `AndroidGradlePluginVersion`| an external version index |
+| `NewerVersionAvailable`     | an external version index (a network round-trip per dependency) |
+| `ExpiringTargetSdkVersion`  | the calendar |
+
+The reason is determinism, not leniency. Whether the build passes ought to be a
+function of the contents of the repository: these four are not, so the same
+commit can be green today and red tomorrow with no edit in between, and green on
+a laptop while red in CI, because the two version indexes were refreshed at
+different times. A check whose verdict moves without the checked object moving is
+a report.
+
+**Deliberate exceptions.** Seven checks stay build-failing even though their
+verdict is not purely a function of this repository, because each encodes a
+store publishing blocker rather than a matter of hygiene — being interrupted by
+them is the point:
+
+- `ExpiredTargetSdkVersion` (fatal), which is calendar-driven;
+- `PlaySdkIndexNonCompliant`, `PlaySdkIndexVulnerability`,
+  `PlaySdkIndexGenericIssues`, `PlaySdkIndexDeprecated`, `RiskyLibrary` and
+  `OutdatedLibrary`, which are decided by the Google Play SDK Index — a
+  network-refreshed dataset with a bundled offline snapshot as fallback.
+
+Anything outside that list is expected to hold the rule: a check that reads
+network reachability, a third-party service or the clock belongs in a report,
+not in the gate.
+
+Demoted is not disabled. The checks still run, still respect the baseline, and
+still appear in the reports — `disable` would drop the findings before any
+reporter sees them. `warningsAsErrors = true` does not undo the demotion: lint
+promotes `WARNING` to `ERROR`, and informational findings are exempt. Do **not**
+add `ignoreWarnings = true` next to it — that flag suppresses informational
+findings as well, which would delete the report.
+
+Dependencies are therefore updated deliberately — when a task needs the newer
+version, or in one pass before a release — rather than because a check went red
+in the middle of unrelated work.
+
+### Where the drift report lands
+
+- Locally: the lint reports below, produced by every `./gradlew check`.
+- In CI: the **Informational lint findings** table in the job summary, plus the
+  `lint-report` artifact, which is uploaded on every run — including green ones,
+  since a green run is precisely the run whose report carries the drift.
+
+**Reports**:
+- `app/build/reports/lint-results-fullDebug.{html,xml}`
+- `app/build/reports/lint-results-fossDebug.{html,xml}`
+- `catalog/build/reports/lint-results-debug.{html,xml}`
+
+---
+
+## Lint baseline guard (`verifyLintBaselineOverrides`)
+
+The checks demoted above report at informational severity, which makes the lint
+report their only signal — and makes the baseline a way to delete that signal
+without failing anything. Lint records informational findings into a regenerated
+baseline exactly as it records errors (the write path filters by issue id, never
+by severity) and then filters baselined findings out of the reports, so a single
+routine `updateLintBaseline` run would empty the drift report while `check`
+stayed green.
+
+`verifyLintBaselineOverrides` closes that path: a demoted id may not appear in a
+committed baseline. Unlike the checks it protects, the guard is a legitimate gate
+— its verdict is a function of the committed baselines and nothing else.
+
+The pure scanner lives in `buildSrc`
+([`LintBaselineGuard`](../buildSrc/src/main/kotlin/app/knotwork/android/buildtools/LintBaselineGuard.kt))
+and holds the demoted-id list as its single declaration site: both lint blocks
+read it as `informational += LintBaselineGuard.DEMOTED_ISSUE_IDS`, so the set
+cannot drift between the modules and the guard. Its unit tests are not reachable
+from the root `check` graph (`buildSrc` is a separate build):
+
+```bash
+./gradlew -p buildSrc test
+```
+
+---
+
+## Konsist — architecture guard
+
+[Konsist](https://docs.konsist.lemonappdev.com/) (Apache-2.0) is a Kotlin
+static analyzer whose checks are written as ordinary JUnit tests. The project
+uses it for two things: mechanically enforcing the Clean Architecture layer
+boundaries that were previously guarded by item 1 of the manual review
+checklist, and pinning a small number of **invariants that would otherwise be
+held by prose alone** — a decision recorded in a document lasts exactly until
+the first convenient occasion. Because the suite lives in the `test` source
+set, it runs as part of `:app:testFullDebugUnitTest` — no extra `check` wiring
+is needed.
+
+The suite lives in
+[`app/src/test/java/app/knotwork/android/architecture/`](../app/src/test/java/app/knotwork/android/architecture)
+and is pinned to the `app` module's **production** source set
+(`app/src/main`) via the shared `ArchitectureScope`. The pin is deliberate:
+a whole-project Konsist scope would also parse test sources (which
+legitimately cross layers) and any unrelated copies of the tree under the
+project root — notably stale git worktrees under `.claude/worktrees/` — and
+flag them with spurious, environment-dependent violations.
+
+| Rule (test class)                  | What it enforces                                                                                  |
+|------------------------------------|---------------------------------------------------------------------------------------------------|
+| `LayerDependencyKonsistTest`       | `data -> domain <- presentation`; `domain.dependsOnNothing()` (no `domain -> data`/`presentation`). |
+| `DomainPurityKonsistTest`          | `domain` imports no `android.*` / `androidx.*` — the only exception is annotation-only `androidx.annotation.*`. |
+| `RepositoryPlacementKonsistTest`   | `*Repository` interfaces reside in `domain`; `*RepositoryImpl` classes reside in `data`.          |
+| `ComposableUseCaseKonsistTest`     | No `@Composable` takes a `*UseCase` parameter (see scope note below).                             |
+| `FirebaseIsolationKonsistTest`     | No file in the shared `main` source set imports the Firebase SDK, so the `foss` build is provably free of it. |
+| `CrashReportingConsentOwnerTest`  | Only `App.kt` switches the crash collector on or off — an observer of the stored consent it installs only in release builds of the `full` flavour, whose manifest keeps collection off until then — so a debug build never collects. The Settings switch and the settings reset once flipped the collector directly, from any build: consent given in a debug build started collection. |
+| `TimberMessageTemplateKonsistTest` | Every `WARN`-or-above Timber message (`w`, `e`, `wtf`, tagged or not) is a string literal without templates and with words of its own; values go in as format arguments. `CrashlyticsTimberTree` sends only that literal, so a value spliced into it, or a message held in a variable, would ship in the crash report: the file screen and the workspace once logged paths, and the tool-failure log whole `JSONException` texts. |
+| `UsageTelemetryNoNetworkKonsistTest` | No file on the local usage-telemetry path imports a network client. The statistics stay on-device. |
+| `PromptPackNoNetworkKonsistTest`   | No file on the prompt-pack path imports a network client — a pack is imported from a file the user picked, never fetched (see below). |
+| `JournalExportNoNetworkKonsistTest` | No file on the journal-export path imports a network client — the trigger and external-request journals leave the device only through the share sheet or a file the user picked (see below). |
+| `RunTraceExportNoNetworkKonsistTest` | No file on the run-trace-export path imports a network client — a run's trace (every prompt the on-device model read, with its answers and hashes) leaves the device only through the share sheet or a file the user picked. Same three instruments as the journal-export rule (see below). |
+| `VerificationToolIsolationKonsistTest` | The check of a finished run cannot run a tool. Every class of `domain/verification/` takes only types on an allowlist — the run record and its trace, the model registry and the pipelines, the generation settings, the model loader, the on-device engine and the package's own use cases — and no file there names a tool, the approval gate, a node executor, the graph engine, the task queue, the MCP connection pool, the AppFunctions manager or the cloud client factory. A tool's recorded output stands, and the tool is never run again. |
+| `LocalInferenceSeamKonsistTest`    | Inside a pipeline run, a node reaches the on-device model only through its `NodeInference`, which runs the call on the run's sampler with a seed derived from the run seed and records it. The direct callers of `generateResponseStream` are an exact list — the two `NodeInference` implementations; chat-history compression, memory compaction, the backend test in Settings and the benchmark on the Models screen; `search_tool`, whose model use is part of the tool's recorded output; and the check of a finished run — and no node executor is on it. A listed caller that disappears fails too. |
+| `HitlDispatchKonsistTest`          | Nothing reaches a tool around the approval gate. Across every production source set the call sites are an exact list: `executeTool` — the gate, and the tool repository's dispatch to an MCP server; `invokeByName`, which runs an AppFunction — the repository; `resumeWithApproval` — only the chain that starts at `SubmitApprovalDecisionUseCase`, which settles only the request an answer names. A built-in tool executor is named only by its own file, the module that binds it and the repository, and a cross-check against Konsist keeps that list of executors complete. A new call site fails, and so does one that disappeared. |
+| `TranscriptJoinKonsistTest`        | No production code joins a speaker label and stored text in one string template (`"${message.role.name}: ${message.content}"`), or renders a numbered or `name — description` list entry from stored text that way. A body holding a line break and `User: …` would read as a real user turn; transcripts are built with `ChatTranscript.turn` and list entries with `ChatTranscript.entry`, which keep stored text from opening a line of its own. Three transcripts, `$MEMORY_SUMMARY`, `$TOOLS` and the tool auto-select list were once built the other way. Only that spelling is matched — a join written differently is left to review. |
+| `NetworkEgressInventoryKonsistTest` | Every shipping file (every production source set of `app` and `:catalog`) that imports a network client is named in an inventory, with either the `PRIVACY.md` section describing what leaves the device along it or the reason it opens nothing — and, for an egress, what the More tab's privacy indicator sees of it (see below). |
+| `KoogClientTimeoutKonsistTest`     | Every construction of a Koog model client passes the shared deadlines (`CloudClientTimeouts.CONFIG`); without them Koog's 900 s request and socket defaults apply, which the embedding clients once did. |
+| `ContentUriReadInventoryTest`      | Every file that opens a URI through `ContentResolver` is inventoried with where the URI comes from; one another app can supply must pass `ForeignContentUri` (another app's `content://` only), since the read runs with this app's identity. |
+| `ImageAttachmentEntryCensusTest`   | Every file that starts runs says whether it can attach an image; one that can must call the multimodal pre-flight (`CheckImageAttachmentUseCase`), and one listed as text-only may not handle an attachment. |
+| `TransientCacheDirectoryGuardTest` | Every directory the app creates under its cache, and every `<cache-path>` the `FileProvider` serves, is an entry of `TransientCacheDirectory` — so the daily sweep removes what its owner misses. |
+| `PathContainmentGuardTest`         | No production file outside `PathContainment` prefix-tests a path string: `absolutePath.startsWith(root)` passes `root/../elsewhere`, so containment is always canonicalise-then-compare. |
+| `RegexConstructionKonsistTest`     | Every regular expression the production code builds — `Regex(…)`, `Pattern.compile(…)`, `"…".toRegex()` — is a string literal in the source, and runtime text enters it only through `Regex.escape` or `Pattern.quote`. `java.util.regex` backtracks, and no coroutine timeout or interruption stops a match: `find_files` once compiled a glob the model wrote, and about thirty characters held a core for seconds. Untrusted input matched against a pattern a user or the model supplied goes through a matcher that cannot backtrack (`WorkspaceGlob`). |
+| `RawExecSqlGuardTest`              | No production file runs a statement through SQLCipher's `rawExecSQL`. sqlcipher-android steps it and drops the result code, so a statement that fails when stepped — a full disk, a lock — returns as if it had run. The backup's database snapshot once ran its `ATTACH` and export that way: on a device both failed, and only the next statement's compile error reached the caller — a failure later in the export would have left a partial copy reported as whole. The device test `SqlCipherDatabaseSnapshotterTest` pins the library's behaviour. |
+| `PersistentStorageInventoryGuardTest` | Every storage root the production code reaches is inventoried with three decisions — kept out of Android backup and device transfer, erased or kept by the recovery wipe, and written into the app's own encrypted backup or left out with a reason. Backup is off, both extraction sections exclude every domain, the plain-text directories are also excluded by the names production code uses, the wipe calls the owner of every root recorded as erased, every archive entry the format names is claimed by a root, and the backup code names every entry a root claims (that it is written is the exporter's end-to-end test). |
+| `PreferenceStorageSnapshotTest`   | Every preference key keeps its name and value type, and the settings keep their file names: a renamed or retyped key, or a renamed file, loses the user's value on the next read without failing anything. The key census reads the production sources, so a key moving to another file does not matter; every key must be declared with a literal name — the one file that builds keys from names is the restore's, and only for the travelling keys `PreferenceBackupPolicy` lists, which its own test holds against the census — and there is one DataStore file. A new key is added to the snapshot in the same change. |
+| `SettingsCompositeConsumersTest`  | No production file depends on the whole `SettingsRepository` composite unless it is on the list of existing consumers, and a listed file that no longer does fails too — so the list only shrinks. Code depends on the settings section it reads (`MemorySettings`, `ToolSettings`, …); a KDoc mention does not count. |
+| `SettingsSingletonScopeTest`      | Every class that implements a settings section is a class-level `@Singleton`. Each section has its own binding, and a scope on a `@Binds` method caches per binding: with the class unscoped, the generated component built one instance per binding, each with its own in-memory credential cache. The sections are read from `SettingsRepository`'s supertype list. |
+| `TimeLimitedForegroundServiceGuardTest` | The only foreground-service type with an Android time limit that either flavour ships is `dataSync` (read from the merged-manifest expectations, so a library's `dataSync` or `mediaProcessing` counts too; a library's `shortService` has no permission to show), and every file that starts one books against `DownloadForegroundBudget`. A foreground service still running when its time limit runs out takes the app down. |
+| `CloudStreamEndCallersGuardTest` | Every file that turns a cloud model's stream into an answer (every caller of `executeStreaming`, the retry wrapper that forwards frames aside) asks `CloudStreamEnd` whether the stream was cut off, and the list of those files is pinned. An OpenAI-compatible client ends a dropped stream normally, so a reader that keeps only the text deltas passes half an answer on as a whole one, as `delegate_task` and the structured steps once did. |
+| `DownloadStartCallSiteGuardTest` | Only user actions on a screen start a model download. Starting one resets the download's foreground-time budget, which is honest only while the app is on screen, because Android resets its own count at that moment. |
+| `ExportedComponentInventoryTest`   | Every component a source manifest exports (overlays included) is inventoried with the permission it demands; each shipping one that demands none is named in `SECURITY.md`, and the external-automation receiver keeps `enforceIntentFilter`. The manifests outside `src/main` are declared test inputs — without that, an export added to `src/full` left the `foss` suite green from a cached run (observed). |
+| `ExportedEntryExtrasGuardTest`     | Every component the main manifest exports without a permission — the main activity, the share activity, the external-automation receiver — reads its caller's extras only inside a function that catches `RuntimeException`. Any installed app chooses those extras, and a parcel that fails to unmarshal would crash the process, every run in flight with it, before the component's own checks run. A read moved into a helper is held by the helper's own test (`SharedIntentFieldsTest` for the share activity). |
+| `AppFunctionServiceManifestGuardTest` | Every AppFunctions entry point (`@AppFunctionServiceEntryPoint`, in `:app` and the `:tools-probe` debug app) is registered in its own module's manifest exactly as the compiler generates it — the generated service name, exported, guarded by `BIND_APP_FUNCTION_SERVICE`, the `AppFunctionService` action, the `v2` property naming the generated function inventory — and nothing else there is registered as an AppFunctions service. A mismatch builds, installs and runs, and shows only on a device, as a function no caller can find. |
+| `OutboundBroadcastCensusTest`      | `ExternalAutomationCallbackSender` is the app's only `sendBroadcast`, so the two rules it enforces — nothing while external automation is off, nothing over the contract's length ceilings — have no second path around them. |
+| `NotificationLockScreenGuardTest`  | Every notification builder in the production sources is given a version that shows only its title where Android hides sensitive content on the lock screen — one per builder in the file — unless the file is listed with the reason its notifications carry nothing the user or the model wrote (the agent's status line, a model download, a run's limit). A listed file that no longer builds a notification fails too. On a phone set to show all notification content, the full text still appears. |
+| `NotificationIdSourceGuardTest`    | `NotificationIds` is the only place a notification id is decided: every file that posts a notification (`notify`, `startForeground`, `ForegroundInfo`) takes its id from it, and no other file declares an id-shaped constant. The id families each notifier once computed for itself overlapped, so one family's notification could replace or cancel another's — a parked run's ongoing notification included. `NotificationIdsTest` holds the families apart, and this rule keeps every id inside what it checks. An id computed inline in a file that also names the registry is not seen. |
+| `EntrySurfaceLimitsDocumentsTest`  | Every number the public documents quote about the entry surfaces' limits (share ceiling, contract value ceilings, journal value bound) equals the constant that enforces it. |
+| `PolicyDocumentClaimsTest`         | Claims of `PRIVACY.md`, `SECURITY.md` and the bundled FAQ that the code once contradicted stay corrected: each case looks for the false sentence and for the fact that replaced it. A node whose engine is a cloud provider is a cloud path, not only a Cloud node; the trigger-journal export carries a failed run's error message; crash reporting is not the only network path; the `foss` build carries Firebase's encoders but none of the components that send; Crashlytics attaches an installation identifier; attachments never reach a cloud step; the threat model names the browser editor's import guard. |
+| `WorkspaceToolsDocumentedTest`     | The sections of `SECURITY.md`, `docs/architecture.md` and `docs/extending.md` that list the tools able to read or write the agent's workspace name every tool that can — a built-in executor whose constructor takes an `AgentWorkspace`. The threat model and the architecture map once listed six while a seventh, the write tool `append_file`, shipped beside them. A name a section keeps after its tool is gone is not caught. |
+| `RunRateCeilingTest` (census)      | Every `RunOrigin` is bounded by its own `RunRateCeiling` or exempt for a written reason, and the two origins another app can start without a permission (`SHARE`, `EXTERNAL`) have a ceiling. A new origin does not compile until someone decides. |
+| `PipelineBindingCensusTest`        | Every stored pipeline id — a `pipelineId` or `…PipelineId` property of a domain model or of a settings section — is listed with a decision: a binding `FindPipelineBindingsUseCase` counts for the Replace confirmation (the default pipeline, the share, tile and external-automation surfaces, triggers, chats, sub-pipeline calls), or not one, with the reason (run history, usage statistics, a queued run). Replace keeps the id, so everything bound to it runs the imported graph; a new id field fails here until someone decides which side it is on. |
+| `SurfaceBindingReadersTest`        | A share-target or Quick Settings tile binding is an id in settings and can outlive its pipeline. Only the callers that need it afterwards read the raw resolver, `ResolveSurfacePipelineUseCase` — the bindings census, the pipeline library and the resolver built on it; the share and tile launch paths read `ResolveLaunchableSurfacePipelineUseCase`, which checks the pipeline still exists. Reading the raw id once handed a missing pipeline to the run queue, which ran the default one from a surface showing "Not set". |
+| `TabRootEntryGuardTest`            | A bottom-nav tab root is entered as a tab switch, never pushed onto another subtree's back stack. |
+| `SnackbarHostGuardTest`            | Every snackbar in `:app` and `:catalog` renders through `KnotworkSnackbarHost`, never Material3's raw host; every `SnackbarHostState` a file creates is rendered by a host in that file; and every host sits in a `snackbarHost` slot that reaches a `Scaffold` or an aligned container, or aligns itself. Twelve screens once wrote their own host — three looks, four placements, the settings screens' over the top bar — and the Models screen rendered none, so its download failures never appeared. |
+| `ComposeTestRuleV2GuardTest`       | No instrumented test builds its Compose rule with a deprecated v1 factory (`junit4.createComposeRule` and the rest); the v2 ones run the composition's coroutines on a `StandardTestDispatcher`, as `runTest` does. A twin in `:catalog` holds its screenshot tests to the same rule. |
+| `InstrumentedTestExclusionGuardTest` | The roster of device-only instrumented tests, and the annotation the emulator workflow excludes by, stay in step. |
+| `FdroidSigningStripGuardTest`      | The release signing assignment in `app/build.gradle.kts` keeps a shape F-Droid's build server removes whole. Before building, fdroidserver strips signing configuration line by line; the test runs a port of its rules over the real script and fails when a signing assignment survives — F-Droid's release build would come out debug-signed — or when a kept line continues a statement whose first line was removed, as the two-line `findByName("release") ?: getByName("debug")` did, its second half gluing onto the line above. Fixtures show the port reproduces both. |
+| `ArchitectureGuardsDocumentedTest` | Every test class of this suite is named in this guide — as a row of this table or in the heading of its own section — and every row names a test that exists. Seventeen rows were once missing at the same time, each found by hand. |
+
+**Why these rules and not more.** Konsist analyses *declarations*, not the
+data flow inside a function body, so it cannot prove a `@Composable` never
+*invokes* a use-case transitively. `ComposableUseCaseKonsistTest` therefore
+guards only the structural smell it can express precisely — a use-case handed
+to a Composable as a parameter. The deeper "presentation talks to ViewModels
+only" intent stays a **manual** review item; the layer-direction and
+domain-purity rules above are fully mechanical and supersede the manual
+"no Android imports in `domain`" / "repository placement" checks.
+
+The guard is regression-tested against the exact leak class it exists to
+catch: reintroducing a `domain -> data` import (or an `android.*` import in
+`domain`) turns both `LayerDependencyKonsistTest` and
+`DomainPurityKonsistTest` red — verified during the suite's introduction.
+
+**The four no-network rules, and the trap they share.**
+`UsageTelemetryNoNetworkKonsistTest`, `PromptPackNoNetworkKonsistTest`,
+`JournalExportNoNetworkKonsistTest` and `RunTraceExportNoNetworkKonsistTest`
+select their files by name and path, and a filter of that shape goes stale in
+silence: a new file on the same logical path, named something the filter does
+not match, is simply unguarded and nothing says so. The prompt-pack rule closes
+that with a **second instrument** — it also treats a file as in-scope when it
+*imports* the `promptpack` packages (whose names it derives from real
+declarations, so a package rename moves the guard with the code), and a
+companion test measures coverage from the file's own text, failing when a file
+that names a prompt pack falls outside the guarded set. The rule to follow when
+adding to either surface is still the cheap one: name the new file **into** the
+guard rather than widening the filter until it matches everything.
+
+The journal-export rule takes the same two instruments and adds a third, after
+the coverage test earned its keep on its first run: a name-only filter left the
+two `Export…JournalUseCase`s and both journal screens unguarded, because none of
+them carries the export token in its own name. The filter now also matches on
+*imports* containing that token, and a third test pins the token to the real
+declarations' names — so a rename fails loudly instead of quietly emptying the
+guarded set. The run-trace-export rule was written with all three from its first
+day, keyed off the `RunTraceExport` token.
+
+**The allow-list rule, and the question the four deny-lists cannot answer.**
+The four rules above each say "this surface must never reach the network".
+Between them they say nothing about *which* surfaces do — and that is the
+question every privacy text in the repository answers in prose. The project
+shipped the same defect three times on that gap: a document listing the ways
+data can leave the device while one of the ways was missing from the list. The
+third round was the built-in `search_tool`, reaching `wikipedia.org` since
+before the first public release while four documents said the paths were five
+and each one user-configured.
+
+`NetworkEgressInventoryKonsistTest` inverts the shape. Any shipping file — every
+production source set of `app` (`main`, the flavours, `debug`) and of `:catalog` —
+whose **imports** include a network client must appear in a hand-written inventory
+carrying a verdict: `Opens`, naming the `PRIVACY.md` subsection that describes what
+goes out along it, or `None`, with the reason it starts no request — a URL builder,
+a model descriptor, an interceptor on somebody else's client. A named section has
+to exist, and an entry naming no such file fails too, so the inventory cannot rot
+in either direction. Selection is by import rather than by name, which is what
+keeps it clear of the trap the four deny-lists share.
+
+The import prefixes live in one list, `NetworkClientImports`, which all five rules
+read. They used to be four copies of five prefixes, and a namespace missing from one
+was missing from all: the image loader (`coil3.`), the Firebase SDK and
+`android.webkit.` were. So was a whole source set — scoped to `app/src/main`, the
+inventory had no entry for the Crashlytics upload in `app/src/full`. Coil in
+`:catalog` is inventoried as opening nothing, and that verdict rests on a fact the
+rule checks rather than assumes: Coil 3 fetches over the network only through a
+fetcher a `coil-network-*` artifact registers with `ServiceLoader`, and the rule
+asserts that registry is empty.
+
+Each egress entry also says what the More tab's privacy indicator
+(`NetworkActivityTracker`) learns of it: the file records the call itself, named
+callers record it, or it is not shown and the entry says why. The first two are
+checked against the code (`recordOutbound(` outside comments). The indicator reads
+"no network calls", and it once heard of three of the ten paths it counts now; a new egress
+now fails here until somebody decides what the indicator says about it.
+
+What it does **not** do is check that the named section describes the path
+*truthfully*; no assertion can, because the truth of that prose is a claim about
+code somewhere else. It removes the failure mode that actually occurred — a path
+reaching the network with no entry anywhere, which nobody had to notice. It was
+observed red twice before it was believed: once with `SearchTool.kt` dropped from
+the inventory (the message names the file), and once against the privacy policy
+as it shipped in `0.10.0`, which the rule refuses. The wider scope and the
+indicator column were observed red the same way: with the Crashlytics entry
+removed, with every added `recordOutbound()` call removed, and with a bogus
+fetcher registered for Coil. The privacy policy is already
+a declared `Test` input of the module, so an edit to it re-runs the rule instead
+of answering from cache — checked by running twice for `UP-TO-DATE`, editing, and
+watching the task execute.
+
+`android.net` is deliberately not on the forbidden list of the prompt-pack or
+journal-export rules. The file picker legitimately hands both paths an
+`android.net.Uri`, and a rule that has to be suppressed on its first day is not
+a rule.
+
+All three rules are pinned to `app/src/main`, so a file added under a `full` or
+`foss` flavour source set is outside their scope. No surface has one today. The
+same bound puts `TriggerJournalDumpReceiver` (in `src/debug`) outside the
+journal-export rule — acceptably, since it exists only in debuggable builds and
+renders its document through the guarded seam the in-app export uses.
+
+---
+
+## External-automation contract documentation guard (`verifyExternalAutomationDocs`)
+
+`:app:verifyExternalAutomationDocs` is a custom Gradle verification task, wired
+into `check`, that fails the build when the reference tables in
+[`docs/external-automation.md`](external-automation.md) no longer match the
+Kotlin declarations they document — the action strings and extra keys of
+`ExternalAutomationContract`, the members of `ExternalAutomationStatus`, and the
+constants of `ExternalAutomationRejectionReason`.
+
+The guard exists because this contract's callers live in **other apps**. A
+Tasker profile or `adb` one-liner written against a documented key keeps using
+it forever, and a key that has quietly changed does not fail loudly on the
+caller's side: the request simply looks malformed to the app, and the person who
+wrote the profile has no way to see why. Documentation drift here is therefore a
+compatibility defect, not a tidiness issue.
+
+Regenerate the tables with:
+
+```bash
+./gradlew :app:generateExternalAutomationDocs
+```
+
+Only the content between the `<!-- AUTO-GEN:… -->` markers is generated. The
+prose, the trust model and the worked examples around them are hand-written and
+never touched.
+
+Each row's description is the declaration's **own KDoc first paragraph**, so —
+unlike the browser-editor generator — there is no second, hand-maintained table
+that can be forgotten. What replaces that cross-check is a stricter demand on
+the source: a contract member with no KDoc fails generation outright, because an
+undocumented member would otherwise publish an empty cell.
+
+The generation logic is a pure string transform in `buildSrc`
+([`ExternalAutomationDocsGenerator`](../buildSrc/src/main/kotlin/app/knotwork/android/buildtools/ExternalAutomationDocsGenerator.kt))
+and is unit-tested there (`./gradlew -p buildSrc test`), including idempotence,
+per-block drift detection, and the two failure modes above. The gate itself was
+verified by renaming a wire key and watching `check` fail with the drifted block
+named.
+
+---
+
+## Node-cookbook guards (`verifyCookbookDocs`, `CookbookRuntimeReachTest`, `CookbookRecipeValidationTest`)
+
+Three guards over [`docs/cookbook.md`](cookbook.md) and the recipes it
+publishes. They are separate on purpose: each answers a question the others
+cannot.
+
+### `verifyCookbookDocs` — the reference is derived, not written
+
+A build-time verification task, wired into `check`, that regenerates the three
+`AUTO-GEN` blocks of the cookbook from the sources that define a node — the
+`NodeType` enum, the `:catalog` mirror of it, `NodePorts.forType`,
+`NodeContextConfig.defaultForType`, the `NodeConfig` hierarchy,
+`DefaultPrompts` and the node-type resource file `strings_node_types.xml` —
+and fails when the committed document differs.
+
+That last source is the one the app shares. Each entry opens with the type's
+name and one-line description exactly as the app's string resources hold them,
+read from `:catalog` through `NodeTypeStrings` (`buildSrc`), which refuses
+anything a verbatim copy would render differently — markup, format arguments,
+escapes other than `\'` and `\"` — and a description longer than one sentence
+of 85 characters, the two lines the node-type picker is designed to give it on
+a 360 dp phone. The browser editor's palette label and tooltip are generated
+from the same file (`verifyBrowserEditorConstants`), so rewording a description
+in the app rewords both documents or fails `check`.
+
+Regenerate with:
+
+```bash
+./gradlew :app:generateCookbookDocs
+```
+
+Three things the generator cannot read out of the sources are hand-maintained in
+[`CookbookDocsGenerator`](../buildSrc/src/main/kotlin/app/knotwork/android/buildtools/CookbookDocsGenerator.kt):
+the reader-facing sentences that continue each type's one-line description (the
+domain KDoc is written for whoever implements an executor, not for whoever wires
+a pipeline), the per-field verdict
+of whether a configuration field reaches the run, and — per node type — the list
+of what the node actually runs on.
+
+That third table is what the document leads with, and it exists because the
+first draft led with the wrong thing. Enumerating the editor's form fields is
+not the same as describing the node's inputs, and for four node types the two
+barely overlap: the form shows a prompt box that goes nowhere while the prompt
+the node really runs on appeared in no table at all. A reader who knew the
+system found the result confusing, which settled it.
+
+None of the three is unguarded. Generation fails when a node type is missing
+from that table or from the resource file, when a field has no verdict, when a
+sheet field writes a property no
+input row explains, or when an input row promises a control that no field
+writes. So the two tables cannot drift apart, in either direction.
+
+The count guard matters more here than the drift check, because a generator
+paired with its own drift check agrees with itself exactly when it is wrong. So
+the node set is derived **six times over six files in two modules** — the
+`:app` enum, the `:catalog` enum, the ports factory, the context-defaults
+`when`, the config hierarchy and the node-type resource file — and generation
+stops unless all six agree.
+
+### `CookbookRuntimeReachTest` — the verdicts are checked against the codec
+
+The column saying whether a configuration field changes anything at run time is
+the reason the document is worth reading, and it is the one claim a build-time
+parser cannot settle: no static reading of a declaration reveals whether the
+engine later reads the value.
+
+So the check runs from the other side. The test mutates every field of every
+node configuration, pushes it through the real `NodeConfigCodec`, observes which
+properties of the stored node actually moved, and compares that against the
+committed Markdown — a different file, produced by different code, read by a
+different parser. A verdict claiming a field works when it does not fails the
+unit suite; fixing the codec so an ignored field starts working fails it too,
+until the document is regenerated, so the fix and its documentation land
+together.
+
+### `CookbookRecipeValidationTest` — the recipes still import
+
+The five documents under [`docs/recipes/`](recipes/) are what the cookbook tells
+a reader to download and import. They go through the **same parser the app's
+import uses** and the graphs through the same `PipelineGraph.validate()` the
+editor's validation bar runs — not a validator written alongside them. The test
+also asserts nothing is dropped on parse, that every prompt variable is one the
+app registers (read out of the Hilt module rather than a list in the test), that
+every router's declared classes match its outgoing edge labels, and that each
+recipe is linked from the cookbook so one cannot rot unread.
+
+Both tests read files that are on no classpath — the published Markdown and the
+recipe documents — so `app/build.gradle.kts` declares them as inputs of every
+`Test` task, alongside the instrumented sources and the store metadata that have
+the same problem. This is not a precaution: without those two lines a broken
+recipe **passed `check` from a cached run**, and nothing else would have caught
+it, since `verifyCookbookDocs` does not read the recipes at all. The cost is a
+unit-test re-run when the documents change; the alternative is a guard that
+answers from cache about the very edit it polices.
+
+The generation logic is a pure string transform in `buildSrc` and is unit-tested
+there (`./gradlew -p buildSrc test`). Every gate was observed failing before
+being trusted: a removed `FIELD_REACH` entry, a node type dropped from the meta,
+an edited verdict, and a broken recipe each fail with the cause named — the last
+one twice, before and after the caching hole above was closed.
+
+---
+
+## Top-bar inset guard (`TopBarInsetGuardTest`)
+
+The app draws edge to edge, and both the shell scaffold and every screen's own
+`Scaffold` zero their window insets, so each screen owns its status-bar inset.
+Material's `TopAppBar` applies it by itself; a bar laid out by hand does not.
+Twice a hand-built bar drew its title under the clock — the Help screen's two
+bars, then the Files selection bar — and **no rendering test can see it**:
+Robolectric renders with no system insets, so the snapshot of the broken bar is
+identical to the snapshot of the fixed one.
+
+`TopBarInsetGuardTest` reads the production sources of `:app` and `:catalog` and
+enforces three rules:
+
+1. **`Scaffold` slots.** Every composable of the project called inside a
+   `topBar = { … }` slot either shows inset evidence — a Material top app bar, or
+   a `windowInsetsPadding` / `statusBarsPadding` / `safeDrawingPadding` /
+   `systemBarsPadding` call — or is a container that only lays out a `content`
+   slot. Checking *every* callee matters: the Files slot switched between a
+   `TopAppBar` and a hand-built row, and only the first carried the inset.
+2. **Bars outside a slot.** A bar placed at the top of a column by hand is
+   invisible to rule 1, so each is listed with the owner of its inset — the bar
+   itself, or the parent file that applies it. A renamed or deleted entry fails
+   the test instead of checking nothing.
+3. **Census.** Any composable named like a top bar (`…TopBar`, `…AppBar`,
+   `…Toolbar`, `…SelectionBar`) must be covered by rule 1 or listed under rule 2.
+
+**What it cannot catch:** a hand-built top bar outside a `Scaffold` slot whose
+name does not look like a bar, and an inset applied to the wrong element — the
+rules read evidence, not geometry.
+
+### Observed failing
+
+With the Files selection bar's inset removed, rule 1 reports exactly
+`FilesSelectionBar`; with the Help list bar's inset removed, rule 2 reports
+`HelpListBar`. Its first run also found the image viewer's top bar covered by
+no rule — it insets itself, and is now listed.
+
+---
+
+## Screenshot baseline guard (`verifyRoborazziDebug`)
+
+The `:catalog` unit tests render every design-system screen and component with
+Roborazzi, and `check` always ran them — but it never *compared* a render with its
+committed baseline under `catalog/src/test/snapshots/`. A screen could change and
+every gate stayed green; the baselines were only as current as the last time
+someone ran `verifyRoborazziDebug` by hand. `check` now depends on it, so the unit
+tests run in verify mode and any pixel difference fails the build.
+
+Three things make it a gate rather than a ritual:
+
+- **The baselines are declared as test inputs.** They sit on no classpath, so
+  without that declaration replacing a baseline left `testDebugUnitTest`
+  `UP-TO-DATE` and the verification green — measured before the wiring.
+- **It was measured on both platforms before it was made blocking.** On the
+  development machine (macOS): 707 tests, 503 baselines, no difference, about a
+  minute. On CI (Linux): 706 matched byte for byte; the settings hub's loading
+  state — tiles drawn at half alpha — differed in 975 of 1,094,400 pixels, by at
+  most 2/255 per channel, anti-aliasing no one can see.
+- **Every capture uses one colour tolerance for that reason.**
+  `KnotworkRoborazziOptions` (`catalog/src/test/…/KnotworkRoborazziOptions.kt`) raises
+  Roborazzi's per-pixel colour distance from 0.007 to **0.02** — twice the measured
+  noise (0.0096), two orders of magnitude below a visible change (a light baseline
+  swapped for its dark twin: ~800,000 pixels up to 1.63 apart). No pixel shift and
+  no share of differing pixels is allowed. Roborazzi takes the option per call, so
+  `SnapshotComparisonOptionsGuardTest` fails a `captureRoboImage` that omits it.
+  Re-recording the baselines on Linux was rejected: it would move the same noise to
+  every local run on macOS.
+
+To accept an intended change, re-record the affected snapshots with
+`./gradlew :catalog:recordRoborazziDebug --tests '<test>'`, look at the new PNGs,
+and commit them with the change that caused them. On a CI failure the diffs are
+uploaded as the `roborazzi-report` artefact.
+
+**What it cannot see:** anything Robolectric does not render — system insets
+above all (see the top-bar inset guard) — and screens outside `:catalog`.
+
+### Observed failing
+
+With `foundations_light.png` replaced by the dark baseline, the run reports
+exactly `FoundationsCatalogPageSnapshotTest > foundations_light` and fails; with
+the file restored it passes. Before the baselines were declared as inputs, the
+same replacement passed from the up-to-date check. With CI's Linux render of the
+settings hub put in place of its baseline, the run passes at 0.02 and fails at
+Roborazzi's default 0.007 — the tolerance absorbs exactly the observed noise. A
+capture call with its options removed fails the guard.
+
+---
+
+## Golden trace guard (`GoldenTraceTest`)
+
+The engine's behaviour was pinned path by path — one unit test per branch, per
+suspension, per executor. Nothing pinned it end to end: "this pipeline, on this
+input, visits these nodes with these inputs and outputs". `GoldenTraceTest` does,
+for every bundled preset, every cookbook recipe and three test-only fixtures. The
+harness, what it fakes and how to rewrite a trace are in
+[`testing.md` § Golden run traces](testing.md#golden-run-traces); this section is
+what makes it a gate.
+
+- **The comparison lives in the test, not in a `buildSrc` task.** Build logic
+  cannot run app code, so a task there could only compare files the test wrote —
+  a second place to fail and a stale-output risk, for a diff the test can print
+  itself. The golden directory is declared as a test input, so the task is
+  `UP-TO-DATE` when nothing changed and re-runs when a golden file is edited
+  (measured both ways).
+- **The trace is wider than routing.** It carries every prompt the model receives,
+  every write to run records, chat, metrics and the trigger journal, and the
+  states the UI sees. A refactoring that stops applying a setting, renders a
+  variable differently, drops a metric or flushes the trace at a different point
+  shows as a diff even when every route is unchanged. Every numeric setting differs
+  from its shipped default and reaches some scenario, so a read replaced by the
+  default shows as well.
+- **The fakes cannot lie for the engine.** The stores keep the production guards
+  (a terminal status is written once; a trace record is durable only after a
+  flush, and what was never flushed is gone when an attempt ends). A user's answer
+  to a parked run goes through the app's own use cases, and the resumed attempt is
+  driven from the task they enqueue. A misused fake — including an interface member
+  no run path uses — raises an `AssertionError`, which the engine's
+  `catch (Exception)` around every node cannot turn into an ordinary run error.
+  Every scenario declares how it ends, and the run record must agree.
+- **Determinism is checked, not assumed.** Each scenario runs twice and the
+  traces must match before either is compared.
+- **Completeness is a test.** `GoldenTraceCatalogueTest` fails on a pipeline file
+  without a scenario, on a `NodeType` no committed trace visits — `EVALUATION`
+  and `SKILL` are in no shipped pipeline, so two of the fixtures under
+  `app/src/test/golden/fixtures/` run them — and on a golden file no scenario
+  produces.
+
+**What it cannot see:** anything behind the fakes — the real model, a real tool's
+side effect, Room's SQL (only its guards are modelled), notifications on a device,
+the settings layer itself (its defaults and migrations never run), the wall-clock
+resume and approval windows — and the copy of each tool's description, which is a
+fixture. A behaviour no scenario reaches is not pinned either; a new branch needs a
+scenario.
+
+### Observed failing
+
+Six mutations, each restored in the same command, against the 56 scenarios the
+guard shipped with:
+
+| Mutation | Red scenarios |
+|---|---|
+| `IF_CONDITION` routing with True and False swapped | **6 of 56** — exactly those whose run passes an `IF` node |
+| `stepQueue` taking the **last** remaining item instead of the first | **7 of 56** — exactly those that run a queue |
+| `ResolveRunCeilingsUseCase` giving a background run the interactive ceilings and vice versa | **4 of 56** — the four ceiling scenarios (steps and tokens, one per origin) |
+| the same, on the token axis only | **2 of 56** — the two token-ceiling scenarios |
+| `PipelineNodeExecutor` reading the shipped default instead of the nesting-depth setting | **1 of 56** — the self-nesting fixture |
+| `ToolNodeExecutor` reading the shipped default instead of the repair-limit setting | **1 of 56** — the tool-arguments give-up scenario |
+
+An early version of the harness caught one queue scenario instead of seven: its
+default plan had two items, and the engine takes a queue's first item itself, so
+`stepQueue` only ever saw a one-item list. The default plan has three items for
+that reason. The ceiling and nesting mutations were invisible to it as well: its
+only ceiling scenario set the same limit for both origins, and nothing nested
+deeper than one level (by construction; not measured).
+
+A golden file edited by one character makes the next run execute and fail; the
+same run without the edit is `UP-TO-DATE`.
+
+---
+
+## Bundled-document routing guard (`BundledDocumentationRoutingGuardTest`)
+
+`openDocumentation` routes by the registry's `delivery`: a document bundled into
+the app opens in the in-app reader, one on the web in the browser — **but only
+when the caller passes a reader.** Without one, a bundled document falls back to
+the browser. That fallback is legitimate for a caller with nowhere to navigate,
+and it is how the onboarding Ready step sent its FAQ link — a bundled document,
+on the step where the network may not be set up yet — to the browser while every
+screen around it looked correct.
+
+The guard reads every `openDocumentation(…)` call in `:app`'s production sources
+and fails when a call without a reader can reach a bundled document:
+
+- a call naming a `DocumentationLinks.ID_…` constant is resolved against the
+  registry itself, so moving a document into the APK makes its readerless callers
+  fail here rather than on a device;
+- a call whose id is a variable must name, in the test's `DYNAMIC_ID_SOURCES`, the
+  file every such id comes from (today the settings help catalogue), whose
+  constants are resolved the same way; a variable-id caller missing from that list,
+  or a listed one that no longer exists, fails too.
+
+**What it cannot see:** a reader argument that is passed but navigates nowhere
+useful — it checks that a reader is handed over, not where it goes.
+
+### Observed failing
+
+With the onboarding call's reader argument removed, the first test reports
+`OnboardingScreen.kt` opening `[faq]` without a reader. With the settings help
+catalogue pointed at the troubleshooting document, it reports `SettingsScreens.kt`.
+
+---
+
+## Cloud model list guard (`CloudModelListGuardTest`)
+
+The models the app offers for OpenAI, Anthropic, Google and DeepSeek are written
+by hand in `KoogModelMapper`, and the list fell behind without a sound: a Koog
+upgrade brought 22 chat models the app never offered, while models their
+providers had already retired stayed on offer.
+
+The guard reads Koog's chat constants by reflection — every static `LLModel`
+field of `OpenAIModels.Chat`, `AnthropicModels`, `GoogleModels` and
+`DeepSeekModels`, not Koog's own `models` lists, which are kept by hand and mix in
+embedding and audio models — and fails when:
+
+- an offered model is not one of those constants for its provider: a hand-built
+  `LLModel` loses the capabilities Koog routes by;
+- a constant is neither offered nor in the guard's `notOffered` list with a
+  reason — so a Koog upgrade that adds a model fails the build until the model
+  is offered or left out on purpose;
+- an entry in `notOffered` is not a chat constant of its provider, is offered as
+  well, or has no reason.
+
+A model is left out when its provider has retired it (the provider's
+deprecation page, or a request with a real key answering "not found"); when a
+shutdown date is announced before it is first offered, or falls within a week
+of a release; or when no request to it has been measured on a path the app has
+not run before.
+
+**What it cannot see:** whether a model still answers. A retired model stays on
+offer until someone checks; the list is checked again at each release.
+
+### Observed failing
+
+With `gemini-3.7-flash` taken out of the Google list, the test that every
+constant is sorted reports `google: gemini-3.7-flash`. With an embedding model and
+an offered model added to the OpenAI exclusions, the test of the exclusions
+reports `text-embedding-3-small is not a chat constant of it` and `gpt-5.4 is
+offered and left out at once`.
+
+---
+
+## Room migration guard (`MigrationStepGuardTest`)
+
+The database upgrades through `ALL_MIGRATIONS`, one step per schema version.
+`AppDatabaseMigrationChainTest` holds the list's shape — no gap, ends at the
+current version — and the instrumented `AppDatabaseMigrationHelperTest`
+validates the whole chain and the steps someone wrote a test for, on the
+emulator matrix only. Three steps an installed database can still run (33→34,
+35→36, 36→37) were checked nowhere but inside that chain, against its final
+schema.
+
+The guard runs every registered step with Room's `MigrationTestHelper` under
+Robolectric, one test case per step: it creates the database from the schema
+Room exported for the step's start version, runs the step, and validates every
+table, view and index against the exported schema of its target version. It
+fails when:
+
+- a step leaves a schema that differs from its exported target;
+- a step has no exported schema for its start or target version — Room writes
+  `app/schemas/<version>.json` on build, and the file has to be committed;
+- a step listed as unexported now has a starting schema, or the list names a
+  step `ALL_MIGRATIONS` does not register.
+
+**Unexported steps.** Schemas are exported from version 23. The 14 steps that
+start below it (9→10 … 22→23) are listed in the test: no build under this
+application id shipped a schema below 28, so no installed database runs them.
+The list cannot grow.
+
+**Where the schemas come from.** Robolectric reads only the tested variant's
+merged assets, so the schemas are `debug` assets as well as `androidTest`
+assets (`app/build.gradle.kts`). The `test` source set's assets and the
+host-test sources of `androidComponents` were tried and never reach it. Room's
+KSP writes the current schema into the same directory while it compiles, and
+the directory is not a declared output of KSP, so the debug asset merges are
+ordered after it (`mustRunAfter`); without the order, the first build after a
+schema bump merged the assets first and the new version had no exported schema.
+
+**What it cannot see:** whether data survives a step. Data preservation stays
+with the per-migration tests (`AppDatabaseMigrationTest`,
+`AppDatabaseMigrationHelperTest`).
+
+### Observed failing
+
+With the `staleNoticeFor` column dropped from `MIGRATION_69_70`, the case
+`69->70` fails with `Migration didn't properly handle: triggers`, every other
+case passing. With the unexported list widened to start at 8, a case `8->9`
+appears and fails with `UNEXPORTED_STEPS lists 8->9, which ALL_MIGRATIONS does
+not register`; widened to end at 23, the case `23->24` fails with `a schema for
+version 23 exists now`.
+
+On the first schema bump after the guard (v70 → v71), the case `70->71` failed
+with `no exported schema for 70 or 71` while `71.json` sat on disk: the asset
+merge had run before KSP wrote it. With the merge ordered after KSP the same
+build passes; with the order removed, it fails again (both logs kept).
+
+---
+
+## Backup content guards (`PreferenceBackupPolicyTest`, `BackedUpSecretsGuardTest`)
+
+A backup is only as complete as the list of what goes into it, and every new
+setting or encrypted store would otherwise be left out, or carried, without
+anyone deciding. Three guards make the decision a build error:
+
+- `PreferenceBackupPolicyTest` holds `PreferenceBackupPolicy` against the key
+  census: every DataStore key the code declares travels, stays with the phone or
+  is reset by a restore, each one decided once, and a key that does not travel
+  carries its reason. A travelling key also carries the type the code declares it
+  with: a restore writes a value only of that type, since a setting read back as
+  another type fails every read of it.
+- `BackedUpSecretsGuardTest` finds every file that builds a Keystore-backed store
+  or takes one as a dependency. Each must implement `BackedUpSecrets` and be bound
+  into the backup's set in `BackupModule`, or be named with its reason — the
+  database passphrase never leaves the phone, and a staged restore's own store is
+  destroyed once the restore is applied. An owner also writes its entries back on
+  a restore, only under the names it writes. It holds owners, not entries: which
+  of its entries an owner reports is the owner's test. Each owner also settles
+  secrets an older release kept inside a setting, and scrubs them from what a
+  backup writes — MCP sign-ins once lived inside the plain server list.
+- `PersistentStorageInventoryGuardTest` (above) gives every storage root its
+  archive entries or the reason it has none, both ways.
+
+### Observed failing
+
+The storage guard's first run failed `ATTACHMENTS is recorded as archived in
+ATTACHMENTS_PREFIX, but the exporter never writes it`: the prefixes are written by
+the file listing, not the exporter, and the check now reads the whole backup
+package. Review found its first version of the owner check satisfied by any mention
+of `BackedUpSecrets` in the file; it now reads the class header.
+
+---
+
+## Backup format fixture (`BackupFormatV1FixtureTest`)
+
+The backup archive format is public ([backup-format.md](backup-format.md)): a
+file one release writes has to open in every later one. Nothing else in the
+build would notice a change to the header codec, the chunk framing, the
+associated data, the key derivation or the entry rules that breaks files already
+written — the round-trip tests write and read with the same code.
+
+The test reads a committed format-1 archive,
+`app/src/test/resources/backup/format-1.knotwork`, with the reader of the build,
+in both flavours' suites, and checks every header field and every entry's name,
+order, size and SHA-256. The file was written with the app's own key costs and
+the smallest chunk size, so a few kilobytes span many chunks.
+`-PrecordBackupFixture` writes it anew — only before a release has shipped format
+1. After that the file never changes, and a later format version adds its own
+fixture beside it.
+
+**What it cannot see:** a reader that accepts what it should refuse. The tamper
+matrix (`BackupDecryptingInputStreamTest`, `BackupArchiveReaderTest`,
+`BackupHeaderCodecTest`) covers that side.
+
+### Observed failing
+
+With the chunk index left out of the associated data, the fixture fails to open
+and the test that swaps two chunks fails; with one byte of the fixture flipped,
+the fixture test fails alone. Normalising the password to NFD instead of NFC, or
+not at all, fails the test that derives a composed and a decomposed password —
+an earlier version of that test compared the two with each other only, and
+passed under NFD.
+
+---
+
+## Settings help-text guards (`SettingsHelpCatalogTest`, `verifySettingsHelpDocs`)
+
+Two guards, one rule: **a setting's meaning is written once**, in
+`app/src/main/res/values/strings_settings_help.xml`, and everything else quotes
+it.
+
+The rule exists because the alternative was measured. Before it, one setting's
+explanation lived in four places — the catalog row subtitle, the search-index
+description, a second copy of the subtitle in the app resources, and the user
+guide's prose — and closed testing found them already disagreeing. The
+long-running-tasks row said "runs > 8 s", the search index said "runs long", the
+guide said "exceeds the long-running threshold", and **no constant anywhere in
+the code held any such number**. Prose kept in sync by review alone drifts, and a
+reader cannot tell which copy is true.
+
+### `SettingsHelpCatalogTest` — completeness and register
+
+A Robolectric unit test, so it can resolve real string resources. It fails when:
+
+- a row in `SettingsRegistry` has no decision in `SettingsHelpCatalog` (or a
+  decision exists for a row that does not);
+- an explained row's string resource is missing or resolves to blank text;
+- an explanation exceeds **140 characters** — the ceiling measured against the
+  200 % font-scale frame, past which the panel pushes the row it explains off
+  the top of the screen;
+- two rows are explained by the same sentence;
+- an explanation uses a phrasing the copy standard rules out (`enables …`,
+  `allows you to …`, `this setting …`, `when enabled …`) — each describes the
+  control rather than what the reader will notice, which is the register that
+  went unread.
+
+Note what this fixes about its predecessor. `SettingsSearchCatalogTest` reads
+like a completeness guard and is one on **names only**: `descRes` is nullable and
+no assertion looks at it, so a description could be deleted and the build stayed
+green. Here the decision is an explicit `SettingHelp.Text | SettingHelp.None`
+with a recorded reason, which is what makes "every row decided" assertable at
+all.
+
+- an explanation exists for a row that no screen renders (the set of such rows is
+  pinned by name, so it can only shrink — a *new* unreachable explanation fails
+  the build).
+
+Each failure mode was observed failing before the gate was wired in, on its own
+assertion. Note the one thing this gate cannot see: it knows an anchor is
+*declared*, not that the control emits both the glyph and the panel. A header
+that shipped a glyph opening nothing passed it, and was caught by
+`SettingsHintBehaviourTest` — which opens each bespoke control and demands the
+panel — instead.
+
+### `verifySettingsHelpDocs` — the guide quotes rather than restates
+
+`:app:verifySettingsHelpDocs` fails `check` when the `AUTO-GEN:SETTINGS_HELP`
+block of [`docs/user-guide.md`](user-guide.md) no longer matches the shipped
+strings. Regenerate with:
+
+```bash
+./gradlew :app:generateSettingsHelpDocs
+```
+
+The generated table answers *"what does this option mean"*. The hand-written
+prose around it answers *"what happens when you change it"* — the measured
+timeouts, the retry behaviour, the ordering rules — and is never touched.
+
+**One thing to know before editing this generator.** A doc generator paired with
+its own drift check can delete a real row and stay green: if the parser stops
+seeing a declaration, the block loses that row and the verify task then confirms
+the shortened block matches. Guarding against it needs a count taken from a
+**different file read by a different parser** — here, the help catalogue, whose
+keys `SettingsHelpCatalogTest` independently pins to the registry. Comparing the
+registry parse against itself does not work, and this generator shipped two
+drafts that did exactly that: the first emitted **five rows for fifty-six
+settings** with its own check green.
+
+The logic is a pure string transform in `buildSrc`
+([`SettingsHelpDocsGenerator`](../buildSrc/src/main/kotlin/app/knotwork/android/buildtools/SettingsHelpDocsGenerator.kt)),
+unit-tested there including idempotence, drift detection, a missing string
+resource, a display name that lives in another values file, and a crippled
+parser. The gate was verified by editing a help string without regenerating, by
+hand-editing the generated table, and by breaking the registry parser — each
+failed with the cause named.
+
+---
+
+## File-map guard (`verifyFileMap`)
+
+`:app:verifyFileMap` is wired into `check`. It regenerates the `AUTO-GEN` blocks
+of four `FILE_MAP.md` files from the Kotlin source tree and fails when the
+committed file differs, or when a documentation gap has grown.
+
+### Why generated
+
+The maps were kept in step by a post-write hook, a PR-checklist item and a
+review step — all three of which name the map under `app/src/main`, while the
+repository holds several. Measured immediately before this guard was added:
+
+| Map | Files it named | Files that existed |
+|---|---|---|
+| `app/src/main/…/FILE_MAP.md` | 704 | 701 (3 unlisted, 1 entry pointing at a moved file) |
+| `catalog/FILE_MAP.md` | 164 | 292 |
+| `app/src/test/…/FILE_MAP.md` | 44 | 375 |
+| `app/src/androidTest/…/FILE_MAP.md` | 16 | 60 |
+
+A map covering an eighth of its directory does not read as stale — it reads as
+complete, which is the more expensive failure. Deriving the structure turns
+"the map is current" into a function of the repository, which is the standard a
+verdict has to meet before it may block a build.
+
+### What is generated, and what is not
+
+The **structure** — which paths exist, how they nest, what order they are in —
+is derived. Ordering is alphabetical with directories and files interleaved,
+because the previous hand-chosen order could not be reproduced from the
+repository and therefore could not be verified.
+
+The **descriptions** are not derived. They carry design rationale no KDoc holds,
+so each is carried across regenerations by path key. A path that has none is
+seeded from the KDoc of the declaration the file is named for, and a path with
+neither gets an explicit marker.
+
+`./gradlew :app:generateFileMap` rewrites the blocks. Only Kotlin files appear
+inside them; manifests, build scripts and the maps themselves stay in the
+hand-written prose around the markers.
+
+### The three failure modes it is built around
+
+1. **A silently shorter map.** A generator that drops what it cannot parse
+   produces a shorter file and a green build. So the generator reconciles rather
+   than trusts: a description whose path still exists but which did not reach
+   the output is a hard error, and a block that matches zero Kotlin files fails
+   instead of rendering empty.
+2. **A rename eating a paragraph.** A moved file's description would otherwise
+   vanish inside a diff that reads as a routine map update. `generateFileMap`
+   refuses to write, prints every description it would lose, and accepts
+   `-PacceptFileMapDrops` once the author has confirmed the loss is intended.
+3. **A plausible but wrong description.** Seeding from "the first KDoc in the
+   file" produced, for one catalog composable, the KDoc of a private layout
+   constant declared above it — a real sentence about the wrong thing, which
+   nothing downstream can detect. The extractor therefore answers only from the
+   declaration the file is named for, or from the file's single documented
+   declaration, and otherwise returns nothing.
+
+### The ratchet
+
+`config/file-map/baseline.properties` records, per block, how many entries carry
+the "no description" marker and how many Kotlin files offer no KDoc sentence to
+seed one from.
+`verifyFileMap` fails when a measured count exceeds its record.
+
+`generateFileMap` **lowers** a number and never raises one, so an improvement is
+recorded by re-running the task while a regression leaves the record where it
+was and fails verification. Raising a number is a deliberate edit to the
+committed file, reviewed like any other change.
+
+Every `.undescribed` count is currently `0`: a new Kotlin file or package
+without a description fails `check` until one is written.
+
+### Why a typed task rather than an ad-hoc block
+
+The four generate/verify pairs above are ad-hoc `doLast` blocks. Two consequences
+this pair avoids, both measured rather than assumed:
+
+- **Configuration cache.** An ad-hoc action that reads a build-script `val`
+  captures the whole build script. On its own task graph,
+  `./gradlew :app:verifyCookbookDocs --configuration-cache` fails with *"cannot
+  serialize Gradle script object references"*; `:app:verifyFileMap` and
+  `:app:generateFileMap` store and reuse an entry. (This says nothing about the
+  whole build's compatibility — a task's problems only surface when that task is
+  in the graph.)
+- **Up-to-date checking.** A task with no declared output is never up to date, so
+  an ad-hoc verification task re-runs on every `check`. `VerifyFileMapTask`
+  declares a stamp output: observed `UP-TO-DATE` on a second consecutive run,
+  re-running on a content change, and failing on an added file.
+
+The action reads the tree **through** its declared `@InputFiles` property rather
+than walking the filesystem, so Gradle cannot fingerprint one set of files while
+the code reads another.
+
+### Observed failing
+
+Both gates were watched red before being trusted: a line deleted from the
+unit-test map (drift, named the file and the fix), and a new undocumented Kotlin
+file (ratchet, `app-main.undescribed: 1, recorded 0` and
+`app-main.no-kdoc-seed: 28, recorded 27`). The pure logic is unit-tested in
+`buildSrc` — `FileMapGeneratorTest`, `KdocSentenceExtractorTest`,
+`FileMapBaselineTest` (`./gradlew -p buildSrc test`).
+
+---
+
+## Generators and their consumers: the ordering rule
+
+Six tasks in this build **rewrite a committed file** — `generateFileMap`,
+`generateBrowserEditorConstants`, `generateSettingsHelpDocs`,
+`generateExternalAutomationDocs`, `generateCookbookDocs` and
+`generateDocumentationLinks` — and nine gates plus every unit-test task **read**
+those same files. Gradle refuses a build whose task graph contains a task consuming another
+task's declared output with no ordering between them, and the refusal is an
+**error raised before either task runs**, not a warning:
+
+```
+Task ':app:verifyBundledDocs' uses this output of task
+':app:generateSettingsHelpDocs' without declaring an explicit or implicit
+dependency.
+```
+
+This is invisible to `check`. Every gate passes run on its own; the failure needs
+a generator and a consumer in **one invocation** — which is exactly the two-step
+the contribution workflow prescribes (regenerate the file, then verify). Measured
+on `1f0515cb`, **five of the six** generators could not be combined with `check`
+at all: 24 task pairs enumerated by probing them one by one, plus — for the file
+maps alone — every compile and analysis task of every variant. The one that could
+was `generateDocumentationLinks`, the only one already fixed.
+
+### Two shapes, two answers
+
+Which fix applies depends on **where** the rewritten file lives.
+
+**A committed file under `docs/` (or the repository root) → declare the
+ordering.** The file is outside every source set, so its readers are a set someone
+can actually write down — the documentation gates, the bundled-docs pair, and the
+unit-test tasks, which declare `docs/cookbook.md`, `docs/recipes/` and
+`pipeline-editor.html` as inputs of their own. `mustRunAfter` is then enough: it
+states order without dependency, so neither side drags the other into a build that
+did not ask for it. `app/build.gradle.kts`
+declares this as the matrix it is — a list of generators, a list of consumers, and
+the product of the two, with self-pairs filtered out because a task that reads
+what it writes needs no ordering against itself and Gradle rejects the rule.
+
+**A committed file inside a source set → do not declare it as an output at all.**
+`app/src/main/java/…/FILE_MAP.md` and `…/domain/constants/DocumentationLinks.kt`
+live where Kotlin compilation, KSP, detekt, ktlint and lint all read. Declaring
+either as an `@OutputFile` makes it a build output in that directory, and *every*
+one of those tasks then collides with the generator. Ordering does not scale
+there — it would mean naming every compile and analysis task of every variant.
+Both generators are therefore `@UntrackedTask` with their file `@Internal`:
+`GenerateDocumentationLinksTask` had been for some time, and
+`GenerateFileMapTask` was brought in line after `./gradlew :app:generateFileMap
+check` — the command the *File Map Rule* prescribes — was observed failing on
+`kspFossDebugKotlin`.
+
+The two annotations do different jobs, and the difference was measured rather than
+assumed. `@Internal` on the file is what removes the collision: with
+`@UntrackedTask` already in place and the maps still declared `@OutputFiles`, the
+failure came back unchanged. `@UntrackedTask` is what keeps the task honest
+afterwards — once its real product is not a declared output, Gradle would judge it
+up to date from its inputs alone and skip a regeneration that was needed. The cost
+is that neither task can ever be up to date; both are invoked by a human, and
+`verifyFileMap` — the one in `check` — is unaffected and still reports
+`UP-TO-DATE` on a second run.
+
+The ordering rules stay declared anyway: untracking removes the validation error,
+not the reason a verifier must not read a map that is about to be rewritten.
+
+### Why pair-by-pair kept failing
+
+Each instance was previously met where it was found. That approach has now lost
+twice in a way worth recording:
+
+- The rule `verifySettingsHelpDocs.mustRunAfter(generateSettingsHelpDocs)` was
+  added with a comment naming `./gradlew :app:generateSettingsHelpDocs check` as
+  the reason it exists. That command **still failed** afterwards — on
+  `verifyBundledDocs`, a different consumer of the same file. Fixing the sibling
+  pair looked like fixing the command.
+- `verifyDocsHygiene` was later moved onto the shared documentation file set and
+  never added to the ordering list three lines below it.
+
+A list that has to be extended by hand every time a gate is added will be
+incomplete again. What keeps it honest is not the list but the check on it: a
+**single CI step** names every generator and every consumer in one invocation and
+lets Gradle's own validator answer. It is deliberately its own step — what is
+being tested is the composition of one task graph, so folding it into another
+command tests something else — and it costs seconds, because it runs after
+`check` has already done the work. A generator added without an ordering rule
+fails there.
+
+---
+
+## Public documentation hygiene guard (`verifyDocsHygiene`)
+
+`:app:verifyDocsHygiene` is a custom Gradle verification task, wired into
+`check`, that scans the public-documentation contour for two defect classes
+that are cheap to introduce and expensive once the repository is public.
+
+**Scope.** It shares the `documentationFiles` collection with the link and
+Mermaid gates: every top-level `*.md`, plus everything under `docs/`,
+`.github/`, `app/`, `catalog/` and `gradle/`, plus `NOTICE`. Each scope is a
+**glob**, not a hand-maintained allowlist, so a newly added public document is
+guarded automatically.
+
+It used to resolve a narrower set of its own — the repository root, `NOTICE`
+and `docs/` — which left the generated `FILE_MAP.md` files outside every rule
+it enforces. Those are exactly the documents most likely to acquire an internal
+reference, because their descriptions are seeded from KDoc written for
+maintainers, and by the time the gate was widened they had accumulated nine
+violations across three files. The three maps are additionally pinned by exact
+path in `requiredPrefixes`, so a glob that quietly stops matching them fails
+the build instead of passing over nothing.
+
+The defect classes:
+
+1. **LLM tool-call wrapper artifacts** — stray fragments of an assistant's
+   tool-call envelope (closing wrapper tags, or the opening of a markup /
+   function-results block) that leak into a document when generated prose is
+   pasted verbatim. These are never valid Markdown.
+2. **References to internal-only documents** — links or mentions of the
+   project's private planning files (the roadmap plan, the full description,
+   the decision log, the phase backlog, the vision doc, the agent manifest)
+   or of the internal `project_docs` tree. External readers cannot see
+   them, so such a reference is always dangling.
+
+**What this gate still does not catch**, recorded so the question is not
+reopened: an internal file named by its **bare basename** with no directory
+(`node-specs.md`), and any reference that lives in a KDoc comment which never
+reaches a generated map. Scanning all KDoc rather than the first sentence, and
+scanning `CHANGELOG.md`, are both deliberately out of scope — the first because
+the gate would then police prose that no public reader ever sees, the second
+because its past entries legitimately name internal documents as they were
+called at the time.
+
+Two families are deliberately **excluded** from the glob: `CHANGELOG.md`
+(a historical journal whose past entries legitimately name internal documents
+as they were called at the time — rewriting history to satisfy a lint rule
+would be worse than the dangling reference) and the untracked, internal
+`CLAUDE` agent-manifest family, which deliberately references the private
+planning docs. Internal-document filenames are matched only at a path/word
+boundary, so a longer name that merely contains one (for example an archive
+copy) does not trip the guard.
+
+The scanning logic is a pure `Map<path, content> -> List<Violation>`
+transform in `buildSrc`
+([`DocsHygieneChecker`](../buildSrc/src/main/kotlin/app/knotwork/android/buildtools/DocsHygieneChecker.kt)),
+so it is unit-tested there (`./gradlew -p buildSrc test`) with a fixture for
+every forbidden token and a clean-input case. The forbidden tokens are
+assembled from fragments at runtime so that neither the scanner's own source
+nor this document — which describes the tokens in prose — matches itself.
+
+---
+
+## Documentation link guards (`verifyDocLinks`, `reportExternalDocLinks`)
+
+Two tasks over the same links, with deliberately different powers.
+
+**`:app:verifyDocLinks` is a gate.** A relative path or an `#anchor` is a claim
+about *this repository*: its verdict is a function of the commit under review
+and nothing else, so a dead one is a defect the build can refuse. It resolves
+every internal link across the whole Markdown set — the top-level documents,
+`docs/`, `.github/`, the `FILE_MAP.md` family and `gradle/` — and fails naming
+the file, the line and the target. Today that is more than 450 internal links
+across 35 Markdown files.
+
+**It reads inline-code paths too.** Documentation names source files in code
+spans far more often than in links, and a span is invisible to a link checker —
+which is how a rule in `api-conventions.md` sent implementers to a parser file
+that had never existed, for four months, with this gate green. So a span written
+as a repository path is resolved as well: it must hold a `/`, end in a source
+extension (`.kt`, `.md`, `.yml`, …) after an optional `:line` or `#anchor`, and
+begin with `./`, `../` or a directory name that exists in the repository. It
+resolves from the root, from the document's directory, or as the tail of a file's
+path (`data/mcp/KoogMcpClient.kt`, written from the package root). Shorthand is
+left alone on purpose — an elision (`…`, `...`), a glob, a `<placeholder>`, build
+output, an absolute (device) path — and so are the spans of `CHANGELOG.md`,
+whose entries name the tree they were written against. The file index is a walk
+of the working tree, not the Git index, minus build output and the Git-ignored
+entries that exist only in a developer's checkout (internal notes, local agent
+rules, `local.properties`), so a local pass means a CI pass. Today that is about 220
+spans. A span that is deliberately not one file is written elided, or as the
+bare file name.
+
+**`:app:reportExternalDocLinks` is a report, and is not part of `check`.** An
+`http` link is a claim about somebody else's server; it can turn red while the
+repository does not change at all. Gating on it would make merges depend on
+third-party uptime — the same reasoning that keeps the dependency
+version-freshness checks at informational severity. The task probes every
+distinct URL (`HEAD`, falling back to `GET`), writes
+`app/build/reports/docs-links/external-links.md`, and never fails the build.
+[`.github/workflows/docs-links.yml`](../.github/workflows/docs-links.yml) runs
+it weekly and on demand, and publishes the report to the job summary; it must
+never be added to branch protection's required checks.
+
+Both read the links through one extractor
+([`MarkdownLinks`](../buildSrc/src/main/kotlin/app/knotwork/android/buildtools/MarkdownLinks.kt)),
+so the gate and the report cannot end up disagreeing about what a link is.
+
+### The two ways a link checker reports zero and is wrong
+
+Both were met while writing one for this repository, and both are closed here:
+
+1. **Choosing inputs from the Git index.** A file set read from `git ls-files`
+   cannot see the files the branch under review is *adding*. Such a checker
+   validated 32 files and reported `0 broken` while the roughly 60 links in a
+   brand-new FAQ had never been read. The Gradle task takes its file set from
+   declared source trees instead, and the falsification below was repeated
+   inside a brand-new untracked file for exactly this reason.
+2. **Getting GitHub's anchor rule wrong.** GitHub strips punctuation *in place*
+   and then replaces **each remaining space** with a hyphen — so a heading whose
+   words are separated by punctuation keeps both surrounding spaces and
+   slugifies with a **double** hyphen. Collapsing runs of whitespace instead
+   reports a perfectly valid link as broken.
+
+The mirror-image failure — a scan that passes by covering nothing — is closed
+by `requiredPrefixes`: each declared documentation root must contribute at
+least one document, which is self-maintaining where a pinned file count would
+rot. The untracked `CLAUDE` manifest family is excluded so the gate reads the
+same corpus locally and in CI.
+
+### What it does not check
+
+Shortcut and collapsed reference usages (`[label]`, `[label][]`) are not
+resolved — `CHANGELOG.md` is full of them, and they are covered only in as much
+as their *definitions* are checked. A code span opened on one line and closed on
+the next keeps its links visible to the scanner, and its path is not read. A
+span naming a class, a package or a directory (no file extension) is not
+resolved: `data/tools/local/appfunctions/AgentAppFunctionService` names nothing
+the file system can answer for. Anchors into a Markdown file
+outside the scanned set are reported rather than skipped: that would mean the
+scan has a hole, which is a finding about the gate itself.
+
+### Why the task is untracked
+
+`verifyDocLinks` declares no output and runs on every `check`. Its verdict
+depends on files it cannot declare as inputs — a link may point at any path in
+the repository, and the defect it exists to catch is precisely that such a path
+stopped existing. Declaring the whole working tree would hash 138 MB to answer
+a question that costs milliseconds; declaring only the documents would let the
+task report a **cached pass** over a target deleted after it last ran. Running
+every time is the honest option, and it costs a fraction of a second.
+
+### Observed failing
+
+Watched red before being trusted, in three shapes: a link to a file that does
+not exist, a link to an anchor that does not exist, and both together **inside a
+brand-new untracked file** — the case the Git-index failure mode above would
+have missed. The inline-code pass was watched red on the real tree before any
+document was touched — six spans, two of them dead references nobody had
+reported (the parser above, and a settings screen that had since been split) —
+and on a probe span naming a brand-new untracked file, which resolved once the
+file existed. The pure logic is unit-tested in `buildSrc` (`MarkdownLinksTest`,
+`DocLinkCheckerTest`, `RepositoryFilesTest`, `ExternalLinkReportTest`).
+
+---
+
+## Bundled documentation guard (`verifyBundledDocs`)
+
+`:app:verifyBundledDocs` is wired into `check`. It guards the documents that
+ship **inside** the APK — today `docs/faq.md` and `docs/troubleshooting.md`,
+which the registry marks `BUNDLED`.
+
+`./gradlew :app:syncBundledDocs` writes the copies into
+`app/src/main/assets/docs/` together with a generated `index.json`, and the
+verification task fails on drift. Both are committed, like every other generated
+artefact here.
+
+### Why a document has to earn being bundled
+
+The in-app renderer is not GitHub. It drops what it does not implement
+**silently** — no placeholder, no error — so a document that looks right in a
+browser can reach a reader with paragraphs missing and nothing on screen to
+suggest anything is absent. The gate turns that into rules:
+
+1. **No Mermaid blocks.** There is no diagram support, so a diagram arrives as a
+   fenced block of its own source.
+2. **No images.** Nothing resolves a relative image path inside the APK.
+3. **No HTML.** Unsupported upstream by design; an HTML node falls through the
+   renderer and is dropped. This is the rule that keeps `docs/cookbook.md` on
+   the web — its generated node-reference tables carry 14 `<br>` tags, each one
+   welding a caption onto a code sample when dropped.
+4. **Every relative link resolves** — to a heading in the same document, to
+   another bundled document, or to a repository file that exists. Offline there
+   is no address bar to recover with.
+5. **Every anchor a link targets is unique**, for the reason spelled out under
+   `verifyDocumentationLinks`: a heading written twice yields two anchors that
+   both keep working.
+
+The input set is the Markdown under `docs/` **plus the repository's root
+Markdown**, because a bundled document links to `../SECURITY.md` and
+`../PRIVACY.md`. Declaring only the `docs` tree would resolve those against
+files the task never declared, and stay green after one was deleted.
+
+### Why `verifyDocLinks` skips the copies
+
+`app/src/main/assets/docs/` is excluded from `verifyDocLinks`. That gate
+resolves a relative link against the file's own directory, and the copies are
+deliberately a *subset* — `user-guide.md` is not beside them and never will be.
+Checking them there as well would not be stricter, it would be wrong. Their
+links are checked here instead, against the real repository.
+
+### What the index is for, and why the app resolves nothing
+
+The renderer has no heading anchors and no path resolution, and both answers are
+needed at run time. Implementing them in `app` would mean a second GitHub slug
+algorithm and a second path resolver — with the build's copy being the one a
+gate verifies and the app's being the one a user gets. So `syncBundledDocs`
+ships the answers instead: `index.json` maps each anchor to the **character
+offset** of its heading, and each raw link target to what the reader should do
+with it. The app performs a lookup, never a resolution, and a lookup that misses
+is a defect in the build rather than a case for the app to guess at.
+
+One trap worth recording: the offsets are counted over the **original** lines
+while headings are recognised in the **masked** ones. Masking blanks a fenced
+block's lines, which preserves their count — that is what makes the two readings
+line up — but not their lengths, so an offset taken from masked text would drift
+by the width of every code block above it.
+
+## In-app documentation link guard (`verifyDocumentationLinks`)
+
+`:app:verifyDocumentationLinks` is wired into `check`. It guards the registry of
+documents the **app** links out to — the Help screen's list (which the About
+screen's Documentation card opens) and the in-app reader's *Open in browser*, the
+onboarding Ready step, the Tools and Triggers top bars, the editor's overflow,
+and the external-automation settings hint.
+
+It fails on two things: the committed registry drifting from the build-side
+list, and any entry naming a document or heading that no longer resolves.
+
+### Why the list lives in `buildSrc` and the app's copy is generated
+
+Three readers need the same list: the app (which builds the URLs), this gate
+(which resolves them), and the bundled-documentation sync. `buildSrc` cannot see
+`app` code, so only one of the three can hold the list natively. The build holds
+it (`DocumentationLinkRegistry`) and generates the app's copy
+(`domain/constants/DocumentationLinks.kt`), which is committed like any other
+generated artefact in this repository.
+
+That is the only arrangement in which the list **and** the GitHub slug algorithm
+(`MarkdownLinks.slug`) each have exactly one owner. The alternative — parsing the
+Kotlin object back out of `app` with regular expressions — was rejected on the
+precedent of `BrowserEditorConstantsGenerator`, which skips a record of
+unexpected shape *silently*: a typo there produces a missing gate rather than a
+failure.
+
+`./gradlew :app:generateDocumentationLinks` rewrites the copy. It refuses to
+write while any entry fails to resolve, so a broken registry cannot reach the
+app and be reported afterwards against a file already committed.
+
+Note the consequence of the generated entries carrying per-document counts (the
+Help list shows them): **editing any document under `docs/` can make the
+committed registry stale**, and the gate will say so. Regenerating is the same
+one command, and it is cheap; the alternative was a hand-maintained number
+beside a document that grows, which is the defect this repository keeps
+removing.
+
+### Why this one is typed and cacheable while `verifyDocLinks` is not
+
+`verifyDocLinks` is deliberately untracked: a documentation link may address any
+path in the repository, so its inputs cannot be declared, and a cached pass
+could hide a target deleted since the last run.
+
+This gate constrains every target to a Markdown file under `docs/` — a rule it
+enforces rather than assumes. That makes the declared input set *complete*:
+deleting a target changes the task's fingerprint. So the task carries typed
+inputs and a stamp output, and `check` skips it while nothing it reads has
+changed, which is what keeps a no-op build from growing by another always-run
+task.
+
+### The rule that "the anchor exists" cannot express
+
+A heading written twice yields two anchors, `slug` and `slug-1`, and **both
+keep resolving forever**. Reordering those two sections therefore moves what
+each anchor points at without breaking either — a link that is green and wrong.
+`docs/user-guide.md` carries a live instance: "Background & triggers" appears
+twice.
+
+So the rule is uniqueness, not existence: a registry anchor must be produced by
+exactly one heading, and an ordinal `-N` anchor is refused outright. The count
+comes from `MarkdownLinks.headingSlugCounts`, not from inspecting the anchor's
+shape — `step-1` from a heading "Step 1" is a legitimate anchor and
+indistinguishable from an ordinal suffix by spelling alone.
+
+### Release builds link at the tag, legal documents do not
+
+`BuildConfig.DOCS_REF` is `v<versionName>` for a release build and `main`
+otherwise, decided by build **type** in `app/build.gradle.kts` (the rule itself
+is `DocumentationRef`, unit-tested in `buildSrc` where both branches are
+ordinary arguments — an app-side test only ever observes the debug variant).
+Reading `versionName` for its suffix instead would make an unrelated string
+decide where the links point.
+
+`PRIVACY.md` is exempt and stays on `main`: what binds a user is the current
+edition, and that URL is also the one filed with the app stores. The exemption
+is asserted in `AboutLinksTest` so it cannot be tidied into the version-pinned
+rule.
+
+The tag is cut *after* the build, so no repository gate can confirm the link
+resolves on GitHub. `docs/release.md` carries that as a post-publication
+checklist item.
+
+### Observed failing
+
+Watched red before being trusted, in four shapes: a renamed heading
+(`triggers` → no heading produces it), an anchor whose heading text appears
+twice (reported with the count), an ordinal `-1` anchor, and a committed copy
+left stale after the build-side list changed. The pure logic is unit-tested in
+`buildSrc` (`DocumentationLinkRegistryTest`, `DocumentationRefTest`,
+`MarkdownLinksTest`), each rule against a document written to break it.
+
+---
+
+## Mermaid diagram guard (`verifyMermaidDiagrams`)
+
+`:app:verifyMermaidDiagrams` fails the build when an embedded Mermaid diagram
+is structurally broken. A broken diagram does not degrade politely — GitHub
+renders a red error box where the architecture picture should be — and nothing
+in review reliably catches it, because a diagram is read as prose.
+
+**It is not a Mermaid parser, and the difference matters.** A real parse needs
+Mermaid's own grammar, which means a Node toolchain and a network install on the
+critical path of every build. What runs instead is a set of structural rules:
+
+1. The block is not empty, and its first significant line declares a known
+   diagram type.
+2. A `flowchart` / `graph` direction, when written, is one of `TB` `TD` `BT`
+   `RL` `LR`.
+3. Block openers balance their `end` — `subgraph` in flowcharts, and `loop` /
+   `alt` / `opt` / `par` / `critical` / `break` / `rect` / `box` in sequence
+   diagrams.
+4. In a flowchart, brackets and quotes balance on each line.
+5. In a flowchart, an unquoted node label holds no parenthesis.
+6. In a flowchart, every arrow is a real arrow — a bare `->` is not one.
+
+**Every rule was written against the real parser rather than from memory**, and
+that step changed the rule set: three plausible rules were *dropped* because
+Mermaid accepts what they would have rejected. A `flowchart` with no direction
+is valid; so are unbalanced brackets and quotes in the free text of a
+`sequenceDiagram` message or a `stateDiagram` note, which is why rules 4–6 are
+scoped to flowcharts; and the asymmetric `id>text]` node shape has brackets
+that deliberately do not pair. A gate that fails valid documents is worse than
+no gate, because it teaches everyone to distrust it.
+
+The list of known diagram types is a deliberate allowlist: adding a diagram of
+a type nobody has used here yet means adding it to
+[`MermaidBlockChecker`](../buildSrc/src/main/kotlin/app/knotwork/android/buildtools/MermaidBlockChecker.kt),
+and the failure message says so.
+
+### Observed failing
+
+Four mutations of the real diagrams in `docs/architecture.md` — an unknown
+diagram type, a `subgraph` missing its `end`, an unquoted parenthesis in a node
+label, and a bare `->` arrow. Each turned the gate red, and each was
+independently confirmed to be rejected by the actual Mermaid parser, while
+every committed diagram passes both. That cross-check is the point: a structural
+checker is only worth having while its rules agree with the renderer, and it is
+the one claim this guard cannot make about itself.
+
+---
+
+## Version-number agreement guard (`verifyVersionSources`)
+
+`versionName` in [`app/build.gradle.kts`](../app/build.gradle.kts) is the single
+source of truth for the build — the F-Droid recipe builds a tag with no Gradle
+properties injected and must still get the right number. The problem is that the
+number is *repeated*, for humans, in places no build step reads:
+
+- the version badge in `README.md`;
+- the *Pre-release notice* sentence in `README.md` ("currently at **version X**");
+- the topmost released heading of `CHANGELOG.md`;
+- the `[Unreleased]` compare link at the foot of `CHANGELOG.md`;
+- the link definition of that topmost release, which names the tag it shipped as;
+- every version in `SECURITY.md` — its prose, the line it says fixes land on,
+  and both cells of the supported-versions table;
+- the pre-release **line** named at the top of `docs/roadmap.md`, which says
+  which release the "where the project is today" list describes.
+
+Each is edited by hand at release time and nothing noticed when one was missed.
+The release checklist did not even mention the badge — which is the version
+number a bug reporter quotes. `:app:verifyVersionSources` compares them all
+against the declared `versionName` and fails naming both values and the file to
+edit. A source it cannot *find* is a failure too: a checker that silently finds
+nothing to compare passes everything.
+
+**The last three were added a release after the guard shipped, and the reason is
+the point.** The first version held four of the seven hand-written copies a
+survey of the repository had already counted — and the very next release cut duly
+left `SECURITY.md` at the previous version, in its prose *and* in its
+supported-versions table, where a stale number tells a reporter their release is
+unsupported. A rule covering four of seven does not merely miss three: it reads
+as a closed subject, which is worse than no rule, because nobody greps a
+question that looks answered.
+
+`SECURITY.md` is checked **wholesale** — every version-like token in it must be
+the shipping version or its minor line (`X.Y.Z` or `X.Y.x`). That is a stronger
+claim than one pattern per sentence, and it is true of this document. It is not
+true of `README.md`, which legitimately discusses older releases (the one-time
+signing change at `0.7.0`), so the README is matched by named patterns only.
+Naming a historic version in `SECURITY.md` therefore means revisiting this rule
+on purpose, which is the intended cost.
+
+Two documents name the *line* rather than the release — the supported-versions
+table and the roadmap's opening sentence — so those are compared against
+`X.Y.x`, which is what makes a patch release pass without touching either.
+
+Deliberately outside the rule: `PRIVACY.md` says the policy applies "from
+version 0.7.1 onward", which is a dated statement about the past and must not
+follow the build; and `README.md`'s account of the one-time signing change
+names the releases it happened at. Both are versions that are *supposed* to go
+out of date.
+
+`versionCode` is deliberately out of scope. Its agreement with the store
+changelog file is already held by `StoreMetadataTest`, and a second, separately
+written opinion about the same fact is how two guards start disagreeing.
+
+### Observed failing
+
+Five mutations, one per source plus the whole-release case: a stale README
+badge, a changelog heading ahead of the build, a stale `[Unreleased]` compare
+link, a release heading whose link definition was deleted, and a `versionName`
+bumped with nothing else — which reported all three remaining sources at once.
+
+The sources added later were observed failing on **a real drift rather than a
+mutation**: with `versionName` cut to the shipping version and `SECURITY.md`
+untouched, the extended gate failed naming both stale copies, which is exactly
+the drift the previous release had shipped unnoticed. It was then fixed and the
+gate went green. The roadmap line was found the same way one step later — in the
+diff of the change that added the other two — and is the reason this list is
+worth keeping honest rather than declaring finished: a rule that has just been
+widened is exactly when its author is most sure it is complete.
+
+The pure logic is unit-tested in `buildSrc` (`VersionSourcesCheckerTest`), with
+a case per source, one asserting that the supported *line* (`X.Y.x`) is accepted
+rather than read as a stale version, and one asserting that a `SECURITY.md`
+naming no version at all fails.
+
+---
+
+## Store-listing length guard (`verifyStoreListingLengths`)
+
+The Play Console **rejects** an upload whose listing fields are over Google's
+character limits. Without a gate that rejection lands in a web form, after the
+merge, after the release workflow has built and signed an artefact — the one
+moment at which it is most expensive and least expected.
+
+`:app:verifyStoreListingLengths` measures every file under
+[`fastlane/metadata`](../fastlane/metadata) against the limit for its field:
+30 code points for the app title, 80 for the short description, 4 000 for the
+full description, and 500 for a release's "What's new" text. Counting is in
+**Unicode code points**, matching how the Console counts, and a single trailing
+newline is ignored because every file in the tree ends with one and Play does
+not.
+
+The changelog ceiling is held apart from the other three because those files are
+named after the `versionCode` rather than after the field, so they are matched
+by their parent directory instead of their file name.
+
+**The margins are why this is a gate rather than a line in the release
+checklist.** When it was written, the English full description sat **5**
+characters under its ceiling, the English title **4**, and one release note
+**2**. One added word breaks any of the three, and nothing in the repository
+could see it.
+
+Not to be confused with `StoreMetadataTest`, which checks that a shipping
+`versionCode` *has* release notes at all, in every locale. Length and existence
+are two questions and are answered in two places on purpose.
+
+### Observed failing
+
+The pure logic is unit-tested in `buildSrc` (`StoreListingLengthCheckerTest`)
+with a case per behaviour that decides a verdict: a field exactly **at** its
+limit passes and one character **over** fails — the boundary is where an
+off-by-one in a length rule actually lives — plus the trailing newline, counting
+outside the basic plane, a changelog matched by its directory, every field over
+at once, and a non-listing file ignored. The committed listing passes.
+
+---
+
+## Forbidden-vocabulary guard (`verifyForbiddenVocabulary`)
+
+`:app:verifyForbiddenVocabulary` fails the build when a public text file
+carries either of two families of words that must never reach an outside
+reader or a user of the app.
+
+1. **The product's pre-rename name**, in every form it was written in: the
+   three-word prose name (any capitalisation, including one wrapped across a
+   KDoc line), the run-together identifier used for theme and tag names, the
+   title-case descriptor the project once used, and the old root package.
+2. **Internal planning numbering**: a phase number of two or more digits
+   (written with a space, a hyphen or nothing before the digits), a task
+   fraction, and a phase branch path. That vocabulary belongs to private
+   planning documents; a public reader can look none of it up.
+
+The gate does not spell the forbidden forms out here, because this document is
+inside its own scope — the scanner assembles its patterns from fragments for the
+same reason.
+
+### Why a gate
+
+The product was renamed, and the old name went on greeting every user from the
+onboarding title for three months — through a pre-launch clean-up, a store
+listing that promised the new name, and a Google Play release. No gate looked
+for it; it was found by inspecting a frame of a published demo video. The first
+run of this gate then found the same name in the GitHub issue-template chooser,
+in the app theme's resource and composable names, and in a wake-lock tag —
+which Android vitals lists by name in the Play Console.
+
+Planning numbering had the same history in a different shape. It was removed
+once by a search that matched a single spelling, and a later search with the
+same pattern reported zero — while the hyphenated, lower-case and run-together
+spellings it could not see went on accumulating in KDoc and test comments.
+
+### Scope
+
+Every public **text** file, selected by glob rather than by a list, so a newly
+added file is guarded without anyone remembering to add it: source, resources
+and bundled assets of `:app` and `:catalog`, build logic, the probe app,
+documentation, store metadata, CI configuration, and the repository root. Each
+root must contribute at least one file, so a directory that moves or a glob that
+stops matching fails the build instead of quietly shrinking what is guarded. The
+file set is a declared input, never a Git query, so a file the branch under
+review is adding is scanned too.
+
+Deliberate exclusions:
+
+- **`CHANGELOG.md`** — a historical journal whose past entries name the old
+  identifiers as they were at the time. Rewriting history to satisfy a gate
+  would be the wrong repair.
+- **`buildSrc/src/test`** — the scanner's fixtures must spell the forbidden forms.
+- **`app/src/main/assets/docs`** — a generated copy of `docs/`, which is scanned
+  at its source rather than twice.
+- **Git metadata** — branch names, commit messages and pull request titles.
+  They are not files, and a gate that decides the build has to be a function of
+  the tree. The early history carries the internal numbering and is not
+  rewritten: tags, releases and the F-Droid recipe point at commits by hash. New
+  work follows the convention in `CONTRIBUTING.md`, and
+  `scanGitMetadataVocabulary` (below) checks it on demand. The integration
+  branch named there is not an exception to that convention: it is the one
+  number a reader can look up.
+
+**Not forbidden, on purpose:** the lower-case hyphenated project codename that
+names the Gradle root project and the Firebase project. Neither is visible to a
+user, and a Firebase project id cannot be renamed.
+
+**Not caught, on purpose:** a single-digit phase. Integration tests label the
+steps of a multi-stage scenario "Phase 1" to "Phase 4", which is not planning
+vocabulary. Every real planning phase has two digits, so requiring two digits
+separates the two cleanly; a historical single-digit reference would slip
+through, and none exists.
+
+**Caught although legitimate, knowingly:** a literal progress label written as
+the word "task" followed by digits and a slash — say, in a preview fixture for a
+decomposition queue. Nothing in the tree has that shape; the production strings
+build such a label from placeholders, which the rule does not match. If a
+fixture needs one, write "step" or use the placeholder form rather than
+weakening the rule.
+
+The task is typed and cacheable, so a no-op `check` skips it. It reads files that
+every generator rewrites, so it sits in the consumer list of
+*Generators and their consumers: the ordering rule* above — which is where the
+`mustRunAfter` matrix and the reason for it are described.
+
+### Observed failing
+
+The first run over the tree reported **52** hits: **10** of the pre-rename name
+across eight files, and **42** planning numbers across 27 files — two generated
+file maps, KDoc in the engine, the MCP client and the task queue, test comments,
+a string-resource comment, one test name, and two comments in the browser
+editor. All were rewritten to say what the code does or what was observed,
+without the number. The gate was then observed failing again with the
+onboarding title string reverted to its pre-rename value. The pure logic is
+unit-tested in `buildSrc` (`ForbiddenVocabularyCheckerTest`).
+
+### Git metadata (`scanGitMetadataVocabulary`)
+
+`:app:scanGitMetadataVocabulary` runs the same rules over the git layer: the name
+of the checked-out branch, the full message of every commit in a range (merges
+included), and optionally a pull request's title and body. It is not part of
+`check` — its verdict depends on the state of git, not on the tree — and runs
+before a pull request is opened or retitled:
+
+```bash
+./gradlew :app:scanGitMetadataVocabulary -PgitBase=main \
+    -Ptitle="docs: …" -PbodyFile=pr-body.md
+```
+
+The default range is `origin/<gitBase>..HEAD`; `-PgitRange=<a>..<b>` replaces it.
+
+One family is left out: the integration branch path. `CONTRIBUTING.md` names
+that branch, and merging it writes its path into the merge commit's subject, so
+reporting it would fail every such merge. In files it stays forbidden. The rule
+for a phase number also accepts an opening parenthesis before the digits — a
+commit type with the number as its scope, which is how integration merges used
+to be titled. No public file has that spelling, so the file gate reports nothing
+new.
+
+**Observed failing:** over `v0.10.1..v0.11.0` the scan reports 142 of 143
+commits; the one it passes is the release commit. The pure logic is unit-tested
+in `buildSrc` (`GitMetadataVocabularyTest`, which also runs the task's git
+commands against a temporary repository).
+
+---
+
+## Orphaned-KDoc guard (`verifyNoOrphanedKdoc`)
+
+Kotlin attaches a KDoc block to the declaration that follows it, and only to
+that one. When two blocks end up back to back with no declaration between them,
+the first documents nothing: invisible to Dokka, invisible to the IDE, and —
+worse — it *reads* as documentation of the declaration below, which already has
+its own.
+
+`:app:verifyNoOrphanedKdoc` and `:catalog:verifyNoOrphanedKdoc` fail the build
+on such a block, naming the file, the line and the block's first content line.
+
+**A file-level block is not a violation.** A file whose opening block explains
+the file as a whole, followed by the first declaration's own block, is a
+deliberate shape that several files here use. It is told apart structurally
+rather than by heuristics: a file-level block is one with nothing but `package`,
+`import`, file annotations, comments and blank lines before it.
+
+`:app` scans `androidTest` too, deliberately — `check` neither runs nor compiles
+that source set, so a block orphaned there would go unseen until the separate
+instrumented job, and this check only reads text. `:catalog` is covered because
+it is a design system: its declarations carry the longest KDoc in the
+repository, and components are routinely inserted next to their neighbours,
+which is exactly the edit that produces an orphan.
+
+### Observed failing
+
+**Four** real instances existed in the tree when this check was written, all the
+same editing accident and none of which had looked like one in review: a new
+function inserted **between** an existing KDoc and the function it described.
+The old doc stayed where it was, the new function kept its own, and the original
+function silently lost its documentation — in one case the entire migration
+policy of the Room database. Every individual line of those diffs was correct.
+The pure logic is unit-tested in `buildSrc` (`OrphanedKdocCheckerTest`).
+
+---
+
+## Dialog inventory guard (`verifyDialogInventory`)
+
+Dialog and sheet **bodies** belong in `:catalog`, where the Roborazzi baselines
+can reach them; `:app` *hosts* them, because the host owns scrim and IME
+behaviour. `:app:verifyDialogInventory` fails the build when a file in `:app`
+calls `AlertDialog`, `BasicAlertDialog` or `ModalBottomSheet` without an entry
+accounting for it.
+
+The check cannot tell a sanctioned host from a dialog composed in place by
+parsing alone, so it does not try: it reports every call site, and each one is
+answered once in an explicit allowlist in
+[`app/build.gradle.kts`](../app/build.gradle.kts) that records **why** — host of
+a named catalog body, deliberate deviation, or known remaining work. That list
+is the deliverable. A file that has to say what it is doing beats a rule that
+quietly decides for itself.
+
+The allowlist is audited in both directions: an entry that no longer matches any
+file fails just as loudly as an unaccounted dialog. An allowlist that outlives
+what it excused is how a gate rots into decoration, and it is the half such a
+check usually forgets.
+
+A call inside a comment is ignored — this codebase discusses these composables
+in prose constantly, and a check that fired on its own documentation would be
+switched off within the day.
+
+### Observed failing
+
+The inventory this gate replaced was wrong **twice**, which is the argument for
+deriving the list from the sources instead of writing it. The first hand pass
+listed seven screens with no catalog twin; three already had one, under a file
+named after the feature rather than after the screen. The second pass missed the
+dialogs entirely, because it matched `*Screen(` composables — so
+`SaveAsPresetDialog` was never counted, never covered, and shipped with its
+selected category chip visually indistinguishable from the unselected ones until
+somebody ran the app by hand. On its own first run the gate named two sheets a
+hand inventory had already declared complete. The pure logic is unit-tested in
+`buildSrc` (`DialogInventoryCheckerTest`).
+
+---
+
+## Internal-FQN guard (`checkNoInternalFqn`)
+
+A fully-qualified `app.knotwork.android.…` reference in a code body is a type
+the file never imports: it hides a dependency from the import list — the one
+place a reader and the Konsist layer rules look for it — and it survives
+a package move as a string nobody searches for. `:app:checkNoInternalFqn` fails
+when one appears in `:app`'s `main`, `test` or `androidTest` Kotlin sources.
+
+What it deliberately leaves alone:
+
+- `import` and `package` statements, which is where the name belongs;
+- lines that start with `//` or `*` (line comments and the body of a KDoc
+  block), where a fully-qualified name is prose;
+- **intent action strings.** Android namespaces an action by the application id
+  (`app.knotwork.android.action.RUN_PIPELINE`), so it reads exactly like an
+  internal name while being wire data that other apps send — nothing an import
+  could replace, and frozen once a caller uses it. The action prefix is scrubbed
+  from the line before matching rather than exempting the line, so a real
+  fully-qualified reference beside an action string is still caught.
+
+It is a line scan, not a parser: a name split across lines, or inside a
+multi-line string, goes unseen.
+
+---
+
+## Browser-editor constants guard (`verifyBrowserEditorConstants`)
+
+The browser pipeline editor (`pipeline-editor.html`) is a single file that runs
+with no build step, so it carries its own copy of part of the app: the node
+types, the prompt variables, the local tools, the default system prompts, and
+every bundled pipeline preset and prompt template. Each copy sits between
+`AUTO-GEN` markers and is produced by `:app:generateBrowserEditorConstants` from
+the app's own sources — `NodeType.kt`, `PromptTemplateModule.kt` and the
+providers it binds, `LocalToolsModule.kt`, `DefaultPrompts.kt`, and the JSON
+under `assets/presets/pipelines/` and `assets/presets/prompts/` in the order
+`BundledPresetCatalog` displays them. `:app:verifyBrowserEditorConstants` fails
+when a committed block differs from what the generator would write now, and names
+the drifted blocks. Only the blocks are generated; the editor's own logic around
+them is hand-written.
+
+**Why the presets and templates are generated too.** They were the largest
+copies, and they were kept by hand. When they were brought under the generator,
+six of fifteen presets still carried prompt wording the app had replaced because
+it made on-device tool calls fail, and four of twenty-one templates were out of
+date — a change the commit message said had been mirrored had reached only the
+generated prompt block.
+
+**The second half: no control for a field no run reads.** The same task runs
+`BrowserEditorInertControlGuard` over the editor's `renderFormFields`. A node
+field that decodes and round-trips but is never read at run time (see
+[decision 0005](decisions/0005-a-control-that-cannot-act-is-removed.md)) must not be
+offered as a control, because a control that saves a value the run ignores
+teaches its user that the app ignores them. Which fields count is not restated:
+the guard reads `CookbookDocsGenerator.FIELD_REACH`, the same verdicts the
+cookbook publishes and `CookbookRuntimeReachTest` checks against the codec. The
+fields stay in the editor's encode/decode, so files still round-trip. The guard
+refuses to pass when `renderFormFields` or a node type's `case` cannot be found,
+so a rename cannot make it check nothing.
+
+**The third half: everything derived for the run is exported.** The editor
+derives the flat values the engine reads in `richToFlat`, and `exportToJson`
+writes the file's `config` block from its own list of keys.
+`BrowserEditorFlatExportGuard` fails when a key `richToFlat` sets is missing from
+that list. The app's node sheet shows the `config` copy — the one that runs — so
+a derived field left out of the export is a browser setting that is silently
+gone after import. It refuses to pass when either function or the `config` block
+cannot be found.
+
+To fix a failure, run `./gradlew :app:generateBrowserEditorConstants` and commit
+the updated `pipeline-editor.html`; for the inert-control half, remove the
+control and its validation from the form; for the export half, add the key to
+the `config` block in `exportToJson`.
+
+### Observed failing
+
+The inert-control guard's first run named **eight** controls — temperature,
+top-p, max new tokens and stop sequences on the on-device node; model,
+temperature, max tokens and timeout on the cloud node — against the seven the
+defect report had counted. The export guard's first run named **three** —
+`fallbackClass`, `maxSubtasks` and `quickReplies`. The pure logic is unit-tested
+in `buildSrc` (`BrowserEditorConstantsGeneratorTest`,
+`BrowserEditorInertControlGuardTest`, `BrowserEditorFlatExportGuardTest`).
+
+---
+
+## Shipped pipeline layout guard (`ShippedPipelineLayoutTest`)
+
+Node positions are canvas units, which are dp, and a node card is a fixed dp
+footprint. Every file this project ships as a pipeline — the bundled presets
+under `app/src/main/assets/presets/pipelines/` and the cookbook recipes under
+`docs/recipes/` — is laid out by hand, and nothing else would notice two cards on
+top of each other: the graph still parses and validates. The test reads each file
+as plain JSON, walks every `nodes` array it finds (so the preset format, the
+export format and a multi-pipeline bundle are all covered without depending on
+their serializers), and fails on any pair of cards closer than one grid step.
+
+A companion test fails if either directory contributes no graphs, because a path
+that stops resolving would otherwise make the overlap check pass over nothing.
+Editing either re-runs the test instead of answering from a cached pass: the
+presets are packaged Android resources of the unit tests, and the recipes are a
+declared test input.
+
+### Observed failing
+
+On its first run it found the comprehensive showcase preset overlapping **even at
+density 1** — hidden until then because the editor drew positions as screen
+pixels, which stacked every preset's cards on a dense phone anyway. Eight of its
+nodes were moved, in the preset and in the browser editor's copy.
+
+---
+
+## R8 keep-rule guard (`verify<Variant>KeepRules`)
+
+Some keep rules protect code whose failure mode **no test in this gate can
+see**, because the gate is JVM-only and debug builds are not minified. The
+motivating case: MediaPipe's `tasks-text` pulls in
+`com.google.common.flogger`, which resolves a log site by *walking the call
+stack* for a frame belonging to flogger itself. When R8 renames or inlines
+those frames away, the first `TextEmbedder.createFromOptions` call fails with
+`IllegalStateException: no caller found on the stack for: …` — that is the
+on-device embedding path, so in a minified build every message that touches
+long-term memory kills the process, while every debug build stays green.
+
+The one durable artefact that *can* see it is the mapping R8 emits: a live
+`-keep class … { *; }` rule leaves the package **identity-mapped**
+(`a.b.C -> a.b.C`). `:app:verify<Variant>KeepRules` asserts exactly that for
+every protected package after each `release` assemble (it is wired with
+`finalizedBy`, so it runs as part of the release build, not of `check` —
+`check` never produces a mapping). A package that comes back renamed **or
+missing entirely** fails the build; the missing case is treated as a failure
+on purpose, since "all zero classes are identity-mapped" would be a vacuous
+pass hiding a dropped dependency.
+
+The parsing is a pure `String -> List<Violation>` transform in `buildSrc`
+([`R8MappingChecker`](../buildSrc/src/main/kotlin/app/knotwork/android/buildtools/R8MappingChecker.kt)),
+unit-tested there (`./gradlew -p buildSrc test`) against an identity-mapped
+fixture, an obfuscated one, an absent-package one, and a member-line shape
+that must not be misparsed as a class. Protected packages are listed in
+`r8ProtectedPackages` in `app/build.gradle.kts`; add to that list whenever a
+new keep rule exists to satisfy a stack-walking or name-reflecting library.
+
+### Keep-rule names (`verify<Variant>KeepRuleTargets`)
+
+The mapping guard proves a rule that matched kept doing so. It cannot see a rule
+that never matched anything, and R8 does not report one — no warning, no info
+line. `:app:verify<Variant>KeepRuleTargets` runs **before** R8 on every release
+build and resolves each class, annotation and package named in a class
+specification of `app/proguard-rules.pro` against the classes R8 is about to read:
+the variant's `ScopedArtifact.CLASSES` over every scope, plus the SDK boot
+classpath. `*` and `?` stay within a package segment and `**` crosses them, as in
+ProGuard's syntax; names without a package (`*`, `**$$serializer`) match by
+construction. `-dontwarn` / `-dontnote` are not checked — naming absent classes is
+what they are for. The parser and matcher are
+[`KeepRuleTargets`](../buildSrc/src/main/kotlin/app/knotwork/android/buildtools/KeepRuleTargets.kt),
+unit-tested in `buildSrc`; the task refuses to pass when it finds no names or no
+classes.
+
+**Observed failing.** On the tree it was written for, five names: four
+AppFunctions rules naming `androidx.appfunctions.AppFunctionInventory`,
+`…AppFunctionInvoker` and `@androidx.appfunctions.AppFunction` (the library ships
+them under `…internal`, `…service.internal` and `…service`), and
+`org.tensorflow.lite.**`, a package no dependency has. Every other name in the
+file resolved.
+
+### Pinned NDK (`verify<Variant>PinnedNdk`)
+
+The app packages five prebuilt native libraries, and AGP strips them with the
+NDK of `android.ndkVersion`. When that NDK is not installed, AGP neither
+downloads it nor fails — it logs *"Unable to strip the following libraries,
+packaging them as they are"* and ships them unstripped, so the artefact follows
+the host. The version is pinned in `gradle/libs.versions.toml`, and
+`:app:verify<Variant>PinnedNdk` runs before the strip step of every release build
+and fails unless `ndk/<version>` holds that revision with an `llvm-strip`
+([`PinnedNdk`](../buildSrc/src/main/kotlin/app/knotwork/android/buildtools/PinnedNdk.kt)).
+`release.yml` installs the same version before building.
+
+**Observed failing** on a host carrying three other NDKs but not the pinned one —
+the host whose release build had shipped the libraries unstripped. With the
+pinned NDK installed, the same build stripped them to the bytes CI publishes.
+
+## Supply chain
+
+Every gate above checks the code in this repository. Of the four below, three
+check what the build *pulls in* or *ships* — the GitHub Actions and the Gradle
+distribution, every dependency, the manifests libraries merge in — and the
+fourth checks what a commit might carry *out*. They share one question: **can the same commit of this
+repository run different bytes tomorrow, or ship something nobody here wrote?**
+
+The release job is why that question is not academic. It decodes the signing
+keystore and exports its passwords in the same job that runs `setup-gradle`,
+downloads the Gradle distribution and resolves every dependency; code planted
+by any of those runs inside the build JVM that holds the key.
+
+### Supply-chain pin guard (`verifySupplyChainPins`)
+
+`:app:verifySupplyChainPins` fails the build when:
+
+- a `uses:` anywhere under `.github/` names a third-party action by anything
+  but a **full 40-character commit SHA followed by a version comment**
+  (`actions/checkout@<sha> # v6.1.0`). A tag or a branch is a pointer its owner
+  can move; an abbreviated SHA is a prefix, and a prefix can collide. Local
+  references (`./…`) pass, since their contents are part of the commit, and a
+  `docker://` image passes only with a `@sha256:` digest;
+- `gradle/wrapper/gradle-wrapper.properties` has no `distributionSha256Sum`.
+  `validateDistributionUrl` checks that the URL is well formed, not the bytes
+  behind it.
+
+The version comment is required, not decorative: a bare SHA is unreadable in
+review, and Dependabot rewrites the version only where the comment sits on the
+same line. Dependabot (`.github/dependabot.yml`) proposes new pins monthly, one
+grouped pull request, holding each new release back for seven days; Gradle
+dependencies are deliberately not in its scope (see *Dependency verification*).
+
+**What it does not check.** That a SHA is the commit its comment names, or that
+the checksum is Gradle's. Both are one lookup away when reviewing the change that
+introduced them, and neither can be answered without the network. What the guard
+catches is a pin *disappearing* — a step copied from a README, a
+`./gradlew wrapper` run without `--gradle-distribution-sha256-sum`. The wrapper
+itself compares the checksum only when it downloads the distribution, so a
+machine with it already cached never re-checks. The wrapper **JAR** is checked by
+`setup-gradle`, which validates it against Gradle's published checksums on every
+CI run by default.
+
+**Observed failing.** On the tree before the pins: 28 references in the four
+workflows (`checkout`, `setup-java`, `setup-android`, `setup-gradle`,
+`upload-artifact`), plus the missing distribution checksum — one failure listing
+all 29. The wrapper's own check was observed separately: with one digit of the
+sum changed and an empty Gradle home, the wrapper refused the download, and the
+checksum it reported as actual was the committed one. The rules are unit-tested
+in `buildSrc` (`SupplyChainPinsCheckerTest`) — tag, branch, abbreviated SHA, no
+ref, no version comment, quoted values, local and `docker://` references, a
+commented-out `uses:`. The task refuses a tree in which it found no reference at
+all, so a pattern that silently stopped matching cannot pass every workflow.
+
+### Merged-manifest guard (`verify<Variant>MergedManifest`)
+
+The source manifests are not what ships. The merger folds in every library's
+own manifest, so a dependency bump can add a permission, an exported component
+or a `queries` entry without a line of this repository changing — and
+[`PRIVACY.md`](../PRIVACY.md) §5 enumerates the permissions, while
+[`SECURITY.md`](../SECURITY.md) names every export any installed app can reach.
+
+`:app:verifyFullReleaseMergedManifest` and `:app:verifyFossReleaseMergedManifest`
+reduce the merged manifest that is packaged into each release APK and AAB
+(`SingleArtifact.MERGED_MANIFEST`) to its entry surfaces and compare them with
+[`config/merged-manifest/<variant>.txt`](../config/merged-manifest/fullRelease.txt):
+
+- `uses-permission NAME [maxSdkVersion=N]` — what the app asks for;
+- `permission NAME protectionLevel=LEVEL` — what it declares for others to request;
+- `exported TAG NAME permission=PERMISSION|none` — every component another app can
+  start or bind, **with the permission it demands** (for a provider, also its
+  `readPermission` / `writePermission`): an export that loses its permission is a
+  new surface under an old name, and the line changes. Anything but a literal
+  `android:exported="false"` counts as exported, so a value resolved from a
+  resource at runtime is listed rather than assumed closed;
+- `queries package|intent|provider …` — the package visibility the app claims.
+
+The failure prints the exact lines to add (`+`) or remove (`-`) and where to look
+up an entry's origin (`app/build/outputs/logs/manifest-merger-*-report.txt`). The
+expectation is **edited by hand, and there is deliberately no task that rewrites
+it**: each line is a decision the privacy policy or the threat model has to
+reflect, and a generator would turn each of those decisions into a keystroke.
+
+Non-exported components are left out — they are no entry surface, and an
+expectation that churned on every internal service a library adds would be
+approved without being read. Only release variants are checked, because only
+they ship; the debug overlay's receiver is covered by the source-manifest census
+`ExportedComponentInventoryTest`. The two layers are distinct: that test pins what
+this repository *writes*, this guard what the build *ships*. Merging both release
+manifests costs seconds and needs neither signing nor R8.
+
+An expectation can also say what must **not** be there: `absent TEXT` fails the
+build if any attribute of any element — exported or not — contains `TEXT`. The
+`foss` expectation uses it for the one thing that flavour promises about Google
+code: no `com.google.android.datatransport`, `com.google.firebase` or
+`com.google.android.gms` element. The data-transport classes and their endpoint
+still ship in the `foss` dex (MediaPipe pulls them in); what keeps them inert is
+that `src/foss/AndroidManifest.xml` removes the three components that would let
+them find a backend or schedule an upload. None of the three is exported, so the
+entry list alone would not notice one coming back. Observed failing with one of
+the three removals deleted: the build named the returned `JobInfoSchedulerService`,
+which the entry list did not.
+
+**Observed failing — on a genuine divergence.** The merged release manifests
+either side of the commit that added WorkManager differ by four entries, none of
+them from the app's own manifest: `RECEIVE_BOOT_COMPLETED`, `WAKE_LOCK`, an
+exported `DiagnosticsReceiver` and an exported `SystemJobService`. Nothing in the
+repository recorded that they had arrived. Those two build outputs are now the
+fixture of `MergedManifestInventoryTest`, next to cases for each entry kind, a
+non-exported component, an export that lost its permission, and an expectation
+that lists an entry twice (a duplicate would hide the removal of one copy).
+
+### SLF4J provider guard (`verify<Variant>NoSlf4jProvider`)
+
+Koog and the libraries under it log through SLF4J. An SLF4J provider on the
+classpath decides where those lines go, and the one Koog's Android client brought
+in, `slf4j-simple`, wrote them to `System.err` — logcat — past the redaction the
+app applies to its own logs; some of Koog's lines are model output. The module
+is excluded in `configurations.configureEach` (`app/build.gradle.kts`), and with
+no provider SLF4J 2 uses its no-op logger.
+
+`:app:verifyFullReleaseNoSlf4jProvider` and `:app:verifyFossReleaseNoSlf4jProvider`
+keep any other provider out. They read the Java resources of each release
+variant's runtime classpath (the `android-java-res` view) and fail on a
+`META-INF/services/org.slf4j.spi.SLF4JServiceProvider` file that lists a class —
+the only way an SLF4J 2 provider registers
+([`Slf4jProviders`](../buildSrc/src/main/kotlin/app/knotwork/android/buildtools/Slf4jProviders.kt),
+unit-tested in `buildSrc`). They run in `check` and before R8 on every release
+build, and refuse to pass when they receive no resources.
+
+Why not the APK: R8 turns a `ServiceLoader` lookup it can resolve into a direct
+constructor call and drops the service file, so the packaged APK shipped the
+provider with no registration left to find. Why not the variant API's
+`ScopedArtifact.JAVA_RES`: for the `ALL` scope it hands a task no files (AGP
+9.3.1), which the guard's own refusal to pass vacuously surfaced.
+
+**Observed failing.** Before the exclusion, both variants:
+`slf4j-simple-2.0.17.jar registers org.slf4j.simple.SimpleServiceProvider`.
+After it, the full release mapping holds no `org.slf4j.simple` class.
+
+### Dependency verification (`gradle/verification-metadata.xml`)
+
+Every artifact Gradle resolves — plugins, `buildSrc`'s dependencies, the app's
+libraries, and the tools the build runs (lint, detekt, ktlint, the Kover agent,
+AGP's own tool jars such as `aapt2`) — is verified before it is used, in every
+build, locally and in CI. There is no task to wire: Gradle refuses a build that
+resolves an artifact the file does not vouch for, and the verdict depends on
+nothing but the repository.
+
+**The policy: trust a publisher where there is a signature, the bytes where there
+is not.**
+
+- **Signed artifacts are verified against the publisher's key**, trusted for a
+  group rather than a version (`<trusted-keys>`, 119 keys). A version bump of a
+  dependency whose publisher is already trusted needs no change here. That is
+  deliberate: a review of a short list of publisher keys is one a person can
+  actually do, whereas thousands of checksums nobody can check by eye would be
+  approved without being read.
+- **Only an organisation's release key is trusted across a namespace** — Google's
+  Maven signing key for its `androidx.*` / `com.android.*` / `com.google.*`
+  groups, JetBrains' release keys for `org.jetbrains.*`. **Every other key is
+  trusted for exactly the groups it was seen signing.** Gradle's generator does
+  not draw that line: it folded the personal keys of a Guava maintainer and an
+  Error Prone maintainer into all of `com.google.*`, and the long-dead Bintray
+  signing key into all of `org.jetbrains.*`, because each had signed a few groups
+  under that prefix — so any one of those keys, leaked, would have vouched for
+  Firebase. Eleven such entries were narrowed to the groups the key actually
+  signed, read from the signatures of every artifact this build resolves. That
+  census has to include configurations no local build resolves: the first one
+  came from running every CI task list, missed the connected-test runner's
+  plugins, and the instrumented suite failed verification on CI. The census now
+  comes from a bootstrap dry run, which resolves every resolvable configuration,
+  and each configuration was then resolved in strict mode.
+- **Unsigned artifacts are pinned by SHA-256**, per version (145 files) — part of
+  Firebase's transitive graph and older `androidx` releases, for example, are
+  published without a signature.
+- **The keys are committed** (`gradle/verification-keyring.keys`, armored) **and
+  key servers are disabled**, so a build never contacts one.
+- **Three kinds of file are trusted without verification**: `-sources` and
+  `-javadoc` jars, and Gradle's own source distribution (`gradle-<v>-src.zip`),
+  which Android Studio's sync fetches so build scripts can be navigated. The IDE
+  downloads them; the build never executes them. The first sync after this file
+  landed failed on exactly that zip — no command-line build ever asks for it —
+  and the second on the metadata of the Groovy bundled with Gradle, which the IDE
+  resolves for sources: signed by the Groovy release manager's key, which the file
+  had trusted only for Groovy's older `org.codehaus.groovy` coordinates. Both were
+  reproduced without the IDE, by an init script adding the repository it uses and
+  resolving the same coordinates, before and after the fix.
+
+**The policy is enforced, not only written down.** `:app:verifySupplyChainPins`
+fails when `verify-metadata` or `verify-signatures` is off, when key servers are
+on, when the file holds an `<ignored-key>`, when `<trusted-artifacts>` holds an
+entry outside `dependencyVerificationTrustedArtifacts` (one `group=".*"` entry
+would switch verification off for everything), and when a key outside the list of
+organisation release keys in `app/build.gradle.kts`
+(`dependencyVerificationNamespaceKeys`, each with its owner) is trusted by
+`regex="true"` — or when any key is trusted wider than a namespace of two parts
+(`^com[.]google…` passes, `^com…` and `.*` do not). Both of the generator's own
+outputs fail it: the file before
+narrowing on its 11 widened personal keys, and the first attempt additionally on
+its 14 ignored keys and its key servers.
+
+**Bumping a dependency.** If the new version is signed by a trusted key, nothing
+changes. Otherwise the build fails naming what it cannot verify; record it with
+
+```bash
+./gradlew --write-verification-metadata pgp,sha256 --export-keys <the failing tasks>
+```
+
+and read the diff. A new trusted key is a decision to trust a publisher: check its
+fingerprint against one the project publishes itself before accepting it. A new
+checksum is trust on first use — nothing but that download vouches for it.
+**A checksum mismatch on an existing entry is never fixed by regenerating**: it is
+the substitution the file exists to catch. Gradle never removes an entry that is
+no longer used; to prune, move the file aside, regenerate, and compare.
+
+**Generating it.** `--write-verification-metadata` records only what the build
+actually resolves, and a task that is up to date or restored from the build cache
+resolves nothing. So the file was generated with `--rerun-tasks` over every task
+list CI runs — `check :buildSrc:test`, the instrumented-source compile, the
+generators, both release flavours and the App Bundle. For this build the rerun
+added no entry, because every tool jar a cached task would have resolved is
+signed by an already-trusted key — but only the rerun makes that a measurement
+rather than an assumption. Keys the key servers failed to return were fetched by
+hand, and Google's was checked against a second channel
+(`dl.google.com/linux/linux_signing_key.pub`), since a key Gradle cannot download
+is written down as *ignored* and its artifacts silently fall back to first-use
+checksums.
+
+**What it does not cover.** Robolectric downloads its `android-all` jars itself at
+test time, checking only a SHA-512 fetched from the same repository. Android SDK
+packages come from `sdkmanager` and AGP's auto-download; the JDK comes from
+`setup-java` in CI — the daemon's criteria no longer name a vendor, so CI never
+needs Gradle's toolchain download, which carries no checksum at all. None of these
+goes through Gradle's resolution. And verification is not vulnerability scanning:
+a verified artifact can still be a vulnerable one.
+
+**Observed failing.** Two ways, both on this repository. Adding a dependency
+from a publisher not yet trusted (`org.jsoup:jsoup:1.18.1`) failed the build on
+its `.pom`, with Gradle's note that key servers are disabled and the keyring
+lacks the key. One changed digit in the recorded checksum of an unsigned artifact
+(`firebase-encoders-17.0.0.jar`) — indistinguishable from the artifact itself
+having changed — failed on that jar. A Firebase BOM bump (`34.18.0` → `34.19.0`)
+passed without touching the file, as it should: its artifacts are signed by the
+trusted Google key.
+
+The generation had a failure of its own worth knowing. On the first attempt the
+key servers did not return 14 keys — Google's Maven signing subkey among them —
+and Gradle wrote each down as *ignored* and fell back to first-use checksums for
+everything it signs, reporting only that "some problems were discovered". The
+keys were fetched explicitly and the file generated again. With the final file,
+every task list CI runs passed in an empty Gradle home with every task executed,
+and CI's Linux runners passed `check` and the instrumented suite — which resolve
+the Linux `aapt2` jar and the connected-test runner, neither of which a macOS
+build ever downloads.
+
+### Secret scan (CI)
+
+A step in the required `check` job runs [gitleaks](https://github.com/gitleaks/gitleaks)
+over every commit under review: a pull request's own commits, or a push's new
+ones. Every commit, not the final tree — a key added in one commit and deleted in
+the next is still published the moment the branch is pushed. gitleaks reads each
+commit's own diff and skips merge commits, so it reports fewer commits than the
+range holds — and a line that exists only in a merge's conflict resolution is not
+scanned. A manual run, or the
+release workflow calling this one for a tag, scans what the ref has that `main`
+does not; for a release tag that is nothing, since its commits were scanned on
+their way into `main`.
+
+It is a step rather than a job of its own because branch protection requires the
+`check` job by name, and a job that fails before it makes it *skipped* — which
+branch protection counts as success.
+
+- **The scanner is pinned by bytes.** The workflow downloads the gitleaks release
+  archive and checks it against a SHA-256 written next to the version; bumping
+  the version means updating both. The gitleaks GitHub Action is not used: it
+  downloads its binary with no checksum and defaults to an older release. The
+  rules are gitleaks' defaults, fixed by that version.
+- **A hit fails the job, and the log shows no secret** (`--redact`).
+- **A waiver covers one line, never a path or a pattern.** Before the commit is
+  pushed, it is an inline `gitleaks:allow` on the offending line: it travels with
+  that line and is visible in the diff that introduces it. Once the commit is
+  pushed, that no longer helps — the scan reads every commit's own diff, so a later
+  commit adding the waiver leaves the original flagged — and the waiver is the
+  finding's fingerprint in [`.gitleaksignore`](../.gitleaksignore)
+  (`commit:file:rule:line`), which names that one commit and exempts nothing
+  written later. [`.gitleaks.toml`](../.gitleaks.toml) has no path or regex
+  allowlist on purpose: a real key pasted into a test is still a leaked key, so
+  "fixtures are exempt" would exempt exactly where one is most likely to be
+  pasted. Prefer a fixture that does not look like a key at all — too short, or
+  plainly fake; the sanitizer tests' `key=AIzaSyREALSECRET123` matches no rule.
+
+**What it does not do.** Scan history before the change under review — the
+whole-history pass is a separate, one-off audit. Know whether a hit is live: that
+would mean calling the provider's API from CI, which makes the verdict a
+function of the network. And it does not replace GitHub's own secret scanning or
+push protection, which are repository settings rather than files and which see
+provider-verified patterns this scan does not.
+
+**Observed failing.** A commit adding a random `ghp_`-shaped token failed the
+exact command the workflow runs (rule `github-pat`, exit 1); the same line with
+`gitleaks:allow` passed. Then the scan stopped the change that introduced it: a
+test fixture holding a public PGP key fingerprint tripped `generic-api-key` on
+CI. It is not a secret, but it was already pushed, which is how the second
+waiver — the commit-bound `.gitleaksignore` entry — came to exist. Before
+wiring, the default rules were run over the whole tree and all of history: one
+hit, a short preview fixture (`sk-live-…`) in `:catalog`, outside the range any
+future change scans unless that line is edited.
+
+---
+
+## Kover — coverage measurement & threshold
+
+Plugin: `org.jetbrains.kotlinx.kover` `0.9.8`. Strict mode: a single
+aggregate rule enforces **≥ 75 % LINE coverage** over the unit-testable
+surface (raised from 70 %).
+
+Kover 0.9.x does not support per-rule filters (that landed in 0.10+), so
+filtering is done globally via `reports.filters.excludes`. The excluded
+class set covers:
+
+- Generated code (Hilt factories, Room `*_Impl`, AppDatabase, AutoMigrations,
+  ComposableSingletons, `BuildConfig`, BR, DataBinding).
+- All `*Preview.kt` files and `@Preview`-annotated functions.
+- Hilt DI modules (`app.knotwork.android.di.*`).
+- `App.kt` and `MainActivity` — Android-runtime-bound bootstrap.
+- All `*Screen` Composables and `presentation.ui.*.components.*`, plus the
+  sub-packages `presentation.ui.navigation.*`,
+  `presentation.ui.about.AboutScreen*` / `AboutAcknowledgments*`,
+  `presentation.ui.more.MoreScreen*`, and
+  `presentation.ui.settings.provider.{ProviderPickerScreen, ProviderDetailScreen}*`.
+- `presentation.theme/state.*` — declarative Compose constants.
+- `data.tools.local.*` Android-runtime glue (AppFunctions service, search HTTP,
+  delegate-task), including the sub-package
+  `data.tools.local.appfunctions.*`.
+- `data.local.dao.*` interfaces (impls are auto-excluded via the `*_Impl` pattern).
+- `data.logging.CrashlyticsTimberTree*` — Firebase Crashlytics Timber bridge.
+
+After these exclusions the aggregate runs at ~77.6 %;
+[`coverage-baseline.md`](coverage-baseline.md) keeps the per-package
+breakdown and the (informational) per-package targets. The 75 % floor
+protects against regression with ~2.6 pp of headroom for in-flight
+refactors.
+
+Verification is wired into the `check` lifecycle:
+
+```kotlin
+tasks.named("check") { dependsOn("koverVerifyFullDebug") }
+```
+
+**Local commands**:
+
+```bash
+./gradlew :app:koverVerifyFullDebug      # threshold check
+./gradlew :app:koverHtmlReportFullDebug  # drill-down per package/file
+./gradlew :app:koverLog              # one-liner aggregate %
+```
+
+**Reports**:
+- `app/build/reports/kover/htmlFullDebug/index.html`
+- `app/build/reports/kover/reportFullDebug.xml`
+
+---
+
+## CI
+
+The required job is defined in `.github/workflows/check.yml`. The workflow runs
+`./gradlew check :buildSrc:test` on every `pull_request → main` and every `push`
+to `main` (plus a manual `workflow_dispatch` trigger), uploads each report set —
+detekt / ktlint / unit-test / Kover / Roborazzi diffs — as a downloadable
+artifact on failure, and is configured with `concurrency.cancel-in-progress` so
+a new push supersedes any older run on the same branch. The **lint** report is
+the exception: it is uploaded on every run, green ones included, because it
+carries the informational dependency-drift findings described above. The same
+findings are also rendered into the job summary as an *Informational lint
+findings* table, so the answer to "what is out of date?" needs no artifact
+download.
+
+The same job also compiles the instrumented source set for both flavours, in a
+Gradle invocation of its own. `check` does not compile `androidTest`, so
+without that step an instrumented test could stop building while every gate
+stayed green. Whether those tests *pass* is decided elsewhere — by
+`.github/workflows/instrumented.yml`, which runs them on an emulator matrix and
+is deliberately kept out of the required `check` workflow (and therefore out of
+the release path) because an emulator's verdict is not purely a function of the
+repository. See [`testing.md`](testing.md) § *The instrumented gate*.
+
+One workflow is deliberately **not** a gate.
+[`.github/workflows/docs-links.yml`](../.github/workflows/docs-links.yml) probes
+the external `http` links of the documentation weekly and on demand, publishes
+the result to the job summary, and never fails: an external link's verdict
+belongs to somebody else's server, so it must not sit among the conditions for
+merging. It must never be added to branch protection's required checks — and
+note that a scheduled workflow only runs from the default branch, and only once
+its definition has reached it.
+
+Before any Gradle step, the job scans the commits under review for secrets (see
+*Secret scan* above), and a dependency-verification failure uploads Gradle's
+report (`build/reports/dependency-verification/`) as an artifact.
+
+The same workflow is also exposed as a reusable one (`workflow_call`) and is
+called as the first job of `.github/workflows/release.yml`, so a release cannot
+be built against a definition of "green" that has drifted from the one pull
+requests are measured by. `release.yml` adds the checks that only make sense on
+a release build — the tag ↔ `versionName` agreement, the pinned NDK installed and
+checked, `verify<Variant>KeepRuleTargets` and `verify<Variant>KeepRules` on both
+flavours, a check that the `foss` APK carries no Firebase configuration,
+a check that both APKs ship the native libraries the app loads (LiteRT-LM and
+MediaPipe Tasks) and not the MediaPipe text-generation library the build
+excludes, and a signature check of every published artefact against the
+expected certificate fingerprint and for both APK signature schemes, v2 and v3.
+The release procedure itself is documented in [`release.md`](release.md) §9.
+
+---
+
+## What this gate does **not** do
+
+- It does not collect instrumented (androidTest / Compose UI test)
+  **coverage** — `*Screen.kt` Composables remain outside the Kover scope. The
+  instrumented tests themselves do run in CI, in their own workflow; their
+  results simply do not feed the coverage number.
+- It does not run the `release` variant — lint and tests target `debug`. R8
+  regressions are therefore invisible here; the release-only guards above
+  (`verify<Variant>KeepRuleTargets`, `verify<Variant>KeepRules`,
+  `verify<Variant>PinnedNdk`) run as part of the release build instead,
+  which on CI means `release.yml` rather than this workflow.
+- It does not perform dependency-vulnerability scanning — that is a
+  separate workstream. Dependency *verification* (above) answers a different
+  question: whether an artifact is the one its publisher signed, not whether it
+  is safe.

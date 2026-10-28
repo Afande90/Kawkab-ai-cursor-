@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Cleartext policy lives in app code, not here.
+
+    Android's network-security-config supports neither ranges nor wildcards, so
+    "permit HTTP to any private-LAN address" cannot be expressed in this file.
+    What used to be here instead was a hand-written list of fourteen private IPs
+    — which matched a real user's LAN address only by coincidence, and which a
+    user of an installed release build cannot edit. Running a local Ollama or
+    MCP server over HTTP, the scenario this product is built around, therefore
+    did not work for most people.
+
+    Cleartext is permitted here so the rule can be expressed where it is
+    expressible: `domain/services/CleartextPolicy.kt`. That rule is strictly
+    narrower than "permit everything" — unencrypted traffic is allowed only to a
+    loopback / private-LAN address the user has explicitly approved, and never
+    to a public host — and it is enforced at every point that opens a connection
+    to a user-configured address:
+
+      * ModelNetworkGate.endpointRefusal()  — a server the user runs (Ollama, an
+                                           OpenAI-compatible server), asked by
+                                           KoogClientFactory (chat) and
+                                           OllamaEmbeddingProvider (memory)
+      * KoogTransportFactory               — every hop of every model client,
+                                           redirects included
+      * McpConnectionPool                  — every MCP connection
+      * CleartextGuardInterceptor          — the shared OkHttp client, every hop
+                                           (before the first lookup, and on each
+                                           redirect OkHttp follows)
+
+    The platform no longer blocks a cleartext redirect anywhere; inside the
+    third-party Koog / Ktor stacks the app's own transport check does.
+-->
+<network-security-config xmlns:tools="http://schemas.android.com/tools">
+    <!--
+        `InsecureBaseConfiguration` is suppressed deliberately, not silenced: the
+        header above is the reasoning, and the alternative (a hard-coded address
+        list) did not work for the scenario the product exists to support. It is
+        suppressed here rather than in `lint-baseline.xml` so the justification
+        stays next to the setting instead of in a file nobody reads.
+    -->
+    <base-config cleartextTrafficPermitted="true" tools:ignore="InsecureBaseConfiguration">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

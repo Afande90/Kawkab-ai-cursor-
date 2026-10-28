@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    User-facing strings for the chat feature (`presentation/ui/chat/`).
+
+    Keys follow `chat_<context>_<purpose>` where `<context>` identifies the
+    sub-surface (topbar, drawer, menu, dialog, sheet, banner, console,
+    clarification, trace, thought, message, input, session, snackbar) and
+    `<purpose>` describes the role of the string. Content descriptions for
+    icons / clickable affordances carry the `_cd` suffix.
+-->
+<resources>
+    <!-- TopAppBar -->
+
+    <!-- Overflow menu -->
+    <string name="chat_export_chooser_title">Export chat</string>
+
+    <!-- Pipeline switch confirmation dialog -->
+
+    <!-- New chat pipeline sheet -->
+
+    <!-- Chat-settings dialog -->
+
+    <!-- Drawer -->
+
+    <!-- Message bubble -->
+
+    <!-- Input bar -->
+
+    <!-- Console (collapsed + full) -->
+    <string name="chat_console_clear_dialog_title">Clear console log?</string>
+    <string name="chat_console_clear_dialog_text">This removes every event from the current session log. The action cannot be undone.</string>
+
+    <!-- Console event tags (rendered inside log lines as `[TAG]`) -->
+
+    <!-- Console filter chips -->
+
+    <!-- Clarification card -->
+
+    <!-- Pipeline trace card -->
+
+    <!-- Agent thought indicator -->
+    <string name="chat_thought_deny">Deny</string>
+    <string name="chat_thought_approve">Approve</string>
+
+    <!-- Risk chip rendered next to the tool name in the approval prompt. Temporary
+         constants until the design-system pass replaces them with palette tokens. -->
+
+    <!-- Inline approval banner shown above the chat input when the agent is waiting for
+         the user to confirm a tool execution. -->
+
+    <!-- Snackbar feedback -->
+    <string name="chat_snackbar_copied">Copied</string>
+    <string name="chat_snackbar_saved_to_memory">Saved to memory</string>
+    <string name="chat_snackbar_save_to_memory_failed">Couldn\'t save to memory</string>
+    <string name="chat_snackbar_console_copied">Console log copied</string>
+    <string name="chat_snackbar_console_line_copied">Line copied</string>
+    <!-- Shown when a picked/captured image could not be attached (decode/read failed). -->
+    <string name="chat_snackbar_attachment_failed">Couldn\'t attach that image. Try a different one.</string>
+    <string name="chat_snackbar_attachment_replaced">Replaced the previous image — one at a time.</string>
+    <!-- Shown when voice input fails (recording, audio-file import, or transcription error). -->
+    <string name="chat_snackbar_voice_failed">Couldn\'t process the recording. Try again.</string>
+    <!-- Shown when a Resume tap finds the run no longer resumable (raced discard, legacy record). -->
+    <string name="chat_snackbar_resume_unavailable">This run can no longer be resumed</string>
+    <!-- Shown when the pipeline graph was edited or deleted after the interrupted run started. -->
+    <string name="chat_snackbar_resume_graph_changed">Pipeline was edited \u2014 resume is unavailable, restart the task instead</string>
+    <!-- Shown when the interruption is older than the configured resume window. -->
+    <string name="chat_snackbar_resume_expired">Resume window elapsed \u2014 this run can only be discarded</string>
+    <string name="chat_console_clear_dialog_confirm">Clear</string>
+    <string name="chat_console_clear_dialog_cancel">Cancel</string>
+
+    <!-- ============ ChatHomeScreen debug state picker (debug builds only) ============ -->
+    <string name="chat_home_debug_state_empty">Empty</string>
+    <string name="chat_home_debug_state_idle">Idle</string>
+    <string name="chat_home_debug_state_generating">Generating</string>
+    <string name="chat_home_debug_state_hitl_readonly">HITL — Read-only</string>
+    <string name="chat_home_debug_state_hitl_sensitive">HITL — Sensitive</string>
+    <string name="chat_home_debug_state_hitl_destructive">HITL — Destructive</string>
+    <string name="chat_home_debug_state_clarification">Clarification</string>
+    <string name="chat_home_debug_state_interrupted">Interrupted</string>
+    <string name="chat_home_debug_state_error">Error</string>
+    <string name="chat_home_debug_state_drawer_open">Drawer open</string>
+    <string name="chat_home_debug_state_console_partial">Console — Partial</string>
+    <string name="chat_home_debug_state_console_full">Console — Full</string>
+
+    <!--
+        Agent status lines rendered in the pill above the composer. Two spaces
+        between the bracketed tag and the body keep the surfaces vertically
+        aligned with the mockup.
+    -->
+    <string name="chat_home_status_idle">[NODE]  idle · ready</string>
+    <string name="chat_home_status_generating">[NODE]  generating</string>
+    <string name="chat_home_status_preparing_model">[NODE]  loading model · please wait</string>
+    <string name="chat_home_status_waiting_in_queue">[NODE]  waiting behind another run · queued</string>
+    <!-- Label of the loader bubble at the end of the thread when nothing is being
+         generated yet. The generating case keeps the design-system default. -->
+    <string name="chat_home_loader_preparing_model">Loading model…</string>
+    <string name="chat_home_loader_waiting_in_queue">Waiting…</string>
+    <string name="chat_home_status_hitl">[TOOL]  awaiting approval</string>
+    <string name="chat_home_status_clarification">[NODE]  waiting on clarification</string>
+    <string name="chat_home_status_error">[NODE]  error · see message</string>
+
+    <!--
+        Stub session-drawer fixtures rendered while the orchestrator
+        integration is pending. The titles double as the thread display
+        names; the subtitles encode "{when} · {pipeline}".
+    -->
+    <string name="chat_home_stub_session_1_title">Personal assistant</string>
+    <string name="chat_home_stub_session_1_subtitle">now · default pipeline</string>
+    <string name="chat_home_stub_session_2_title">Refactor planner</string>
+    <string name="chat_home_stub_session_2_subtitle">12m · code-pipeline</string>
+    <string name="chat_home_stub_session_3_title">Weekly summary</string>
+    <string name="chat_home_stub_session_3_subtitle">2h · summariser</string>
+    <string name="chat_home_stub_session_4_title">Travel research</string>
+    <string name="chat_home_stub_session_4_subtitle">Mon · default pipeline</string>
+    <string name="chat_home_stub_session_5_title">LiteRT benchmark</string>
+    <string name="chat_home_stub_session_5_subtitle">Last week</string>
+
+    <!--
+        Generic, pipeline-agnostic empty-state suggestion cards. Shown only as a
+        fallback when the active pipeline declares no starter prompts of its own
+        (see PipelineGraph.samplePrompts). They deliberately make NO tool claims
+        (`tools` is empty, so the mono "uses · …" subtitle is hidden) because the
+        active pipeline's real capabilities are unknown here — a static tool
+        promise could advertise tools the pipeline does not wire.
+    -->
+    <string name="chat_home_suggestion_card_1_title">What can you help me with?</string>
+    <string name="chat_home_suggestion_card_1_tools" />
+    <string name="chat_home_suggestion_card_2_title">Summarise a long note I paste in</string>
+    <string name="chat_home_suggestion_card_2_tools" />
+    <string name="chat_home_suggestion_card_3_title">Break a goal down into steps</string>
+    <string name="chat_home_suggestion_card_3_tools" />
+
+
+    <!-- Overflow menu -->
+    <string name="chat_overflow_export">Export chat</string>
+    <string name="chat_overflow_delete">Delete chat</string>
+
+    <!-- Delete chat confirmation -->
+    <string name="chat_delete_dialog_title">Delete this chat?</string>
+    <string name="chat_delete_dialog_text">This permanently removes the conversation, including every message in it. This cannot be undone.</string>
+    <string name="chat_delete_dialog_confirm">Delete</string>
+    <string name="chat_delete_dialog_cancel">Cancel</string>
+
+    <!-- Rename session sheet -->
+    <string name="chat_rename_sheet_title">Rename chat</string>
+    <string name="chat_rename_sheet_label">Chat name</string>
+    <string name="chat_rename_sheet_save">Save</string>
+    <string name="chat_rename_sheet_cancel">Cancel</string>
+
+    <!-- New chat pipeline picker sheet -->
+    <string name="chat_new_thread_sheet_title">Start a new chat</string>
+    <string name="chat_new_thread_sheet_create">Create</string>
+    <string name="chat_new_thread_sheet_cancel">Cancel</string>
+    <string name="chat_new_thread_sheet_use_default">Use default pipeline</string>
+
+    <!-- Import chat -->
+    <string name="chat_import_failed">Could not import chat: %1$s</string>
+    <string name="chat_import_unreadable">Selected file could not be read.</string>
+
+    <!-- Reporting a model-authored response. The disclosure is deliberately blunt:
+         there is no reporting back end, so the user must know that submitting means
+         a public issue and that they can edit the text before it goes anywhere. -->
+    <string name="chat_report_dialog_title">Report this response</string>
+    <string name="chat_report_dialog_body">Tell me what is wrong with what the model produced. This helps improve the pipelines and prompts that ship with the app.</string>
+    <string name="chat_report_dialog_note_placeholder">What is wrong with this response? (optional)</string>
+    <string name="chat_report_dialog_disclosure">Nothing is sent automatically. Open issue puts this report in a GitHub link, so GitHub receives it when the page opens; it goes public only if you submit it. To edit it first, copy it instead.</string>
+    <string name="chat_report_dialog_copy">Copy report</string>
+    <string name="chat_report_dialog_cancel">Cancel</string>
+    <string name="chat_report_dialog_open_issue">Open issue</string>
+    <string name="chat_report_reason_harmful">Harmful or unsafe</string>
+    <string name="chat_report_reason_sexual">Sexually explicit</string>
+    <string name="chat_report_reason_hate">Hate or harassment</string>
+    <string name="chat_report_reason_misleading">Misleading</string>
+    <string name="chat_report_reason_other">Something else</string>
+    <string name="chat_report_snackbar_copied">Report copied</string>
+    <string name="chat_report_snackbar_no_browser">No app can open the issue tracker. The report was copied instead.</string>
+
+    <!-- Chat archive: undo snackbars raised from the drawer. The thread is deliberately
+         not named — over a 320 dp drawer the title ellipsises to nothing useful, and the
+         user just acted on that row. -->
+    <string name="chat_snackbar_archived">Chat archived</string>
+    <string name="chat_snackbar_archive_undo">Undo</string>
+    <string name="chat_snackbar_restored">Chat restored</string>
+
+    <!-- Chat archive screen. -->
+    <string name="chat_archive_title">Archived chats</string>
+    <string name="chat_archive_back_cd">Back</string>
+    <plurals name="chat_archive_subtitle">
+        <item quantity="one">%1$d chat · newest first</item>
+        <item quantity="other">%1$d chats · newest first</item>
+    </plurals>
+    <string name="chat_archive_restore">Restore</string>
+    <string name="chat_archive_export">Export chat</string>
+    <string name="chat_archive_delete_forever">Delete forever</string>
+    <string name="chat_archive_row_menu_cd">More actions</string>
+    <string name="chat_archive_ran_after_archiving">Run finished after archiving</string>
+    <string name="chat_archive_footer">Archived chats are kept until you delete them</string>
+    <string name="chat_archive_empty_title">Nothing archived</string>
+    <string name="chat_archive_empty_body">Archiving takes a chat out of your list without deleting it. In the chat list, swipe a chat or open its menu and pick Archive — it waits here, whole, until you restore it.</string>
+    <string name="chat_archive_error_title">Couldn\'t load the archive</string>
+    <string name="chat_archive_error_retry">Try again</string>
+    <string name="chat_archive_delete_title">Delete this chat?</string>
+    <string name="chat_archive_delete_body">"%1$s" and all its messages will be deleted from this device. This can\'t be undone.</string>
+    <string name="chat_archive_delete_confirm">Delete</string>
+    <string name="chat_archive_delete_cancel">Cancel</string>
+
+    <!-- Relative "when was this archived" label on an archive row. -->
+    <string name="chat_archive_when_just_now">Archived just now</string>
+    <string name="chat_archive_when_yesterday">Archived yesterday</string>
+    <string name="chat_archive_when_unknown">Archived</string>
+    <plurals name="chat_archive_when_minutes">
+        <item quantity="one">Archived %1$d min ago</item>
+        <item quantity="other">Archived %1$d min ago</item>
+    </plurals>
+    <plurals name="chat_archive_when_hours">
+        <item quantity="one">Archived %1$d h ago</item>
+        <item quantity="other">Archived %1$d h ago</item>
+    </plurals>
+    <plurals name="chat_archive_when_days">
+        <item quantity="one">Archived %1$d d ago</item>
+        <item quantity="other">Archived %1$d d ago</item>
+    </plurals>
+    <plurals name="chat_archive_when_weeks">
+        <item quantity="one">Archived %1$d w ago</item>
+        <item quantity="other">Archived %1$d w ago</item>
+    </plurals>
+    <plurals name="chat_archive_when_months">
+        <item quantity="one">Archived %1$d mo ago</item>
+        <item quantity="other">Archived %1$d mo ago</item>
+    </plurals>
+    <plurals name="chat_archive_when_years">
+        <item quantity="one">Archived %1$d y ago</item>
+        <item quantity="other">Archived %1$d y ago</item>
+    </plurals>
+</resources>

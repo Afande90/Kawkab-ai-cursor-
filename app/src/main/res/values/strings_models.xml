@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="models_screen_title">Models</string>
+    <string name="models_error_unknown">An unknown error occurred</string>
+    <string name="models_meta_verified">Verified</string>
+    <string name="models_meta_not_verified">Not verified</string>
+    <string name="models_interrupted_continue">Continue</string>
+    <string name="models_error_link_not_litertlm">This link isn\'t a .litertlm file. Only .litertlm models run on the phone.</string>
+
+    <!-- Knotwork redesign. -->
+    <string name="models_subtitle_format" tools:ignore="PluralsCandidate">%1$d active · %2$d on disk · %3$s</string>
+    <string name="models_section_hf">HUGGINGFACE</string>
+    <string name="models_section_hf_optional">optional</string>
+    <string name="models_field_hf_placeholder">Tap to paste hf_… token</string>
+    <string name="models_action_paste">+ Paste</string>
+    <string name="models_section_custom_url">CUSTOM MODEL URL</string>
+    <string name="models_field_url_placeholder">https://huggingface.co/…/model.litertlm</string>
+    <string name="models_action_get">Get</string>
+    <string name="models_hint_formats">.litertlm only</string>
+    <string name="models_section_available_presets">AVAILABLE PRESETS</string>
+    <string name="models_preset_get">Get</string>
+    <string name="models_preset_activate">Activate</string>
+    <string name="models_preset_delete">Delete</string>
+    <string name="models_preset_cancel_cd">Cancel download</string>
+    <string name="models_row_menu_cd">Model actions</string>
+    <string name="models_section_downloaded_v2">DOWNLOADED MODELS</string>
+    <string name="models_custom_download_label">Downloading custom model…</string>
+    <string name="models_active_badge">ACTIVE</string>
+    <string name="models_empty_title">No models installed</string>
+    <string name="models_empty_subtitle">Add a model from the presets list or paste a custom URL.</string>
+    <string name="models_empty_cta">Add model</string>
+    <string name="models_error_title">Couldn\'t load models</string>
+    <string name="models_overflow_cd">More options</string>
+    <string name="models_discover_cd">Discover models</string>
+
+    <!-- Performance card / benchmark. -->
+    <string name="models_benchmark_failed">Couldn\'t run the benchmark</string>
+    <string name="models_benchmark_share_subject">Model benchmark</string>
+</resources>

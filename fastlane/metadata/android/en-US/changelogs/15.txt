@@ -1,0 +1,5 @@
+A security release, from a full review of the app.
+
+An approval now answers only the call you saw, and no setting lets a destructive tool run without asking. An imported pipeline shows in the editor as it runs. Secrets stay out of backups, crash reports and keyboard suggestions, and background prompts are stored encrypted. The memory library no longer reports usage to Google.
+
+The privacy policy lists every way data can leave your phone.

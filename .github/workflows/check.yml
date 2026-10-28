@@ -1,0 +1,359 @@
+name: Check
+
+# Strict-mode CI gate.
+# Runs the aggregate `./gradlew check` task, which itself triggers detekt,
+# ktlintCheck, lint, the unit tests for both distribution flavours
+# (testFullDebugUnitTest + testFossDebugUnitTest), koverVerifyFullDebug,
+# verifyBrowserEditorConstants, and the project-level `checkNoInternalFqn`.
+# `:buildSrc:test` is added explicitly because the build-logic module's own
+# unit tests (e.g. the browser-editor constants generator) are not reachable
+# from the app's `check` aggregate and would otherwise drift unnoticed.
+# Compiling the instrumented source set is added for the same reason: `check`
+# does not compile it either, so a broken instrumented test would leave every
+# gate green. The instrumented tests are *run* by the separate `Instrumented`
+# workflow, which stays out of this one so that an emulator cannot block a
+# signed release (see the header of `instrumented.yml`).
+# Any one of them failing blocks the merge.
+#
+# Triggers: every pull request targeting `main`, and every push to `main`
+# (so the badge reflects the head of the protected branch). `workflow_dispatch`
+# allows a manual run from the Actions tab — useful to exercise the gate on a
+# phase branch before the phase→main PR exists. `workflow_call` lets
+# `release.yml` reuse this exact gate as its first job instead of restating it:
+# the release build must never run against a definition of "green" that has
+# drifted from the one every pull request is measured by.
+#
+# What this gate deliberately does NOT decide: whether the project's
+# dependencies are up to date. Those lint checks answer from an external version
+# index, so their verdict changes without the repository changing; they run at
+# informational severity and surface as the "Dependency version drift" job
+# summary plus the always-uploaded lint report, never as a failure.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+  workflow_call:
+
+# NOTE for callers: in a reusable workflow these expressions are evaluated in
+# the CALLER's context, so `github.workflow` resolves to the calling workflow's
+# name. A caller whose own top-level concurrency group would render to the same
+# string (case-insensitively) deadlocks against itself — the caller run holds
+# the group while this job waits for it. `release.yml` therefore uses a group
+# name that cannot collide with `<caller name>-<ref>`.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: ./gradlew check
+    runs-on: ubuntu-latest
+    # The `distribution` flavour dimension makes `check` compile and test two
+    # variants (`full` + `foss`) in one invocation. On a PR the Gradle cache is
+    # read-only and seeded from `main`, so the first run after a cache-key change
+    # (e.g. when the FOSS flavour first reaches `main`) builds the whole `foss`
+    # variant cold on the 2-core runner — which overran the previous 30-minute
+    # cap. The push-to-`main` job (same cap) must also finish cold to *write* the
+    # warm cache that makes subsequent PRs fast again, so the budget has to cover
+    # one cold doubled-flavour build, not the warm steady state.
+    #
+    # Raised 60 → 75 when the instrumented-compile step was added: the previous
+    # cap had already been forced up once by a cold doubled-flavour build that
+    # overran it, and adding work to a job whose budget is tuned to its worst
+    # case is how that happens again. A timeout kills the run outright and
+    # produces no reports; a cap that is never reached costs nothing.
+    timeout-minutes: 75
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The whole history, not the default single commit: the secret scan
+          # below reads every commit under review, and a pull request's base is
+          # not in a shallow clone.
+          fetch-depth: 0
+
+      # Secret scan of the commits under review — every commit, not the final
+      # tree, because a key added in one commit and deleted in the next is still
+      # published the moment the branch is pushed.
+      #
+      # A step inside this job rather than a job of its own: branch protection
+      # requires this job by name, and a job that fails *before* it would make
+      # this one skipped — which reports to branch protection as success.
+      #
+      # gitleaks is fetched as a release binary and checked against a SHA-256
+      # written here, not through its GitHub Action: the Action downloads its
+      # binary with no checksum and defaults to an older release than the rules
+      # below assume. Bumping the version means taking the new sum from the
+      # release's `checksums.txt` and updating both lines together.
+      #
+      # `--redact` keeps a hit out of this public log. The rules and the two
+      # waivers (`gitleaks:allow` on the line; a commit-bound fingerprint in
+      # `.gitleaksignore` once the commit is pushed) are described in `.gitleaks.toml`.
+      #
+      # Range: a pull request's own commits; a push's new commits. Anything else —
+      # a manual run, or the release workflow calling this one for a tag — scans
+      # what the ref has that `main` does not, which for a release tag is nothing:
+      # those commits were scanned on their way into `main`.
+      - name: Secret scan
+        env:
+          GITLEAKS_VERSION: 8.30.1
+          GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+          EVENT_NAME: ${{ github.event_name }}
+          GIT_REF: ${{ github.ref }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_AFTER: ${{ github.event.after }}
+        run: |
+          set -euo pipefail
+          archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -sSfL -o "$RUNNER_TEMP/$archive" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${archive}"
+          echo "${GITLEAKS_SHA256}  $RUNNER_TEMP/$archive" | sha256sum --check --strict
+          tar -xzf "$RUNNER_TEMP/$archive" -C "$RUNNER_TEMP" gitleaks
+
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            range="$PR_BASE..$PR_HEAD"
+          elif [[ "$EVENT_NAME" == "push" && "$GIT_REF" == refs/heads/* && ! "$PUSH_BEFORE" =~ ^0+$ ]]; then
+            range="$PUSH_BEFORE..$PUSH_AFTER"
+          else
+            range="$(git merge-base origin/main HEAD)..HEAD"
+          fi
+          echo "Scanning $(git rev-list --count "$range") commit(s): $range"
+          "$RUNNER_TEMP/gitleaks" git --no-banner --redact --config .gitleaks.toml --log-opts="$range" .
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Android SDK
+        # Installs a current cmdline-tools and accepts the SDK licenses. The
+        # API 37 platform (`compileSdk = release(37)`) and the matching
+        # build-tools are then fetched automatically by AGP during the build
+        # (`android.builder.sdkDownload` is on by default), so the exact
+        # package coordinates do not have to be hand-maintained here.
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
+        with:
+          # Only platform-tools. The action's default also asks for the legacy
+          # `tools` package (SDK Tools 26), which nothing in this build uses and
+          # which sdkmanager intermittently fails to resolve ("Failed to find
+          # package 'tools'") — it broke the release job twice in a row.
+          packages: 'platform-tools'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Run ./gradlew check
+        run: ./gradlew check :buildSrc:test --stacktrace --no-daemon
+
+      # `check` neither runs NOR COMPILES the instrumented source set, so an
+      # instrumented test could stop compiling and every gate would stay green —
+      # which is how a whole `androidTest` source set once drifted out of
+      # buildability unnoticed. Compiling it here closes that hole for the
+      # merge gate and, because `release.yml` reuses this workflow, for the
+      # release path too. Whether those tests *pass* is decided by the separate
+      # `Instrumented` workflow; whether they *compile* is a pure function of
+      # the repository, so it belongs in the deterministic gate.
+      #
+      # Its OWN Gradle invocation on purpose: bundling
+      # `compile*DebugAndroidTestKotlin` into the same invocation as `check`
+      # makes dozens of unrelated Robolectric unit tests fail with
+      # "Default FirebaseApp is not initialized in this process". Run
+      # separately, both are green.
+      #
+      # `!cancelled()` rather than the default: otherwise a lint or unit-test
+      # failure hides an instrumented compile break for a whole extra CI cycle.
+      - name: Compile the instrumented test sources
+        if: ${{ !cancelled() }}
+        run: >
+          ./gradlew
+          :app:compileFullDebugAndroidTestKotlin
+          :app:compileFossDebugAndroidTestKotlin
+          --stacktrace --no-daemon
+
+      # Generators and consumers of committed files, in ONE invocation — which is
+      # the only place the defect this guards against is visible.
+      #
+      # Gradle rejects a build whose graph contains a task reading another task's
+      # declared output with no ordering between them, and the rejection is an
+      # error before either task runs. That makes it invisible to `check`: every
+      # gate is green run on its own, and the pairing only fails when someone
+      # regenerates a committed file and then verifies it — the exact two-step
+      # the contribution workflow prescribes. Measured on `1f0515cb`, FIVE of the
+      # six generators could not be combined with `check` at all.
+      #
+      # Naming them all together hands the question to Gradle's own validator
+      # instead of reimplementing it, and it costs seconds: the tasks are
+      # incremental and the work is already done. A consumer added later without an
+      # ordering rule fails HERE, and so does a generator named below but missing
+      # from the matrix in `app/build.gradle.kts`.
+      #
+      # A new generator has to be added in BOTH places — here and in that matrix.
+      # Nothing catches its absence from both, because "which tasks rewrite a
+      # committed file" is a fact about intent that Gradle cannot be asked for.
+      #
+      # Its own invocation for the same reason as the step above: what is being
+      # tested is the composition of one task graph, so it cannot be folded into
+      # another command without testing something else.
+      #
+      # AFTER `check`, and that order is load-bearing rather than incidental: this
+      # step RUNS the generators, so a committed file that had drifted is rewritten
+      # here. Run first, it would hand the drift gates a freshly corrected tree and
+      # they would pass on a repository that is wrong. Run second, `check` has
+      # already had the committed files as they were.
+      #
+      # The rewritten files stay in this job's workspace and reach nothing: the
+      # release workflow reuses this one as a separate job with its own checkout,
+      # so no signed artefact is ever built from a tree these generators touched.
+      - name: Generators and their consumers compose in one task graph
+        if: ${{ !cancelled() }}
+        run: >
+          ./gradlew
+          :app:generateFileMap
+          :app:generateBrowserEditorConstants
+          :app:generateSettingsHelpDocs
+          :app:generateExternalAutomationDocs
+          :app:generateCookbookDocs
+          :app:generateDocumentationLinks
+          :app:syncBundledDocs
+          :app:verifyBundledDocs
+          :app:verifyFileMap
+          :app:verifyDocLinks
+          :app:verifyDocsHygiene
+          :app:verifyDocumentationLinks
+          :app:reportExternalDocLinks
+          :app:verifyMermaidDiagrams
+          :app:verifyForbiddenVocabulary
+          --stacktrace --no-daemon
+
+      # Renders this run's informational lint findings into the job summary, so
+      # the answer to "what is out of date?" is readable without downloading the
+      # lint-report artifact below. Selects by SEVERITY rather than by a list of
+      # issue ids on purpose: the demoted set is declared once, in buildSrc's
+      # LintBaselineGuard, and a step that re-listed those ids here would be a
+      # fourth copy to keep in sync. Reads the lint XML of every module; never
+      # fails the job.
+      - name: Summarise informational lint findings
+        if: always()
+        run: |
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import glob
+          import xml.etree.ElementTree as ET
+
+          # Lint's own baseline bookkeeping notices are informational too, and are
+          # noise here rather than findings.
+          META_IDS = ("LintBaseline", "LintBaselineFixed")
+          INFORMATIONAL = ("Hint", "Information", "Informational")
+
+          reports = sorted(glob.glob("*/build/reports/lint-results-*.xml"))
+          rows = set()
+          for path in reports:
+              try:
+                  root = ET.parse(path).getroot()
+              except Exception:
+                  continue
+              for issue in root.iter("issue"):
+                  issue_id = issue.get("id") or ""
+                  if issue.get("severity") not in INFORMATIONAL or issue_id in META_IDS:
+                      continue
+                  message = (issue.get("message") or "").replace("|", "\\|")
+                  rows.add((issue_id, message))
+
+          print("### Informational lint findings")
+          print()
+          print("These never fail the build: their verdict depends on an external version")
+          print("index or on the calendar, not on the contents of the repository.")
+          print("Dependencies are updated deliberately, not because a check went red.")
+          print()
+          if not reports:
+              print("No lint reports were produced by this run.")
+          elif rows:
+              print("| Check | Finding |")
+              print("| --- | --- |")
+              for issue_id, message in sorted(rows):
+                  print("| `%s` | %s |" % (issue_id, message))
+          else:
+              print("No informational findings in %d lint report(s)." % len(reports))
+          PY
+
+      # Gradle writes one HTML report per failed dependency-verification run, naming
+      # every artifact it could not verify and why (missing entry, wrong checksum,
+      # untrusted or missing key). The console says only that verification failed.
+      - name: Upload dependency-verification report
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dependency-verification-report
+          path: build/reports/dependency-verification/
+          if-no-files-found: ignore
+
+      - name: Upload detekt report
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: detekt-report
+          path: |
+            app/build/reports/detekt/
+            catalog/build/reports/detekt/
+          if-no-files-found: ignore
+
+      - name: Upload ktlint report
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ktlint-report
+          path: app/build/reports/ktlint/
+          if-no-files-found: ignore
+
+      # Uploaded on EVERY run, not only on failure. The version-freshness checks
+      # report at informational severity (the demoted set is declared in buildSrc's
+      # `LintBaselineGuard`), so a green run is exactly the run whose report
+      # carries the dependency drift. Gating
+      # this upload on failure would delete the signal the demotion was meant to
+      # preserve. `:catalog` is included because the root `check` lints it too.
+      - name: Upload lint report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: lint-report
+          path: |
+            app/build/reports/lint-results-fullDebug.html
+            app/build/reports/lint-results-fullDebug.xml
+            app/build/reports/lint-results-fossDebug.html
+            app/build/reports/lint-results-fossDebug.xml
+            catalog/build/reports/lint-results-debug.html
+            catalog/build/reports/lint-results-debug.xml
+          if-no-files-found: ignore
+
+      - name: Upload Kover coverage report
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: kover-report
+          path: app/build/reports/kover/
+          if-no-files-found: ignore
+
+      - name: Upload Roborazzi diffs
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: roborazzi-report
+          path: |
+            catalog/build/outputs/roborazzi/
+            catalog/build/reports/roborazzi/
+          if-no-files-found: ignore
+
+      - name: Upload unit-test report
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-report
+          path: app/build/reports/tests/
+          if-no-files-found: ignore

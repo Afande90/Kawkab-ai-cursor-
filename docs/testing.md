@@ -1,0 +1,564 @@
+# Testing
+
+This document describes the test strategy and tooling used across
+Knotwork, an on-device AI agent for Android — what kinds of tests live
+where, how to run them, and what the
+quality bar is. It covers both unit tests (`app/src/test/`) and Compose /
+instrumented tests (`app/src/androidTest/`).
+
+## Coverage policy
+
+Target **100% logic coverage** in new or modified code of the `domain` and
+`data` layers; the build-side gate is **75% LINE aggregate** across the
+module (raised from 70 % — see
+[`coverage-baseline.md`](coverage-baseline.md) § *Enforced threshold*).
+Per-package decomposition and informational per-package targets are also
+documented in [`coverage-baseline.md`](coverage-baseline.md); the full
+policy — what is counted, what is excluded, and how regressions are
+handled — lives in [`static-analysis.md`](static-analysis.md).
+
+Every public method in `domain` and `data` should have at least one unit
+test.
+
+## Coverage measurement (Kover)
+
+Test coverage is measured by
+[Kover](https://kotlin.github.io/kotlinx-kover/gradle-plugin/) (Gradle plugin
+`org.jetbrains.kotlinx.kover`, version pinned in
+`gradle/libs.versions.toml`). Generated code (Hilt factories and modules,
+Room `*_Impl` DAOs, Compose previews and synthetic singletons, DI modules,
+`BuildConfig`) is excluded by the filter in `app/build.gradle.kts`.
+
+> The app has a `distribution` product-flavour dimension (`full` / `foss`), so
+> per-variant Gradle tasks carry the flavour segment (e.g. `koverVerifyFullDebug`,
+> `lintFullDebug`). Coverage is measured on the representative `full` variant;
+> both flavours share every measured source.
+
+Run locally:
+
+```bash
+./gradlew :app:koverHtmlReportFullDebug   # HTML report — drill-down per package/file
+./gradlew :app:koverXmlReportFullDebug    # XML report — for CI parsers
+./gradlew :app:koverLogFullDebug          # console one-liner: line coverage %
+```
+
+Report locations:
+
+- `app/build/reports/kover/htmlFullDebug/index.html` — primary visual entry
+  point.
+- `app/build/reports/kover/reportFullDebug.xml` — JaCoCo-compatible XML.
+
+The current baseline numbers and the rationale behind every exclusion are in
+[`coverage-baseline.md`](coverage-baseline.md).
+
+## Unit tests (JUnit + MockK)
+
+### File layout
+
+Mirror the source-file path under the `test` source set:
+
+```
+src/main/.../domain/usecase/SendMessageUseCase.kt
+src/test/.../domain/usecase/SendMessageUseCaseTest.kt
+```
+
+### Naming pattern
+
+```kotlin
+@Test
+fun `given <precondition> when <action> then <expected result>`() { ... }
+```
+
+### Standard structure (Given–When–Then)
+
+```kotlin
+@Test
+fun `given valid input when execute then emits success state`() {
+    // Given
+    val input = "Hello"
+    every { mockRepository.findChat(any()) } returns flowOf(fakeChat)
+
+    // When
+    val result = useCase.execute(input).first()
+
+    // Then
+    assertThat(result).isInstanceOf(Result.Success::class.java)
+}
+```
+
+### Mocking
+
+- Use **MockK** for all mocking: `mockk<T>()`, `coEvery { }`, `coVerify { }`.
+- Use `relaxed = true` only when the mock's return values are irrelevant to
+  the test.
+- Use `spyk()` only for testing real class behaviour with partial overrides.
+
+### ViewModel tests
+
+- Use `kotlinx-coroutines-test` with a `StandardTestDispatcher`.
+- Always call `advanceUntilIdle()` after triggering state changes.
+- Use the **Turbine** library when asserting on a sequence of `Flow`
+  emissions.
+
+### Use-case tests
+
+- Cover every branch: happy path, error / exception, empty state, boundary
+  values.
+- Mock **all** external dependencies (repositories, dispatchers, clocks).
+
+### Tests that read files from the repository
+
+A test that opens a file by path — a guard over published documents, the
+browser editor, the store listing, screenshot baselines — is answered from
+Gradle's up-to-date check unless that file is an input of the test task. Edit
+the file, and the test does not run again: `check` stays green on the very
+change the test exists to catch.
+
+- **Files under `src/main` need nothing.** Editing a source recompiles the
+  module and editing an asset repackages the resources the Robolectric tests
+  load; both re-run the task (measured).
+- **Everything else must be declared** on the test task, next to the reason, in
+  the module's build file — `tasks.withType<Test>().configureEach { inputs.file(…) }`
+  in `app/build.gradle.kts` (repository-root files, `docs/`, `fastlane/`, the
+  instrumented sources and workflow), `catalog/build.gradle.kts` (screenshot
+  baselines) and `buildSrc/build.gradle.kts` (the `:app` and `:catalog` sources the
+  cookbook generator test reads).
+- **Prove it once:** run the test twice (the second run is `UP-TO-DATE`), change
+  the file, run again — the task must execute. Without the declaration it does
+  not: the privacy policy, the browser editor, the cookbook generator's sources
+  and the screenshot baselines were each found that way.
+
+### Golden run traces
+
+`GoldenTraceTest` runs every bundled pipeline preset, every recipe in
+`docs/recipes/` and three test-only fixtures through the real
+`GraphExecutionEngine` and all of its node executors, and compares each run's
+trace with a file committed under `app/src/test/golden/traces/`. It is the
+safety net for refactoring the engine: a refactoring merges with no change to
+those files.
+
+- **What is real:** besides the engine and its executors, the approval gate,
+  the prompt variable providers (on a frozen clock, locale and device), the
+  clarification repository, and the whole path a user's answer takes — the
+  `Submit…UseCase`s, `ParkedRunResumer` and `ResumePipelineRunUseCase`. A
+  resume the app would refuse is refused in the trace too.
+- **What is faked:** the model (scripted per node and visit), tools (recorded
+  outputs — nothing executes), long-term memory (a fixed snapshot), chat
+  history, run storage (in memory, with the production store's guards: a
+  terminal status is written once, and a trace record is durable only after a
+  flush), metrics, the trigger journal, the network indicator, notifications,
+  the task queue (the harness plays it), and the user. Settings are a strict
+  stand-in: a setting the run path starts reading is a harness violation, and
+  every numeric value differs from the shipped default and reaches some
+  scenario — step and token ceilings per origin, nesting depth, the
+  tool-result budget, the `$MEMORY_SUMMARY` limit, the approval window — so a
+  read replaced by the default changes a trace. The token-ceiling scenarios
+  use values below the floor the settings store enforces on write, because
+  scripted answers are a few tokens long. The resume-age and background
+  approval windows are wall-clock and are not exercised.
+- **What a trace holds:** each node visit; each model call with its full
+  prompt and answer; each tool call with its arguments, the risk the gate
+  decided on and the output; each persisted trace record (sequence number,
+  input, output, routing verdict, tool, console line); run-record, chat,
+  metrics and journal writes; notifications; and the orchestrator states the
+  UI sees — streaming collapsed to one line per stream, and the console, the
+  trace panel and the per-node view checked against the persisted records they
+  must repeat. Times, durations and
+  random ids are left out — a request id appears as `#1`, `#2`, so the trace
+  still shows which surfaces carry the same request — and the duration in the
+  `✓ … in Nms` console line is masked.
+- **Scenarios** live in `GoldenScenarios`: at least one per pipeline file, plus
+  the branches, suspensions and settings the engine has to get right —
+  approve, deny, a clarification answered or parked, a step or token ceiling
+  pausing a chat or a background run, a resume from the checkpoint, nested
+  `PIPELINE`s up to the depth ceiling, each approval policy, blocked
+  destructive tools, a compressed chat history, a tool result over the read
+  budget.
+  Each scenario declares how it ends (completed, error or parked), and that is
+  checked before the trace is compared. `GoldenTraceCatalogueTest` fails when
+  a pipeline file has no scenario, when a node type appears in no trace (two
+  fixtures exist for the two node types no shipped pipeline uses; the third
+  nests itself up to the depth ceiling), or when a trace file belongs to no
+  scenario.
+- **A misused fake fails the run, it is not recorded.** An approval or a
+  clarification the scenario does not settle, or a call to a member no run
+  path uses, raises an `AssertionError` and is listed for the run to assert.
+  The engine catches `Exception` around every node on purpose, so a plain
+  exception from a fake would end the run as an ordinary error — and be
+  recorded as golden output. (A model call the scenario does not script gets
+  a default answer for its node type.)
+- **Every scenario runs twice**, and the two traces must match before either is
+  compared: a nondeterministic trace fails as such, never as a flaky diff. A
+  run still going after ten minutes of virtual time fails instead of hanging.
+
+A failure names the first differing line, writes the actual trace under
+`app/build/golden-traces/actual/` and prints the `git diff --no-index` command
+for the whole diff. When a trace changes on purpose, rewrite the files, read
+the diff, and explain it in the pull request:
+
+```bash
+./gradlew :app:testFullDebugUnitTest --tests '*GoldenTraceTest*' -PrecordGoldenTraces
+```
+
+Re-recording to turn a red run green without reading the diff defeats the gate.
+A new pipeline file needs a scenario; a new node type needs a scenario that
+visits it.
+
+## Instrumented / Compose UI tests
+
+> **Note:** instrumented tests run in CI on emulators — see
+> [The instrumented gate](#the-instrumented-gate) for the matrix, the
+> exclusion list and how to reproduce a CI run locally. They stay outside
+> `./gradlew check`, which remains JVM-only.
+
+### Setup
+
+```kotlin
+import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+
+@get:Rule
+val composeTestRule = createAndroidComposeRule<MainActivity>()
+```
+
+Compose tests use the **v2** factories, from the `v2` packages
+(`junit4.v2.createComposeRule`, `junit4.v2.createAndroidComposeRule`,
+`v2.runComposeUiTest`). The v1 factories are deprecated, and they ran the
+composition's coroutines (effects, `rememberCoroutineScope`) on an
+`UnconfinedTestDispatcher`: one launched there ran at once, which can hide a
+timing bug. The v2 factories use a `StandardTestDispatcher`, as `runTest`
+does, so such a coroutine runs when the test lets the clock move. A gesture
+(`performClick`, `performTouchInput`) and a Compose finder's assertion do that
+themselves; before a non-Compose assertion — a MockK `verify`, a captured
+value — that follows a semantics action such as `performTextInput`, call
+`waitForIdle()` or assert inside `runOnIdle { }`. Every instrumented test and
+every `:catalog` test is on v2. `ComposeTestRuleV2GuardTest` — one in `:app` over
+`src/androidTest`, one in `:catalog` over its tests — fails a v1 factory,
+imported or written out.
+
+### Naming
+
+`<ScreenName>ScreenTest.kt` under the `androidTest` source set.
+
+### Must-test scenarios per screen
+
+- The initial loading state renders correctly.
+- The success state renders the expected content.
+- The error state shows the error UI with a retry action.
+- User interactions (click, swipe, input) dispatch the correct ViewModel
+  events.
+
+## What not to test
+
+- Generated code (Room DAO auto-generated implementations, Hilt factories).
+- Trivial data classes with no logic.
+- `@Preview` Composables.
+
+## CI gate
+
+All tests, static analysis and coverage must pass via:
+
+```bash
+./gradlew check :buildSrc:test
+```
+
+Two tasks, and the second is not optional: `buildSrc` is a separate build, so
+its tests cannot be reached from `check` — which is why CI spells both out, and
+why running only `check` locally is a narrower gate than the one that decides
+the merge. The build-logic module holds the generators behind the cookbook, the
+file maps and the docs gates; a red test there means a published document is
+being generated from a rule nobody checked.
+
+`check` is the task CI runs on every pull request. It executes
+detekt (including the type-resolution gate, `detektFullDebug` +
+`detektFossDebug`, and `:catalog:detektDebug` for the design system),
+ktlint, Android lint, the unit-test suite for both flavours
+(`testFullDebugUnitTest` + `testFossDebugUnitTest`, which include the
+[golden run traces](#golden-run-traces)), the `:catalog`
+screenshot tests **in verify mode** (`verifyRoborazziDebug` — a render that
+differs from its committed baseline beyond anti-aliasing fails the build; capture
+with `KnotworkRoborazziOptions`, which `SnapshotComparisonOptionsGuardTest`
+requires of every capture), the documentation, version and store-listing gates,
+the supply-chain gates (pinned actions and Gradle distribution, the release
+manifests' entry surfaces), and `koverVerifyFullDebug`. Every build also verifies
+each dependency against `gradle/verification-metadata.xml`. Lint must pass with no new warnings. The full list,
+with what each gate guards, is in [`static-analysis.md`](static-analysis.md).
+
+`check` does not compile the instrumented source set, so CI compiles it in
+a separate step of the same job:
+
+```bash
+./gradlew :app:compileFullDebugAndroidTestKotlin :app:compileFossDebugAndroidTestKotlin
+```
+
+Run it as its own Gradle invocation, never appended to `check`: bundling
+the two into one invocation makes dozens of unrelated Robolectric unit
+tests fail with *Default FirebaseApp is not initialized in this process*.
+Run separately, both are green.
+
+## The instrumented gate
+
+The `app/src/androidTest/` suite runs on emulators in its own workflow,
+`Instrumented`, separate from `check`:
+
+It runs three legs on `google_apis` x86_64 emulators — both distribution
+flavours at API 36 (`full` and `foss`, the two things the project actually
+ships) plus `full` at API 34, the `minSdk` floor — on every pull request
+into `main`, every push to `main`, and nightly.
+
+### Why the third leg is the API floor
+
+The first two legs sit at the API *ceiling* the project supports. When
+`minSdk` moved from 36 to 34, the floor had no automated coverage at all —
+roughly ten thousand lines of Compose, Room and DAO tests had only ever
+run at 36, so anything breaking specifically at the floor had nothing to
+surface it. The leg uses `full` because the flavour axis is already
+covered at API 36 and both flavours share every measured source.
+
+**What the floor leg does not cover, said plainly:** AppFunctions. Below
+API 36 the app publishes none — its entry point extends the platform
+service added in API 36 — and the only test that reaches the AppFunctions
+runtime at any level, `AppFunctionsEndToEndTest`, is on the device-only
+exclusion list, because Android 16 declares `EXECUTE_APP_FUNCTIONS` at
+`internal|privileged` and an emulator cannot grant it to a
+developer-installed app. The AppFunctions runtime is covered by nothing
+automated at any API level; it belongs to the manual reference-device
+pass, alongside `targetSdk` 37. What the JVM gate does hold is the wiring:
+`AppFunctionServiceManifestGuardTest` checks each entry point against the
+manifest that registers it.
+
+### Why the second axis is the flavour, not a second API level
+
+The intended shape was floor plus `targetSdk` — API 36 and API 37, back when
+36 was the floor. Neither alternative API level survives contact with this
+app, and both were measured rather than assumed:
+
+- **API 37 never reaches the suite.** The image boots, and then the
+  emulator action's own post-boot `adb shell input keyevent 82` — which no
+  input can disable — dies with *Failure calling service input: Broken
+  pipe*. 0 of 2 runs.
+- **API 36.1 failed 0 of 3 runs**, at a different layer each time: the AVD
+  disk, the keyguard, then `install-write`. The first two produced fixes
+  that hardened the API 36 leg too. The third has none in sight, and 36.1
+  is still Android 16, so what it adds over API 36 is a patch level rather
+  than an API surface.
+
+API 36 has been green 3 of 3 with the full suite. So the second
+configuration is the one the project ships twice over: `foss`, which is
+what F-Droid builds, shares every `main` source with `full`, and had never
+been exercised on a device by anything automated.
+
+**The cost is real and is not hidden: the app targets API 37 and no
+emulator run covers it.** That belongs to the manual reference-device pass
+until the action makes its unlock step optional.
+
+### Two settings that are load-bearing, not decoration
+
+The AVD is given an explicit **10 GB disk**. `abiFilters` strips non-arm64
+only in `release`, so the **debug** APK carries all four ABIs at ~210 MB,
+and the default partition runs out while adb is still pushing it — *write
+failed: No space left on device*.
+
+The script **dismisses the keyguard** before starting the suite. The
+action's post-boot `input keyevent 82` retires a swipe lock on some images
+and not others, and when it does not, the failure looks nothing like a lock
+screen: instrumentation launches the app while the user is still locked and
+it dies with *SharedPreferences in credential encrypted storage are not
+available until after user (id 0) is unlocked*, running zero tests.
+
+Both gaps were invisible on API 36 — which happened to fit in the default
+disk and happens to boot unlocked. A single-configuration matrix would have
+shipped both as future "the emulator is flaky" noise.
+
+### Making it blocking
+
+The workflow runs on every pull request into `main`; whether it *blocks* is a
+branch-protection setting, which lives in GitHub rather than in this
+repository. Require exactly two checks on `main`:
+
+- `./gradlew check`
+- `Instrumented gate`
+
+Not the individual legs. The required-check list is a hand-maintained copy of
+job names with nothing to keep the two in step: naming the legs means a new
+leg is silently not required, and a renamed one leaves a stale entry that
+blocks every pull request forever, waiting for a status that can no longer be
+reported. The gate job aggregates them, so the matrix stays free to change.
+
+Two details of that job are load-bearing rather than decorative. It runs under
+`if: always()`, because **a job skipped by a conditional is reported to branch
+protection as a success** — without it, a failing matrix would skip the gate
+and the required check would go green exactly when the tests were red. And it
+demands `success` from both the classifier and the matrix, so a failed
+classifier (which leaves the matrix `skipped`) fails the gate rather than
+passing as an absence of news. A cancelled run leaves the gate red for the
+same reason: a cancelled run is not a passed one.
+
+Leave *Require branches to be up to date before merging* off. It would force a
+rebase and a full re-run — around 35 minutes of `check` plus 16 of emulators —
+every time anything else lands on `main`.
+
+### Why it is not part of `./gradlew check`
+
+The release workflow reuses the `check` workflow verbatim as its first
+job, so anything added there also gates a signed release built from a tag.
+An emulator downloads system images, boots a virtual machine and talks to
+it over adb — it can fail for reasons the repository did not cause, and a
+release must not be blocked by that. The project's rule is that a build's
+verdict has to be a function of the repository's contents, so the two
+halves are split along exactly that line: **whether the instrumented
+sources compile** is deterministic and lives in `check`; **whether they
+pass** lives in the separate workflow.
+
+That does not make the emulator job optional. It runs on every pull
+request into `main` and goes red for both failure classes — the split
+labels them, it does not excuse either. (Whether the check is *blocking*
+is a branch-protection setting — see [Making it
+blocking](#making-it-blocking).) What the script does is tell them apart.
+`.github/scripts/run-instrumented.sh` matches the output against a tight
+list of environment signatures — a lost device, a failed install, a
+dependency download that timed out — and:
+
+- an **infrastructure** failure is retried at most once, then reported as
+  such in the job summary;
+- everything else is attributed to the **repository** and never retried,
+  because retrying a real regression until it passes is how one gets
+  shipped.
+
+The second class is named for the repository rather than for tests on
+purpose: it also catches a build error in the instrumented sources, where
+no test ran at all, and calling that a test failure sends the next reader
+hunting for a failing test that does not exist.
+
+Anything ambiguous falls to the repository. `Process crashed.` from the
+instrumentation runner, for instance, is exactly what an app-side crash
+regression looks like, so it is not on the environment list.
+
+That classifier only ever executes on a run that is already failing, so
+nothing else would notice it regressing.
+`.github/scripts/run-instrumented-selftest.sh` drives it against a stub
+`gradlew` — asserting the exit code, the recorded class *and* the number
+of attempts — and the workflow runs it before booting any emulator. Run
+it by hand in a second:
+
+```bash
+bash .github/scripts/run-instrumented-selftest.sh
+```
+
+### Tests excluded from the emulator runs
+
+Excluded tests are named by a list, not dropped silently. A class carrying
+`@DeviceOnlyInstrumentedTest(reason = …)` is filtered out of every
+automated run by annotation name, and `InstrumentedTestExclusionGuardTest`
+pins both the roster and the reason, so the list can only grow through a
+deliberate edit that a reviewer reads.
+
+| Test | Why an emulator cannot reach a verdict |
+|---|---|
+| `AppFunctionsEndToEndTest` | Android 16 declares `EXECUTE_APP_FUNCTIONS` at `internal\|privileged` — granted to privileged system apps only. No stock emulator image grants it to a developer-installed caller, so cross-package discovery never returns the probe and all five scenarios degrade to skips — while still paying the discovery poll (78 s of a 453 s suite). The round-trip is exercised in the manual pass on the reference device, where the permission gate can apply. |
+
+An excluded test is not dead code: it still has to compile under
+`./gradlew check`, and it is still run by hand on a device.
+
+### Running the instrumented suite locally
+
+Against any connected device or emulator:
+
+```bash
+./gradlew :app:connectedFullDebugAndroidTest
+```
+
+To reproduce what CI does — same task, same exclusion filter, same
+failure classification — run the CI script itself against a booted
+emulator:
+
+```bash
+GRADLE_TASK=:app:connectedFullDebugAndroidTest EXCLUDE_ANNOTATION=app.knotwork.android.testing.DeviceOnlyInstrumentedTest LOG_DIR=build/instrumented-logs bash .github/scripts/run-instrumented.sh
+```
+
+## What the automated gate does NOT cover
+
+`./gradlew check` is **JVM-based**: plain JUnit + MockK unit tests,
+Robolectric-driven Compose tests, and Roborazzi screenshot tests (in the
+`:catalog` module). It runs on `ubuntu-latest` with **no emulator and no
+physical device attached** — deliberately, so that its verdict depends on
+nothing but the repository. The instrumented suite covers part of the
+remaining gap on emulators (see [The instrumented
+gate](#the-instrumented-gate)), but an emulator is not a phone, and one
+consequence should not be overestimated:
+
+> **A green `./gradlew check` is NOT a guarantee that the app works on a
+> physical device.** It guarantees that the JVM-testable logic behaves as
+> specified. Everything that needs real Android system services, native
+> libraries, or hardware is outside the gate.
+
+The areas below are **not** exercised by CI, and why:
+
+- **Real hardware.** The instrumented suite runs on emulators, which
+  reproduce the Android framework but not a phone: no real GPU or NPU, no
+  vendor OEM layer, no thermal throttling, no true Doze, no cellular
+  radio. A regression that needs any of those to appear is still found
+  only by the manual pass below.
+- **Pull requests into a phase branch.** CI fires on pull requests into
+  `main` and pushes to `main`, so a pull request that targets an
+  integration branch runs neither `check` nor the instrumented suite.
+  Run both locally, and dispatch the workflows manually on the
+  integration branch before it is merged into `main`.
+- **Real TalkBack navigation.** `TalkBackHappyPathsTest` (in the
+  `:catalog` test source set) only asserts a structural pre-condition:
+  every surface on the ratified happy paths publishes focusable
+  interactive nodes with non-blank content descriptions. It does **not**
+  drive the actual screen reader — the AccessibilityService bridge cannot
+  be toggled from a Compose test. Whether TalkBack focus order, custom
+  actions, and announcements actually work is verified only by a manual
+  walkthrough with TalkBack enabled.
+- **LiteRT-LM inference.** The native inference engine and real model
+  weights never run in CI. Unit tests mock the engine boundary; model
+  loading, token streaming, delegate selection (CPU/GPU), and memory
+  behaviour under real weights are device-only concerns.
+- **AppFunctions caller/callee.** The end-to-end test that resolves
+  function metadata and invokes a function through
+  `AppFunctionManager.executeAppFunction(...)` is the single entry on the
+  [emulator exclusion list](#tests-excluded-from-the-emulator-runs): no
+  stock image grants a third-party caller the appop-protected
+  `EXECUTE_APP_FUNCTIONS`, so the full caller → callee round-trip is
+  verifiable only on a device build where the gate applies.
+- **System window insets.** Robolectric reports no status bar and no
+  navigation bar, so a screen that draws under the status bar renders exactly
+  like one that does not, and its screenshot baseline stays identical. That is
+  why the top-bar inset rule is a source check (`TopBarInsetGuardTest`, see
+  [`static-analysis.md`](static-analysis.md)) and not a screenshot, and why an
+  inset still needs a look on a device.
+- **Bundled documents surviving packaging.** The unit suite reads the bundled
+  FAQ and troubleshooting copies from the build directory. That they reach the
+  APK's assets is answered by the instrumented `HelpReaderNavigationTest`, which
+  opens the FAQ from the installed assets and follows a link to a troubleshooting
+  anchor; that the reader works with **no network** is part of the manual pass
+  below.
+- **Opening the SQLCipher-encrypted database.** Robolectric cannot load
+  the SQLCipher native library, so JVM tests never open the real
+  encrypted database. That the passphrase provisioning, keystore-backed
+  storage, and encrypted open actually succeed is observable only on a
+  device.
+- **Foreground Service and WorkManager.** Unit tests mock the lifecycle
+  and scheduling boundaries. Real service start/stop semantics,
+  notification behaviour, Doze interactions, and worker execution under
+  OS constraints are not reproduced on the JVM.
+
+### Compensating control: manual smoke on the reference device
+
+These gaps are covered by a **manual smoke test on the reference device —
+Samsung Galaxy S25 Ultra (Android 16)** — performed before every integration
+merge into `main`, plus a manual TalkBack walkthrough of the ratified happy
+paths. A release also opens every in-app documentation link from the installed
+build, and the Help screen in airplane mode ([`release.md`](release.md) §
+*Cutting a release*). The emulator suite narrowed what that pass has to carry —
+Room migrations, DAO round-trips and the Compose flows are now answered
+automatically — but it did not replace it: the remaining items above are the
+ones only real hardware can decide. The pre-release quality gate in
+[`release.md`](release.md) § *Quality gate before release* builds on the same
+rule: automated checks first, manual on-device verification as the final word.
+
+This compromise is reasonable for a small-team project without a device
+farm, but it is a compromise. If a change touches any of the areas listed
+above, do not rely on CI alone — state in the pull request what was
+verified on-device and how.

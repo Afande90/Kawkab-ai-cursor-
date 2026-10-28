@@ -1,0 +1,7 @@
+Faster runs and fixes.
+
+Runs no longer pause between steps: a chat message on the first-launch pipeline skips 3.5 s of waiting.
+
+An MCP server saved with a sign-in connects on the Tools screen right away, and saving it unchanged no longer leaves it on Connecting.
+
+A Keystore hiccup no longer deletes a saved API key. A resumed queue no longer mixes up its items after a failure. A Wikipedia result names the article it comes from.

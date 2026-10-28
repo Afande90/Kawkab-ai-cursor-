@@ -1,0 +1,463 @@
+# Privacy Policy — Knotwork
+
+**Effective date:** 16 October 2026
+**Applies to:** the Knotwork Android application (package `app.knotwork.android`),
+both published distributions — `full` and `foss` — from version `0.7.1` onward.
+
+---
+
+## Summary
+
+Knotwork is an on-device AI agent. There is **no account, no sign-in, and no
+server operated by the developer**. Nothing is uploaded for the app to work,
+and there is no back end that could hold your data.
+
+The app processes your conversations **on your phone**, using a language model
+you download to the device. Data leaves the device only along these paths — a
+cloud model carrying your own API key (in a pipeline step, or as the embedding
+model for memory), an MCP server you added, a model download, an outbound
+request from one of the two built-in tools that reach the network, or (in the
+`full` build only) crash reports you opted in to. All of them are off until you
+configure them except one: the built-in Wikipedia lookup is on from the first
+launch, and section 3.4 says so and says how to turn it off. Each path is
+listed below with what it sends, where, and how to stop it. Files you
+export yourself — a journal, a run trace, a backup — go wherever you send them
+(sections 3.7–3.9).
+
+This document is the privacy policy. The engineering-level threat model, the
+attack surfaces the app defends against, and what is explicitly *out* of scope
+live in [SECURITY.md](SECURITY.md); per-feature behaviour is described in the
+[user guide](docs/user-guide.md).
+
+---
+
+## 1. Who is responsible
+
+Knotwork is an independent open-source project maintained by a single
+developer. There is no company, no data-processing infrastructure, and no
+analytics back end behind it.
+
+- Source code and issue tracker: <https://github.com/alexeyw/knotwork>
+- Privacy point of contact: <alexeyw+knotwork@gmail.com>
+- Security reports: the private advisory channel described in
+  [SECURITY.md](SECURITY.md#reporting-a-vulnerability) — not the address above,
+  so that a vulnerability report stays private until a fix ships
+
+Because the developer operates no server, the developer receives **none** of
+the data described in section 3 except crash reports (section 3.5), and those
+only if you switch them on.
+
+---
+
+## 2. What the app stores on your device
+
+All of the following is created by your use of the app and stays in the app's
+private storage on your device. None of it is included in Android's cloud
+backup or in a transfer to a new device
+([details](SECURITY.md#backup-and-device-transfer)); it leaves only in a backup
+file you make yourself (section 3.9):
+
+- Chat sessions and messages, including image and audio attachments you add.
+- Long-term memory entries derived from your conversations. When a newer fact
+  replaces an entry's text, the replaced text is kept as that entry's history
+  (up to 10 earlier versions). It is deleted with the entry — when you delete
+  it, clear memory, or compaction merges it — and you can delete a single
+  earlier version on the Memory screen.
+- Pipelines, presets, prompt templates, and their run traces. A run trace
+  keeps, for every call a pipeline step made to the on-device model, the whole
+  text the model read and wrote — instructions, the parts of your chat history
+  and memory the step included, and the answer — with the seed and settings it
+  ran on, so the run can be checked later. It is deleted with the run, under
+  the same retention setting.
+- A checksum (SHA-256) of each downloaded model file, so a run can name the
+  exact model it used, and — when a download was checked against it — the one
+  Hugging Face published for the file.
+- For a model download that paused or did not match its checksum, the file's
+  name, the address it downloads from, the reason and when, until the app has
+  shown it to you or you start or cancel that download.
+- Files in the agent workspace — what the agent wrote and what you imported.
+- Triggers, scheduled tasks, and the trigger journal.
+- The journal of requests other apps sent (section 3.6).
+- Settings, including the list of cloud providers, MCP servers, and allowed
+  domains you configured — and the times of your most recent shares (at most 30,
+  no content), kept only to enforce the share limit and replaced as you share.
+- Local usage statistics (section 4).
+- API keys, the Hugging Face access token, and MCP credentials and custom
+  headers you entered.
+
+**Encryption at rest.** The local database — chats, memory, run traces, and
+the prompts of scheduled and background runs waiting to start — is encrypted
+with SQLCipher. API keys, the Hugging Face token, and MCP credentials
+and headers are sealed with AES-GCM under a dedicated Android Keystore key.
+Details and limits are in [SECURITY.md](SECURITY.md#threat-model).
+
+**Deletion.** Uninstalling the app removes all of it. Individual chats,
+memories, pipelines, and run history can be deleted from inside the app, and
+run history is also pruned automatically according to the retention setting.
+If the database can no longer be unlocked, **Erase data** on the recovery
+screen deletes chats, memory, pipelines, workspace files, attachments and
+scheduled tasks, and keeps your settings and saved keys. Downloaded models stay on the device too:
+the app lists them again under Models the next time it starts.
+
+---
+
+## 3. What can leave your device
+
+None of this is required for the app to work, and none of it sends data to the
+developer. Every item here is **off until you configure it** with one exception,
+called out where it belongs: the built-in Wikipedia lookup in section 3.4 is on
+from the first launch.
+
+### 3.1 Cloud model providers (opt-in, your own key)
+
+If a pipeline step runs on a cloud provider and you have set it up, the text
+that step processes — the prompt and the relevant conversation context — is sent
+to the provider you selected: OpenAI, Anthropic, Google Gemini, DeepSeek,
+OpenRouter or Groq with your own API key, or a server you run and name by its
+address — Ollama, or any server that speaks the OpenAI API (vLLM, LM Studio,
+llama.cpp). Attachments are never sent to a cloud provider (section 4).
+
+OpenRouter forwards a request to the company behind the model you chose there;
+its own policy and the routing settings of your OpenRouter account decide which
+one, and what they may keep.
+That step is a **Cloud** node, or a router, condition, decomposition,
+evaluation, tool or skill node whose engine is set to a cloud provider.
+
+The request goes **directly from your device to that provider**. It does not
+pass through any infrastructure of the developer. Once it arrives, the
+provider's own privacy policy and data-retention terms govern it — including
+whether they retain or train on it. Review the policy of whichever provider
+you choose.
+
+Three other paths reach the same providers, all also opt-in:
+
+- **Memory embeddings.** If you choose OpenAI or Ollama as the *Embedding model*
+  in the memory settings, the text being embedded is sent to that service: a
+  memory as it is saved, and the query used to search memory during a run. This
+  happens whether or not the pipeline has a cloud node. The default embedding
+  model runs on the device.
+- **The `delegate_task` tool** hands a subtask to a provider you have a key for.
+  It counts as a sensitive tool call, so it waits for your approval unless you
+  set *Approve tool calls* to *Never*.
+- **Test connection** on a provider's settings screen, when you press it, asks
+  that provider for its list of models with the key and address you entered;
+  for OpenRouter it first asks whether the key is valid. No prompt or
+  conversation text is sent.
+
+Apart from those three, a pipeline contacts a cloud provider only through a step
+that runs on one. A node's settings show its engine, so you can see which do.
+
+**Block network from local model** (Settings → Tools & workspace) keeps every
+path in this section on your own network: no hosted provider is contacted — memory uses the
+on-device embedding model instead — and a server you run (Ollama, or one that speaks the
+OpenAI API) is used only at `localhost` or a private IP address on your own network. The
+check applies to every hop of a request: a server that answers with a redirect elsewhere
+does not take the request with it. It also withholds the
+built-in `search_tool` (3.4), which is the one tool it covers. It does not
+affect MCP servers (3.2), model downloads (3.3) or the `http_request` tool
+(3.4) — each of those is something you set up, and each has its own control.
+
+### 3.2 MCP servers (opt-in)
+
+If you add a Model Context Protocol server, the app connects to that server's
+URL to list its tools and to invoke them. *Test connection* in the server form
+does the first of those with the values you entered, before you save them:
+it connects, lists the tools and disconnects. Tool arguments produced during a run
+— which may contain content from your conversation — are sent to that server,
+along with any credentials you stored for it. The operator of that server
+determines what happens to that data.
+
+What the server sends back stays on your device, like the rest of a
+conversation: the tool results are saved in the chat history, and the tool list
+and results become part of what the model reads next. That includes a cloud
+model, if a later step in the run uses one (see 3.1). The app keeps only a
+bounded amount of each: a result is cut at the *Largest tool response* setting,
+and a tool list is limited in size.
+
+### 3.3 Model downloads
+
+Downloading an on-device model contacts the host serving it: Hugging Face for
+the models offered in the app, or any URL you paste yourself. These are
+ordinary file downloads. If you saved a Hugging Face access token, it goes only
+to Hugging Face (`huggingface.co`), with its model downloads — never to a link
+you paste for another host. Checking a file sends nothing extra: the checksum
+comes in Hugging Face's answer to the download itself. Browsing the catalogue
+is anonymous.
+
+### 3.4 Outbound requests from tools
+
+Two built-in tools reach a destination of their own, and this section is about
+those two. A third tool also leaves the device — `delegate_task` — but it goes
+to the cloud provider whose key you entered, so it is described in section 3.1
+with the other paths to that provider. Every remaining built-in works inside the
+device: the workspace tools read and write files here, and `schedule_task` only
+asks the device to run something later.
+
+**`search_tool` — a Wikipedia lookup, and the one path in this document that is
+on by default.** When a pipeline step calls it, the app requests
+`https://<language>.wikipedia.org/w/api.php` with a search term. The language
+code is checked first, so the request can only go to a Wikipedia address. The model
+writes that term from what it is working on, so it can carry wording from your
+conversation. Nothing else of yours goes with it — no account, no device
+identifier, no credentials; the request names the app and its version, not
+your phone's model — though, like any web request, it shows your IP address
+to the Wikimedia Foundation, whose servers answer it.
+
+Being on by default is the part worth stating plainly: the pipeline the app
+creates for you on first launch calls this tool for questions it judges
+factual, so the lookup can happen before you have configured anything. The tool
+is classified read-only, so it does not stop for a confirmation. Either of two
+switches ends it — **Settings → Tools & workspace → Block network from local
+model**, which withholds this tool along with the cloud paths, or the tool's
+own switch on the **Tools** screen.
+
+On Android 16 and later the same lookup is also published to other apps as an
+AppFunction (`search`), which only a privileged system agent can call. Such a
+call goes out exactly like the agent's own, and the same two switches stop it.
+
+**`http_request` — off until you name a destination.** It can reach only hosts
+you have added to the allowed-domains list; while that list is empty the tool
+is not offered to the model at all. A call waits for your approval, showing
+the destination and the arguments before anything is sent, unless you set
+*Approve tool calls* to *Never* — then a `GET` goes without asking, while a
+`POST`, `PUT` or `DELETE` still asks. The layered
+restrictions on this path are documented in
+[SECURITY.md](SECURITY.md#outbound-http-and-the-exfiltration-chain).
+
+### 3.5 Crash reporting (`full` build only, opt-in, off by default)
+
+The `full` distribution can send anonymous crash reports to Firebase
+Crashlytics (Google) — **only** after you enable
+*Settings → Privacy → Send anonymous crash reports*, which is off by default.
+
+When enabled, a report may contain: the stack trace, device model, Android and
+app version, two identifiers describing which pipeline and model were active,
+and a random installation identifier Crashlytics creates to count how many
+installations a crash affects. That identifier is not derived from you or your
+phone, and changes if you reinstall the app. It **never** contains message
+content, prompts, model replies, memory entries, tool inputs or outputs, API
+keys, or anything stored in the encrypted stores. Full detail is in
+[SECURITY.md](SECURITY.md#what-is-collected-crash-reporting).
+
+You can revoke consent at any time from the same setting. The `foss`
+distribution contains no crash-reporting dependency at all and hides the
+setting.
+
+### 3.6 External automation (another app on this device)
+
+Another app on the same device — a Tasker or MacroDroid profile, a shell script
+over `adb` — can ask Knotwork to run one of your pipelines. This is **off by
+default**; it does nothing until you switch it on in
+*Settings → Background & triggers → External automation* and bind exactly one
+pipeline that outside callers may reach.
+
+While it is on, data moves in two directions and neither leaves the device:
+
+- **Inbound.** The caller's broadcast carries the prompt text into Knotwork.
+  That text is another app's to send, so what it contains is governed by that
+  app, not by this one; here it is treated like any other input.
+- **Outbound (optional).** If the request asked to be answered, Knotwork sends
+  one broadcast addressed to **the package that request named** — delivered to
+  that package only, never a general broadcast — carrying the request id, the
+  admission status and, when refused, the reason. It never carries the prompt, the model's reply, or
+  anything the run produced. Note the precision: Android does not tell the app
+  who sent a broadcast unless the sender opts in, so the address is a claim made
+  *in* the request rather than a verified identity. That is exactly why the
+  payload is this thin — an unverified address must not be able to have anything
+  of yours read back to it. A request that names no package gets no callback at
+  all, which is the normal shape for a shell script.
+
+While it is off, nothing is sent back at all — not to a request refused because
+it is off, and not the final report of a run accepted before you switched it off.
+
+Every inbound request, accepted or refused, is written to a local journal on
+the device. The vocabulary of the contract is documented in
+[docs/external-automation.md](docs/external-automation.md).
+
+### 3.7 Journal export (you share the file)
+
+The trigger journal and the external-request journal can be exported to a file
+through the system share sheet, by an explicit action you take in the app.
+There is no network on that path — a build-time architecture check fails the
+build if any network dependency reaches the export code. The exported file holds
+the journal rows: when a run failed, that includes its error message, which can
+quote part of the call that failed. It holds no message a run was given and no
+answer it produced.
+
+Where the file goes after the share sheet is decided by the app you pick, and
+that app's own policy applies from that point on.
+
+### 3.8 Run trace export (you share the file)
+
+A finished run's trace can be exported from the console — **Export trace** in
+the run header — to the system share sheet or to a file you pick, by an explicit
+action. There is no network on that path; a build-time architecture check fails
+the build if any network dependency reaches the export code.
+
+Unlike the journals, this file holds **everything the on-device model read
+during the run**: every prompt in full, so the memory excerpts and the chat
+history placed inside them, every answer, the run's message, the seed and
+sampler, each node's input and output, and their hashes. It names the model
+file by its file name, not by where it is stored. Share it as you would share
+the conversation itself. Where it goes after the share sheet is decided by the
+app you pick.
+
+Checking a run (**Verify**) and starting it again with its seed do not export
+anything: both run on the device.
+
+### 3.9 Backup file (you choose where it goes)
+
+**Back up** in Settings → Privacy → *Backup & restore* writes one file to a
+place you pick in the system's file picker, by an explicit action. The app
+opens no connection to do it. The file holds your chats and their images,
+memory, pipelines, presets, prompts and skills, run history, triggers, usage
+statistics, settings and the agent workspace's files, and the list of models
+you installed with where each came from — not the model files. Your cloud API
+keys, Hugging Face token and MCP sign-ins go in only if you tick *Include API
+keys and sign-ins*. The addresses of servers you added always go in, so a token
+written into an address travels with it.
+
+The file is encrypted under a password you choose, which the app never stores.
+A few facts stay readable without it — the format version, the app version and
+build flavour that wrote the file, the database schema version, when it was
+written, roughly how large its content is, its chunk size and how its key is
+derived
+([details](docs/backup-format.md#what-the-format-does-not-hide)). Anyone who
+has the file and the password can read everything in it. If you pick a cloud
+drive in the picker, that drive's app uploads the file under its own policy.
+
+**Restore from file…** reads a backup you pick, after its password, and — once
+you confirm — replaces the app's data on this phone with the backup's: chats,
+memory, pipelines, run history, triggers, settings and files, and the usage
+statistics, which then continue those of the phone the backup came from. The
+model files on this phone stay. So do its API keys, Hugging Face token and MCP
+sign-ins, except those the backup carries, which replace them — a restore is not
+a way to clear them. MCP servers come from the backup, so a sign-in for a server
+it does not list is kept but goes unused. The app opens no connection to do it.
+
+---
+
+## 4. What never leaves your device
+
+- **Usage statistics.** The in-app statistics — how many pipelines you ran,
+  which days you were active, and so on — are computed and stored on the
+  device and are never transmitted. This is enforced at build time: an
+  architecture test fails the build if any network dependency ever reaches
+  that code. Exporting the statistics as a file, or making a backup (section
+  3.9), is a manual action you take, and the resulting file goes wherever you
+  send it.
+- **A library's own usage statistics.** The on-device library that builds
+  memory embeddings (MediaPipe) comes with a usage logger that would report to
+  Google how it is used, together with your phone's model, build, country and
+  carrier. Release builds remove that call, and each release build is checked
+  for it before it ships. A debug build — one a developer makes from the source,
+  never published — keeps it.
+- **Your keys and credentials.** API keys, the Hugging Face token, and MCP
+  credentials are used only to authenticate to the service you entered them
+  for. They are never sent anywhere else — a backup file carries them only if
+  you tick the box (section 3.9) — and a saved provider key found in an
+  outgoing `http_request` — in a header, the body or the address — causes that
+  request to be refused outright.
+- **Attachments.** Images and audio you attach are never sent to a cloud
+  provider. An image is read only by the on-device model, and a pipeline that
+  would hand one to a cloud step is stopped before it runs; a voice message is
+  transcribed on the device, and only its text joins the conversation, like a
+  message you typed.
+- **Nothing is sent to the developer on its own.** The only two paths that can
+  reach the developer at all are the optional crash reports of section 3.5 and
+  a report you compose yourself. When you flag a model response, **Open issue**
+  opens GitHub's new-issue page in your browser with the report — your note
+  and up to 3,000 characters of the flagged reply — already in the link, so
+  opening it hands that text to GitHub; it becomes a public issue only if you
+  submit it. **Copy report** sends nothing. Neither happens in the background.
+
+---
+
+## 5. Permissions and why they are requested
+
+| Permission | Why | When |
+|---|---|---|
+| Internet, network state | Model downloads, and the opt-in cloud/MCP/tool paths above | Always declared; used only for the paths you configure |
+| Notifications | Run progress, background-run results, confirmation prompts, model downloads and why one stopped | Asked on first run |
+| Microphone | Voice input you record for a message; processed on-device | Asked when you first record audio |
+| Approximate and precise location | Only to match a Wi-Fi trigger against specific network names — Android ties Wi-Fi identity to location | Asked only if you scope a Wi-Fi trigger to named networks |
+| Foreground service, wake lock | Keeping a model download or a running pipeline alive while the screen is off | Used only while such work is running |
+| Run at boot | Re-arming your scheduled triggers after a restart, so an automation you set up does not silently stop | Declared by the scheduling library; used only if you created a trigger |
+| Execute app functions | Calling tool functions that other apps on the device expose | Declared, but Android grants it only to privileged system apps — on a normal install it is never granted and nothing uses it |
+
+The Wi-Fi network name obtained under the location permission is used on the
+device to decide whether a trigger fires, and never leaves it. Background
+location is **not** requested.
+
+**Notifications on the lock screen.** A notification that carries what you or
+the model wrote — a tool call waiting for your approval, a question the agent
+asks you, a background run's answer — shows only its title where Android hides
+sensitive content: on a lock screen set to hide it, or while the screen is
+shared. If your phone is set to show all notification content on the lock
+screen, Android shows the full text there; that setting is yours. Approving a
+tool call from a notification asks you to unlock the phone first.
+
+---
+
+## 6. Children
+
+Knotwork is not directed to children. The intended audience is adults
+(18 and over). The app does not knowingly process data from children, and it
+collects no age information because it collects no personal profile at all.
+
+---
+
+## 7. Legal bases and your rights
+
+Since the developer operates no server and receives no personal data, there is
+no data controller holding a copy of your information to grant access to,
+export, or erase on request — the data is in your possession, on your device,
+and you can inspect, export, or delete it there at any time.
+
+Where crash reporting is enabled (section 3.5), the legal basis is your
+explicit consent, which you may withdraw at any time in the app. Data you send
+to a cloud provider or an MCP server is governed by your relationship with that
+operator; exercise any rights over it with them directly.
+
+---
+
+## 8. Third parties
+
+The app contacts a third party only along the paths in section 3. Depending on
+what you configure — and, for the first entry below, on nothing at all — those
+may be:
+
+- The cloud model provider you set up (OpenAI, Anthropic, Google, DeepSeek,
+  OpenRouter — and the model company it routes to — or Groq, with your key; or a
+  server you run and name by its address), for pipeline steps, memory embeddings
+  (OpenAI or Ollama only) or `delegate_task`.
+- Hugging Face, or any host you paste a model URL for.
+- MCP servers you add.
+- The Wikimedia Foundation, for the built-in `search_tool` lookup described in
+  section 3.4 — the one entry here that does not wait for you to configure
+  something.
+- A host you added to the allowed-domains list for the `http_request` tool.
+- Google (Firebase Crashlytics), in the `full` build, if you opted in to crash
+  reporting.
+
+Each is governed by its own privacy policy. The developer has no agreement with
+them on your behalf and receives nothing from them.
+
+---
+
+## 9. Changes to this policy
+
+Material changes are recorded in [CHANGELOG.md](CHANGELOG.md) alongside the
+release that introduces them, and the effective date at the top of this
+document is updated. The version history of this file is public in the
+repository, so any change can be diffed.
+
+---
+
+## 10. Contact
+
+Questions about this policy, or a request about your data: write to
+<alexeyw+knotwork@gmail.com>, or open an issue at
+<https://github.com/alexeyw/knotwork/issues> if the question is not private.
+Suspected vulnerabilities should go through the private channel described in
+[SECURITY.md](SECURITY.md#reporting-a-vulnerability) instead.

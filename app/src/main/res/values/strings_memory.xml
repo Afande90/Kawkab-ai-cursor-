@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Transient snackbar messages surfaced by the Memory screen. -->
+    <string name="memory_msg_load_error">Couldn\'t refresh memory</string>
+    <string name="memory_msg_add_error">Couldn\'t save to memory</string>
+    <string name="memory_msg_edit_error">Couldn\'t save the edit</string>
+</resources>

@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    User-facing strings for the pipeline library + shared orchestrator
+    (`presentation/ui/orchestrator/`). The legacy `VisualOrchestratorScreen`
+    ids were removed together with that file; the new
+    `PipelineEditorScreen` carries its own strings in
+    `strings_pipeline_editor.xml`.
+
+    Keys follow `orchestrator_<context>_<purpose>`.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Library screen -->
+    <string name="orchestrator_library_new_pipeline_title">New pipeline</string>
+    <string name="orchestrator_library_rename_pipeline_title">Rename pipeline</string>
+    <string name="orchestrator_library_delete_pipeline_title">Delete pipeline</string>
+    <string name="orchestrator_library_delete_confirm">Delete pipeline «%1$s»? This cannot be undone.</string>
+    <!-- Shown instead of the plain confirm when other pipelines run this one
+         through a PIPELINE node. %1$d is the dependent count. The dialog also
+         lists the dependent names under the WILL BREAK header. -->
+    <plurals name="orchestrator_library_delete_dependents_warning">
+        <item quantity="one">%1$d pipeline runs this one through a PIPELINE node. Deleting it leaves that node with a dangling target — the pipeline will show a validation error until you repoint or remove it.</item>
+        <item quantity="other">%1$d pipelines run this one through a PIPELINE node. Deleting it leaves each with a dangling target — they\'ll show a validation error until you repoint or remove the node.</item>
+    </plurals>
+    <string name="orchestrator_library_delete_dependents_header" tools:ignore="PluralsCandidate">WILL BREAK · %1$d</string>
+    <string name="orchestrator_library_delete_anyway">Delete anyway</string>
+    <string name="orchestrator_library_delete_keep">Keep</string>
+    <string name="orchestrator_library_name_field_label">Name</string>
+
+    <!-- Snackbars / feedback -->
+    <string name="orchestrator_feedback_default_pipeline_updated">Default pipeline updated</string>
+    <string name="orchestrator_feedback_share_pipeline_bound">Pipeline set for sharing</string>
+    <string name="orchestrator_feedback_tile_pipeline_bound">Pipeline set for the Quick Settings tile</string>
+    <string name="orchestrator_feedback_pipeline_renamed">Pipeline renamed</string>
+    <string name="orchestrator_feedback_pipeline_duplicated">Pipeline duplicated</string>
+    <string name="orchestrator_feedback_pipeline_deleted">Pipeline deleted</string>
+    <string name="orchestrator_feedback_pipeline_created">Pipeline created</string>
+
+    <!-- Prompt-preset picker -->
+    <string name="prompt_preset_picker_title">Prompt presets</string>
+    <string name="prompt_preset_picker_subtitle">%1$s · pick a preset for this node</string>
+    <string name="prompt_preset_picker_tab_bundled">Bundled</string>
+    <string name="prompt_preset_picker_tab_mine">Mine</string>
+    <string name="prompt_preset_picker_all_chip">All</string>
+    <string name="prompt_preset_picker_current_badge">CURRENT</string>
+    <string name="prompt_preset_picker_tokens_suffix">tok</string>
+    <string name="prompt_preset_picker_empty_bundled">No bundled presets for this node type.</string>
+    <string name="prompt_preset_picker_empty_mine">You haven\'t saved any presets for this node type.</string>
+    <string name="prompt_preset_picker_empty_filtered">No presets match the current filter.</string>
+    <string name="prompt_preset_picker_action_preview">Preview</string>
+    <string name="prompt_preset_picker_action_use_prompt">Use prompt</string>
+    <string name="prompt_preset_picker_action_cancel">Cancel</string>
+
+    <!-- Save-as-prompt-preset dialog -->
+    <string name="prompt_preset_save_dialog_title">Save as preset</string>
+    <string name="prompt_preset_save_dialog_subtitle">Target node type: %1$s</string>
+    <string name="prompt_preset_save_field_name">Name</string>
+    <string name="prompt_preset_save_field_description">Description (optional)</string>
+    <string name="prompt_preset_save_field_tags">Tags (comma-separated, optional)</string>
+    <string name="prompt_preset_save_field_tags_hint">e.g. concise, reasoning, json</string>
+    <string name="prompt_preset_save_action_save">Save</string>
+    <string name="prompt_preset_save_action_cancel">Cancel</string>
+    <string name="prompt_preset_save_error_blank_prompt">Cannot save an empty system prompt.</string>
+    <string name="prompt_preset_save_error_name_too_long" tools:ignore="PluralsCandidate">Name must be at most %1$d characters</string>
+
+    <!-- Node context-config section -->
+    <string name="orchestrator_context_section_title">Input Data</string>
+    <string name="orchestrator_context_previous_node_output_label">Previous node output</string>
+    <string name="orchestrator_context_previous_node_output_hint">Result of the previous step (always enabled)</string>
+    <string name="orchestrator_context_original_task_label">Original user task</string>
+    <string name="orchestrator_context_original_task_hint">The chat message that started this run</string>
+    <string name="orchestrator_context_chat_history_label">Chat history</string>
+    <string name="orchestrator_context_chat_history_hint">All earlier messages in the current session</string>
+    <string name="orchestrator_context_long_term_memory_label">Long-term memory</string>
+    <string name="orchestrator_context_long_term_memory_hint">Relevant entries from the agent\'s long-term memory</string>
+    <string name="orchestrator_context_tool_results_label">Tool results</string>
+    <string name="orchestrator_context_tool_results_hint">Data returned by tools in the current step</string>
+    <string name="orchestrator_context_hint">Fewer inputs make the node faster and cheaper. Enable only what\'s needed.</string>
+    <!-- SKILL node — per-row tag showing whether the context flag still matches the skill default. -->
+    <string name="orchestrator_context_inherited_tag">inherited</string>
+    <string name="orchestrator_context_overridden_tag">overridden</string>
+
+    <!-- Pipeline presets UI -->
+    <!-- Library speed-dial -->
+    <string name="orchestrator_library_speed_dial_new">New</string>
+    <string name="orchestrator_library_speed_dial_new_pipeline">New pipeline</string>
+    <string name="orchestrator_library_speed_dial_from_preset">From preset</string>
+
+    <!-- Preset picker sheet -->
+    <string name="orchestrator_preset_picker_title">Choose a preset</string>
+    <string name="orchestrator_preset_picker_tab_bundled">Bundled</string>
+    <string name="orchestrator_preset_picker_tab_mine">Mine</string>
+    <string name="orchestrator_preset_picker_chip_all">All</string>
+    <string name="orchestrator_preset_picker_empty">No presets match this filter.</string>
+    <string name="orchestrator_preset_picker_use">Use this preset</string>
+    <string name="orchestrator_preset_picker_loaded">Preset loaded into editor</string>
+
+    <!-- Save as preset dialog -->
+    <string name="orchestrator_preset_save_title">Save as preset</string>
+    <string name="orchestrator_preset_save_name_label">Name</string>
+    <string name="orchestrator_preset_save_description_label">Description</string>
+    <string name="orchestrator_preset_save_category_label">Category</string>
+    <string name="orchestrator_preset_save_tags_label">Tags (comma-separated)</string>
+    <string name="orchestrator_preset_save_success">Preset saved</string>
+    <string name="orchestrator_prompt_preset_save_success">Prompt preset saved</string>
+
+    <!-- Preset categories -->
+    <string name="orchestrator_preset_category_local">Local</string>
+    <string name="orchestrator_preset_category_cloud">Cloud</string>
+    <string name="orchestrator_preset_category_hybrid">Hybrid</string>
+    <string name="orchestrator_preset_category_tool">Tool</string>
+    <string name="orchestrator_preset_category_research">Research</string>
+    <string name="orchestrator_preset_category_other">Other</string>
+
+    <!-- Preset manager screen -->
+    <string name="orchestrator_preset_manager_title">Pipeline presets</string>
+    <string name="orchestrator_preset_manager_subtitle" tools:ignore="PluralsCandidate">%1$d bundled · %2$d saved</string>
+    <string name="orchestrator_preset_manager_bundled_empty">No bundled presets are available.</string>
+    <string name="orchestrator_preset_manager_user_empty">You haven\'t saved any presets yet. Save a pipeline as preset from the editor or the library overflow menu.</string>
+    <string name="orchestrator_preset_manager_action_rename">Rename</string>
+    <string name="orchestrator_preset_manager_action_export">Export JSON</string>
+    <string name="orchestrator_preset_manager_action_delete">Delete</string>
+    <string name="orchestrator_preset_manager_rename_title">Rename preset</string>
+    <string name="orchestrator_preset_manager_rename_blank">Preset name cannot be blank</string>
+    <string name="orchestrator_preset_manager_renamed">Preset renamed</string>
+    <string name="orchestrator_preset_manager_deleted">Preset deleted</string>
+    <string name="orchestrator_preset_manager_delete_title">Delete preset?</string>
+    <string name="orchestrator_preset_manager_delete_confirm">Delete the preset \"%1$s\"? This cannot be undone.</string>
+
+    <!-- Pipeline JSON import (library) -->
+    <string name="orchestrator_library_import_unreadable">Selected file could not be read.</string>
+    <string name="orchestrator_library_import_too_large">This file is larger than %1$s, the most a pipeline import reads.</string>
+    <string name="orchestrator_library_import_schema_title">Schema mismatch</string>
+    <string name="orchestrator_library_import_schema_body" tools:ignore="PluralsCandidate">This pipeline was written for schema v%1$d but this build expects v%2$d. Some configuration may not import cleanly.</string>
+    <string name="orchestrator_library_import_dropped_heading">These settings are in the file but cannot be imported by this version, and will be lost:</string>
+    <plurals name="orchestrator_library_import_dropped_more">
+        <item quantity="one">…and %1$d more</item>
+        <item quantity="other">…and %1$d more</item>
+    </plurals>
+    <plurals name="orchestrator_library_import_dropped_feedback">
+        <item quantity="one">Imported. One setting in the file could not be read by this version and was not kept.</item>
+        <item quantity="other">Imported. %1$d settings in the file could not be read by this version and were not kept.</item>
+    </plurals>
+    <string name="orchestrator_library_import_anyway">Import anyway</string>
+
+    <!-- Pipeline id-collision resolution (single import) -->
+    <!-- Headline names the pipeline already in the library, never the file's own name. -->
+    <string name="orchestrator_library_import_collision_title_format">“%1$s” is already in your library</string>
+    <string name="orchestrator_library_import_collision_single_body">The file calls it “%1$s”. Replace swaps its steps for the file\'s; Import as copy keeps both.</string>
+    <string name="orchestrator_library_import_collision_bindings_heading">Replace keeps everything that runs it. After Replace, these run the file\'s steps:</string>
+    <string name="orchestrator_library_import_collision_replace">Replace</string>
+    <string name="orchestrator_library_import_collision_copy">Import as copy</string>
+    <string name="orchestrator_library_import_orphan_title">This file uses the id of a pipeline you deleted</string>
+    <string name="orchestrator_library_import_orphan_body">The file calls it “%1$s”. Keep the id and what still runs it will run the file\'s steps; Import as copy leaves them alone.</string>
+    <string name="orchestrator_library_import_orphan_bindings_heading">These still run that id. After Keep the id, they run the file\'s steps:</string>
+    <string name="orchestrator_library_import_orphan_keep">Keep the id</string>
+    <string name="orchestrator_library_import_bundle_orphan_item">“%1$s” (the id of a deleted pipeline)</string>
+
+    <!-- Pipeline bundle import (library) -->
+    <string name="orchestrator_library_import_bundle_title">Import bundle</string>
+    <plurals name="orchestrator_library_import_bundle_collision_title">
+        <item quantity="one">%1$d of %2$d pipelines is already in your library</item>
+        <item quantity="other">%1$d of %2$d pipelines are already in your library</item>
+    </plurals>
+    <string name="orchestrator_library_import_bundle_collision_body">Replace swaps their steps for the ones in this file. Import as copies keeps both.</string>
+    <string name="orchestrator_library_import_bundle_collision_heading">Replace keeps everything that runs them. Already in your library:</string>
+    <plurals name="orchestrator_library_import_bundle_taken_title">
+        <item quantity="one">%1$d of %2$d pipelines uses an id that is already taken</item>
+        <item quantity="other">%1$d of %2$d pipelines use an id that is already taken</item>
+    </plurals>
+    <string name="orchestrator_library_import_bundle_taken_heading">Replace keeps everything that runs them. Already taken — in your library, or still named by a deleted pipeline\'s chats, triggers or callers:</string>
+    <!-- One colliding pipeline in the bundle list: its name, then what runs it. -->
+    <string name="orchestrator_library_import_bundle_collision_item">“%1$s”</string>
+
+    <!-- What is bound to a pipeline id (the Replace confirmation lists these). -->
+    <string name="orchestrator_library_binding_default">The default pipeline for chats</string>
+    <string name="orchestrator_library_binding_share">The share target</string>
+    <string name="orchestrator_library_binding_tile">The Quick Settings tile</string>
+    <string name="orchestrator_library_binding_external">Requests from other apps</string>
+    <plurals name="orchestrator_library_binding_triggers">
+        <item quantity="one">%1$d automation trigger</item>
+        <item quantity="other">%1$d automation triggers</item>
+    </plurals>
+    <plurals name="orchestrator_library_binding_chats">
+        <item quantity="one">%1$d chat</item>
+        <item quantity="other">%1$d chats</item>
+    </plurals>
+    <string name="orchestrator_library_binding_caller">Called by “%1$s”</string>
+    <string name="orchestrator_library_import_bundle_schema_body">Some pipelines in this bundle were written for a different schema version. Some configuration may not import cleanly.</string>
+    <string name="orchestrator_library_import_bundle_replace">Replace</string>
+    <string name="orchestrator_library_import_bundle_copies">Import as copies</string>
+    <plurals name="orchestrator_library_import_bundle_success">
+        <item quantity="one">Imported %d pipeline</item>
+        <item quantity="other">Imported %d pipelines</item>
+    </plurals>
+    <string name="orchestrator_library_export_bundle_failed">Bundle export failed: %1$s</string>
+    <string name="orchestrator_library_export_bundle_success">Exported %1$s</string>
+</resources>

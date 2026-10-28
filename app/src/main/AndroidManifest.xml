@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Optional: only requested when the user scopes a Wi-Fi trigger to specific
+         network names (SSIDs). Reading the connected Wi-Fi SSID requires fine
+         location on modern Android; without the grant, SSID-scoped triggers simply
+         never match (fail-safe) and no other feature depends on it. COARSE is
+         declared alongside FINE because Android 12+ lets the user grant only
+         coarse — in which case the SSID stays redacted and the trigger stays inert. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.EXECUTE_APP_FUNCTIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <!-- Granted to ModelDownloadWorker so a multi-gigabyte model download keeps
+         running (and stays visible) while the user leaves the app. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+<!--    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />-->
+
+<!--    <queries>-->
+<!--        <package android:name="com.samsung.android.dialer" />-->
+<!--        <package android:name="com.sec.android.gallery3d" />-->
+<!--        <package android:name="com.sec.android.app.myfiles" />-->
+<!--        <package android:name="com.samsung.android.incallui" />-->
+<!--        <package android:name="com.samsung.android.app.sharelive" />-->
+<!--    </queries>-->
+
+    <!--
+        The agent must be able to see other AppFunction-providing
+        packages via `PackageManager.canPackageQuery` so
+        `AppFunctionManager.searchAppFunctions` surfaces their metadata. Android 11+
+        ships with package visibility on by default; without an explicit `<queries>`
+        entry the system filters cross-package metadata out.
+
+        The `<intent>` with the system AppFunctionService action makes the agent
+        visible to every package that publishes an `@AppFunction` (the agent does not
+        know their applicationIds at compile time). The end-to-end test's target,
+        `app.knotwork.android.toolsprobe`, is also named explicitly — in the debug
+        overlay, since the test runs on debug builds and a release build has no
+        business seeing a package that exists only on a test device.
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.app.appfunctions.AppFunctionService" />
+        </intent>
+        <!--
+            Visibility of automation apps that publish a manifest receiver for the
+            external-automation callback. Declared by capability rather than by
+            listing package names, matching the AppFunctions entry above and for the
+            same reason: the callers are not known at build time.
+
+            This is NOT what makes the callback deliverable. Broadcast delivery
+            resolves its receivers under the system identity, so a package-directed
+            callback reaches a package this app cannot see. Visibility is needed to
+            *describe* a caller — resolving its label and icon for the request
+            journal — which is a `PackageManager` lookup and therefore filtered.
+        -->
+        <intent>
+            <action android:name="app.knotwork.android.action.RUN_RESULT" />
+        </intent>
+    </queries>
+
+    <application
+        android:name=".App"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:enableOnBackInvokedCallback="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:largeHeap="true"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:theme="@style/Theme.Knotwork">
+
+        <!-- Firebase Crashlytics / Analytics opt-in meta-data lives in the
+             `full`-flavour manifest overlay (`src/full/AndroidManifest.xml`);
+             the `foss` build carries no Firebase SDK and therefore none of it. -->
+
+        <!-- Required for LiteRT GPU (OpenCL) acceleration -->
+        <uses-native-library android:name="libOpenCL.so" android:required="false" />
+        <uses-native-library android:name="libvndksupport.so" android:required="false" />
+        <!-- Required for LiteRT NPU (Qualcomm DSP) acceleration -->
+        <uses-native-library android:name="libcdsprpc.so" android:required="false" />
+
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
+
+        <!-- FileProvider for the app's handoff files (res/xml/file_paths.xml):
+             workspace share copies staged into cacheDir/shared, camera captures,
+             journal exports. Grants are temporary and per file, so the workspace
+             directory itself is never exposed. Being unexported does not stop the
+             app's own uid from opening it, which is why a URI another app hands
+             over is refused when it names this provider (ForeignContentUri). -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+        <!--
+            `singleTask`: the app is single-Activity, so a deep link (launcher
+            shortcut, share, notification) must reuse the one MainActivity and
+            navigate inside its NavHost via onNewIntent — never spin up a second
+            instance. With the default `standard` mode a warm shortcut tap
+            created a second MainActivity, so the user saw two stacked chats
+            (and the older, recreated one was sometimes a blank frame).
+        -->
+        <activity
+            android:name=".presentation.ui.MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.App.Splash">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- Static launcher shortcuts (New chat / Pipelines). Dynamic
+                 shortcuts (recent sessions) are pushed at runtime by
+                 AppShortcutPublisher. -->
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
+        </activity>
+
+        <!--
+            Share target: receives ACTION_SEND text / single image from other
+            apps and routes it through the user's bound share pipeline. The
+            activity is invisible (translucent theme) — it only resolves the
+            share and deep-links into the resulting chat session.
+
+            Exported without a permission, and it has to be: the share sheet
+            starts it on the sending app's behalf. The same means any installed
+            app (and adb) can start it directly, without the share sheet, and put
+            text where the user's own message goes. So LaunchSharePipelineUseCase
+            gates it rather than this declaration: inert until a share pipeline is
+            bound, at most RunRateCeiling.SHARE runs an hour (one budget for every
+            sender — the sender is not known), the image pre-flight, and only
+            another app's content:// URI is read. The run is visible: the app opens
+            into its chat. SECURITY.md names this surface; ExportedComponentInventoryTest
+            fails when an export is added or loses its permission.
+        -->
+        <activity
+            android:name=".presentation.share.ShareReceiverActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="text/plain" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
+        </activity>
+
+        <!--
+            Quick Settings tile: one-tap launch of the user's bound "duty"
+            pipeline from the system shade. Must be exported and guarded by
+            BIND_QUICK_SETTINGS_TILE so only the system can bind it.
+        -->
+        <service
+            android:name=".presentation.tile.DutyPipelineTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_duty"
+            android:label="@string/tile_label"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <!--
+            The AppFunctions Knotwork publishes to other apps. The class is generated
+            by the AppFunctions compiler from the entry point `AgentAppFunctionService`
+            (its `serviceName`), and `v2` names the inventory the compiler writes to
+            `assets/` (its `appFunctionXmlFileName` plus `.xml`) —
+            `AppFunctionServiceManifestGuardTest` keeps all three in step, since a
+            mismatch builds and runs and only shows as a function no one can find.
+            Only the system may bind it (`BIND_APP_FUNCTION_SERVICE`), and only a
+            privileged agent holding `EXECUTE_APP_FUNCTIONS` may call through it.
+            Android 16+ only: the service extends the platform class added in API 36.
+        -->
+        <service
+            android:name=".data.tools.local.appfunctions.KnotworkAppFunctionService"
+            android:exported="true"
+            android:permission="android.permission.BIND_APP_FUNCTION_SERVICE"
+            tools:targetApi="36">
+            <property
+                android:name="android.app.appfunctions.schema"
+                android:value="app_functions_schema.xsd" />
+            <property
+                android:name="android.app.appfunctions.v2"
+                android:value="knotwork_app_functions.xml" />
+            <intent-filter>
+                <action android:name="android.app.appfunctions.AppFunctionService" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".data.services.AgentForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="On-Device LLM Inference and Agent Orchestration" />
+        </service>
+
+        <!--
+            WorkManager promotes long-running workers (AgentWorker during scheduled
+            inference) through its own SystemForegroundService. Android 14+ requires
+            the service entry to declare the foreground type the promotion uses —
+            merged here as `specialUse` with the same subtype the app's own
+            AgentForegroundService is declared for.
+
+            `dataSync` is declared alongside it for ModelDownloadWorker: a model
+            bundle is several gigabytes, and the platform type for "the user asked
+            for a transfer and is waiting on it" is dataSync, not specialUse. Both
+            types live on the one merged service entry because WorkManager routes
+            every promotion through it; each worker picks its own type at runtime.
+        -->
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse|dataSync"
+            tools:node="merge">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="On-Device LLM Inference and Agent Orchestration" />
+        </service>
+
+        <receiver
+            android:name=".presentation.receivers.AgentApprovalReceiver"
+            android:exported="false" />
+
+        <!--
+            External-automation entry point. Exported on purpose: the whole feature
+            is "let another app on this device ask us to run a pipeline", and the
+            callers it exists for (Tasker, MacroDroid, a shell script over `adb`)
+            cannot be enumerated at build time.
+
+            No android:permission is declared, and that is a decision rather than an
+            omission. A signature-level permission would admit only apps signed with
+            this project's key, i.e. nobody; a normal-level one would have to be
+            declared by the caller, which an automation app driven by user-authored
+            profiles cannot do. Either choice would close the entry point to exactly
+            the callers it is for, so the gate is placed where the user can see it
+            instead: the contract is off by default, inert until the user binds one
+            pipeline to it, rate-ceilinged, and every request — admitted or refused
+            — is journalled. While it is off nothing is sent back to any caller
+            (ExternalAutomationCallbackSender, the app's only broadcast). Human-in-the-loop confirmation and the destructive-tool
+            block apply unchanged, because an admitted request goes through the very
+            same scheduler path as the app's own background work.
+
+            intentMatchingFlags="enforceIntentFilter" opts in to the Android 16
+            Safer Intents rules while they are still opt-in: an explicit intent
+            aimed at this component must match the filter below. The initiative is
+            scheduled to become opt-out and then mandatory, and a receiver that
+            already satisfies the strict rules cannot be broken by that transition.
+
+            The attribute exists only from API 36, and `minSdk` is 34, so
+            `tools:targetApi` marks it as deliberately version-scoped rather than
+            an oversight. Stating the consequence rather than hiding it: on
+            API 34-35 this receiver is not covered by Safer Intents.
+
+            That loss is defence-in-depth, not a hole, and the reason is worth
+            recording because the opposite reading is the obvious one: the filter
+            is NOT what validates the action. `ExternalAutomationReceiver.onReceive`
+            copies `intent.action` verbatim and hands it to the use case, which
+            refuses anything the contract does not define with `UNKNOWN_ACTION`
+            and journals it. An explicit intent carrying a foreign action reaches
+            the same refusal on API 34 as on 36. Every other gate listed above —
+            off by default, one bound pipeline, rate ceiling, journalling, HITL —
+            lives in app code and is unaffected by the platform version.
+        -->
+        <receiver
+            android:name=".presentation.receivers.ExternalAutomationReceiver"
+            android:exported="true"
+            android:intentMatchingFlags="enforceIntentFilter"
+            tools:targetApi="36"
+            tools:ignore="ExportedReceiver">
+            <intent-filter>
+                <action android:name="app.knotwork.android.action.RUN_PIPELINE" />
+            </intent-filter>
+        </receiver>
+    </application>
+
+</manifest>

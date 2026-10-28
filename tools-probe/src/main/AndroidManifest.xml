@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+        EXECUTE_APP_FUNCTIONS is required for the probe's MainActivity to call the agent's
+        `search_tool` AppFunction back across processes. The matching declaration in
+        :app already exposes the function; this side only consumes it.
+    -->
+    <uses-permission android:name="android.permission.EXECUTE_APP_FUNCTIONS" />
+
+    <!--
+        The probe needs `canPackageQuery` access to the agent app
+        so `AppFunctionManager.searchAppFunctions` can resolve the agent's
+        `search_tool` metadata when the user taps the probe's invoke button.
+    -->
+    <queries>
+        <package android:name="app.knotwork.android" />
+    </queries>
+
+    <application
+        android:label="@string/probe_app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.ToolsProbe">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/probe_app_name"
+            android:theme="@style/Theme.ToolsProbe">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!--
+            The probe's `echo` AppFunction: the class is generated from the entry point
+            `ProbeAppFunctionService` (its `serviceName`), and `v2` names the inventory
+            the compiler writes to `assets/` (its `appFunctionXmlFileName` plus `.xml`).
+        -->
+        <service
+            android:name=".EchoAppFunctionService"
+            android:exported="true"
+            android:permission="android.permission.BIND_APP_FUNCTION_SERVICE"
+            tools:targetApi="36">
+            <property
+                android:name="android.app.appfunctions.schema"
+                android:value="app_functions_schema.xsd" />
+            <property
+                android:name="android.app.appfunctions.v2"
+                android:value="tools_probe_app_functions.xml" />
+            <intent-filter>
+                <action android:name="android.app.appfunctions.AppFunctionService" />
+            </intent-filter>
+        </service>
+    </application>
+
+</manifest>

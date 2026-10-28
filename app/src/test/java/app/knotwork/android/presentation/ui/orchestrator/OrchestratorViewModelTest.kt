@@ -1,0 +1,1604 @@
+package app.knotwork.android.presentation.ui.orchestrator
+
+import app.knotwork.android.data.engine.KoogCloudModelCatalog
+import app.knotwork.android.domain.engine.DefaultPipelineFactory
+import app.knotwork.android.domain.models.AgentTool
+import app.knotwork.android.domain.models.CloudProvider
+import app.knotwork.android.domain.models.ConnectionModel
+import app.knotwork.android.domain.models.ImportCollisionResolution
+import app.knotwork.android.domain.models.NodeContextConfig
+import app.knotwork.android.domain.models.NodeModel
+import app.knotwork.android.domain.models.NodeType
+import app.knotwork.android.domain.models.PipelineBindings
+import app.knotwork.android.domain.models.PipelineGraph
+import app.knotwork.android.domain.models.PipelineTargetAvailability
+import app.knotwork.android.domain.models.PipelineValidationError
+import app.knotwork.android.domain.models.PipelineValidationException
+import app.knotwork.android.domain.models.PresetCategory
+import app.knotwork.android.domain.models.PromptPreset
+import app.knotwork.android.domain.pipelineio.PipelineBundleJsonSerializer
+import app.knotwork.android.domain.pipelineio.PipelineJsonSerializer
+import app.knotwork.android.domain.prompt.PromptSegment
+import app.knotwork.android.domain.prompt.PromptTemplateEngine
+import app.knotwork.android.domain.prompt.PromptVariableProvider
+import app.knotwork.android.domain.repositories.ApiKeyRepository
+import app.knotwork.android.domain.repositories.LocalModelRepository
+import app.knotwork.android.domain.repositories.PipelineRepository
+import app.knotwork.android.domain.repositories.PromptPresetRepository
+import app.knotwork.android.domain.repositories.SettingsRepository
+import app.knotwork.android.domain.repositories.SkillRepository
+import app.knotwork.android.domain.repositories.ToolRepository
+import app.knotwork.android.domain.services.PipelineCompositionValidator
+import app.knotwork.android.domain.text.ImportedText
+import app.knotwork.android.domain.usecases.CreatePipelineUseCase
+import app.knotwork.android.domain.usecases.DeletePipelineUseCase
+import app.knotwork.android.domain.usecases.DuplicatePipelineUseCase
+import app.knotwork.android.domain.usecases.ExportPipelineBundleUseCase
+import app.knotwork.android.domain.usecases.FindPipelineBindingsUseCase
+import app.knotwork.android.domain.usecases.ImportPipelineBundleUseCase
+import app.knotwork.android.domain.usecases.ImportPipelineUseCase
+import app.knotwork.android.domain.usecases.LoadPipelineFromPresetUseCase
+import app.knotwork.android.domain.usecases.LoadPipelineUseCase
+import app.knotwork.android.domain.usecases.RenamePipelineUseCase
+import app.knotwork.android.domain.usecases.ResolveSurfacePipelineUseCase
+import app.knotwork.android.domain.usecases.SavePipelineAsPresetUseCase
+import app.knotwork.android.domain.usecases.SavePipelineUseCase
+import app.knotwork.android.domain.usecases.SavePromptAsPresetUseCase
+import app.knotwork.android.domain.usecases.SetSurfacePipelineUseCase
+import app.knotwork.android.presentation.ui.common.UiText
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import org.json.JSONObject
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class OrchestratorViewModelTest {
+
+    private lateinit var savePipelineUseCase: SavePipelineUseCase
+    private lateinit var loadPipelineUseCase: LoadPipelineUseCase
+    private lateinit var importPipelineUseCase: ImportPipelineUseCase
+    private lateinit var importPipelineBundleUseCase: ImportPipelineBundleUseCase
+    private lateinit var exportPipelineBundleUseCase: ExportPipelineBundleUseCase
+    private lateinit var pipelineRepository: PipelineRepository
+    private lateinit var findPipelineBindings: FindPipelineBindingsUseCase
+    private lateinit var loadPipelineFromPresetUseCase: LoadPipelineFromPresetUseCase
+    private lateinit var renamePipelineUseCase: RenamePipelineUseCase
+    private lateinit var duplicatePipelineUseCase: DuplicatePipelineUseCase
+    private lateinit var deletePipelineUseCase: DeletePipelineUseCase
+    private lateinit var createPipelineUseCase: CreatePipelineUseCase
+    private lateinit var savePipelineAsPresetUseCase: SavePipelineAsPresetUseCase
+    private lateinit var savePromptAsPresetUseCase: SavePromptAsPresetUseCase
+    private lateinit var toolRepository: ToolRepository
+    private lateinit var localModelRepository: LocalModelRepository
+    private lateinit var settingsRepository: SettingsRepository
+    private lateinit var promptTemplateEngine: PromptTemplateEngine
+    private lateinit var promptPresetRepository: PromptPresetRepository
+    private lateinit var compositionValidator: PipelineCompositionValidator
+    private lateinit var skillRepository: SkillRepository
+    private lateinit var apiKeyRepository: ApiKeyRepository
+    private lateinit var providerDate: PromptVariableProvider
+    private lateinit var providerTime: PromptVariableProvider
+    private lateinit var viewModel: OrchestratorViewModel
+
+    private val testDispatcher = StandardTestDispatcher()
+
+    /** Drives the http allowlist so the TOOL-picker refresh can be exercised. */
+    private lateinit var allowedDomainsFlow: MutableStateFlow<List<String>>
+
+    @Before
+    fun setup() {
+        Dispatchers.setMain(testDispatcher)
+        allowedDomainsFlow = MutableStateFlow(emptyList())
+        savePipelineUseCase = mockk()
+        // Default to a successful save so the import-then-save pipeline used
+        // by `importPipelineFromJson` round-trips without extra wiring.
+        coEvery { savePipelineUseCase(any()) } returns Result.success(Unit)
+        loadPipelineUseCase = mockk()
+        // Use the real ImportPipelineUseCase against the mocked save: the
+        // import path here is exercised end-to-end (parse + persist). No
+        // collision by default so a clean import still auto-persists.
+        pipelineRepository = mockk()
+        coEvery { pipelineRepository.getPipelineById(any()) } returns null
+        coEvery { pipelineRepository.savePipelines(any()) } returns Unit
+        findPipelineBindings = mockk()
+        coEvery { findPipelineBindings.of(any()) } returns PipelineBindings()
+        coEvery { findPipelineBindings(any()) } answers {
+            firstArg<Collection<String>>().associateWith { PipelineBindings() }
+        }
+        importPipelineUseCase = ImportPipelineUseCase(savePipelineUseCase, pipelineRepository, findPipelineBindings)
+        compositionValidator = mockk()
+        importPipelineBundleUseCase =
+            ImportPipelineBundleUseCase(pipelineRepository, compositionValidator, findPipelineBindings)
+        exportPipelineBundleUseCase = mockk()
+        loadPipelineFromPresetUseCase = mockk()
+        renamePipelineUseCase = mockk()
+        duplicatePipelineUseCase = mockk()
+        deletePipelineUseCase = mockk()
+        createPipelineUseCase = mockk()
+        savePipelineAsPresetUseCase = mockk()
+        savePromptAsPresetUseCase = mockk()
+        promptPresetRepository = mockk(relaxed = true) {
+            every { getPresetsForType(any()) } returns flowOf(emptyList())
+        }
+        skillRepository = mockk(relaxed = true)
+        apiKeyRepository = mockk(relaxed = true)
+        toolRepository = mockk()
+        localModelRepository = mockk()
+        settingsRepository = mockk(relaxed = true) {
+            every { defaultPipelineId } returns flowOf(null)
+            every { shareTargetPipelineId } returns flowOf(null)
+            every { quickSettingsTilePipelineId } returns flowOf(null)
+            every { allowedHttpDomains } returns allowedDomainsFlow
+        }
+
+        every { loadPipelineUseCase.observeAllPipelines() } returns flowOf(emptyList())
+        every { localModelRepository.getAllModels() } returns flowOf(emptyList())
+
+        coEvery { toolRepository.getAvailableTools() } returns listOf(AgentTool("Tool1", "Desc", "{}"))
+
+        promptTemplateEngine = mockk()
+        providerDate = mockk {
+            every { key() } returns "DATE"
+            coEvery { resolve() } returns "01 May 2026"
+        }
+        providerTime = mockk {
+            every { key() } returns "TIME"
+            coEvery { resolve() } returns "15:30"
+        }
+
+        viewModel = buildViewModel()
+    }
+
+    /**
+     * Constructs an [OrchestratorViewModel] from the current mock fields. Pulled
+     * out of [setUp] so a test can re-stub a dependency (e.g. the saved-pipeline
+     * flow) and rebuild the VM before exercising it.
+     */
+    private fun buildViewModel(): OrchestratorViewModel = OrchestratorViewModel(
+        savePipelineUseCase = savePipelineUseCase,
+        libraryUseCases = OrchestratorLibraryUseCases(
+            loadPipeline = loadPipelineUseCase,
+            renamePipeline = renamePipelineUseCase,
+            duplicatePipeline = duplicatePipelineUseCase,
+            deletePipeline = deletePipelineUseCase,
+            createPipeline = createPipelineUseCase,
+            resolveSurfacePipeline = mockk<ResolveSurfacePipelineUseCase>(relaxed = true),
+            setSurfacePipeline = mockk<SetSurfacePipelineUseCase>(relaxed = true),
+            entryPointSettings = settingsRepository,
+        ),
+        transferUseCases = OrchestratorTransferUseCases(
+            importPipeline = importPipelineUseCase,
+            importPipelineBundle = importPipelineBundleUseCase,
+            exportPipelineBundle = exportPipelineBundleUseCase,
+        ),
+        presetUseCases = OrchestratorPresetUseCases(
+            loadPipelineFromPreset = loadPipelineFromPresetUseCase,
+            savePipelineAsPreset = savePipelineAsPresetUseCase,
+            savePromptAsPreset = savePromptAsPresetUseCase,
+            promptPresetRepository = promptPresetRepository,
+            loadPipeline = loadPipelineUseCase,
+        ),
+        nodeSheetSources = OrchestratorNodeSheetSources(
+            toolRepository = toolRepository,
+            toolSettings = settingsRepository,
+            localModelRepository = localModelRepository,
+            compositionValidator = compositionValidator,
+            skillRepository = skillRepository,
+            apiKeyRepository = apiKeyRepository,
+            modelCatalog = KoogCloudModelCatalog(),
+            promptTemplateEngine = promptTemplateEngine,
+            promptVariableProviders = setOf(providerDate, providerTime),
+        ),
+    )
+
+    /** Fills the open pipeline with the default graph, keeping its id and name. */
+    private fun loadBasePreset() {
+        val current = viewModel.uiState.value.currentPipeline
+        val preset = DefaultPipelineFactory.create(current.name)
+        viewModel.replaceCurrentPipeline(current.copy(nodes = preset.nodes, connections = preset.connections))
+    }
+
+    /** The open pipeline as the single-pipeline JSON document an export writes. */
+    private fun currentPipelineJson(): String =
+        PipelineJsonSerializer.serialize(viewModel.uiState.value.currentPipeline)
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
+
+    @Test
+    fun `init loads the available tools`() = runTest {
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(1, state.availableTools.size)
+        assertEquals("Tool1", state.availableTools[0].name)
+    }
+
+    @Test
+    fun `adding an allowed domain refreshes the available tools in-session`() = runTest {
+        // The repository hides http_request while the allowlist is empty and un-hides it
+        // once a domain is added; the picker must reflect that in-session, not after a
+        // restart. Key the stub on the current allowlist so it is call-count independent.
+        coEvery { toolRepository.getAvailableTools() } answers {
+            if (allowedDomainsFlow.value.isEmpty()) {
+                listOf(AgentTool("Tool1", "Desc", "{}"))
+            } else {
+                listOf(AgentTool("Tool1", "Desc", "{}"), AgentTool("http_request", "Desc", "{}"))
+            }
+        }
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(false, viewModel.uiState.value.availableTools.any { it.name == "http_request" })
+
+        allowedDomainsFlow.value = listOf("api.example.com")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(true, viewModel.uiState.value.availableTools.any { it.name == "http_request" })
+    }
+
+    @Test
+    fun `addNode adds a new node to currentPipeline`() {
+        // Act
+        viewModel.addNode(NodeType.TOOL, 100f, 200f)
+
+        // Assert
+        val nodes = viewModel.uiState.value.currentPipeline.nodes
+        assertEquals(1, nodes.size)
+        assertEquals(NodeType.TOOL, nodes[0].type)
+        assertEquals(100f, nodes[0].x)
+        assertEquals(200f, nodes[0].y)
+    }
+
+    @Test
+    fun `moveNode updates coordinates of existing node by delta`() {
+        // Arrange
+        viewModel.addNode(NodeType.TOOL, 100f, 200f)
+        val nodeId = viewModel.uiState.value.currentPipeline.nodes[0].id
+
+        // Act
+        viewModel.moveNode(nodeId, 50f, -20f)
+
+        // Assert
+        val nodes = viewModel.uiState.value.currentPipeline.nodes
+        assertEquals(1, nodes.size)
+        assertEquals(150f, nodes[0].x)
+        assertEquals(180f, nodes[0].y)
+    }
+
+    @Test
+    fun `addConnection creates connection if DAG is valid and returns its ID`() {
+        // Arrange
+        viewModel.addNode(NodeType.INPUT, 0f, 0f)
+        viewModel.addNode(NodeType.OUTPUT, 100f, 100f)
+        val nodes = viewModel.uiState.value.currentPipeline.nodes
+        val n1 = nodes[0].id
+        val n2 = nodes[1].id
+
+        // Act
+        val connectionId = viewModel.addConnection(n1, n2)
+
+        // Assert
+        assertNotNull(connectionId)
+        val connections = viewModel.uiState.value.currentPipeline.connections
+        assertEquals(1, connections.size)
+        assertEquals(connectionId, connections[0].id)
+        assertEquals(n1, connections[0].sourceNodeId)
+        assertEquals(n2, connections[0].targetNodeId)
+        assertEquals(null, viewModel.uiState.value.errorMessage)
+    }
+
+    @Test
+    fun `addConnection sets error if DAG becomes invalid (cycle) and returns null`() {
+        // Arrange
+        viewModel.addNode(NodeType.INPUT, 0f, 0f)
+        viewModel.addNode(NodeType.OUTPUT, 100f, 100f)
+        val nodes = viewModel.uiState.value.currentPipeline.nodes
+        val n1 = nodes[0].id
+        val n2 = nodes[1].id
+
+        viewModel.addConnection(n1, n2)
+
+        // Act
+        val connectionId = viewModel.addConnection(n2, n1) // This should create a cycle
+
+        // Assert
+        assertEquals(null, connectionId)
+        val connections = viewModel.uiState.value.currentPipeline.connections
+        assertEquals(1, connections.size) // The cyclic connection should not be added
+        assertEquals(
+            UiText.Resource(
+                app.knotwork.android.R.string.errors_orchestrator_cycle_detected,
+            ),
+            viewModel.uiState.value.errorMessage,
+        )
+    }
+
+    @Test
+    fun `removeConnection removes connection by ID`() {
+        // Arrange
+        viewModel.addNode(NodeType.INPUT, 0f, 0f)
+        viewModel.addNode(NodeType.OUTPUT, 100f, 100f)
+        val nodes = viewModel.uiState.value.currentPipeline.nodes
+        val n1 = nodes[0].id
+        val n2 = nodes[1].id
+        val connectionId = viewModel.addConnection(n1, n2)
+
+        // Act
+        viewModel.removeConnection(connectionId!!)
+
+        // Assert
+        val connections = viewModel.uiState.value.currentPipeline.connections
+        assertEquals(0, connections.size)
+    }
+
+    @Test
+    fun `removeNode removes node and associated connections`() {
+        // Arrange
+        viewModel.addNode(NodeType.INPUT, 0f, 0f)
+        viewModel.addNode(NodeType.OUTPUT, 100f, 100f)
+        val nodes = viewModel.uiState.value.currentPipeline.nodes
+        val n1 = nodes[0].id
+        val n2 = nodes[1].id
+        viewModel.addConnection(n1, n2)
+
+        // Act
+        viewModel.removeNode(n1)
+
+        // Assert
+        val state = viewModel.uiState.value
+        assertEquals(1, state.currentPipeline.nodes.size)
+        assertEquals(0, state.currentPipeline.connections.size)
+    }
+
+    @Test
+    fun `given a node is added then the editor reports unsaved changes`() = runTest {
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.addNode(NodeType.LITE_RT, 10f, 10f)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue("Adding a node must mark the pipeline unsaved", viewModel.uiState.value.hasUnsavedChanges)
+    }
+
+    @Test
+    fun `given a successful save then the editor reports no unsaved changes`() = runTest {
+        coEvery { savePipelineUseCase(any()) } returns Result.success(Unit)
+        viewModel.addNode(NodeType.LITE_RT, 10f, 10f)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.saveCurrentPipeline()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse("A saved pipeline must not read as unsaved", viewModel.uiState.value.hasUnsavedChanges)
+    }
+
+    @Test
+    fun `given a failed save then the pipeline still reports unsaved changes`() = runTest {
+        coEvery { savePipelineUseCase(any()) } returns
+            Result.failure(PipelineValidationException(listOf(PipelineValidationError.MissingOutput)))
+        viewModel.addNode(NodeType.LITE_RT, 10f, 10f)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.saveCurrentPipeline()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // The failure mode this whole change exists to stop: a Save that did not
+        // reach storage must not leave the editor looking clean, or the guard
+        // that asks before leaving will not ask.
+        assertTrue("A rejected save must leave the work unsaved", viewModel.uiState.value.hasUnsavedChanges)
+    }
+
+    @Test
+    fun `given an edit made while a save is in flight then it stays unsaved`() = runTest {
+        coEvery { savePipelineUseCase(any()) } returns Result.success(Unit)
+        viewModel.addNode(NodeType.LITE_RT, 10f, 10f)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.saveCurrentPipeline()
+        // A second node lands before the save coroutine settles the baseline.
+        viewModel.addNode(NodeType.OUTPUT, 40f, 40f)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // The baseline moves to the graph that was persisted, not to whatever is
+        // on screen when the save returns — otherwise the second node would be
+        // silently counted as saved.
+        assertTrue("An edit made during a save is still unsaved", viewModel.uiState.value.hasUnsavedChanges)
+    }
+
+    @Test
+    fun `given a rejected save then no success feedback is shown`() = runTest {
+        coEvery { savePipelineUseCase(any()) } returns
+            Result.failure(PipelineValidationException(listOf(PipelineValidationError.MissingOutput)))
+        viewModel.addNode(NodeType.LITE_RT, 10f, 10f)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.saveCurrentPipeline()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // The editor used to announce "Pipeline saved." the moment the menu item
+        // was tapped, so a rejected save reported success and failure at once.
+        val state = viewModel.uiState.value
+        assertEquals(null, state.feedbackMessage)
+        assertTrue("A rejected save must still surface its error", state.errorMessage != null)
+    }
+
+    @Test
+    fun `given a successful save then the confirmation is shown`() = runTest {
+        coEvery { savePipelineUseCase(any()) } returns Result.success(Unit)
+        viewModel.addNode(NodeType.LITE_RT, 10f, 10f)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.saveCurrentPipeline()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue("A successful save must confirm", viewModel.uiState.value.feedbackMessage != null)
+    }
+
+    @Test
+    fun `saveCurrentPipeline calls use case and updates state`() = runTest {
+        coEvery { savePipelineUseCase(any()) } returns Result.success(Unit)
+
+        viewModel.saveCurrentPipeline()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coEvery { savePipelineUseCase(any()) }
+        assertEquals(false, viewModel.uiState.value.isLoading)
+        assertEquals(null, viewModel.uiState.value.errorMessage)
+    }
+
+    @Test
+    fun `saveCurrentPipeline handles validation errors and updates errorMessage`() = runTest {
+        val errors = listOf(
+            PipelineValidationError.MissingInput,
+            PipelineValidationError.MissingOutput,
+        )
+        val exception = PipelineValidationException(errors)
+        coEvery { savePipelineUseCase(any()) } returns Result.failure(exception)
+
+        viewModel.saveCurrentPipeline()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val errorMessage = viewModel.uiState.value.errorMessage
+        assertEquals(false, viewModel.uiState.value.isLoading)
+        val joined = errorMessage as UiText.Joined
+        val ids = joined.parts.map { (it as UiText.Resource).id }
+        assertTrue(app.knotwork.android.R.string.errors_orchestrator_validation_missing_input in ids)
+        assertTrue(app.knotwork.android.R.string.errors_orchestrator_validation_missing_output in ids)
+    }
+
+    @Test
+    fun `loadPipeline loads from use case and updates current pipeline`() = runTest {
+        val mockPipeline = PipelineGraph(id = "test-1", name = "Test Pipeline")
+        coEvery { loadPipelineUseCase.getPipelineById("test-1") } returns mockPipeline
+
+        viewModel.library.loadPipeline("test-1")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("test-1", viewModel.uiState.value.currentPipeline.id)
+        assertEquals(false, viewModel.uiState.value.isLoading)
+        assertEquals(null, viewModel.uiState.value.errorMessage)
+    }
+
+    @Test
+    fun `clearError sets error message to null`() {
+        viewModel.addNode(NodeType.INPUT, 0f, 0f)
+        viewModel.addNode(NodeType.OUTPUT, 100f, 100f)
+        val nodes = viewModel.uiState.value.currentPipeline.nodes
+        viewModel.addConnection(nodes[0].id, nodes[1].id) // valid
+        viewModel.addConnection(nodes[1].id, nodes[0].id) // invalid cycle
+        assertTrue(viewModel.uiState.value.errorMessage != null)
+
+        viewModel.clearError()
+        assertEquals(null, viewModel.uiState.value.errorMessage)
+    }
+
+    @Test
+    fun `importPipelineFromJson updates current pipeline from json`() = runTest {
+        loadBasePreset()
+        val originalName = viewModel.uiState.value.currentPipeline.name
+        val json = currentPipelineJson()
+
+        viewModel.replaceCurrentPipeline(
+            viewModel.uiState.value.currentPipeline.copy(nodes = emptyList(), connections = emptyList()),
+        )
+        assertEquals(0, viewModel.uiState.value.currentPipeline.nodes.size)
+
+        viewModel.transfer.importJson(json)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(originalName, state.currentPipeline.name)
+        assertEquals(10, state.currentPipeline.nodes.size)
+        assertEquals(12, state.currentPipeline.connections.size)
+        assertEquals(null, state.errorMessage)
+    }
+
+    @Test
+    fun `given a clean import when it lands then the editor holds the graph as saved, freshened ids included`() =
+        runTest {
+            // The importer freshens node and connection ids before saving (they
+            // are global primary keys). If the editor kept the file's ids, the
+            // next Save from the editor would write `node-1` again and could take
+            // over another pipeline's row under REPLACE.
+            val saved = slot<PipelineGraph>()
+            coEvery { savePipelineUseCase(capture(saved)) } returns Result.success(Unit)
+            loadBasePreset()
+            val json = currentPipelineJson()
+
+            viewModel.transfer.importJson(json)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertEquals(saved.captured.nodes.map { it.id }, state.currentPipeline.nodes.map { it.id })
+            assertEquals(saved.captured.connections.map { it.id }, state.currentPipeline.connections.map { it.id })
+            assertEquals(saved.captured, state.persistedPipeline)
+        }
+
+    @Test
+    fun `given a colliding import resolved by Replace then the editor holds the graph as saved`() = runTest {
+        val saved = slot<PipelineGraph>()
+        coEvery { savePipelineUseCase(capture(saved)) } returns Result.success(Unit)
+        loadBasePreset()
+        val json = currentPipelineJson()
+        val id = viewModel.uiState.value.currentPipeline.id
+        coEvery { pipelineRepository.getPipelineById(id) } returns PipelineGraph(id = id, name = "Existing")
+
+        viewModel.transfer.importJson(json)
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.transfer.resolveCollision(ImportCollisionResolution.REPLACE)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(saved.captured.nodes.map { it.id }, state.currentPipeline.nodes.map { it.id })
+        assertEquals(saved.captured, state.persistedPipeline)
+    }
+
+    @Test
+    fun `given an import colliding with a bound pipeline when the dialog opens then it names the existing row`() =
+        runTest {
+            // The report's case: a file squatting a sub-pipeline id every install
+            // has, under a name of its own choosing.
+            coEvery { pipelineRepository.getPipelineById("subtask_act") } returns
+                PipelineGraph(id = "subtask_act", name = "Act on the task")
+            coEvery { findPipelineBindings.of("subtask_act") } returns
+                PipelineBindings(callerNames = listOf("Full agent"))
+            loadBasePreset()
+            val json = JSONObject(currentPipelineJson())
+                .put("id", "subtask_act")
+                .put("name", "Daily digest")
+                .toString()
+
+            viewModel.transfer.importJson(json)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            val collision = viewModel.uiState.value.pendingCollision!!
+            assertEquals("Act on the task", collision.existingName)
+            assertEquals(listOf("Full agent"), collision.bindings.callerNames)
+            coVerify(exactly = 0) { savePipelineUseCase(any()) }
+        }
+
+    @Test
+    fun `given a bundle colliding with the library when imported then nothing is written until the user decides`() =
+        runTest {
+            loadBasePreset()
+            val graph = viewModel.uiState.value.currentPipeline
+            every { pipelineRepository.observePipelineNames() } returns flowOf(mapOf(graph.id to "In the library"))
+            coEvery { compositionValidator.validate(any(), any()) } returns emptyList()
+            coEvery { findPipelineBindings(listOf(graph.id)) } returns
+                mapOf(graph.id to PipelineBindings(triggerCount = 1))
+            val bundle = PipelineBundleJsonSerializer.serialize(listOf(graph), exportedAt = 0L)
+
+            viewModel.transfer.importJson(bundle)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            val collision = viewModel.uiState.value.pendingBundleImport!!.collisions.single()
+            assertEquals("In the library", collision.existingName)
+            assertEquals(1, collision.bindings.triggerCount)
+            coVerify(exactly = 0) { pipelineRepository.savePipelines(any()) }
+
+            viewModel.transfer.resolveBundleImport(ImportCollisionResolution.REPLACE)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            coVerify(exactly = 1) { pipelineRepository.savePipelines(any()) }
+        }
+
+    @Test
+    fun `importPipelineFromJson sets error on invalid json`() = runTest {
+        viewModel.transfer.importJson("{ invalid json }")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val err = viewModel.uiState.value.errorMessage as UiText.Dynamic
+        assertTrue(err.text.contains("Invalid JSON"))
+    }
+
+    @Test
+    fun `availableVariables are derived from injected providers and sorted`() {
+        val state = viewModel.uiState.value
+
+        assertEquals(listOf("\$DATE", "\$TIME"), state.availableVariables)
+    }
+
+    @Test
+    fun `requestPromptPreview transitions Hidden to Ready with engine segments`() = runTest {
+        val template = "Hello \$DATE"
+        val segments = listOf(
+            PromptSegment.Literal("Hello "),
+            PromptSegment.Resolved("DATE", "01 May 2026"),
+        )
+        coEvery { promptTemplateEngine.renderSegments(template, any()) } returns segments
+
+        viewModel.nodeSheet.requestPromptPreview(template)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val readyState = viewModel.uiState.value.previewState
+        assertTrue(readyState is PromptPreviewState.Ready)
+        assertEquals(segments, (readyState as PromptPreviewState.Ready).segments)
+        coVerify { promptTemplateEngine.renderSegments(template, any()) }
+    }
+
+    @Test
+    fun `addNode supports CLARIFICATION type with default fields`() {
+        viewModel.addNode(NodeType.CLARIFICATION, 50f, 80f)
+
+        val nodes = viewModel.uiState.value.currentPipeline.nodes
+        assertEquals(1, nodes.size)
+        val node = nodes[0]
+        assertEquals(NodeType.CLARIFICATION, node.type)
+        assertEquals(50f, node.x)
+        assertEquals(80f, node.y)
+        assertEquals(null, node.clarificationTimeoutMs)
+        // The default system prompt for CLARIFICATION is the JSON-format instruction.
+        assertNotNull(node.systemPrompt)
+    }
+
+    @Test
+    fun `addNode applies recommended contextConfig for LITE_RT`() {
+        viewModel.addNode(NodeType.LITE_RT, 0f, 0f)
+
+        val node = viewModel.uiState.value.currentPipeline.nodes.single()
+        assertEquals(NodeContextConfig.defaultForType(NodeType.LITE_RT), node.contextConfig)
+        // Sanity: the LITE_RT preset trims chat history / memory / tool results.
+        assertEquals(false, node.contextConfig.chatHistory)
+        assertEquals(true, node.contextConfig.originalTask)
+        assertEquals(true, node.contextConfig.nodeInput)
+        assertEquals(false, node.contextConfig.longTermMemory)
+        assertEquals(false, node.contextConfig.toolResults)
+    }
+
+    @Test
+    fun `addNode applies recommended contextConfig for CLOUD`() {
+        viewModel.addNode(NodeType.CLOUD, 0f, 0f)
+
+        val node = viewModel.uiState.value.currentPipeline.nodes.single()
+        assertEquals(NodeContextConfig.defaultForType(NodeType.CLOUD), node.contextConfig)
+        assertEquals(true, node.contextConfig.chatHistory)
+        assertEquals(true, node.contextConfig.originalTask)
+        assertEquals(true, node.contextConfig.nodeInput)
+        assertEquals(false, node.contextConfig.longTermMemory)
+        assertEquals(false, node.contextConfig.toolResults)
+    }
+
+    @Test
+    fun `addNode applies recommended contextConfig for TOOL`() {
+        viewModel.addNode(NodeType.TOOL, 0f, 0f)
+
+        val node = viewModel.uiState.value.currentPipeline.nodes.single()
+        assertEquals(NodeContextConfig.defaultForType(NodeType.TOOL), node.contextConfig)
+        assertEquals(false, node.contextConfig.chatHistory)
+        assertEquals(false, node.contextConfig.originalTask)
+        assertEquals(true, node.contextConfig.nodeInput)
+        assertEquals(false, node.contextConfig.longTermMemory)
+        assertEquals(false, node.contextConfig.toolResults)
+    }
+
+    @Test
+    fun `addNode applies recommended contextConfig for OUTPUT (nodeInput only)`() {
+        viewModel.addNode(NodeType.OUTPUT, 0f, 0f)
+
+        val node = viewModel.uiState.value.currentPipeline.nodes.single()
+        assertEquals(NodeContextConfig.defaultForType(NodeType.OUTPUT), node.contextConfig)
+        assertEquals(false, node.contextConfig.chatHistory)
+        assertEquals(false, node.contextConfig.originalTask)
+        assertEquals(true, node.contextConfig.nodeInput)
+        assertEquals(false, node.contextConfig.longTermMemory)
+        assertEquals(false, node.contextConfig.toolResults)
+    }
+
+    @Test
+    fun `addNode applies recommended contextConfig for CLARIFICATION`() {
+        viewModel.addNode(NodeType.CLARIFICATION, 0f, 0f)
+
+        val node = viewModel.uiState.value.currentPipeline.nodes.single()
+        assertEquals(NodeContextConfig.defaultForType(NodeType.CLARIFICATION), node.contextConfig)
+        assertEquals(false, node.contextConfig.chatHistory)
+        assertEquals(true, node.contextConfig.originalTask)
+        assertEquals(true, node.contextConfig.nodeInput)
+    }
+
+    @Test
+    fun `addNode applies recommended contextConfig for QUEUE_PROCESSOR`() {
+        viewModel.addNode(NodeType.QUEUE_PROCESSOR, 0f, 0f)
+
+        val node = viewModel.uiState.value.currentPipeline.nodes.single()
+        assertEquals(NodeContextConfig.defaultForType(NodeType.QUEUE_PROCESSOR), node.contextConfig)
+        assertEquals(true, node.contextConfig.originalTask)
+        assertEquals(true, node.contextConfig.nodeInput)
+        assertEquals(false, node.contextConfig.chatHistory)
+    }
+
+    @Test
+    fun `updateNodeContextConfig updates target node and forces nodeInput true`() {
+        viewModel.addNode(NodeType.TOOL, 0f, 0f)
+        val nodeId = viewModel.uiState.value.currentPipeline.nodes[0].id
+
+        val requested = NodeContextConfig(
+            chatHistory = true,
+            originalTask = false,
+            nodeInput = false,
+            longTermMemory = true,
+            toolResults = false,
+        )
+        viewModel.updateNodeContextConfig(nodeId, requested)
+
+        val updated = viewModel.uiState.value.currentPipeline.nodes.single { it.id == nodeId }
+        assertEquals(true, updated.contextConfig.nodeInput)
+        assertEquals(true, updated.contextConfig.chatHistory)
+        assertEquals(false, updated.contextConfig.originalTask)
+        assertEquals(true, updated.contextConfig.longTermMemory)
+        assertEquals(false, updated.contextConfig.toolResults)
+        assertEquals(null, viewModel.uiState.value.errorMessage)
+    }
+
+    @Test
+    fun `updateNodeContextConfig with all flags disabled sets snackbar message and forces nodeInput true`() {
+        viewModel.addNode(NodeType.TOOL, 0f, 0f)
+        val nodeId = viewModel.uiState.value.currentPipeline.nodes[0].id
+
+        val empty = NodeContextConfig(
+            chatHistory = false,
+            originalTask = false,
+            nodeInput = false,
+            longTermMemory = false,
+            toolResults = false,
+        )
+        viewModel.updateNodeContextConfig(nodeId, empty)
+
+        val updated = viewModel.uiState.value.currentPipeline.nodes.single { it.id == nodeId }
+        assertEquals(true, updated.contextConfig.nodeInput)
+        assertEquals(
+            UiText.Resource(
+                app.knotwork.android.R.string.errors_orchestrator_at_least_one_source,
+            ),
+            viewModel.uiState.value.errorMessage,
+        )
+    }
+
+    @Test
+    fun `updateNodeContextConfig leaves other nodes unchanged`() {
+        viewModel.addNode(NodeType.TOOL, 0f, 0f)
+        viewModel.addNode(NodeType.LITE_RT, 100f, 100f)
+        val nodes = viewModel.uiState.value.currentPipeline.nodes
+        val targetId = nodes.first { it.type == NodeType.TOOL }.id
+        val otherId = nodes.first { it.type == NodeType.LITE_RT }.id
+
+        viewModel.updateNodeContextConfig(
+            targetId,
+            NodeContextConfig(
+                chatHistory = false,
+                originalTask = false,
+                nodeInput = true,
+                longTermMemory = false,
+                toolResults = false,
+            ),
+        )
+
+        val updated = viewModel.uiState.value.currentPipeline.nodes
+        val target = updated.single { it.id == targetId }
+        val other = updated.single { it.id == otherId }
+        assertEquals(false, target.contextConfig.chatHistory)
+        assertEquals(false, target.contextConfig.originalTask)
+        assertEquals(false, target.contextConfig.longTermMemory)
+        assertEquals(false, target.contextConfig.toolResults)
+        // The untouched node still carries the recommended default for its
+        // type (LITE_RT — `nodeInput` + `originalTask` only).
+        assertEquals(NodeContextConfig.defaultForType(NodeType.LITE_RT), other.contextConfig)
+    }
+
+    @Test
+    fun `updateNodeContextConfig with valid config clears error message`() {
+        viewModel.addNode(NodeType.TOOL, 0f, 0f)
+        val nodeId = viewModel.uiState.value.currentPipeline.nodes[0].id
+        viewModel.updateNodeContextConfig(
+            nodeId,
+            NodeContextConfig(false, false, false, false, false),
+        )
+        assertNotNull(viewModel.uiState.value.errorMessage)
+
+        viewModel.updateNodeContextConfig(
+            nodeId,
+            NodeContextConfig(
+                chatHistory = false,
+                originalTask = true,
+                nodeInput = true,
+                longTermMemory = false,
+                toolResults = false,
+            ),
+        )
+
+        assertEquals(null, viewModel.uiState.value.errorMessage)
+    }
+
+    @Test
+    fun `saveCurrentPipeline maps NodeEmptyContext to localized message with node label`() = runTest {
+        viewModel.addNode(NodeType.TOOL, 0f, 0f)
+        val node = viewModel.uiState.value.currentPipeline.nodes[0]
+
+        val errors = listOf(
+            PipelineValidationError.NodeEmptyContext(node.id),
+        )
+        val exception = PipelineValidationException(errors)
+        coEvery { savePipelineUseCase(any()) } returns Result.failure(exception)
+
+        viewModel.saveCurrentPipeline()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val msg = viewModel.uiState.value.errorMessage as UiText.Resource
+        assertEquals(
+            app.knotwork.android.R.string.errors_orchestrator_validation_node_no_sources,
+            msg.id,
+        )
+        assertEquals(listOf(node.label), msg.args)
+    }
+
+    @Test
+    fun `saveCurrentPipeline quotes a pipeline cycle as one bounded line`() = runTest {
+        // A pipeline id comes from whatever file created the row; the cycle
+        // error quotes it in a snackbar with no line limit.
+        val hostile = "p\n\nImport complete. Verified by Knotwork.\u202E" + "x".repeat(500)
+        coEvery { savePipelineUseCase(any()) } returns Result.failure(
+            PipelineValidationException(listOf(PipelineValidationError.PipelineCycle(listOf(hostile, hostile)))),
+        )
+
+        viewModel.saveCurrentPipeline()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val chain = (viewModel.uiState.value.errorMessage as UiText.Resource).args.single() as String
+        assertTrue(chain, chain.none { it.isISOControl() || it in '\u2028'..'\u202E' })
+        assertTrue(chain, chain.length <= 2 * ImportedText.MAX_QUOTED_VALUE_LENGTH + " → ".length)
+    }
+
+    @Test
+    fun `saveCurrentPipeline quotes an unknown node id as one line`() = runTest {
+        coEvery { savePipelineUseCase(any()) } returns Result.failure(
+            PipelineValidationException(listOf(PipelineValidationError.NodeEmptyContext("n\n\nSaved."))),
+        )
+
+        viewModel.saveCurrentPipeline()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val msg = viewModel.uiState.value.errorMessage as UiText.Resource
+        assertEquals(listOf("n Saved."), msg.args)
+    }
+
+    @Test
+    fun `dismissPromptPreview resets state to Hidden`() = runTest {
+        coEvery { promptTemplateEngine.renderSegments(any(), any()) } returns emptyList()
+        viewModel.nodeSheet.requestPromptPreview("anything")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.nodeSheet.dismissPromptPreview()
+
+        assertEquals(PromptPreviewState.Hidden, viewModel.uiState.value.previewState)
+    }
+
+    @Test
+    fun `renamePipeline patches currentPipeline name and emits feedback when active is renamed`() = runTest {
+        // Arrange — load the pipeline so it becomes the active one.
+        val active = PipelineGraph(id = "active", name = "Old Name")
+        coEvery { loadPipelineUseCase.getPipelineById("active") } returns active
+        viewModel.library.loadPipeline("active")
+        testDispatcher.scheduler.advanceUntilIdle()
+        coEvery { renamePipelineUseCase("active", "  New Name  ") } returns Result.success(Unit)
+
+        // Act
+        viewModel.library.renamePipeline("active", "  New Name  ")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Assert
+        val state = viewModel.uiState.value
+        assertEquals("New Name", state.currentPipeline.name)
+        assertEquals(false, state.isLoading)
+        assertEquals(null, state.errorMessage)
+        assertEquals(
+            UiText.Resource(
+                app.knotwork.android.R.string.orchestrator_feedback_pipeline_renamed,
+            ),
+            state.feedbackMessage,
+        )
+        coVerify { renamePipelineUseCase("active", "  New Name  ") }
+    }
+
+    @Test
+    fun `renamePipeline surfaces error and leaves current pipeline unchanged on failure`() = runTest {
+        coEvery {
+            renamePipelineUseCase("p1", "")
+        } returns Result.failure(IllegalArgumentException("Pipeline name cannot be empty"))
+
+        viewModel.library.renamePipeline("p1", "")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(
+            UiText.Dynamic("Pipeline name cannot be empty"),
+            state.errorMessage,
+        )
+        assertEquals(null, state.feedbackMessage)
+    }
+
+    @Test
+    fun `duplicatePipeline loads the duplicate as currentPipeline on success`() = runTest {
+        val duplicate = PipelineGraph(id = "dup", name = "Source (copy)")
+        coEvery { duplicatePipelineUseCase("src") } returns Result.success(duplicate)
+
+        viewModel.library.duplicatePipeline("src")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals("dup", state.currentPipeline.id)
+        assertEquals("Source (copy)", state.currentPipeline.name)
+        assertEquals(
+            UiText.Resource(
+                app.knotwork.android.R.string.orchestrator_feedback_pipeline_duplicated,
+            ),
+            state.feedbackMessage,
+        )
+        assertEquals(null, state.errorMessage)
+    }
+
+    @Test
+    fun `duplicatePipeline surfaces error on failure`() = runTest {
+        val previousPipelineId = viewModel.uiState.value.currentPipeline.id
+        coEvery {
+            duplicatePipelineUseCase("missing")
+        } returns Result.failure(IllegalStateException("Pipeline not found"))
+
+        viewModel.library.duplicatePipeline("missing")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(previousPipelineId, state.currentPipeline.id)
+        assertEquals(
+            UiText.Dynamic("Pipeline not found"),
+            state.errorMessage,
+        )
+    }
+
+    @Test
+    fun `given the pipeline the editor holds when deleted then the editor moves to the next saved pipeline`() =
+        runTest {
+            val open = PipelineGraph(id = "open", name = "Open", nodes = listOf(NodeModel("i", NodeType.INPUT, 0f, 0f)))
+            val other =
+                PipelineGraph(id = "other", name = "Other", nodes = listOf(NodeModel("i", NodeType.INPUT, 0f, 0f)))
+            val library = MutableStateFlow(listOf(open, other))
+            every { loadPipelineUseCase.observeAllPipelines() } returns library
+            // A fresh screen adopts the most recent pipeline — the one that used to be
+            // labelled "Active" and could not be deleted.
+            val vm = buildViewModel()
+            testDispatcher.scheduler.advanceUntilIdle()
+            assertEquals("open", vm.uiState.value.currentPipeline.id)
+            coEvery { deletePipelineUseCase("open") } returns Result.success(Unit)
+
+            vm.library.deletePipeline("open")
+            testDispatcher.scheduler.advanceUntilIdle()
+            library.value = listOf(other)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            // Before: refused after the user had confirmed, with the exception text as the
+            // message. Now it is deleted, and the editor no longer holds a graph that a
+            // Save would write back under the deleted id.
+            val state = vm.uiState.value
+            assertEquals(null, state.errorMessage)
+            assertEquals("other", state.currentPipeline.id)
+            assertEquals(false, state.hasUnsavedChanges)
+        }
+
+    @Test
+    fun `given the last pipeline when deleted then the editor falls back to an empty scratch pipeline`() = runTest {
+        val only = PipelineGraph(id = "only", name = "Only", nodes = listOf(NodeModel("i", NodeType.INPUT, 0f, 0f)))
+        val library = MutableStateFlow(listOf(only))
+        every { loadPipelineUseCase.observeAllPipelines() } returns library
+        val vm = buildViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals("only", vm.uiState.value.currentPipeline.id)
+        coEvery { deletePipelineUseCase("only") } returns Result.success(Unit)
+
+        vm.library.deletePipeline("only")
+        testDispatcher.scheduler.advanceUntilIdle()
+        library.value = emptyList()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = vm.uiState.value
+        assertEquals(null, state.errorMessage)
+        assertTrue(state.currentPipeline.id != "only")
+        assertTrue(state.currentPipeline.nodes.isEmpty())
+        assertEquals(false, state.hasUnsavedChanges)
+    }
+
+    @Test
+    fun `given another pipeline when deleted then the editor keeps what it holds`() = runTest {
+        val open = PipelineGraph(id = "open", name = "Open", nodes = listOf(NodeModel("i", NodeType.INPUT, 0f, 0f)))
+        coEvery { loadPipelineUseCase.getPipelineById("open") } returns open
+        viewModel.library.loadPipeline("open")
+        testDispatcher.scheduler.advanceUntilIdle()
+        coEvery { deletePipelineUseCase("p2") } returns Result.success(Unit)
+
+        viewModel.library.deletePipeline("p2")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("open", viewModel.uiState.value.currentPipeline.id)
+    }
+
+    @Test
+    fun `given the delete fails when deleting the open pipeline then the editor keeps it`() = runTest {
+        val open = PipelineGraph(id = "open", name = "Open", nodes = listOf(NodeModel("i", NodeType.INPUT, 0f, 0f)))
+        coEvery { loadPipelineUseCase.getPipelineById("open") } returns open
+        viewModel.library.loadPipeline("open")
+        testDispatcher.scheduler.advanceUntilIdle()
+        coEvery { deletePipelineUseCase("open") } returns Result.failure(RuntimeException("disk full"))
+
+        viewModel.library.deletePipeline("open")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals("open", state.currentPipeline.id)
+        assertEquals(UiText.Dynamic("disk full"), state.errorMessage)
+        assertEquals(null, state.feedbackMessage)
+    }
+
+    @Test
+    fun `deletePipeline emits feedback on successful deletion`() = runTest {
+        coEvery { deletePipelineUseCase("p2") } returns Result.success(Unit)
+
+        viewModel.library.deletePipeline("p2")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(
+            UiText.Resource(
+                app.knotwork.android.R.string.orchestrator_feedback_pipeline_deleted,
+            ),
+            state.feedbackMessage,
+        )
+        assertEquals(null, state.errorMessage)
+    }
+
+    @Test
+    fun `createNewPipeline loads the seed graph as currentPipeline`() = runTest {
+        val seed = PipelineGraph(
+            id = "new",
+            name = "Brand New",
+            nodes = listOf(
+                NodeModel("i", NodeType.INPUT, 0f, 0f),
+                NodeModel("o", NodeType.OUTPUT, 100f, 0f),
+            ),
+            connections = listOf(
+                ConnectionModel("c", "i", "o"),
+            ),
+        )
+        coEvery { createPipelineUseCase("Brand New") } returns Result.success(seed)
+
+        viewModel.library.createNewPipeline("Brand New")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals("new", state.currentPipeline.id)
+        assertEquals(2, state.currentPipeline.nodes.size)
+        assertEquals(
+            UiText.Resource(
+                app.knotwork.android.R.string.orchestrator_feedback_pipeline_created,
+            ),
+            state.feedbackMessage,
+        )
+    }
+
+    @Test
+    fun `createNewPipeline surfaces validation error from use case`() = runTest {
+        coEvery {
+            createPipelineUseCase("")
+        } returns Result.failure(IllegalArgumentException("Pipeline name cannot be empty"))
+
+        viewModel.library.createNewPipeline("")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(
+            UiText.Dynamic("Pipeline name cannot be empty"),
+            state.errorMessage,
+        )
+        assertEquals(null, state.feedbackMessage)
+    }
+
+    @Test
+    fun `clearFeedback resets feedbackMessage to null`() = runTest {
+        coEvery { deletePipelineUseCase("p2") } returns Result.success(Unit)
+        viewModel.library.deletePipeline("p2")
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(
+            UiText.Resource(
+                app.knotwork.android.R.string.orchestrator_feedback_pipeline_deleted,
+            ),
+            viewModel.uiState.value.feedbackMessage,
+        )
+
+        viewModel.clearFeedback()
+
+        assertEquals(null, viewModel.uiState.value.feedbackMessage)
+    }
+
+    @Test
+    fun `createNewPipeline sets pendingEditorNavigation true on success`() = runTest {
+        val seed = PipelineGraph(id = "new", name = "Brand New")
+        coEvery { createPipelineUseCase("Brand New") } returns Result.success(seed)
+
+        viewModel.library.createNewPipeline("Brand New")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(true, viewModel.uiState.value.pendingEditorNavigation)
+    }
+
+    @Test
+    fun `createNewPipeline keeps pendingEditorNavigation false on failure`() = runTest {
+        coEvery {
+            createPipelineUseCase("")
+        } returns Result.failure(IllegalArgumentException("Pipeline name cannot be empty"))
+
+        viewModel.library.createNewPipeline("")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(false, viewModel.uiState.value.pendingEditorNavigation)
+    }
+
+    @Test
+    fun `consumePendingEditorNavigation resets the flag`() = runTest {
+        val seed = PipelineGraph(id = "new", name = "Brand New")
+        coEvery { createPipelineUseCase("Brand New") } returns Result.success(seed)
+        viewModel.library.createNewPipeline("Brand New")
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(true, viewModel.uiState.value.pendingEditorNavigation)
+
+        viewModel.consumePendingEditorNavigation()
+
+        assertEquals(false, viewModel.uiState.value.pendingEditorNavigation)
+    }
+
+    // ─── Pipeline editor hooks ───────────────────────────
+
+    @Test
+    fun `addNode returns the id of the just-added node`() {
+        val id = viewModel.addNode(NodeType.LITE_RT, 10f, 20f)
+        val newNode = viewModel.uiState.value.currentPipeline.nodes.last()
+        assertEquals(id, newNode.id)
+    }
+
+    @Test
+    fun `updateNodeFromEditor replaces the matching node`() {
+        viewModel.addNode(NodeType.LITE_RT, 0f, 0f)
+        val node = viewModel.uiState.value.currentPipeline.nodes.first()
+        val mutated = node.copy(label = "Renamed", systemPrompt = "new")
+
+        viewModel.updateNodeFromEditor(node.id, mutated)
+
+        val refreshed = viewModel.uiState.value.currentPipeline.nodes.first()
+        assertEquals("Renamed", refreshed.label)
+        assertEquals("new", refreshed.systemPrompt)
+    }
+
+    @Test
+    fun `replaceCurrentPipeline swaps the active pipeline`() {
+        val replacement = PipelineGraph(id = "x", name = "X")
+        viewModel.replaceCurrentPipeline(replacement)
+        assertEquals(replacement, viewModel.uiState.value.currentPipeline)
+    }
+
+    @Test
+    fun `requestFocusNode does not throw and the SharedFlow exists`() {
+        // The SharedFlow is wired with `extraBufferCapacity = 1` so `tryEmit` always
+        // succeeds even when no collector is active. Asserting that exposed flow is
+        // non-null and the emit is silent is enough behaviour-coverage at the VM seam;
+        // end-to-end emission timing is covered by the editor's instrumentation tests.
+        assertNotNull(viewModel.focusNodeRequest)
+        viewModel.requestFocusNode("node-7")
+    }
+
+    @Test
+    fun `labelFor returns a non-null UiText for every validation error`() {
+        val errors: List<PipelineValidationError> = listOf(
+            PipelineValidationError.MissingInput,
+            PipelineValidationError.MissingOutput,
+            PipelineValidationError.MultipleInputs,
+            PipelineValidationError.MultipleOutputs,
+            PipelineValidationError.HasCycles,
+            PipelineValidationError.DisconnectedInput,
+            PipelineValidationError.DisconnectedOutput,
+            PipelineValidationError.UnreachableNode,
+            PipelineValidationError.DeadEndNode,
+            PipelineValidationError.NodeEmptyContext(nodeId = "missing"),
+        )
+        errors.forEach { err -> assertNotNull(viewModel.labelFor(err)) }
+    }
+
+    // ─── Save-as-preset ─────────────────────────────
+
+    @Test
+    fun `saveCurrentAsPreset packages current pipeline through SavePipelineAsPresetUseCase`() = runTest {
+        // Given
+        coEvery {
+            savePipelineAsPresetUseCase(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+            )
+        } returns Result.success("preset-1")
+
+        // Sanity: VM starts with a scratch pipeline; load a valid graph first.
+        val nodeIn = NodeModel(id = "in", type = NodeType.INPUT, x = 0f, y = 0f, contextConfig = NodeContextConfig())
+        val nodeOut = NodeModel(id = "out", type = NodeType.OUTPUT, x = 0f, y = 0f, contextConfig = NodeContextConfig())
+        val conn = ConnectionModel(id = "c1", sourceNodeId = "in", targetNodeId = "out")
+        val pipeline =
+            PipelineGraph(id = "p1", name = "Demo", nodes = listOf(nodeIn, nodeOut), connections = listOf(conn))
+        viewModel.replaceCurrentPipeline(pipeline)
+
+        // When
+        viewModel.presets.saveCurrentAsPreset(
+            name = "My preset",
+            description = "demo",
+            category = PresetCategory.LOCAL,
+            tags = listOf("offline"),
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Then
+        coVerify(exactly = 1) {
+            savePipelineAsPresetUseCase(
+                graph = pipeline,
+                name = "My preset",
+                description = "demo",
+                category = PresetCategory.LOCAL,
+                tags = listOf("offline"),
+            )
+        }
+        assertNotNull(viewModel.uiState.value.feedbackMessage)
+    }
+
+    @Test
+    fun `saveCurrentAsPreset surfaces validation error to errorMessage`() = runTest {
+        coEvery {
+            savePipelineAsPresetUseCase(any(), any(), any(), any(), any())
+        } returns Result.failure(IllegalArgumentException("Preset name must not be blank"))
+
+        viewModel.presets.saveCurrentAsPreset(
+            name = " ",
+            description = "",
+            category = PresetCategory.OTHER,
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val msg = viewModel.uiState.value.errorMessage
+        assertTrue(msg is UiText.Dynamic)
+    }
+
+    @Test
+    fun `saveAsPresetFromLibrary loads pipeline by id and forwards to the use case`() = runTest {
+        // Given
+        val nodeIn = NodeModel(id = "in", type = NodeType.INPUT, x = 0f, y = 0f, contextConfig = NodeContextConfig())
+        val nodeOut = NodeModel(id = "out", type = NodeType.OUTPUT, x = 0f, y = 0f, contextConfig = NodeContextConfig())
+        val conn = ConnectionModel(id = "c1", sourceNodeId = "in", targetNodeId = "out")
+        val src = PipelineGraph(id = "p9", name = "Source", nodes = listOf(nodeIn, nodeOut), connections = listOf(conn))
+        coEvery { loadPipelineUseCase.getPipelineById("p9") } returns src
+        coEvery {
+            savePipelineAsPresetUseCase(any(), any(), any(), any(), any())
+        } returns Result.success("preset-9")
+
+        // When
+        viewModel.presets.saveAsPresetFromLibrary(
+            pipelineId = "p9",
+            name = "From library",
+            description = "",
+            category = PresetCategory.HYBRID,
+            tags = emptyList(),
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Then
+        coVerify(exactly = 1) {
+            savePipelineAsPresetUseCase(
+                graph = src,
+                name = "From library",
+                description = "",
+                category = PresetCategory.HYBRID,
+                tags = emptyList(),
+            )
+        }
+    }
+
+    @Test
+    fun `saveAsPresetFromLibrary surfaces pipeline-not-found error`() = runTest {
+        coEvery { loadPipelineUseCase.getPipelineById("missing") } returns null
+
+        viewModel.presets.saveAsPresetFromLibrary(
+            pipelineId = "missing",
+            name = "x",
+            description = "",
+            category = PresetCategory.OTHER,
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertNotNull(viewModel.uiState.value.errorMessage)
+    }
+
+    // ─── Prompt preset surface ────────────────────────────
+
+    @Test
+    fun `bundledPresetsForType returns only bundled presets`() = runTest {
+        val bundled = PromptPreset(
+            id = "b1",
+            name = "Bundled",
+            description = "",
+            nodeType = NodeType.LITE_RT,
+            systemPrompt = "You are helpful.",
+            isBundled = true,
+        )
+        val user = bundled.copy(id = "u1", name = "Mine", isBundled = false)
+        every { promptPresetRepository.getPresetsForType(NodeType.LITE_RT) } returns
+            flowOf(listOf(bundled, user))
+
+        val emitted = mutableListOf<List<PromptPreset>>()
+        viewModel.presets.bundledPresetsForType(NodeType.LITE_RT)
+            .collect { emitted += it }
+
+        assertEquals(1, emitted.last().size)
+        assertEquals("b1", emitted.last().first().id)
+    }
+
+    @Test
+    fun `userPresetsForType returns only user presets`() = runTest {
+        val bundled = PromptPreset(
+            id = "b1",
+            name = "Bundled",
+            description = "",
+            nodeType = NodeType.CLOUD,
+            systemPrompt = "You are helpful.",
+            isBundled = true,
+        )
+        val user = bundled.copy(id = "u1", name = "Mine", isBundled = false)
+        every { promptPresetRepository.getPresetsForType(NodeType.CLOUD) } returns
+            flowOf(listOf(bundled, user))
+
+        val emitted = mutableListOf<List<PromptPreset>>()
+        viewModel.presets.userPresetsForType(NodeType.CLOUD)
+            .collect { emitted += it }
+
+        assertEquals(1, emitted.last().size)
+        assertEquals("u1", emitted.last().first().id)
+    }
+
+    @Test
+    fun `saveCurrentPromptAsPreset sets feedback message on success`() = runTest {
+        coEvery {
+            savePromptAsPresetUseCase(
+                systemPrompt = any(),
+                name = any(),
+                description = any(),
+                nodeType = any(),
+                tags = any(),
+            )
+        } returns Result.success("preset-1")
+
+        viewModel.presets.saveCurrentPromptAsPreset(
+            systemPrompt = "You are concise.",
+            name = "Concise assistant",
+            description = "",
+            nodeType = NodeType.LITE_RT,
+            tags = listOf("concise"),
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(null, state.errorMessage)
+        assertNotNull(state.feedbackMessage)
+        coVerify(exactly = 1) {
+            savePromptAsPresetUseCase(
+                systemPrompt = "You are concise.",
+                name = "Concise assistant",
+                description = "",
+                nodeType = NodeType.LITE_RT,
+                tags = listOf("concise"),
+            )
+        }
+    }
+
+    @Test
+    fun `saveCurrentPromptAsPreset surfaces error on failure`() = runTest {
+        coEvery {
+            savePromptAsPresetUseCase(
+                systemPrompt = any(),
+                name = any(),
+                description = any(),
+                nodeType = any(),
+                tags = any(),
+            )
+        } returns Result.failure(IllegalArgumentException("Preset name must not be blank"))
+
+        viewModel.presets.saveCurrentPromptAsPreset(
+            systemPrompt = "ignored",
+            name = "",
+            description = "",
+            nodeType = NodeType.LITE_RT,
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertNotNull(viewModel.uiState.value.errorMessage)
+    }
+
+    @Test
+    fun `applyPresetToCurrentPipeline fills current pipeline preserving its id and name`() = runTest {
+        val originalId = viewModel.uiState.value.currentPipeline.id
+        val originalName = viewModel.uiState.value.currentPipeline.name
+        val materialized = PipelineGraph(
+            id = "preset-instance",
+            name = "Preset Name",
+            nodes = listOf(
+                NodeModel("n1", NodeType.INPUT, 0f, 0f),
+                NodeModel("n2", NodeType.OUTPUT, 0f, 0f),
+            ),
+            connections = emptyList(),
+        )
+        coEvery { loadPipelineFromPresetUseCase.materialize("preset1") } returns Result.success(materialized)
+
+        viewModel.presets.applyPresetToCurrentPipeline("preset1")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val current = viewModel.uiState.value.currentPipeline
+        // id + name preserved (we fill the existing pipeline, not spawn a new one)…
+        assertEquals(originalId, current.id)
+        assertEquals(originalName, current.name)
+        // …but nodes come from the materialised preset.
+        assertEquals(listOf("n1", "n2"), current.nodes.map { it.id })
+        assertNotNull(viewModel.uiState.value.feedbackMessage)
+    }
+
+    @Test
+    fun `applyPresetToCurrentPipeline surfaces error when materialize fails`() = runTest {
+        coEvery { loadPipelineFromPresetUseCase.materialize("bad") } returns
+            Result.failure(IllegalStateException("Preset not found: bad"))
+
+        viewModel.presets.applyPresetToCurrentPipeline("bad")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertNotNull(viewModel.uiState.value.errorMessage)
+    }
+
+    @Test
+    fun `dependentsOf returns only the pipelines that reference the target`() = runTest {
+        val target = PipelineGraph(id = "x", name = "Target")
+        val dependent = PipelineGraph(
+            id = "a",
+            name = "Caller",
+            nodes = listOf(
+                NodeModel(id = "a-n0", type = NodeType.PIPELINE, x = 0f, y = 0f, targetPipelineId = "x"),
+            ),
+        )
+        val unrelated = PipelineGraph(id = "b", name = "Unrelated")
+        every { loadPipelineUseCase.observeAllPipelines() } returns
+            flowOf(listOf(dependent, unrelated, target))
+        val vm = buildViewModel()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(listOf("a"), vm.library.dependentsOf("x").map { it.id })
+    }
+
+    @Test
+    fun `classifyPipelineTargets maps the validator classification`() = runTest {
+        coEvery { compositionValidator.classifyTargets(any(), any()) } returns listOf(
+            PipelineTargetAvailability(
+                pipelineId = "ok",
+                name = "OK",
+                selectable = true,
+                reason = null,
+            ),
+            PipelineTargetAvailability(
+                pipelineId = "loop",
+                name = "Loop",
+                selectable = false,
+                reason = PipelineTargetAvailability.Reason.Cycle("Caller"),
+            ),
+        )
+
+        val result = viewModel.nodeSheet.classifyPipelineTargets()
+
+        assertEquals(listOf("ok", "loop"), result.map { it.pipelineId })
+        assertEquals(PipelineTargetAvailability.Reason.Cycle("Caller"), result[1].reason)
+    }
+
+    @Test
+    fun `classifyPipelineTargets degrades to empty list when the validator throws`() = runTest {
+        coEvery { compositionValidator.classifyTargets(any(), any()) } throws IllegalStateException("boom")
+
+        assertEquals(emptyList<PipelineTargetAvailability>(), viewModel.nodeSheet.classifyPipelineTargets())
+    }
+
+    @Test
+    fun `given providers set up here when the node sheet asks then each comes with its model and auto resolves`() =
+        runTest {
+            every { apiKeyRepository.getApiKey(any()) } answers {
+                flowOf(
+                    if (firstArg<CloudProvider>() in
+                        setOf(CloudProvider.OPENAI, CloudProvider.OPENROUTER)
+                    ) {
+                        "k"
+                    } else {
+                        null
+                    },
+                )
+            }
+            every { apiKeyRepository.getBaseUrl(any()) } returns flowOf(null)
+            every { apiKeyRepository.getModel(any()) } answers {
+                flowOf(if (firstArg<CloudProvider>() == CloudProvider.OPENAI) "gpt-4o-mini" else null)
+            }
+            val vm = buildViewModel()
+
+            val availability = vm.nodeSheet.loadProviderAvailability()
+
+            // OpenRouter has a key but no model, and no default: not usable here, so not listed.
+            assertEquals(mapOf(CloudProvider.OPENAI to "gpt-4o-mini"), availability.models)
+            assertEquals(CloudProvider.OPENAI, availability.auto)
+        }
+
+    @Test
+    fun `given providers using a model other than the one saved when the node sheet asks then it names the one used`() =
+        runTest {
+            every { apiKeyRepository.getApiKey(any()) } answers {
+                flowOf(
+                    if (firstArg<CloudProvider>() in
+                        setOf(CloudProvider.OPENAI, CloudProvider.ANTHROPIC)
+                    ) {
+                        "k"
+                    } else {
+                        null
+                    },
+                )
+            }
+            every { apiKeyRepository.getBaseUrl(any()) } returns flowOf(null)
+            every { apiKeyRepository.getModel(any()) } answers {
+                flowOf(if (firstArg<CloudProvider>() == CloudProvider.ANTHROPIC) "claude-3-opus" else null)
+            }
+            val vm = buildViewModel()
+
+            val availability = vm.nodeSheet.loadProviderAvailability()
+
+            assertEquals(
+                mapOf(CloudProvider.OPENAI to "gpt-5.4", CloudProvider.ANTHROPIC to "claude-sonnet-4-6"),
+                availability.models,
+            )
+        }
+}

@@ -1,0 +1,87 @@
+Third-party assets bundled in the Knotwork APK
+==============================================
+
+This file inventories third-party assets shipped inside the application
+binary along with the licenses that govern their redistribution, and the
+notice of bundled code whose license asks for it to travel with the binary.
+The full SIL Open Font License v1.1 texts for the two fonts are in this same
+`assets/` directory; the Apache License 2.0 is linked below; the MIT License
+text of Bouncy Castle is quoted in full.
+
+
+Inter font family
+-----------------
+
+Files: `res/font/inter_regular.ttf`, `res/font/inter_medium.ttf`,
+       `res/font/inter_semibold.ttf`, `res/font/inter_bold.ttf`
+Upstream: https://github.com/rsms/inter (v4.0)
+Copyright (c) 2016 The Inter Project Authors.
+License: SIL Open Font License, Version 1.1 — see `license_inter_ofl.txt`.
+
+Modifications: the upstream static TTFs have been subset to the Latin-1
+range plus a small set of typographic punctuation glyphs (en/em dash,
+curly quotes, bullet, ellipsis, trademark, euro). No glyph shapes were
+modified; the Inter reserved font name is preserved.
+
+
+JetBrains Mono font family
+--------------------------
+
+Files: `res/font/jetbrains_mono_regular.ttf`,
+       `res/font/jetbrains_mono_medium.ttf`
+Upstream: https://github.com/JetBrains/JetBrainsMono (v2.304)
+Copyright (c) 2020 The JetBrains Mono Project Authors.
+License: SIL Open Font License, Version 1.1 — see
+         `license_jetbrainsmono_ofl.txt`.
+
+Modifications: same Latin-1 + typographic punctuation subset as Inter.
+No glyph shapes were modified; the JetBrains Mono reserved font name is
+preserved.
+
+
+Universal Sentence Encoder (text-embedding model)
+-------------------------------------------------
+
+File: `assets/universal_sentence_encoder.tflite`
+Upstream: MediaPipe Text Embedder model, distributed by Google at
+          https://storage.googleapis.com/mediapipe-models/text_embedder/universal_sentence_encoder/float32/latest/universal_sentence_encoder.tflite
+          (model family: https://www.kaggle.com/models/google/universal-sentence-encoder)
+Copyright Google LLC.
+License: Apache License, Version 2.0 —
+         https://www.apache.org/licenses/LICENSE-2.0
+
+Used for on-device semantic search of long-term memory.
+
+Modifications: none. The file is bundled as distributed; its metadata
+names the author as Google LLC.
+
+
+Bouncy Castle (bcprov-jdk18on)
+------------------------------
+
+Code: the Argon2id key-derivation classes of `org.bouncycastle`, compiled
+      into the application's DEX
+Upstream: https://www.bouncycastle.org/ (version 1.86)
+Used for: deriving the key of a backup archive from its password.
+License: MIT License
+
+Copyright (c) 2000-2026 The Legion of the Bouncy Castle Inc.
+(https://www.bouncycastle.org).
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sub license, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
