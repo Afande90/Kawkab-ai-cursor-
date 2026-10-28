@@ -25,6 +25,8 @@ Dates are calendar dates in Asia/Dubai. The owner asked for commits on `main` an
 | 12. Freeze the command eval set | not started | | |
 | 13. Deterministic Arabic/English fast path, stub messenger, M1 gates, tag `m1` | not started | | |
 
-Next task: 6.
+Next task: 7.
 
 Task 5 checks, 28 Oct 2026: `./gradlew :app:testFossDebugUnitTest --tests app.kawkab.android.presentation.ui.about.AboutAcknowledgmentsTest :app:ktlintKotlinScriptCheck :app:verifyComplianceSource` passed (BUILD SUCCESSFUL in 35s). The compliance source scan passed (3432 files). No gate is BLOCKED.
+
+Task 6 checks, 28 Oct 2026: `./gradlew :app:assembleFossRelease` passed in 5m 28s. `scripts/check-apk-size.sh` passed: 64380860 bytes, arm64-v8a only, limit 150000000. GitHub Actions was not run here, so the new job is not claimed as a CI pass. No gate is BLOCKED.
