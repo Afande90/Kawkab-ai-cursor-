@@ -6,7 +6,7 @@ Dates are calendar dates in Asia/Dubai. The owner asked for commits on `main` an
 
 | Task | Status | Date | Commit |
 |---|---|---|---|
-| 1. Import Knotwork v0.12.1, build, create this file and `DECISIONS.md` | done | 28 Oct 2026 | import `10a9f54c`; gate exemption and these notes land in the following commit |
+| 1. Import Knotwork v0.12.1, build, create this file and `DECISIONS.md` | done | 28 Oct 2026 | `10a9f54c` (import), `7cffff68` (notes and doc-link exemption) |
 | 2. Rename to `app.kawkab.android`, app name Kawkab (كوكب) | not started | | |
 | 3. Remove the Anthropic provider | not started | | |
 | 4. Three compliance checks | not started | | |
