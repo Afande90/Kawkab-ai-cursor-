@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="prompts_screen_title">مكتبة الموجّهات</string>
+    <string name="prompts_subtitle_format" tools:ignore="PluralsCandidate">%1$d فئات · %2$d موجّهات</string>
+    <string name="prompts_back_cd">رجوع</string>
+    <string name="prompts_fab_cd">إضافة موجّه</string>
+    <string name="prompts_edit_cd">تعديل الموجّه</string>
+    <string name="prompts_delete_cd">حذف الموجّه</string>
+    <string name="prompts_preview_cd">معاينة الموجّه</string>
+    <string name="prompts_used_by_format" tools:ignore="PluralsCandidate">تستخدمه %1$d مسارات</string>
+    <string name="prompts_duplicate_cd">تكرار الموجّه</string>
+    <string name="prompts_more_cd">مزيد من الإجراءات</string>
+    <string name="prompts_empty_title">لا موجّهات بعد</string>
+    <string name="prompts_empty_subtitle">استورد موجّهًا من ملف Markdown، أو اكتب واحدًا من البداية.</string>
+    <string name="prompts_empty_import_cta">استيراد موجّه</string>
+    <string name="prompts_empty_new_cta">موجّه جديد</string>
+    <string name="prompts_empty_category_title">لا شيء هنا بعد</string>
+    <string name="prompts_empty_category_subtitle">تظهر هنا موجّهات هذا النوع من الخطوات. استورد واحدًا، أو انقر + لكتابته.</string>
+    <string name="prompts_error_title">تعذّر تحميل الموجّهات</string>
+
+    <string name="prompts_import_cd">استيراد موجّه من ملف</string>
+    <string name="prompts_export_cd_format">تصدير «%1$s» إلى ملف</string>
+    <string name="prompts_action_export">تصدير</string>
+    <string name="prompts_action_delete">حذف</string>
+    <string name="prompts_import_success_format">استُورد «%1$s» إلى %2$s.</string>
+    <string name="prompts_import_success_action">إظهار</string>
+    <string name="prompts_export_success_format">صُدّر «%1$s».</string>
+    <string name="prompts_import_unchanged_format">«%1$s» موجود أصلًا في مكتبتك — لم يتغيّر شيء.</string>
+    <string name="prompts_import_unreadable">تعذّرت قراءة هذا الملف.</string>
+    <string name="prompts_export_unwritable">تعذّر حفظ هذا الملف.</string>
+
+    <string name="prompts_import_left_out_heading">مستبعَد</string>
+    <plurals name="prompts_import_left_out_more">
+        <item quantity="zero">و%1$d أخرى</item>
+        <item quantity="one">و%1$d أخرى</item>
+        <item quantity="two">و%1$d أخريان</item>
+        <item quantity="few">و%1$d أخرى</item>
+        <item quantity="many">و%1$d أخرى</item>
+        <item quantity="other">و%1$d أخرى</item>
+    </plurals>
+    <string name="prompts_import_mismatch_title">استُورد من دون بعض الإعدادات</string>
+    <string name="prompts_import_mismatch_body_format">كتب «%1$s» إصدار مختلف من التطبيق. وصل الموجّه، ولم تصل هذه الإعدادات.</string>
+    <string name="prompts_import_unknown_keys_body_format">«%1$s» في مكتبتك. بعض الإعدادات في الملف ليست مما يعرفه هذا التطبيق، فاستُبعدت.</string>
+    <string name="prompts_import_refused_title">استُورد كنص فقط</string>
+    <string name="prompts_import_refused_body_format">«%1$s» الآن في مكتبتك. طلب الملف أيضًا إضافة %2$s — والموجّه لا يوفّر إلا الصياغة، فاستُبعد ذلك الجزء.</string>
+    <string name="prompts_import_refused_asked_tools">أدوات</string>
+    <string name="prompts_import_refused_asked_steps">خطوات</string>
+    <string name="prompts_import_refused_asked_scripts">نصوص برمجية</string>
+    <string name="prompts_import_refused_tools_format">الأدوات: %1$s</string>
+    <string name="prompts_import_refused_steps_format" tools:ignore="PluralsCandidate">الخطوات: %1$d</string>
+    <string name="prompts_import_refused_scripts_format" tools:ignore="PluralsCandidate">النصوص البرمجية: %1$d</string>
+    <string name="prompts_import_version_left_out_format">الإصدار: %1$d</string>
+
+    <string name="prompts_import_failed_title">لم يُستورد شيء</string>
+    <string name="prompts_import_failed_frontmatter">كتلة الإعدادات في أعلى الملف مفقودة أو ناقصة. يجب أن تقع بين سطرين، في كل منهما ثلاث شرطات.</string>
+    <string name="prompts_import_failed_duplicate_key">كتلة الإعدادات في أعلى الملف تسمّي الإعداد نفسه مرتين، فلا سبيل إلى معرفة أيهما قصدت.</string>
+    <string name="prompts_import_failed_missing_key_format">ينقص الملف ما يحتاجه: %1$s.</string>
+    <string name="prompts_import_failed_no_prompt">للملف اسم من غير نص للموجّه، فلا شيء يُحفظ.</string>
+    <string name="prompts_import_failed_unknown_type_format">الملف لنوع خطوة لا يملكه هذا التطبيق: %1$s.</string>
+    <string name="prompts_import_failed_not_llm_format">الموجّهات تخص الخطوات التي تستدعي نموذجًا. هذا الملف لـ %1$s، وهذا النوع لا يستدعي نموذجًا.</string>
+    <string name="prompts_import_failed_name_too_long_format" tools:ignore="PluralsCandidate">الاسم في الملف أطول من %1$d محرفًا.</string>
+    <string name="prompts_import_failed_prompt_too_long_format" tools:ignore="PluralsCandidate">الموجّه في الملف أطول من %1$d محرفًا.</string>
+
+    <string name="prompts_import_collision_title_format">«%1$s» موجود أصلًا في مكتبتك</string>
+    <string name="prompts_import_collision_body">الملف والموجّه المحفوظ ليسا متطابقين. الإبقاء على الاثنين يحفظ الملف كموجّه منفصل.</string>
+    <string name="prompts_import_collision_replace">استبدال</string>
+    <string name="prompts_import_collision_keep_both">الإبقاء على الاثنين</string>
+
+    <string name="prompts_editor_title_new">موجّه جديد</string>
+    <string name="prompts_editor_title_edit">تعديل الموجّه</string>
+    <string name="prompts_editor_name_label">الاسم</string>
+    <string name="prompts_editor_name_placeholder">بلا عنوان</string>
+    <string name="prompts_editor_category_label">الفئة (نوع العقدة)</string>
+    <string name="prompts_editor_category_placeholder">DECOMPOSITION</string>
+    <string name="prompts_editor_body_label">نص الموجّه</string>
+    <string name="prompts_editor_body_placeholder">اكتب الموجّه هنا…</string>
+    <string name="prompts_editor_insert_label">إدراج</string>
+    <string name="prompts_editor_category_invalid">اختر نوع عقدة يعتمد على نموذج لغوي (LITE_RT, CLOUD, OUTPUT, SUMMARY, INTENT_ROUTER, DECOMPOSITION, EVALUATION, CLARIFICATION).</string>
+    <string name="prompts_editor_footer_format" tools:ignore="PluralsCandidate">تستخدمه %1$d مسارات · تسري التغييرات في التشغيل التالي</string>
+    <string name="prompts_editor_close_cd">إغلاق المحرّر</string>
+</resources>

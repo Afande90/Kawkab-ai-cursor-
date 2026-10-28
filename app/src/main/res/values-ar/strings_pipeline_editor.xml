@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pipeline_editor_node_pipeline_target">→ %1$s</string>
+    <string name="pipeline_editor_node_pipeline_no_target">لا مسار هدف</string>
+    <string name="pipeline_editor_node_pipeline_missing">المسار غير موجود</string>
+
+    <string name="pipeline_editor_fab_add_node">إضافة عقدة</string>
+
+    <string name="pipeline_editor_validation_clean">المسار صالح</string>
+    <plurals name="pipeline_editor_validation_count">
+        <item quantity="zero">%1$d مشكلات — لا يمكن التشغيل</item>
+        <item quantity="one">%1$d مشكلة — لا يمكن التشغيل</item>
+        <item quantity="two">%1$d مشكلتان — لا يمكن التشغيل</item>
+        <item quantity="few">%1$d مشكلات — لا يمكن التشغيل</item>
+        <item quantity="many">%1$d مشكلة — لا يمكن التشغيل</item>
+        <item quantity="other">%1$d مشكلة — لا يمكن التشغيل</item>
+    </plurals>
+    <string name="pipeline_editor_validation_auto_fix">إصلاح تلقائي</string>
+    <string name="pipeline_editor_validation_go">انتقل</string>
+    <string name="pipeline_editor_validation_auto_fix_none">لا يتوفر إصلاح تلقائي آمن — عالج المشكلات يدويًا.</string>
+    <string name="pipeline_editor_validation_auto_fix_done">طُبّق الإصلاح التلقائي.</string>
+
+    <plurals name="pipeline_editor_multi_select_count">
+        <item quantity="zero">%1$d عنصر محدد</item>
+        <item quantity="one">%1$d عنصر محدد</item>
+        <item quantity="two">%1$d عنصران محددان</item>
+        <item quantity="few">%1$d عناصر محددة</item>
+        <item quantity="many">%1$d عنصرًا محددًا</item>
+        <item quantity="other">%1$d عنصر محدد</item>
+    </plurals>
+    <string name="pipeline_editor_multi_select_cancel">إلغاء التحديد</string>
+    <string name="pipeline_editor_multi_select_copy">نسخ العقد المحددة</string>
+    <string name="pipeline_editor_multi_select_delete">حذف العقد المحددة</string>
+
+    <string name="pipeline_editor_overflow_paste">لصق</string>
+    <string name="pipeline_editor_overflow_paste_empty">الحافظة فارغة — انسخ عقدة أولًا.</string>
+
+    <string name="pipeline_editor_overflow_rename">إعادة تسمية العقدة…</string>
+    <string name="pipeline_editor_rename_title">إعادة تسمية العقدة</string>
+    <string name="pipeline_editor_rename_field_label">تسمية العقدة</string>
+    <string name="pipeline_editor_rename_confirm">إعادة التسمية</string>
+    <string name="pipeline_editor_rename_cancel">إلغاء</string>
+
+    <string name="pipeline_editor_overflow_cookbook">وصفات المسارات</string>
+    <string name="pipeline_editor_overflow_find">بحث عن عقدة…</string>
+    <string name="pipeline_editor_search_placeholder">البحث في العقد…</string>
+    <string name="pipeline_editor_search_close">إغلاق البحث</string>
+    <plurals name="pipeline_editor_search_count">
+        <item quantity="zero">%1$d تطابقات</item>
+        <item quantity="one">%1$d تطابق</item>
+        <item quantity="two">%1$d تطابقان</item>
+        <item quantity="few">%1$d تطابقات</item>
+        <item quantity="many">%1$d تطابقًا</item>
+        <item quantity="other">%1$d تطابق</item>
+    </plurals>
+
+    <string name="pipeline_editor_empty_title">مسار فارغ</string>
+    <string name="pipeline_editor_empty_helper">انقر + لإضافة عقدتك الأولى، أو اضغط مطولًا على اللوحة في الموضع الذي تريده.</string>
+    <string name="pipeline_editor_empty_cta_start">ابدأ بـ INPUT</string>
+    <string name="pipeline_editor_empty_cta_template">من قالب</string>
+    <string name="pipeline_editor_empty_info_pill">اللوحة: %1$d × %2$d · شبكة %3$d dp · %4$s</string>
+
+    <string name="pipeline_editor_zoom_rail_zoom_in">تكبير</string>
+    <string name="pipeline_editor_zoom_rail_zoom_out">تصغير</string>
+    <string name="pipeline_editor_zoom_rail_fit">ملاءمة المسار للعرض</string>
+
+    <string name="pipeline_editor_mini_map_title">نظرة عامة</string>
+    <string name="pipeline_editor_mini_map_close">إغلاق الخريطة المصغّرة</string>
+    <string name="pipeline_editor_overflow_mini_map">الخريطة المصغّرة</string>
+
+    <string name="pipeline_editor_subtitle_overview">نظرة عامة · %1$s · عقد %2$d</string>
+    <string name="pipeline_editor_subtitle_editing">تحرير · عقد %1$d · وصلات %2$d</string>
+    <plurals name="pipeline_editor_subtitle_issues">
+        <item quantity="zero">%1$d مشكلات · لا يمكن الحفظ</item>
+        <item quantity="one">%1$d مشكلة · لا يمكن الحفظ</item>
+        <item quantity="two">%1$d مشكلتان · لا يمكن الحفظ</item>
+        <item quantity="few">%1$d مشكلات · لا يمكن الحفظ</item>
+        <item quantity="many">%1$d مشكلة · لا يمكن الحفظ</item>
+        <item quantity="other">%1$d مشكلة · لا يمكن الحفظ</item>
+    </plurals>
+
+    <string name="pipeline_editor_overflow_undo">تراجع</string>
+    <string name="pipeline_editor_overflow_redo">إعادة</string>
+    <string name="pipeline_editor_overflow_delete">حذف التحديد</string>
+    <string name="pipeline_editor_overflow_auto_layout">ترتيب تلقائي</string>
+    <string name="pipeline_editor_overflow_save">حفظ المسار</string>
+    <string name="pipeline_editor_overflow_save_as_preset">حفظ كإعداد مسبق…</string>
+    <string name="pipeline_editor_save_done">حُفظ المسار.</string>
+    <string name="pipeline_editor_overflow_toggle_grid_show">إظهار الشبكة</string>
+    <string name="pipeline_editor_overflow_toggle_grid_hide">إخفاء الشبكة</string>
+
+    <string name="pipeline_editor_edge_selected_hint">الوصلة محددة. اضغط 🗑 للإزالة.</string>
+    <string name="pipeline_editor_connection_dropped_hint">لوصل العقد، اسحب من المنفذ السفلي للعقدة إلى عقدة أخرى.</string>
+    <string name="pipeline_editor_unsaved_title">المغادرة دون حفظ؟</string>
+    <string name="pipeline_editor_unsaved_text">في هذا المسار تغييرات لم تُحفظ بعد. المغادرة الآن تُفقدها.</string>
+    <string name="pipeline_editor_unsaved_save">احفظ وغادر</string>
+    <string name="pipeline_editor_unsaved_discard">تجاهل</string>
+    <string name="pipeline_editor_remove_connection_title">إزالة الوصلة؟</string>
+    <string name="pipeline_editor_remove_connection_text">سيُحذف الرابط بين العقدتين. يمكن التراجع عن التغيير من شريط أدوات المحرّر.</string>
+    <string name="pipeline_editor_remove_connection_confirm">إزالة</string>
+    <string name="pipeline_editor_remove_connection_cancel">إلغاء</string>
+
+    <string name="pipeline_editor_skill_allowlist_all">كل الأدوات</string>
+    <string name="pipeline_editor_skill_allowlist_none">بلا أدوات</string>
+    <plurals name="pipeline_editor_skill_allowlist_subset">
+        <item quantity="zero">%d أدوات</item>
+        <item quantity="one">%d أداة</item>
+        <item quantity="two">%d أداتان</item>
+        <item quantity="few">%d أدوات</item>
+        <item quantity="many">%d أداةً</item>
+        <item quantity="other">%d أداة</item>
+    </plurals>
+</resources>

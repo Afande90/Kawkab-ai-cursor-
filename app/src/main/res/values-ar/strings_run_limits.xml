@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="run_limits_entry_label">حدود التشغيل</string>
+    <string name="run_limits_entry_value" tools:ignore="PluralsCandidate">%1$,d خطوات · %2$,d رموز لكل تشغيل</string>
+    <string name="run_limits_entry_search">سقوف لتشغيل ذاتي واحد: الخطوات والرموز، وما لا يمكن وضع سقف له.</string>
+
+    <string name="run_limits_number" tools:ignore="PluralsCandidate">%1$,d</string>
+
+    <string name="run_limits_intro">يتوقف التشغيل الذاتي بنفسه عند بلوغ أحد هذه الحدود. كل ما يبدأه التشغيل يُحتسب ضمنها — المسارات التي يستدعيها، وكل مرة يُستأنف فيها.</string>
+
+    <string name="run_limits_group_steps">الخطوات</string>
+    <string name="run_limits_group_tokens">الرموز</string>
+    <string name="run_limits_group_spend">الإنفاق</string>
+
+    <string name="run_limits_steps_label">خطوات لكل تشغيل</string>
+    <string name="run_limits_steps_desc">عدد الخطوات التي يجوز للتشغيل اتخاذها قبل أن يتوقف. الخطوة الواحدة هي تنفيذ عقدة واحدة.</string>
+
+    <string name="run_limits_steps_background_label">خطوات لكل تشغيل في الخلفية</string>
+    <string name="run_limits_steps_background_desc_set">يسري على التشغيل الذي لم تبدأه أنت — مشغّل أو جدول أو مربّع الإعدادات السريعة أو تطبيق آخر.</string>
+    <string name="run_limits_steps_background_desc_inherited">لم يُضبط على حدة، لذلك فإن التشغيل الذي لم تبدأه أنت — مشغّل أو جدول أو مربّع الإعدادات السريعة أو تطبيق آخر — يستخدم الحد نفسه أعلاه.</string>
+
+    <string name="run_limits_tokens_label">رموز لكل تشغيل</string>
+    <string name="run_limits_tokens_desc">عدد الرموز التي يجوز للتشغيل إرسالها واستقبالها في المجموع.</string>
+
+    <string name="run_limits_tokens_background_label">رموز لكل تشغيل في الخلفية</string>
+    <string name="run_limits_tokens_background_desc">يحصل التشغيل الذي لم تبدأه أنت على حد رموز أقل افتراضيًا، لأنه لا أحد يراقب اكتماله.</string>
+
+    <string name="run_limits_qualifier_inherited">مثل الأعلى</string>
+
+    <string name="run_limits_spend_label">حد الإنفاق</string>
+    <string name="run_limits_spend_state">غير مقاس</string>
+    <string name="run_limits_spend_body">يعمل التطبيق بمفتاح واجهة برمجة التطبيقات الخاص بك، فلا يرى فاتورتك ولا يستطيع قياس تكلفة التشغيل أو حدّها. حد الرموز أعلاه هو أقرب وسيلة ضبط.</string>
+
+    <string name="run_limits_soft_note">يُحذّرك التشغيل في محادثة مفتوحة حين يتجاوز 75%% من أحد الحدود، وما زال هناك متسع للإنهاء. نقطة التحذير غير قابلة للضبط، وقد يُحذّر التشغيل الذي يُستأنف بعد توقف مؤقت مرة أخرى.</string>
+
+    <string name="run_termination_tone_limit">حد أمان</string>
+    <string name="run_termination_tone_stuck">لا تقدّم</string>
+    <string name="run_termination_tone_info">انتهى التشغيل</string>
+
+    <string name="run_termination_title_ceiling">أوقفه حد أمان</string>
+    <string name="run_termination_body_step_ceiling">استنفد هذا التشغيل كل الخطوات المسموح بها. ارفع حد الخطوات، أو قسّم العمل إلى تشغيلات أصغر.</string>
+    <string name="run_termination_body_token_ceiling">استنفد هذا التشغيل كل الرموز المسموح بها. ارفع حد الرموز، أو اطلب شيئًا أضيق.</string>
+
+    <string name="run_termination_title_no_progress">توقّف: لم يكن التشغيل يتقدّم</string>
+    <string name="run_termination_body_no_progress">ظل العمل نفسه يتكرر دون أن يدفع المهمة إلى الأمام، فأُنهي التشغيل.</string>
+
+    <string name="run_termination_title_run_stalled">توقّف: صمت التشغيل</string>
+    <string name="run_termination_body_run_stalled">توقفت المهمة عن الاستجابة فأُنهيت حتى تستطيع الرسائل الأخرى أن تعمل. خطوة كان ينتظرها — وهي في الأغلب أداة خارجية — لم تُجب.</string>
+
+    <string name="run_termination_title_hitl_expired">توقّف عن انتظار موافقتك</string>
+    <string name="run_termination_body_hitl_expired">احتاجت خطوة إلى موافقتك، وانتهت مهلة الانتظار قبل أن تصل إجابة.</string>
+
+    <string name="run_termination_title_graph_changed">تغيّر المسار بينما كان هذا التشغيل متوقفًا مؤقتًا</string>
+    <string name="run_termination_body_graph_changed">بُني هذا التشغيل على النسخة السابقة من المسار، فلم يستطع المتابعة من حيث توقّف. تشغيله من جديد يستخدم النسخة الحالية.</string>
+
+    <string name="run_termination_title_process_died">توقّف التطبيق بينما كان هذا التشغيل يعمل</string>
+    <string name="run_termination_body_process_died">وُجد التشغيل ناقصًا عند فتح التطبيق في المرة التالية فأُغلق. لم يبقَ شيء يعمل على نحو ناقص.</string>
+
+    <string name="run_termination_title_discarded">تجاهلت هذا التشغيل</string>
+    <string name="run_termination_body_discarded">انتهى بطلبك، ولم يبقَ شيء يعمل.</string>
+
+    <string name="run_termination_title_not_resumable">تعذّر استئناف هذا التشغيل</string>
+    <string name="run_termination_body_not_resumable">وصلت إجابتك، لكن التشغيل كان قد أُغلق. تشغيله من جديد يبدأ من البداية.</string>
+
+    <string name="run_termination_meter_steps_live" tools:ignore="PluralsCandidate">استُخدم %1$,d من %2$,d خطوة</string>
+    <string name="run_termination_meter_tokens_live" tools:ignore="PluralsCandidate">استُخدم %1$,d من %2$,d رمز</string>
+
+    <string name="run_ceiling_pause_title">توقّف مؤقتًا عند حد أمان</string>
+    <string name="run_ceiling_pause_body_steps" tools:ignore="PluralsCandidate">استنفد هذا التشغيل كل خطوة سُمح له بها. يمكنك أن تدعه يتابع لـ %1$,d خطوة إضافية، أو أن توقفه هنا.</string>
+    <string name="run_ceiling_pause_body_tokens" tools:ignore="PluralsCandidate">استنفد هذا التشغيل كل رمز سُمح له به. يمكنك أن تدعه يتابع لـ %1$,d رمز إضافي، أو أن توقفه هنا.</string>
+    <string name="run_ceiling_pause_continue" tools:ignore="PluralsCandidate">متابعة (+%1$,d)</string>
+    <string name="run_ceiling_pause_stop">أوقف التشغيل</string>
+
+    <string name="run_ceiling_pause_notification_title">تشغيل ينتظرك</string>
+    <string name="run_ceiling_pause_notification_text_steps" tools:ignore="PluralsCandidate">استُخدم %1$,d من %2$,d خطوة. انقر لتقرر هل يتابع.</string>
+    <string name="run_ceiling_pause_notification_text_tokens" tools:ignore="PluralsCandidate">استُخدم %1$,d من %2$,d رمز. انقر لتقرر هل يتابع.</string>
+    <string name="run_ceiling_channel_name">حدود التشغيل</string>
+    <string name="run_ceiling_channel_description">تشغيلات بلغت حدًا ضبطته وتنتظر أن يُقرَّر لها هل تتابع.</string>
+
+    <string name="run_termination_banner_step_ceiling" tools:ignore="PluralsCandidate">أوقفه حد أمان — استُخدم %1$,d من %2$,d خطوة.</string>
+    <string name="run_termination_banner_token_ceiling" tools:ignore="PluralsCandidate">أوقفه حد أمان — استُخدم %1$,d من %2$,d رمز.</string>
+    <string name="run_termination_banner_no_progress">توقّف: لم يكن التشغيل يتقدّم.</string>
+    <string name="run_termination_banner_run_stalled">توقّف: لم تُجب خطوة.</string>
+    <string name="run_termination_banner_hitl_expired">توقّف عن انتظار موافقتك.</string>
+    <string name="run_termination_banner_graph_changed">تغيّر المسار بينما كان هذا التشغيل متوقفًا مؤقتًا.</string>
+    <string name="run_termination_banner_process_died">توقّف التطبيق بينما كان هذا التشغيل يعمل.</string>
+    <string name="run_termination_banner_discarded">تجاهلت هذا التشغيل.</string>
+    <string name="run_termination_banner_not_resumable">تعذّر استئناف هذا التشغيل.</string>
+
+    <string name="run_termination_action_adjust_limits">تعديل الحدود</string>
+    <string name="run_termination_action_open_console">فتح وحدة التحكم</string>
+    <string name="run_termination_action_run_again">تشغيله من جديد</string>
+
+    <string name="run_notice_soft_steps" tools:ignore="PluralsCandidate">قرب حد الخطوات: استُخدم %1$,d من %2$,d خطوة.</string>
+    <string name="run_notice_soft_tokens" tools:ignore="PluralsCandidate">قرب حد الرموز: استُخدم %1$,d من %2$,d رمز.</string>
+    <string name="run_notice_looks_stuck">يبدو هذا التشغيل عالقًا — الخطوة نفسها تتكرر. سيتوقف إن لم يتغيّر شيء.</string>
+
+    <string name="run_termination_notification_body_step_ceiling" tools:ignore="PluralsCandidate">توقّف «%1$s» عند حد خطواته، بعد %2$,d خطوة.</string>
+    <string name="run_termination_notification_body_token_ceiling" tools:ignore="PluralsCandidate">توقّف «%1$s» عند حد رموزه، بعد %2$,d رمز.</string>
+
+    <string name="run_outcome_chat_failed_with_diagnostic">توقّف هذا التشغيل قبل أن يجيب: %1$s</string>
+    <string name="run_outcome_chat_failed">توقّف هذا التشغيل قبل أن يجيب.</string>
+    <string name="run_outcome_chat_cancelled">أُوقف هذا التشغيل قبل أن يجيب.</string>
+    <string name="run_outcome_chat_interrupted">قُوطع هذا التشغيل ولم يكتمل.</string>
+</resources>

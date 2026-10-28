@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="journal_time_just_now">للتو</string>
+    <string name="journal_time_minutes_ago">منذ %d د</string>
+    <string name="journal_day_today">اليوم</string>
+    <string name="journal_day_yesterday">أمس</string>
+
+    <string name="external_automation_title">الأتمتة الخارجية</string>
+    <string name="external_automation_journal_subtitle">سجل الطلبات</string>
+    <string name="external_automation_back_cd">رجوع</string>
+
+    <string name="external_automation_banner_off_title">متوقف</string>
+    <string name="external_automation_banner_off_body">لا يستطيع أي تطبيق خارجي بدء تشغيل. الطلبات التي تصل رغم ذلك تُرفض فورًا — وتُسجَّل أدناه أيضًا، فيبقى ظاهرًا الملف الشخصي الذي ينادي عقدًا متوقفًا.</string>
+    <string name="external_automation_banner_unbound_title">لم يُختر مسار</string>
+    <string name="external_automation_banner_unbound_body">الأتمتة الخارجية مفعّلة، لكن لم يُختر شيء لتشغّله التطبيقات الخارجية، لذلك يُرفض كل طلب. اختر مسارًا في الشاشة السابقة لتعمل.</string>
+    <string name="external_automation_banner_bound_title">يقبل الطلبات</string>
+    <string name="external_automation_banner_bound_body">يجوز للتطبيقات الخارجية تشغيل مسار واحد: %s. ولا شيء غيره.</string>
+
+    <string name="external_automation_section_label">الطلبات الواردة</string>
+    <plurals name="external_automation_retention_footer">
+        <item quantity="zero">تُحفظ الطلبات لمدة %1$d يوم · يُخزَّن %2$s على الأكثر</item>
+        <item quantity="one">تُحفظ الطلبات لمدة %1$d يوم · يُخزَّن %2$s على الأكثر</item>
+        <item quantity="two">تُحفظ الطلبات لمدة %1$d يومين · يُخزَّن %2$s على الأكثر</item>
+        <item quantity="few">تُحفظ الطلبات لمدة %1$d أيام · يُخزَّن %2$s على الأكثر</item>
+        <item quantity="many">تُحفظ الطلبات لمدة %1$d يومًا · يُخزَّن %2$s على الأكثر</item>
+        <item quantity="other">تُحفظ الطلبات لمدة %1$d يوم · يُخزَّن %2$s على الأكثر</item>
+    </plurals>
+    <string name="external_automation_empty_title">لا طلبات بعد</string>
+    <string name="external_automation_empty_body">لم يطلب شيء تشغيل مسار بعد. كل طلب يرسله تطبيق آخر — قُبل أو رُفض — يظهر هنا.</string>
+
+    <string name="external_automation_status_accepted">مقبول</string>
+    <string name="external_automation_status_completed">مكتمل</string>
+    <string name="external_automation_status_failed">فشل</string>
+    <string name="external_automation_status_rejected">مرفوض</string>
+    <string name="external_automation_status_blocked">مُرجَأ</string>
+
+    <string name="external_automation_outcome_running">قيد التشغيل…</string>
+    <string name="external_automation_outcome_completed">اكتمل التشغيل.</string>
+    <string name="external_automation_outcome_failed">لم يكتمل التشغيل.</string>
+
+    <string name="external_automation_rejected_hint">إعادة إرسال الطلب نفسه تعطيك الإجابة نفسها.</string>
+    <string name="external_automation_blocked_hint">يمكن قبول الطلب نفسه لاحقًا.</string>
+
+    <string name="external_automation_reason_contract_disabled">الأتمتة الخارجية متوقفة.</string>
+    <string name="external_automation_reason_surface_not_bound">لم يُختر مسار لتشغّله التطبيقات الخارجية.</string>
+    <string name="external_automation_reason_target_not_allowed">طلب مسارًا غير الذي اخترته.</string>
+    <string name="external_automation_reason_target_missing">لم يذكر أي مسار يُشغَّل.</string>
+    <string name="external_automation_reason_target_ambiguous">سمّى المسار مرتين، بالمعرّف وبالاسم، والاثنان مختلفان.</string>
+    <string name="external_automation_reason_unknown_action">استخدم إجراءً لا يجيب عنه هذا التطبيق.</string>
+    <string name="external_automation_reason_prompt_missing">لم يضمّن رسالة ليُشغَّل عليها.</string>
+    <string name="external_automation_reason_prompt_ambiguous">أرسل الرسالة مرتين، كنص عادي وكترميز base64.</string>
+    <string name="external_automation_reason_prompt_undecodable">تعذّر فك ترميز رسالة base64.</string>
+    <string name="external_automation_reason_request_id_missing">لم يضمّن معرّف طلب ليُجاب به.</string>
+    <string name="external_automation_reason_value_too_long">أرسل معرّفًا أو عنوان إجابة أطول مما يسمح به العقد.</string>
+    <string name="external_automation_reason_rate_limited">طلبات كثيرة في الساعة الأخيرة.</string>
+    <string name="external_automation_reason_return_package_mismatch">طلب إرسال الإجابة إلى تطبيق غير التطبيق الذي نادى.</string>
+    <string name="external_automation_reason_return_package_mismatch_note">لم يُشغَّل شيء، ولم يُرسَل شيء إلى ذلك التطبيق.</string>
+
+    <string name="external_automation_target_prefix">لأجل</string>
+    <string name="external_automation_target_by_id">المعرّف %s</string>
+    <string name="external_automation_action_prefix">الإجراء %s</string>
+    <string name="external_automation_sender_attested">أرسله %s · أكّده أندرويد</string>
+    <string name="external_automation_sender_claimed">طُلب إرسال الإجابة إلى %s · غير موثَّق</string>
+    <string name="external_automation_request_id">طلب %s</string>
+    <string name="external_automation_repeat">×%d</string>
+    <string name="external_automation_repeat_cd" tools:ignore="PluralsCandidate">تكرّر %d مرات</string>
+
+    <string name="external_automation_call_title">كيف ينادي تطبيق آخر هذا</string>
+    <string name="external_automation_call_body">أرسل بثًا بهذا الإجراء وهذه الإضافات. أمثلة مختبرة لـ Tasker وMacroDroid وadb موجودة في توثيق المشروع.</string>
+    <string name="external_automation_call_action_label">الإجراء</string>
+    <string name="external_automation_call_keys_label">الإضافات</string>
+    <string name="external_automation_call_copy">نسخ</string>
+    <string name="external_automation_call_expand_cd">أظهر كيف ينادي تطبيق آخر هذا</string>
+    <string name="external_automation_call_clip_label">الأتمتة الخارجية في كوكب</string>
+
+    <string name="external_automation_key_pipeline_id">معرّف المسار المراد تشغيله. استخدم هذا أو الاسم، ولا تستخدمهما معًا.</string>
+    <string name="external_automation_key_pipeline_name">اسم المسار المراد تشغيله، بمطابقة تامة.</string>
+    <string name="external_automation_key_prompt">الرسالة التي يعمل عليها المسار.</string>
+    <string name="external_automation_key_prompt_b64">الرسالة نفسها بترميز base64، لأغلفة الأوامر التي تفسد علامات الاقتباس.</string>
+    <string name="external_automation_key_request_id">معرّفك أنت، حتى 128 محرفًا. يعود مع الإجابة حتى تستطيع المطابقة بينهما. لا يلزم إلا إذا طلبت إجابة.</string>
+    <string name="external_automation_key_return_action">الإجراء الذي تُرسل به الإجابة، حتى 256 محرفًا. إن تُرك، يُستخدم إجراء العقد نفسه.</string>
+    <string name="external_automation_key_return_package">الحزمة التي تُسلَّم إليها الإجابة، حتى 256 محرفًا. اتركه فارغًا للإرسال بلا انتظار إجابة.</string>
+
+    <string name="external_automation_consent_title">أتسمح لتطبيقات أخرى بتشغيل مسار؟</string>
+    <string name="external_automation_consent_intro">ستستطيع تطبيقات الأتمتة مثل Tasker أو MacroDroid — ونصوص الطرفية عبر adb — أن تطلب من كوكب تشغيل مسار واحد لها.</string>
+    <string name="external_automation_consent_any_app">أي تطبيق على هذا الجهاز يستطيع إرسال بث يجوز له أن يطلب. لا توجد قائمة لكل تطبيق: المسار الذي تختاره هو الإذن كله.</string>
+    <string name="external_automation_consent_one_pipeline">لا يمكن تشغيل إلا ذلك المسار الواحد. أي طلب يسمّي غيره يُرفض، ولا يُحوَّل أبدًا إلى المسار الذي اخترته.</string>
+    <string name="external_automation_consent_approvals">تظل إعدادات موافقتك سارية: يتوقف استدعاء الأداة ويسألك أولًا تمامًا كما في تشغيلات التطبيق في الخلفية، والأداة المدمّرة تفعل ذلك دائمًا.</string>
+    <string name="external_automation_consent_cost">التشغيل الذي يبدأ بهذه الطريقة يمكن أن يستخدم مفتاح واجهة برمجة التطبيقات في السحابة، وتكلفته هي تكلفة ذلك التشغيل.</string>
+    <string name="external_automation_consent_reversible">نقرة واحدة على المفتاح نفسه تُوقف هذا من جديد.</string>
+    <string name="external_automation_consent_confirm">تفعيل</string>
+    <string name="external_automation_consent_cancel">إلغاء</string>
+
+    <string name="external_automation_export_share_cd">مشاركة سجل الطلبات</string>
+    <string name="external_automation_export_save_cd">حفظ سجل الطلبات</string>
+</resources>

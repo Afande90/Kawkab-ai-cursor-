@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="monitoring_power_saving_title">وضع توفير الطاقة مفعّل</string>
+    <string name="monitoring_power_saving_text">البطارية منخفضة. أُزيل نموذج الوكيل من الذاكرة وأُوقفت مهام الخلفية مؤقتًا.</string>
+    <string name="monitoring_section_session_aggregates">مجاميع الجلسة</string>
+    <string name="monitoring_section_time_per_node">الوقت حسب نوع العقدة</string>
+    <string name="monitoring_section_logs">إجراءات النظام والسجلات</string>
+    <string name="monitoring_no_recent_actions">لم يُعثر على إجراءات حديثة.</string>
+    <string name="monitoring_screen_title">المقاييس المباشرة</string>
+    <string name="monitoring_empty_title">لا مقاييس بعد</string>
+    <string name="monitoring_empty_subtitle">شغّل مسارًا لتُملأ المقاييس المباشرة هنا.</string>
+    <string name="monitoring_error_title">تعذّر تحميل المقاييس</string>
+
+    <string name="taskmonitor_screen_title">المهام النشطة</string>
+    <string name="taskmonitor_empty_title">لا مهام قيد التشغيل</string>
+    <string name="taskmonitor_empty_subtitle">تظهر هنا مهام الخلفية وجلسات المحادثة النشطة.</string>
+    <string name="taskmonitor_error_title">تعذّر تحميل المهام</string>
+    <string name="taskmonitor_open_chat">فتح المحادثة</string>
+    <string name="taskmonitor_filter_all">الكل</string>
+    <string name="taskmonitor_filter_active">النشطة</string>
+    <string name="taskmonitor_filter_background">الخلفية</string>
+    <string name="taskmonitor_filter_completed">المكتملة</string>
+    <string name="taskmonitor_detail_no_logs">لم تُلتقط أسطر سجل بعد.</string>
+
+    <string name="taskmonitor_row_scheduled_title">مهمة مجدولة</string>
+    <string name="taskmonitor_row_scheduled_interval_format">كل %1$d ساعة</string>
+
+    <string name="taskmonitor_cancel_all_cd">إيقاف كل المهام المجدولة</string>
+    <string name="taskmonitor_cancel_all_title">إيقاف كل المهام المجدولة؟</string>
+    <string name="taskmonitor_cancel_all_confirm">إيقاف الكل</string>
+    <string name="taskmonitor_cancel_all_dismiss">أبقها</string>
+    <plurals name="taskmonitor_cancel_all_body">
+        <item quantity="zero">هذا يوقف المهام المجدولة وعددها %1$d، بما فيها ما يعمل الآن. لا تتأثر الأتمتة ولا مشغّلاتها، ولا يُحذف شيء — ويمكن جدولة مهمة من جديد.</item>
+        <item quantity="one">هذا يوقف المهمة المجدولة، حتى إن كانت تعمل الآن. لا تتأثر الأتمتة ولا مشغّلاتها، ولا يُحذف شيء — ويمكن جدولة مهمة من جديد.</item>
+        <item quantity="two">هذا يوقف مهمتين مجدولتين وعددهما %1$d، بما في ذلك ما يعمل الآن. لا تتأثر الأتمتة ولا مشغّلاتها، ولا يُحذف شيء — ويمكن جدولة مهمة من جديد.</item>
+        <item quantity="few">هذا يوقف %1$d مهام مجدولة، بما فيها ما يعمل الآن. لا تتأثر الأتمتة ولا مشغّلاتها، ولا يُحذف شيء — ويمكن جدولة مهمة من جديد.</item>
+        <item quantity="many">هذا يوقف %1$d مهمةً مجدولة، بما فيها ما يعمل الآن. لا تتأثر الأتمتة ولا مشغّلاتها، ولا يُحذف شيء — ويمكن جدولة مهمة من جديد.</item>
+        <item quantity="other">هذا يوقف %1$d مهمة مجدولة، بما فيها ما يعمل الآن. لا تتأثر الأتمتة ولا مشغّلاتها، ولا يُحذف شيء — ويمكن جدولة مهمة من جديد.</item>
+    </plurals>
+</resources>

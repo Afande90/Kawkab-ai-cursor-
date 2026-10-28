@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="common_cancel">إلغاء</string>
+    <string name="common_save">حفظ</string>
+    <string name="common_delete">حذف</string>
+    <string name="common_create">إنشاء</string>
+    <string name="common_close">إغلاق</string>
+    <string name="common_back">رجوع</string>
+    <string name="common_retry">إعادة المحاولة</string>
+    <string name="common_ok">حسنًا</string>
+    <string name="common_list_separator">"، "</string>
+
+    <string name="destructive_typed_keyword">نعم</string>
+
+    <string name="nav_tab_chat">المحادثة</string>
+    <string name="nav_tab_pipelines">المسارات</string>
+    <string name="nav_tab_tools">الأدوات</string>
+    <string name="nav_tab_more">المزيد</string>
+
+    <string name="more_row_memory">الذاكرة</string>
+    <string name="more_row_models">النماذج</string>
+    <string name="more_row_prompts">مكتبة الموجّهات</string>
+    <string name="more_row_task_monitor">المهام</string>
+    <string name="more_row_monitoring">المقاييس المباشرة</string>
+    <string name="more_row_settings">الإعدادات</string>
+    <string name="more_row_about">حول</string>
+    <string name="more_row_library">مكتبة الإعدادات المسبقة للمسارات</string>
+    <string name="more_row_files">الملفات</string>
+    <string name="more_row_chat_archive">المحادثات المؤرشفة</string>
+    <string name="more_chat_archive_subtitle_empty">لم يُؤرشف شيء بعد</string>
+    <plurals name="more_chat_archive_subtitle">
+        <item quantity="zero">%1$d محادثات</item>
+        <item quantity="one">%1$d محادثة</item>
+        <item quantity="two">%1$d محادثتان</item>
+        <item quantity="few">%1$d محادثات</item>
+        <item quantity="many">%1$d محادثةً</item>
+        <item quantity="other">%1$d محادثة</item>
+    </plurals>
+    <string name="more_row_triggers">المشغّلات</string>
+    <string name="more_triggers_subtitle">تشغيل المسارات وفق جدول أو حدث في الجهاز</string>
+    <string name="more_subtitle">كل ما عدا ذلك</string>
+    <string name="more_section_automation">الأتمتة</string>
+    <string name="more_section_content">محتواك</string>
+    <string name="more_section_blocks">لبنات البناء</string>
+    <string name="more_section_app">التطبيق</string>
+
+    <string name="about_title">حول</string>
+    <string name="about_version">الإصدار %1$s</string>
+
+    <string name="prompt_preview_title">معاينة الموجّه</string>
+    <string name="prompt_preview_variable_not_found">المتغيّر غير موجود</string>
+
+    <string name="journal_export_chooser_title">مشاركة السجل</string>
+    <string name="journal_export_share_failed">لا تطبيق على هذا الهاتف يستطيع استلام الملف</string>
+    <string name="journal_export_save_failed">تعذّر حفظ السجل</string>
+    <string name="journal_export_render_failed">تعذّر قراءة السجل</string>
+    <plurals name="journal_export_saved">
+        <item quantity="zero">حُفظ %1$d قيود</item>
+        <item quantity="one">حُفظ %1$d قيد</item>
+        <item quantity="two">حُفظ %1$d قيدان</item>
+        <item quantity="few">حُفظت %1$d قيود</item>
+        <item quantity="many">حُفظ %1$d قيدًا</item>
+        <item quantity="other">حُفظ %1$d قيد</item>
+    </plurals>
+</resources>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="models_screen_title">النماذج</string>
+    <string name="models_error_unknown">حدث خطأ غير معروف</string>
+    <string name="models_meta_verified">متحقَّق</string>
+    <string name="models_meta_not_verified">غير متحقَّق</string>
+    <string name="models_interrupted_continue">متابعة</string>
+    <string name="models_error_link_not_litertlm">هذا الرابط ليس ملف .litertlm. لا تعمل على الهاتف إلا نماذج .litertlm.</string>
+
+    <string name="models_subtitle_format" tools:ignore="PluralsCandidate">%1$d نشطة · %2$d على القرص · %3$s</string>
+    <string name="models_section_hf">Hugging Face</string>
+    <string name="models_section_hf_optional">اختياري</string>
+    <string name="models_field_hf_placeholder">انقر للصق رمز hf_…</string>
+    <string name="models_action_paste">+ لصق</string>
+    <string name="models_section_custom_url">رابط نموذج مخصّص</string>
+    <string name="models_field_url_placeholder">https://huggingface.co/…/model.litertlm</string>
+    <string name="models_action_get">تنزيل</string>
+    <string name="models_hint_formats">.litertlm فقط</string>
+    <string name="models_section_available_presets">الإعدادات المسبقة المتاحة</string>
+    <string name="models_preset_get">تنزيل</string>
+    <string name="models_preset_activate">تفعيل</string>
+    <string name="models_preset_delete">حذف</string>
+    <string name="models_preset_cancel_cd">إلغاء التنزيل</string>
+    <string name="models_row_menu_cd">إجراءات النموذج</string>
+    <string name="models_section_downloaded_v2">النماذج المنزَّلة</string>
+    <string name="models_custom_download_label">جارٍ تنزيل النموذج المخصّص…</string>
+    <string name="models_active_badge">نشط</string>
+    <string name="models_empty_title">لا نماذج مثبّتة</string>
+    <string name="models_empty_subtitle">أضف نموذجًا من قائمة الإعدادات المسبقة، أو الصق رابطًا مخصّصًا.</string>
+    <string name="models_empty_cta">إضافة نموذج</string>
+    <string name="models_error_title">تعذّر تحميل النماذج</string>
+    <string name="models_overflow_cd">مزيد من الخيارات</string>
+    <string name="models_discover_cd">اكتشاف النماذج</string>
+
+    <string name="models_benchmark_failed">تعذّر تشغيل قياس الأداء</string>
+    <string name="models_benchmark_share_subject">قياس أداء النموذج</string>
+</resources>
