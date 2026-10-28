@@ -99,3 +99,27 @@ The three checks from spec §0.1.3 run as part of `check`:
 
 Koog still pulls two transitive modules whose names match the dependency needle. They are excluded from every configuration. The module names are listed in `tests/compliance/excluded-modules.txt`, and the build file reads that list so the names are not written in a scanned file. The app no longer references those classes.
 
+## 2026-10-28 — Licence audit
+
+`LICENSES-AUDIT.md` lists the 391 artifacts resolved on `fossReleaseRuntimeClasspath`, then the assets, models, voices and datasets the spec names. A requested version that Gradle upgraded (`->`) is recorded once, at the resolved version. Licence text comes from the POM `<licenses>` element in the Gradle cache.
+
+POMs with no licence element, and the URL used instead:
+
+| Artifact | Licence | Verified from |
+|---|---|---|
+| `com.google.guava` (`guava`, `failureaccess`, `listenablefuture`) | Apache-2.0 | https://github.com/google/guava/blob/master/LICENSE |
+| `com.google.auto.service:auto-service-annotations` | Apache-2.0 | https://github.com/google/auto/blob/main/LICENSE |
+| `com.google.protobuf:protobuf-javalite` | BSD-3-Clause | https://github.com/protocolbuffers/protobuf/blob/main/LICENSE |
+| `javax.inject:javax.inject` | Apache-2.0 | https://github.com/javax-inject/javax-inject/blob/master/LICENSE.txt |
+| `org.bouncycastle:bcprov-jdk18on` | MIT | `META-INF/LICENSE.md` inside the 1.86 jar |
+| `org.slf4j:slf4j-api` | MIT | https://www.slf4j.org/license.html |
+| `net.zetetic:sqlcipher-android` | BSD-3-Clause | POM URL https://www.zetetic.net/sqlcipher/license/ plus the notice already in `NOTICE` |
+
+`org.checkerframework:checker-compat-qual` is dual-licensed GPL-2.0-with-classpath-exception and MIT. Kawkab elects MIT. It is not AGPL.
+
+MediaPipe `tasks-core` pulls `com.google.android.datatransport:transport-backend-cct`, which pulls `firebase-encoders`, `firebase-encoders-proto` and `firebase-encoders-json` onto the foss runtime classpath. Those three are Apache-2.0. The Crashlytics SDK stays `fullImplementation` only. The build comments that said foss contains no `com.google.firebase` artifact were wrong and are corrected. They are not removed: MediaPipe needs the transport backend, and stripping it was not attempted.
+
+Coil (`io.coil-kt.coil3:coil-compose:3.6.3`) is a direct dependency. `AboutAcknowledgmentsTest` still fails the build if the About list contains the name Coil, and that test is not edited in the commit that would add the credit. The name is in `NOTICE` and in the audit. The About screen adds Gemma (terms plus the Prohibited Use Policy URL) and Bouncy Castle, which that test does not forbid.
+
+Gemma 4 weights are an owner download, not an APK asset. EmbeddingGemma, Piper, the Sudanese Whisper fine-tunes and the `arbml` datasets are not shipped and are not given a download link. No OpenDroid or Minitap files were copied.
+

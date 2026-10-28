@@ -555,10 +555,10 @@ android {
 // `assemble`, `assembleFullRelease`) keeps the plugins so Firebase's startup
 // provider finds `google_app_id` and does not throw under Robolectric.
 //
-// The `foss` flavour's freedom from the `com.google.firebase` runtime classpath
-// is guaranteed independently by the flavour-scoped `fullImplementation(...)`
-// dependencies, not by this guard — this guard only keeps the proprietary
-// *build-time* plugins out of a pure F-Droid build.
+// Crashlytics itself is `fullImplementation` only. This guard keeps the
+// proprietary *build-time* plugins out of a pure F-Droid build. It does not
+// strip `com.google.firebase:firebase-encoders*`, which MediaPipe's transport
+// backend pulls onto the foss runtime classpath (Apache-2.0; see LICENSES-AUDIT.md).
 val requestedTaskNames = gradle.startParameter.taskNames
 val fossOnlyBuild = requestedTaskNames.any { it.contains("Foss", ignoreCase = true) } &&
     requestedTaskNames.none { it.contains("Full", ignoreCase = true) }
@@ -2271,9 +2271,10 @@ dependencies {
     // `firebase-analytics`, and the app logs no analytics events. Declaring it
     // used to drag `play-services-measurement` in, which added an advertising-ID
     // permission set to the `full` manifest for a collector nothing ever fed.
-    // Scoped to the `full` flavour ONLY (`fullImplementation`) so the `foss`
-    // build carries no `com.google.firebase` artifact on any classpath — the
-    // hard requirement for F-Droid. The BoM (Bill of Materials) pins
+    // Scoped to the `full` flavour ONLY (`fullImplementation`). The foss runtime
+    // classpath still contains the Apache-2.0 `firebase-encoders` libraries,
+    // because MediaPipe tasks-core pulls `transport-backend-cct`. That is not
+    // the Crashlytics SDK. The BoM (Bill of Materials) pins
     // inter-library versions; individual modules are intentionally un-versioned.
     // Starting from Firebase BoM 34.0 the `-ktx` artifacts were folded into the
     // base modules and removed.

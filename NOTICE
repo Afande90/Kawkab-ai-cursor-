@@ -17,8 +17,10 @@ Third-party components distributed with the application
 ================================================================================
 
 The following third-party components are bundled in the released APK/AAB. Each
-is redistributed under its own license, reproduced or referenced below. All of
-the licenses listed here are compatible with the Apache License 2.0.
+is redistributed under its own license, reproduced or referenced below. The
+bundled licences below (Apache-2.0, BSD-3-Clause, MIT, SIL OFL 1.1) allow
+commercial use with attribution. Gemma weights are not bundled; their terms
+are in their own section and are not the Apache License.
 
 --------------------------------------------------------------------------------
 Apache License 2.0 components
@@ -45,7 +47,10 @@ required for their redistribution beyond this acknowledgment:
   * Multiplatform Markdown Renderer — Mike Penz
   * Timber — Jake Wharton
   * ProcessPhoenix — Jake Wharton
-  * Firebase Android SDK (Crashlytics) — Google LLC
+  * Coil — Coil Contributors (https://github.com/coil-kt/coil)
+  * Bouncy Castle (bcprov) — The Legion of the Bouncy Castle Inc. (MIT; full notice below)
+  * Firebase Android SDK (Crashlytics) — Google LLC — the `full` flavour only
+  * Firebase encoders — Google LLC — Apache-2.0 transitive of MediaPipe, including the `foss` flavour
 
 --------------------------------------------------------------------------------
 SQLCipher for Android — BSD 3-Clause License
@@ -110,6 +115,52 @@ released APK/AAB:
   * Universal Sentence Encoder — Copyright Google LLC — Apache License 2.0
     (the MediaPipe Text Embedder model, https://storage.googleapis.com/mediapipe-models/text_embedder/universal_sentence_encoder/float32/latest/universal_sentence_encoder.tflite;
     model family: https://www.kaggle.com/models/google/universal-sentence-encoder)
+
+--------------------------------------------------------------------------------
+Bouncy Castle — MIT License
+--------------------------------------------------------------------------------
+
+org.bouncycastle:bcprov-jdk18on
+
+Copyright (c) 2000-2026 The Legion of the Bouncy Castle Inc. (https://www.bouncycastle.org)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+The licence text shipped inside the jar is META-INF/LICENSE.md.
+
+--------------------------------------------------------------------------------
+Gemma models — Gemma Terms of Use (not Apache-2.0)
+--------------------------------------------------------------------------------
+
+Gemma weights are not inside the APK. The app can download them at the owner's
+request. They are not covered by the Apache-2.0 grant above.
+
+Use of Gemma is subject to the Gemma Terms of Use:
+  https://ai.google.dev/gemma/terms
+
+and to the Gemma Prohibited Use Policy:
+  https://ai.google.dev/gemma/prohibited_use_policy
+
+The on-device presets are the LiteRT community mirrors
+`litert-community/gemma-4-E4B-it-litert-lm` and
+`litert-community/gemma-4-E2B-it-litert-lm`. Fine-tunes of Gemma models inherit
+these terms. The About screen names Gemma and links the Prohibited Use Policy.
 
 ================================================================================
 Development-time tooling (not distributed in the application)

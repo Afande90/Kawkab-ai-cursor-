@@ -146,6 +146,11 @@ internal object AboutAcknowledgments {
         AcknowledgmentEntry(name = "ProcessPhoenix", license = APACHE_2_0),
         AcknowledgmentEntry(name = "Firebase Crashlytics", license = APACHE_2_0),
         AcknowledgmentEntry(name = "SQLCipher", license = "BSD-3-Clause"),
+        AcknowledgmentEntry(name = "Bouncy Castle", license = "MIT"),
+        AcknowledgmentEntry(
+            name = "Gemma",
+            license = "Gemma terms; Prohibited Use Policy https://ai.google.dev/gemma/prohibited_use_policy",
+        ),
         AcknowledgmentEntry(name = "Inter", license = "SIL OFL 1.1"),
         AcknowledgmentEntry(name = "JetBrains Mono", license = "SIL OFL 1.1"),
     )
