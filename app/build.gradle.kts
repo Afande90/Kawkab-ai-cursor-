@@ -1777,6 +1777,67 @@ val verifyDocumentationLinks by tasks.registering(VerifyDocumentationLinksTask::
 verifyDocumentationLinks { mustRunAfter(generateDocumentationLinks) }
 tasks.named("check") { dependsOn(verifyDocumentationLinks) }
 
+// Compliance checks (spec §0.1.3). The patterns live under tests/compliance,
+// which the source scan skips, so this build file does not name them.
+val verifyComplianceSource by tasks.registering(Exec::class) {
+    group = "verification"
+    description = "Fails if a tracked file outside the compliance exclude list matches the forbidden-name pattern."
+    workingDir = rootDir
+    commandLine("python3", "tests/compliance/check_compliance.py", "source")
+}
+
+val verifyComplianceDependencies by tasks.registering {
+    group = "verification"
+    description = "Fails if an app dependency coordinate matches the compliance needle."
+    doLast {
+        val needle = rootProject.file("tests/compliance/dependency-needle.txt").readText().trim()
+        val hits = linkedSetOf<String>()
+        configurations.forEach { configuration ->
+            configuration.dependencies.forEach { dependency ->
+                val line = "${dependency.group}:${dependency.name}:${dependency.version}"
+                if (line.contains(needle, ignoreCase = true)) {
+                    hits += "${configuration.name} $line"
+                }
+            }
+        }
+        val classpaths = listOf(
+            "fossDebugCompileClasspath",
+            "fossDebugRuntimeClasspath",
+            "fullDebugCompileClasspath",
+            "fullDebugRuntimeClasspath",
+        )
+        classpaths.forEach { name ->
+            val configuration = configurations.getByName(name)
+            configuration.incoming.resolutionResult.allComponents.forEach { component ->
+                val id = component.id.displayName
+                if (id.contains(needle, ignoreCase = true)) hits += "$name $id"
+            }
+        }
+        if (hits.isNotEmpty()) {
+            throw GradleException(
+                "A dependency matches the compliance needle:\n" + hits.joinToString("\n"),
+            )
+        }
+    }
+}
+
+val verifyComplianceDomains by tasks.registering(Exec::class) {
+    group = "verification"
+    description = "Fails if a merged manifest, network security config, or string resource matches a forbidden domain."
+    workingDir = rootDir
+    dependsOn("processFossDebugMainManifest", "processFullDebugMainManifest")
+    commandLine(
+        "python3",
+        "tests/compliance/check_compliance.py",
+        "domains",
+        "app/build/intermediates/merged_manifest",
+    )
+}
+
+tasks.named("check") {
+    dependsOn(verifyComplianceSource, verifyComplianceDependencies, verifyComplianceDomains)
+}
+
 // Bundled documentation — the documents a user reads *inside* the app.
 //
 // `faq.md` and `troubleshooting.md` are needed exactly when the browser is
@@ -2068,6 +2129,14 @@ configurations.configureEach {
     // release classpath; docs/release.md §5).
     exclude(group = "ai.koog", module = "agents-features-opentelemetry")
     exclude(group = "ai.koog", module = "agents-features-opentelemetry-android")
+    // Provider modules the compliance check must not find on the classpath.
+    // The module names are listed beside the check, not spelled here.
+    rootProject.file("tests/compliance/excluded-modules.txt").readLines()
+        .map { it.substringBefore("#").trim() }
+        .filter { it.isNotEmpty() }
+        .forEach { moduleName ->
+            exclude(group = "ai.koog", module = moduleName)
+        }
     exclude(group = "io.opentelemetry")
     exclude(group = "io.opentelemetry.kotlin")
     // The SLF4J provider Koog's Android client module brings in at runtime. It

@@ -1,0 +1,3 @@
+# Transitive Koog modules that must not be on the app classpath.
+prompt-executor-anthropic-client
+prompt-executor-anthropic-client-android

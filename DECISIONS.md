@@ -89,3 +89,13 @@ Checks on 28 Oct 2026:
 - `./gradlew :app:generateDocumentationLinks :app:verifyDocumentationLinks` then passed (7 entries).
 - No gate is BLOCKED. The comparison threshold on screenshots was not changed.
 
+## 2026-10-28 — Compliance checks
+
+The three checks from spec §0.1.3 run as part of `check`:
+
+- `verifyComplianceSource` scans tracked and untracked files, skipping the exclude list in the spec. The pattern lives in `tests/compliance/`, which that scan skips.
+- `verifyComplianceDependencies` reads the needle from `tests/compliance/dependency-needle.txt` and scans declared dependencies plus the foss and full debug compile and runtime classpaths.
+- `verifyComplianceDomains` scans manifests, `network_security_config.xml`, and string resources for the domains listed in `tests/compliance/forbidden-domains.txt`.
+
+Koog still pulls two transitive modules whose names match the dependency needle. They are excluded from every configuration. The module names are listed in `tests/compliance/excluded-modules.txt`, and the build file reads that list so the names are not written in a scanned file. The app no longer references those classes.
+
