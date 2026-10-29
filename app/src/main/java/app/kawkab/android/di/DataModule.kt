@@ -1,6 +1,7 @@
 package app.kawkab.android.di
 
 import app.kawkab.android.data.audio.AudioRecorderImpl
+import app.kawkab.android.data.engine.AndroidDeviceMemory
 import app.kawkab.android.data.engine.AndroidRunEnvironment
 import app.kawkab.android.data.engine.DefaultTextEmbedderFactory
 import app.kawkab.android.data.engine.KoogProviderConnectionChecker
@@ -62,6 +63,7 @@ import app.kawkab.android.data.services.WorkManagerModelFileHashScheduler
 import app.kawkab.android.data.services.WorkManagerTriggerScheduler
 import app.kawkab.android.domain.connection.McpConnectionChecker
 import app.kawkab.android.domain.connection.ProviderConnectionChecker
+import app.kawkab.android.domain.engine.DeviceMemory
 import app.kawkab.android.domain.engine.HardwareAccelerationProbe
 import app.kawkab.android.domain.engine.LlmInferenceEngine
 import app.kawkab.android.domain.engine.TaskQueueManager
@@ -177,12 +179,21 @@ abstract class DataModule {
     abstract fun bindLlmInferenceEngine(engine: LiteRTLlmEngine): LlmInferenceEngine
 
     /**
-     * Binds the OpenCL-backed [HardwareAccelerationProbe] used to decide whether
-     * a first-time install may default to the GPU backend.
+     * Binds the OpenCL-backed [HardwareAccelerationProbe].
+     *
+     * First install no longer calls it. GPU stays a settings choice. The probe
+     * remains so a later check can ask whether OpenCL is present.
      */
     @Binds
     @Singleton
     abstract fun bindHardwareAccelerationProbe(probe: OpenClAccelerationProbe): HardwareAccelerationProbe
+
+    /**
+     * Binds [AndroidDeviceMemory] so onboarding can tell a flagship phone from a smaller one.
+     */
+    @Binds
+    @Singleton
+    abstract fun bindDeviceMemory(memory: AndroidDeviceMemory): DeviceMemory
 
     /**
      * Binds the [MediaPipeTextEmbeddingEngine] implementation to the [TextEmbeddingEngine] interface.

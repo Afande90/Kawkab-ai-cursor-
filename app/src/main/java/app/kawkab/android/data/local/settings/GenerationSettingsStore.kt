@@ -385,6 +385,7 @@ class GenerationSettingsStore @Inject constructor(
         put("timestampMs", result.timestampMs)
         put("success", result.success)
         if (result.errorMessage != null) put("error", result.errorMessage)
+        if (result.timeToFirstTokenMs != null) put("ttftMs", result.timeToFirstTokenMs)
     }.toString()
 
     private fun decodeTestProbeResult(raw: String?): TestProbeResult? {
@@ -397,6 +398,7 @@ class GenerationSettingsStore @Inject constructor(
                 timestampMs = json.optLong("timestampMs", 0L),
                 success = json.optBoolean("success", false),
                 errorMessage = json.optString("error", "").takeIf { it.isNotBlank() },
+                timeToFirstTokenMs = if (json.has("ttftMs")) json.optLong("ttftMs") else null,
             )
         } catch (e: JSONException) {
             Timber.w(e, "Failed to parse last_test_probe_result — clearing")

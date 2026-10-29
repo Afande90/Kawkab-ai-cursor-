@@ -42,6 +42,7 @@
     <string name="settings_row_inference_backend_subtitle">%1$s · يرجع إلى CPU إذا تعذّر البدء.</string>
     <string name="settings_row_test_backend_idle">اضغط تشغيل للتحقق من إمكانية الوصول.</string>
     <string name="settings_row_test_backend_success" tools:ignore="PluralsCandidate">آخر فحص · %1$d tok في %2$s · %3$s tok/s</string>
+    <string name="settings_row_test_backend_first_token"> · أول رمز %1$d مللي ثانية</string>
     <string name="settings_row_test_backend_failed">فشل آخر فحص · %1$s</string>
 
     <!-- External providers list -->

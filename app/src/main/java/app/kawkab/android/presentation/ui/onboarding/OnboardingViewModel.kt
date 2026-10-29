@@ -4,8 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.kawkab.android.data.network.AndroidModelDownloadManager
 import app.kawkab.android.domain.constants.OnboardingModelCatalog
+import app.kawkab.android.domain.engine.DeviceMemory
 import app.kawkab.android.domain.models.AppError
 import app.kawkab.android.domain.models.CustomModelLink
+import app.kawkab.android.domain.models.DefaultBrain
 import app.kawkab.android.domain.models.DownloadState
 import app.kawkab.android.domain.models.OnboardingMilestone
 import app.kawkab.android.domain.repositories.AppStateSettings
@@ -67,9 +69,8 @@ import javax.inject.Inject
  * freshly-downloaded ones.
  * @property downloadManager streams `DownloadState` updates folded into
  * `OnboardingViewState.downloadProgress` / `downloadError`.
- * @property prepareInferenceBackendUseCase resolves the execution backend on a
- * first-time install (GPU when the device plausibly supports it and a real
- * generation confirms it, CPU otherwise) and warms the LiteRT inference handle.
+ * @property prepareInferenceBackendUseCase records CPU on a first install and
+ * warms the LiteRT inference handle. A stored GPU choice is still honoured.
  * @property setUpScenarioUseCase materialises a picked scenario (default pipeline
  * + entry-surface binding) and returns its recap projection.
  * @property transientMessageRelay process-wide one-shot snackbar bus; the
@@ -88,6 +89,7 @@ class OnboardingViewModel @Inject constructor(
     private val setUpScenarioUseCase: SetUpScenarioUseCase,
     private val transientMessageRelay: TransientMessageRelay,
     private val usageTelemetry: UsageTelemetryRepository,
+    private val deviceMemory: DeviceMemory = DeviceMemory { DefaultBrain.FLAGSHIP_RAM_BYTES },
 ) : ViewModel() {
 
     private val _state: MutableStateFlow<OnboardingViewState> = MutableStateFlow(OnboardingViewState())
@@ -146,10 +148,14 @@ class OnboardingViewModel @Inject constructor(
         // Write-once, so re-entering onboarding later never moves the start.
         // Declared after the state properties so the block can never run before
         // the fields a future marker might read are initialised.
+        _state.update { it.copy(liteRtModel = phoneModel()) }
         markMilestone(OnboardingMilestone.ONBOARDING_STARTED)
         attachToRunningDownload()
         observeInterruptions()
     }
+
+    /** E2B below flagship class. E4B on a flagship phone, and still listed either way. */
+    private fun phoneModel() = OnboardingBrainPick.model(deviceMemory.totalRamBytes())
 
     /** Advances to the next step. Idempotent at the final step. */
     fun next() {
@@ -184,10 +190,11 @@ class OnboardingViewModel @Inject constructor(
         installCheckJob?.cancel()
         downloadJob?.cancel()
         warmUpJob?.cancel()
+        val model = phoneModel()
         _state.update {
             it.copy(
                 selectedScenario = scenario,
-                liteRtModel = scenario.requiredModel,
+                liteRtModel = model,
                 downloadProgress = null,
                 downloadError = null,
                 installedModelId = null,
@@ -195,7 +202,7 @@ class OnboardingViewModel @Inject constructor(
             )
         }
         installedModelPath = null
-        checkIfPickedModelAlreadyInstalled(scenario.requiredModel)
+        checkIfPickedModelAlreadyInstalled(model)
     }
 
     /**

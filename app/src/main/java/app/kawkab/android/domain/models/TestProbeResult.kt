@@ -18,6 +18,9 @@ package app.kawkab.android.domain.models
  *   re-running.
  * @property errorMessage Free-form description shown beneath the row when
  *   [success] is `false`. `null` on success.
+ * @property timeToFirstTokenMs Milliseconds from the start of the stream to
+ *   the first token. `null` when the probe produced no token or was recorded
+ *   before this field existed. This is the on-phone self-test number.
  */
 data class TestProbeResult(
     val tokensGenerated: Int,
@@ -25,6 +28,7 @@ data class TestProbeResult(
     val timestampMs: Long,
     val success: Boolean,
     val errorMessage: String? = null,
+    val timeToFirstTokenMs: Long? = null,
 ) {
     /** Throughput rounded to one decimal place. Zero for zero-duration probes. */
     val tokensPerSecond: Float

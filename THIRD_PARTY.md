@@ -44,6 +44,7 @@ Fine-tunes inherit those terms. EmbeddingGemma has no verified model card in thi
 - OpenDroid (Apache-2.0, yashab-cyber/opendroid @ c08175cb): accessibility traversal, alias matching, macro recording, and habit detection are adapted in the app. The owner's zip snapshot was not in the repo. LLM providers, the social manager, finance, food, transport, and the MCP server were not copied.
 - ARTEMIS / Minitap mobile-use: not ported. No `third_party/mobile_use` tree yet.
 - VoiceStudio (AGPL) and non-commercial material (30u30, CC BY-NC-ND): reference only, never copied.
+- Pocket LLM (github.com/dineshsoudagar/local-llms-on-android, MIT): named as a Gemma 4 GPU and NPU idea. No code was copied.
 
 ## M1
 

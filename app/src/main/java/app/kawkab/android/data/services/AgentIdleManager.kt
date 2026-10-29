@@ -75,7 +75,10 @@ class AgentIdleManager(
     }
 
     private companion object {
-        /** Default number of minutes of inactivity before the LLM engine is unloaded from memory. */
-        const val DEFAULT_IDLE_TIMEOUT_MINUTES: Long = 5L
+        /**
+         * Minutes of inactivity before the LLM engine is unloaded.
+         * The model stays loaded between messages; only this idle gap unloads it.
+         */
+        const val DEFAULT_IDLE_TIMEOUT_MINUTES: Long = 2L
     }
 }

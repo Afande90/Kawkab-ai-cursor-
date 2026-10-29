@@ -6,6 +6,7 @@ import android.content.res.Configuration
 import app.kawkab.android.di.ApplicationScope
 import app.kawkab.android.di.IoDispatcher
 import app.kawkab.android.domain.engine.LlmInferenceEngine
+import app.kawkab.android.domain.engine.ReplyBudget
 import app.kawkab.android.domain.models.AppError
 import app.kawkab.android.domain.models.LocalBackend
 import app.kawkab.android.domain.models.LocalSampling
@@ -21,6 +22,7 @@ import com.google.ai.edge.litertlm.EngineConfig
 import com.google.ai.edge.litertlm.Message
 import com.google.ai.edge.litertlm.MessageCallback
 import com.google.ai.edge.litertlm.SamplerConfig
+import com.google.ai.edge.litertlm.ThinkingConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -276,6 +278,11 @@ class LiteRTLlmEngine @Inject constructor(
             _isVisionEnabled == enableVision &&
             _isAudioEnabled == enableAudio
         ) {
+            Timber.i(
+                "LiteRT-LM Engine already running on %s for %s",
+                _activeBackend?.key ?: LocalBackend.CPU.key,
+                modelPath,
+            )
             return Result.Success(Unit)
         }
 
@@ -353,7 +360,11 @@ class LiteRTLlmEngine @Inject constructor(
         // enables transcription). A non-audio init leaves it `null`.
         val audioBackend = if (enableAudio) newBackend(resolved) else null
 
-        // Initialize Engine Configuration
+        // Multi-token prediction stays off. LiteRT-LM 0.17.1 EngineConfig has no
+        // switch for it, on CPU or on GPU, so it cannot turn on for the CPU
+        // default and this build cannot turn it on for GPU either.
+        // NPU is not constructed here. NpuTrialPolicy would allow it only after
+        // a phone self-test that starts and beats CPU. No such measurement exists.
         val config = EngineConfig(
             modelPath = modelPath,
             backend = backend,
@@ -379,8 +390,12 @@ class LiteRTLlmEngine @Inject constructor(
         _activeBackend = resolved
         _activeContextLength = maxTokens
         Timber.i(
-            "LiteRT-LM Engine successfully initialized with $modelPath " +
-                "(vision=$enableVision, audio=$enableAudio)",
+            "LiteRT-LM Engine started on %s (configured %s, vision=%s, audio=%s, model=%s)",
+            resolved.key,
+            configured.key,
+            enableVision,
+            enableAudio,
+            modelPath,
         )
 
         return Result.Success(Unit)
@@ -404,7 +419,7 @@ class LiteRTLlmEngine @Inject constructor(
     override fun generateResponseStream(prompt: String, imagePath: String?, sampling: LocalSampling?): Flow<String> =
         // With an image, the message is a multimodal [Contents] (image then text);
         // without, the plain-string overload keeps the text path byte-identical.
-        streamConversation(sampling) { conversation, callback ->
+        streamConversation(sampling, prompt) { conversation, callback ->
             if (imagePath == null) {
                 conversation.sendMessageAsync(prompt, callback)
             } else {
@@ -427,7 +442,7 @@ class LiteRTLlmEngine @Inject constructor(
      * @return A [Flow] of transcript token chunks, emitted on [ioDispatcher].
      */
     override fun transcribe(audioPath: String, prompt: String): Flow<String> =
-        streamConversation(sampling = null) { conversation, callback ->
+        streamConversation(sampling = null, prompt = prompt) { conversation, callback ->
             conversation.sendMessageAsync(Contents.of(Content.AudioFile(audioPath), Content.Text(prompt)), callback)
         }
 
@@ -460,6 +475,7 @@ class LiteRTLlmEngine @Inject constructor(
      */
     private fun streamConversation(
         sampling: LocalSampling?,
+        prompt: String,
         sendMessage: (Conversation, MessageCallback) -> Unit,
     ): Flow<String> = flow {
         generationMutex.withLock {
@@ -478,7 +494,7 @@ class LiteRTLlmEngine @Inject constructor(
             // engine still fails on that and not on a settings read. The
             // mutex is held for the whole decode anyway, so one cached
             // DataStore read inside it costs nothing measurable.
-            val conversationConfig = sampling?.let(::conversationConfigOf) ?: userConversationConfig()
+            val conversationConfig = conversationConfigFor(sampling, prompt)
             conversation?.close()
             val activeConversation = currentEngine.createConversation(conversationConfig)
             conversation = activeConversation
@@ -749,9 +765,30 @@ class LiteRTLlmEngine @Inject constructor(
      */
     private fun newBackend(backend: LocalBackend): Backend = when (backend) {
         LocalBackend.GPU -> Backend.GPU()
-        // Never resolved — `runnableFromKey` reads a withdrawn NPU choice as CPU — and
-        // a CPU engine is what LiteRT built for it anyway on this app's builds.
+        // NPU stays on CPU. `runnableFromKey` already reads a withdrawn NPU choice
+        // as CPU, and NpuTrialPolicy has no passing phone measurement to promote it.
         LocalBackend.NPU, LocalBackend.CPU -> Backend.CPU()
+    }
+
+    /**
+     * Opens a conversation on [sampling], or on the user's sampler when [sampling]
+     * is null, then applies [ReplyBudget] for [prompt].
+     *
+     * Thinking is off for every turn. A tool or JSON tail also caps output, so
+     * the cap is the answer and not a scratchpad.
+     *
+     * @param sampling The run's sampler, or null for the user's settings.
+     * @param prompt The text about to be sent. Its tail picks the output cap.
+     * @return The conversation config for this turn.
+     */
+    private suspend fun conversationConfigFor(sampling: LocalSampling?, prompt: String): ConversationConfig {
+        val base = sampling?.let(::conversationConfigOf) ?: userConversationConfig()
+        val thinking = ThinkingConfig(enableThinking = false)
+        return if (ReplyBudget.kindOf(prompt) == ReplyBudget.Kind.TOOL_OR_JSON) {
+            base.copy(thinkingConfig = thinking, maxOutputToken = ReplyBudget.TOOL_OR_JSON_MAX_OUTPUT_TOKENS)
+        } else {
+            base.copy(thinkingConfig = thinking)
+        }
     }
 
     /**

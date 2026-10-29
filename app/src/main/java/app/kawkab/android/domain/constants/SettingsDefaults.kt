@@ -21,8 +21,11 @@ import app.kawkab.android.domain.services.EmbeddingProvider
  * lock-step: bumping a default in one place automatically updates every caller.
  */
 object SettingsDefaults {
-    /** Maximum number of tokens to keep in the LLM context window by default. */
-    const val MAX_CONTEXT_LENGTH_DEFAULT: Int = 4_096
+    /**
+     * Maximum number of tokens to keep in the LLM context window by default.
+     * About 1,500, so a mid-range phone is not asked to hold a 4,096-token window.
+     */
+    const val MAX_CONTEXT_LENGTH_DEFAULT: Int = 1_500
 
     /** Default sampling temperature for local LLM generation. */
     const val TEMPERATURE_DEFAULT: Float = 0.7f
@@ -88,11 +91,11 @@ object SettingsDefaults {
      * Default budget, in **tokens**, of file content the `read_file` tool will
      * return in a single call. The tool converts this to a byte ceiling (≈ 4
      * bytes per token) and truncates the served window to it, so a single read
-     * of a large file can never blow the local model's context window. Set to
-     * roughly half of [MAX_CONTEXT_LENGTH_DEFAULT] so one read leaves room for
-     * the prompt, chat history and other context blocks.
+     * of a large file can never blow the local model's context window. Set under
+     * half of [MAX_CONTEXT_LENGTH_DEFAULT] so one read leaves room for the
+     * prompt, chat history and other context blocks.
      */
-    const val WORKSPACE_READ_TOKEN_BUDGET_DEFAULT: Int = 2_000
+    const val WORKSPACE_READ_TOKEN_BUDGET_DEFAULT: Int = 700
 
     /** Lower bound of the single-read token budget. */
     const val WORKSPACE_READ_TOKEN_BUDGET_MIN: Int = 200
@@ -263,11 +266,11 @@ object SettingsDefaults {
 
     /**
      * Default approximate-token budget above which chat history is compressed.
-     * Set below [MAX_CONTEXT_LENGTH_DEFAULT] (4096) so the summarised history
-     * leaves room for the long-term-memory, tool-result, and output blocks
-     * within the on-device context window.
+     * Set below [MAX_CONTEXT_LENGTH_DEFAULT] so the summarised history leaves
+     * room for the long-term-memory, tool-result, and output blocks within the
+     * on-device context window.
      */
-    const val CHAT_HISTORY_COMPRESSION_THRESHOLD_TOKENS_DEFAULT: Int = 3_500
+    const val CHAT_HISTORY_COMPRESSION_THRESHOLD_TOKENS_DEFAULT: Int = 1_000
 
     /** Lower bound enforced when the user edits the compression token threshold. */
     const val CHAT_HISTORY_COMPRESSION_THRESHOLD_TOKENS_MIN: Int = 500

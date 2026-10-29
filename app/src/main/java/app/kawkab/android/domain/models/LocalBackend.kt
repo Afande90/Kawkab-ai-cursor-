@@ -28,10 +28,11 @@ enum class LocalBackend(
     GPU("GPU", offered = true),
 
     /**
-     * Neural Processing Unit delegate — **withdrawn**. LiteRT-LM needs a vendor
-     * dispatch library and a model compiled for the chip; the app ships neither,
-     * so an "NPU" engine ran on CPU three times slower, and its initialisation ran
-     * the E4B model out of memory. Kept for the run records that name it.
+     * Neural Processing Unit delegate — **withdrawn until a phone self-test**.
+     * LiteRT-LM needs a vendor dispatch library and a model compiled for the chip.
+     * [app.kawkab.android.domain.engine.NpuTrialPolicy] may name NPU only when a
+     * probe starts and decodes faster than CPU. No such measurement is on file,
+     * so this entry stays withdrawn and a stored choice still runs on CPU.
      */
     NPU("NPU", offered = false),
     ;

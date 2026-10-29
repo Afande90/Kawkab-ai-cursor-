@@ -195,12 +195,18 @@ class ModelsSettingsDelegate(
             val result = testBackendUseCase()
             state.update { it.copy(testProbeInFlight = false) }
             val message = if (result.success) {
-                appContext.getString(
+                val summary = appContext.getString(
                     R.string.settings_row_test_backend_success,
                     result.tokensGenerated,
                     String.format(Locale.getDefault(), "%.2fs", result.durationMs / MS_PER_SECOND_F),
                     String.format(Locale.getDefault(), "%.1f", result.tokensPerSecond),
                 )
+                val firstToken = result.timeToFirstTokenMs
+                if (firstToken == null) {
+                    summary
+                } else {
+                    summary + appContext.getString(R.string.settings_row_test_backend_first_token, firstToken)
+                }
             } else {
                 appContext.getString(R.string.settings_row_test_backend_failed, result.errorMessage.orEmpty())
             }

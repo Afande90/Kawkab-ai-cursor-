@@ -654,7 +654,21 @@ private fun formatTestProbe(uiState: SettingsUiState, context: Context): String 
     return if (probe.success) {
         val durationLabel = String.format(Locale.getDefault(), "%.2fs", probe.durationMs / MS_PER_SECOND_F)
         val tpsLabel = String.format(Locale.getDefault(), "%.1f", probe.tokensPerSecond)
-        context.getString(R.string.settings_row_test_backend_success, probe.tokensGenerated, durationLabel, tpsLabel)
+        val summary = context.getString(
+            R.string.settings_row_test_backend_success,
+            probe.tokensGenerated,
+            durationLabel,
+            tpsLabel,
+        )
+        val firstToken = probe.timeToFirstTokenMs
+        if (firstToken == null) {
+            summary
+        } else {
+            summary + context.getString(
+                R.string.settings_row_test_backend_first_token,
+                firstToken,
+            )
+        }
     } else {
         context.getString(R.string.settings_row_test_backend_failed, probe.errorMessage.orEmpty())
     }

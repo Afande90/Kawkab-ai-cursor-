@@ -77,8 +77,13 @@ class TestBackendUseCase @Inject constructor(
         }
 
         var tokenCount = 0
+        var firstTokenAt = 0L
+        val streamStarted = System.currentTimeMillis()
         return try {
-            llmInferenceEngine.generateResponseStream(PROBE_PROMPT).collect { _ -> tokenCount += 1 }
+            llmInferenceEngine.generateResponseStream(PROBE_PROMPT).collect { _ ->
+                if (tokenCount == 0) firstTokenAt = System.currentTimeMillis()
+                tokenCount += 1
+            }
             persistAndReturn(
                 TestProbeResult(
                     tokensGenerated = tokenCount,
@@ -86,6 +91,7 @@ class TestBackendUseCase @Inject constructor(
                     timestampMs = started,
                     success = true,
                     errorMessage = null,
+                    timeToFirstTokenMs = if (tokenCount == 0) null else firstTokenAt - streamStarted,
                 ),
             )
         } catch (e: CancellationException) {
@@ -99,6 +105,7 @@ class TestBackendUseCase @Inject constructor(
                     timestampMs = started,
                     success = false,
                     errorMessage = e.message ?: "Unknown error",
+                    timeToFirstTokenMs = if (tokenCount == 0) null else firstTokenAt - streamStarted,
                 ),
             )
         }

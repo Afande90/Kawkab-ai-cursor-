@@ -46,6 +46,7 @@ Only Kotlin files appear inside the generated blocks.
     - `SqlCipherDatabaseSnapshotter.kt` - `DatabaseSnapshotter` on SQLCipher's `sqlcipher_export()`.
     - `StagedDatabasePreparer.kt` - Makes a staged database ready to replace the app's own.
   - `engine/` - Core LLM and inference engines.
+    - `AndroidDeviceMemory.kt` - Reads total RAM from `ActivityManager`.
     - `AndroidRunEnvironment.kt` - `RunEnvironment` read from the build and the device.
     - `CloudClientTimeouts.kt` - Network deadlines applied to every Koog model client the app builds — the chat clients in `KoogClientFactory` and the embedding clients in `app.kawkab.android.data.services.embedding.DefaultKoogEmbedderFactory`.
     - `KoogClientFactory.kt` - Factory for Koog clients; data-layer impl of `domain/engine/CloudLlmClientFactory`. Every constructed client is retry-wrapped via `CloudRetryWrapper` and carries an explicit `ConnectionTimeoutConfig` (60 s socket / 30 s connect / 900 s request) — the per-read socket value bounds provider silence rather than answer length. `createClient` threads a `CloudRetryListener` for console observability; it is the one entry point for every caller, `delegate_task` included.
@@ -434,6 +435,7 @@ Only Kotlin files appear inside the generated blocks.
     - `CloudModelCatalog.kt` - The cloud models the app offers, and the model a run uses for what the user saved.
     - `CloudStreamEnd.kt` - Whether a cloud answer that streamed to its end was whole, or was cut off.
     - `DefaultPipelineFactory.kt` - Factory for default pipelines.
+    - `DeviceMemory.kt` - Total RAM of the phone, as the platform reports it.
     - `executors/` - Per-`NodeType` `NodeExecutor` strategies dispatched by `NodeExecutorFactory`.
       - `ClarificationNodeExecutor.kt` - Executor for `NodeType.CLARIFICATION` that asks the local LLM to generate a question/options JSON, suspends on `ClarificationRepository.requestAnswer`, and forwards the user's reply downstream.
       - `CloudLlmNodeExecutor.kt` - Executor for `CLOUD` nodes; dispatches to a cloud LLM provider with streaming support.
@@ -462,10 +464,12 @@ Only Kotlin files appear inside the generated blocks.
     - `NodeContextBuilder.kt` - Assembles a node's executor input by concatenating only the context blocks enabled by its `NodeContextConfig` (Original Task, Chat History, Long-Term Memory, Tool Results, Previous Node Output).
     - `NodeInference.kt` - A node's only way to its model during one visit.
     - `NodeInputComposer.kt` - Builds what each node of one engine invocation sees: its system prompt with `$VARIABLE`s rendered, its input composed from the context blocks it opted into, and — for exactly one node in the run tree — the run's image.
+    - `NpuTrialPolicy.kt` - Decides whether a measured NPU self-test may replace CPU.
     - `PeakHeapSampler.kt` - Per-run helper tracking the peak native-heap reading across an inference window; reads `NativeMemorySampler` at a throttled (~150 ms) cadence. Used by `StreamInferenceMeter`.
     - `PipelineExecutionContext.kt` - Immutable per-iteration snapshot of pipeline-scoped data (original user message, chat history, previous node output, tool invocation results, memory entries) consumed by `NodeContextBuilder`.
     - `QueueCursor.kt` - Where one QUEUE_PROCESSOR loop of a run stands: the items still to run, the results so far, and which node the loop belongs to.
     - `RecordingNodeInference.kt` - The `NodeInference` of one node visit inside a run: seeds every on-device call from the run seed and keeps what each call did until the engine records it.
+    - `ReplyBudget.kt` - How long a local reply may run, decided from the prompt it was given.
     - `retry/` - Cloud-call transient-failure retry observability (the retry itself is Koog's `RetryingLLMClient`).
       - `CloudRetryListener.kt` - `fun interface` fired before each retry of a transient cloud failure; consumers emit a `CloudRetry` console line. Initial call is not a retry.
       - `CollectingCloudRetryListener.kt` - `CloudRetryListener` that buffers retries so the cloud node executor can drain them into one `NodeOutput.Console` per retry after the call; carries the per-retry console message.
@@ -519,6 +523,7 @@ Only Kotlin files appear inside the generated blocks.
     - `ConsoleEvent.kt` - Domain model of a single agent-console entry (`timestamp`, `type`, `message`, per-run `seq`) with `ConsoleEventType` sealed interface (`NodeExecution`, `ToolCall`, `MemoryAccess`, `SystemMessage`, `Error`, `StructuredOutputRepair`, `CloudRetry`, `HistoryCompression`, `RunCeiling`, `StuckDetector`).
     - `CustomModelLink.kt` - A pasted model link checked before anything downloads: `Accepted` (link + file name = path's last segment without query/fragment), `Blank`, or `NotLitertlm`; shared by the Models screen and onboarding.
     - `DbPassphraseUnavailableException.kt` - Typed exception raised when the SQLCipher passphrase cannot be read (or does not match) while an encrypted DB file exists (`Reason`: PREFS_OPEN_FAILED / PASSPHRASE_MISSING / PASSPHRASE_MALFORMED / KEY_MISMATCH); routes to the splash data-locked recovery screen.
+    - `DefaultBrain.kt` - Splits phones into flagship and everything smaller for the brain default.
     - `DiscoverableModel.kt` - Domain models for Hugging Face discovery: `DiscoverableModelSummary` (list card — repoId/name/downloads/likes/licence/gated/file-count), `DiscoverableModelDetail` (+ model-card URL and the per-file breakdown) and `DiscoverableModelFile` (`.litertlm` file: name/size/resolve URL/installed).
     - `DownloadedModelCheck.kt` - What the check of a freshly downloaded model file concluded, before the file is installed.
     - `DownloadState.kt` - Download state model.
@@ -813,7 +818,7 @@ Only Kotlin files appear inside the generated blocks.
     - `ObserveTriggerJournalUseCase.kt` - Reactive per-trigger journal stream (newest first) for the trigger-detail journal UI.
     - `ParkedRunResumer.kt` - Shared submission tail of the background-HITL decision use cases: notification teardown, lazy approval-window expiry, first-writer-wins response write, checkpoint resume, and the `failPark` settlement shared with the maintenance worker. Hosts `PendingSubmissionOutcome`.
     - `ParseSharedContentUseCase.kt` - Pure mapper from raw `ACTION_SEND` intent fields (mime / text / stream uri) to a `SharedPayload`; keeps Intent parsing out of the activity so it is JVM-testable.
-    - `PrepareInferenceBackendUseCase.kt` - First-install backend decision + warm-up: honours any stored choice, otherwise probes for GPU (`HardwareAccelerationProbe`), records it, and verifies it by really generating (`TestBackendUseCase`) — a failure reverts to CPU, unloading the engine first because its reuse check ignores the backend. Native-abort risk stays covered by the engine's `lastInitBackendAttempt` breadcrumb.
+    - `PrepareInferenceBackendUseCase.kt` - First install stays on CPU and warms that handle. A stored choice, including GPU, is honoured and is not probed. A settings-write failure still unloads and warms CPU.
     - `promptpack/` - Import / export of a prompt as a portable Markdown file.
       - `ExportPromptPackUseCase.kt` - Renders a saved prompt (bundled ones included — exporting is a read) into `ExportedPromptPack(fileName, displayName, content)`.
       - `ImportPromptPackUseCase.kt` - Owns what the parser deliberately does not: the id falls back to the file-name stem (so re-importing the same file updates rather than duplicates), a collision with a **bundled** id is re-keyed without asking (`getPresetById` resolves bundled-first, so a user preset under one would be unreachable), a collision with the user's own prompt becomes a question, and everything written is `isBundled = false`.
@@ -1036,6 +1041,7 @@ Only Kotlin files appear inside the generated blocks.
       - `TabOwnership.kt` - Pure `owningTabRoute(stackRoutes)` / `isTabRootStack(stackRoutes)` over the back stack; replaces the hand-maintained `route → tab` table that silently highlighted no tab at all on ten registered destinations. Handles nested tab graphs (Pipelines) by mapping a graph's start destination back to its tab route.
       - `TriggerDeepLink.kt` - Builds the deep link into one trigger, `knotwork://triggers/{id}`, with the back stack synthesised — the overdue-trigger notification's tap.
     - `onboarding/` - First-launch scenario onboarding gate with the 4-step Knotwork pager (`Welcome → Choose a scenario → Download → Ready`; wires the real scenario set-up / download / model-load flow on top of the catalog surface).
+      - `OnboardingBrainPick.kt` - Gemma 4 build onboarding pre-selects for this phone.
       - `OnboardingScreen.kt` - Composable entry: subscribes to `OnboardingViewModel.state`, forwards scenario-pick / set-up / finish / skip / start-from-scratch callbacks into the nav-graph, and handles predictive-back. The skip / escape hint is published through `TransientMessageRelay` (rendered after the back-stack pop), not a screen-local host.
       - `OnboardingViewModel.kt` - Hilt ViewModel orchestrating the scenario set-up + download + warm-up flow. Injects `LocalModelRepository`, `ModelDownloadManager`, `LoadModelUseCase`, `SetUpScenarioUseCase`; picking a scenario pre-selects its model and re-checks its install, `setUpScenario` materialises the scenario (default pipeline + surface binding) and advances to the download step, folds `DownloadState` into the catalog `OnboardingViewState`, persists the freshly-downloaded `LocalModel`, and warms the inference handle. Sets `hasCompletedOnboarding` on finish / skip / start-from-scratch.
     - `orchestrator/` - Pipeline library + shared orchestrator ViewModel (the canvas surface moved to `pipeline/editor/`).

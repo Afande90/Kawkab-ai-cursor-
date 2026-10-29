@@ -227,3 +227,21 @@ Resource ids stay `knotwork_*`. They are not drawn on screen, and renaming them 
 
 The mood-router preset keeps its id and stays importable. Its display name is Kawkab, matching the onboarding card. Screenshot goldens for the screens whose copy changed are re-recorded in the same change. The comparison threshold is not changed.
 
+## 2026-10-29 — personal-use licences
+
+The owner decided Kawkab is a personal app and is not sold. That overrides the spec's ban on AGPL and non-commercial code. Any open-source code or model may be reused when its licence allows personal use. Upstream licence headers stay. Every donor is credited in `NOTICE` and `THIRD_PARTY.md`. AGPL and non-commercial items are marked personal-use only there, so they can be swapped out if the app is ever sold. Hosted-provider clients and subscription logins stay out.
+
+## 2026-10-29 — performance defaults
+
+The owner's phone froze while the model worked. The first-install path probed the GPU and kept it when a short generation succeeded. That probe is no longer the default. A stored choice, including GPU, is still used. A phone with no stored choice records CPU and warms CPU. The log line on a successful init names the backend that actually started, and names the configured one when crash recovery substituted CPU.
+
+Flagship class is total RAM at or above 16 GiB (`ActivityManager.MemoryInfo.totalMem`). Below that, onboarding pre-selects Gemma 4 E2B. E4B stays in the picker. A flagship phone still starts on E4B. The curated scenario cards may still say they were written for E4B. The download step follows the phone, not that card.
+
+The injected context default is 1,500 tokens. The history-compression threshold is 1,000 and the read-file token budget is 700, so both sit inside that window. The idle unload is 2 minutes. The model stays loaded between messages and unloads only after that idle gap.
+
+Every local turn sets thinking off. A prompt whose last 500 characters ask for JSON, and do not say "no JSON", also caps output at 300 tokens. Thinking stays off on that turn too, so the cap is the answer and not a scratchpad. Chat already streams every reply through `sendMessageAsync`. No second path was added.
+
+Multi-token prediction stays off on CPU and on GPU. LiteRT-LM 0.17.1 `EngineConfig` has no switch for it. "Only on GPU" is met by never enabling it, because this build cannot enable it anywhere.
+
+NPU stays withdrawn. `NpuTrialPolicy` returns NPU only when a self-test started and decoded faster than CPU. This machine cannot run that test. Time to first token and tokens per second are not measured. The Settings "Test backend" row stores both numbers when the owner runs it on a phone. Pocket LLM was read as an idea only. No code was copied.
+
