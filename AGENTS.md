@@ -76,6 +76,67 @@ To know which task is next, read `PROGRESS.md`. Create it in task 1. After each 
 12. Freeze the command eval set in its own commit (spec §12.3).
 13. Build the deterministic Arabic/English fast path for the five core commands and the stub messenger app. Run the M1 gates, then tag `m1`.
 
+### M1.5: Make it usable (owner-phone findings and proven donors, 29 Oct 2026)
+
+The owner installed the `m1` APK on his Nothing Phone (3a). He found these problems:
+- The phone freezes while the model answers.
+- Typed commands do nothing.
+- The default chat is Knotwork's "Virtual Companion" demo.
+- "Knotwork" still shows on screen.
+
+These tasks fix that by reusing projects that already solved it. Each donor is reused with credit in `NOTICE` and `THIRD_PARTY.md`. Never copy cloud providers (Anthropic, OpenAI, Gemini API), and never copy donor names or trademarks.
+
+Donors:
+- **PokeClaw** (github.com/agents-io/PokeClaw, Apache-2.0): Gemma 4 E2B on LiteRT-LM, phone control, 3-tier routing, skills, stuck detection.
+- **PhoneCLI** (github.com/HKUDS/PhoneCLI, MIT): app maps and macros replayed with no model call.
+- **OnDevice LLM** (github.com/sebytzr16/on-device-llm, MIT): action cards and an offline voice loop.
+- **Google FunctionGemma 270M "Mobile Actions"** (ai.google.dev/gemma/docs/mobile-actions): a tiny model trained only for phone actions.
+
+14. **Branding.** Replace every user-visible "Knotwork", its logo and the "Virtual Companion" persona with Kawkab (كوكب) and the planet mark, in English and Arabic. Keep the upstream credit in `NOTICE` and on the About screen. Add a test that fails if "Knotwork" appears in any user-visible string resource or preset pipeline name.
+15. **Performance defaults.** The phone must stay smooth while the model works.
+    - Default the inference backend to CPU, and log which backend actually started (LiteRT-LM can fall back silently).
+    - Default the model to Gemma 4 E2B on phones below flagship class; E4B stays an option.
+    - Keep the model loaded between messages, and unload it after 2 minutes idle.
+    - Cap injected context at about 1,500 tokens.
+    - Cap output at 300 tokens for tool or JSON turns.
+    - Turn thinking mode off for simple turns.
+    - Enable Multi-Token Prediction only on GPU.
+    - Stream every reply.
+    - Write the measured time to first token and tokens per second to `MODELS.md` (Tier 2), and add them to the on-phone self-test (Tier 3).
+16. **Kawkab assistant pipeline.** Make it the default for the first chat and for new chats, replacing "Virtual Companion". Its system prompt says:
+    - it is Kawkab;
+    - it runs fully offline on the owner's phone (no server);
+    - it answers briefly in the user's language (Sudanese Arabic, Modern Standard Arabic or English);
+    - it uses its phone tools.
+
+    Remove the Virtual Companion demo pipelines from the first-run library, and keep them as importable presets.
+17. **3-tier routing (port from PokeClaw):**
+    - **Tier 1:** wire `CommandFastPath` into the chat input. Matched commands go straight to the hands tools with no LLM call, and still show the `OUTBOUND` tap card.
+    - **Tier 2:** fixed skill recipes, with the LLM writing only the text. Start with: reply to a message, read my last messages, set a reminder from a screenshot.
+    - **Tier 3:** the agent loop, using LiteRT-LM native tool calling, with PokeClaw-style stuck detection (repeated action, unchanged screen) and step and time budgets.
+
+    Add an instrumented test that types "set an alarm for 6" into the chat screen and asserts the alarm intent fires, with no LLM call.
+18. **Harder command test.** In its own commit before any parser change, freeze `evals/commands/v2`:
+    - 150 commands, none of whose phrasings appear in v1;
+    - include word-order changes, typos, mixed Arabic and English, and real Sudanese expressions;
+    - include indirect requests ("I'm late, tell Ahmad").
+
+    Record its SHA-256 in `DECISIONS.md`, then score the parser honestly. Improve the parser only in a later commit, and report both scores.
+19. **App maps (PhoneCLI idea).** For Phone, Messages, Clock, Calendar, WhatsApp and Gmail, record each app's navigation as a stored map plus macros.
+    - Common tasks replay these with no model call.
+    - Each macro verifies the screen after every step and falls back to tier 3 on any mismatch.
+    - Outbound steps still need the tap card.
+20. **Model candidates.** Record these in `MODELS.md` and the licence audit:
+    - FunctionGemma 270M Mobile Actions, as a candidate tier-2 intent model (fine-tune only if free compute is available);
+    - Parakeet TDT 0.6B v3 and Kokoro, as M4 speech candidates (from OnDevice LLM).
+
+    Do not ship any of them without a passing licence check.
+21. **Close out M1.5.**
+    - Run the full check.
+    - Update `docs/owner-checks/M1.5.md` with exactly what the owner should try on the phone.
+    - Make sure the CI APK artifact exists.
+    - Tag `m1.5`.
+
 ### Later milestones
 - **M2 to M8:** split each milestone in spec §13 into tasks of the same size as above.
 - Write the new tasks into this list in a pull request before starting them.
