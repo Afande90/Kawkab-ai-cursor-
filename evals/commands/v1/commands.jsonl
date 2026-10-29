@@ -1,0 +1,200 @@
+{"id":"call-001","split":"test","type":"call","lang":"en","text":"call Ahmad","tool":"call_phone","args":{"contact":"Ahmad"}}
+{"id":"call-002","split":"calibration","type":"call","lang":"en","text":"please call Ahmad","tool":"call_phone","args":{"contact":"Ahmad"}}
+{"id":"call-003","split":"test","type":"call","lang":"en","text":"call Sara","tool":"call_phone","args":{"contact":"Sara"}}
+{"id":"call-004","split":"calibration","type":"call","lang":"en","text":"please call Sara","tool":"call_phone","args":{"contact":"Sara"}}
+{"id":"call-005","split":"test","type":"call","lang":"en","text":"call Mom","tool":"call_phone","args":{"contact":"Mom"}}
+{"id":"call-006","split":"calibration","type":"call","lang":"en","text":"please call Mom","tool":"call_phone","args":{"contact":"Mom"}}
+{"id":"call-007","split":"test","type":"call","lang":"en","text":"call Hassan","tool":"call_phone","args":{"contact":"Hassan"}}
+{"id":"call-008","split":"calibration","type":"call","lang":"en","text":"please call Hassan","tool":"call_phone","args":{"contact":"Hassan"}}
+{"id":"call-009","split":"test","type":"call","lang":"en","text":"call Layla","tool":"call_phone","args":{"contact":"Layla"}}
+{"id":"call-010","split":"calibration","type":"call","lang":"en","text":"please call Layla","tool":"call_phone","args":{"contact":"Layla"}}
+{"id":"call-011","split":"test","type":"call","lang":"en","text":"call Omar","tool":"call_phone","args":{"contact":"Omar"}}
+{"id":"call-012","split":"calibration","type":"call","lang":"en","text":"please call Omar","tool":"call_phone","args":{"contact":"Omar"}}
+{"id":"call-013","split":"test","type":"call","lang":"en","text":"call Noor","tool":"call_phone","args":{"contact":"Noor"}}
+{"id":"call-014","split":"calibration","type":"call","lang":"en","text":"please call Noor","tool":"call_phone","args":{"contact":"Noor"}}
+{"id":"call-015","split":"test","type":"call","lang":"en","text":"call Yusuf","tool":"call_phone","args":{"contact":"Yusuf"}}
+{"id":"call-016","split":"calibration","type":"call","lang":"en","text":"please call Yusuf","tool":"call_phone","args":{"contact":"Yusuf"}}
+{"id":"call-017","split":"test","type":"call","lang":"en","text":"call Hana","tool":"call_phone","args":{"contact":"Hana"}}
+{"id":"call-018","split":"calibration","type":"call","lang":"en","text":"please call Hana","tool":"call_phone","args":{"contact":"Hana"}}
+{"id":"call-019","split":"test","type":"call","lang":"en","text":"call Khalid","tool":"call_phone","args":{"contact":"Khalid"}}
+{"id":"call-020","split":"calibration","type":"call","lang":"en","text":"please call Khalid","tool":"call_phone","args":{"contact":"Khalid"}}
+{"id":"call-021","split":"test","type":"call","lang":"msa","text":"اتصل على أحمد","tool":"call_phone","args":{"contact":"أحمد"}}
+{"id":"call-022","split":"calibration","type":"call","lang":"msa","text":"كلم أحمد","tool":"call_phone","args":{"contact":"أحمد"}}
+{"id":"call-023","split":"test","type":"call","lang":"msa","text":"اتصل على سارة","tool":"call_phone","args":{"contact":"سارة"}}
+{"id":"call-024","split":"calibration","type":"call","lang":"msa","text":"كلم سارة","tool":"call_phone","args":{"contact":"سارة"}}
+{"id":"call-025","split":"test","type":"call","lang":"sdn","text":"اتصل على أخوي","tool":"call_phone","args":{"contact":"أخوي"}}
+{"id":"call-026","split":"calibration","type":"call","lang":"msa","text":"كلم أخوي","tool":"call_phone","args":{"contact":"أخوي"}}
+{"id":"call-027","split":"test","type":"call","lang":"sdn","text":"اتصل على أمي","tool":"call_phone","args":{"contact":"أمي"}}
+{"id":"call-028","split":"calibration","type":"call","lang":"msa","text":"كلم أمي","tool":"call_phone","args":{"contact":"أمي"}}
+{"id":"call-029","split":"test","type":"call","lang":"msa","text":"اتصل على محمد","tool":"call_phone","args":{"contact":"محمد"}}
+{"id":"call-030","split":"calibration","type":"call","lang":"msa","text":"كلم محمد","tool":"call_phone","args":{"contact":"محمد"}}
+{"id":"call-031","split":"test","type":"call","lang":"msa","text":"اتصل على فاطمة","tool":"call_phone","args":{"contact":"فاطمة"}}
+{"id":"call-032","split":"calibration","type":"call","lang":"msa","text":"كلم فاطمة","tool":"call_phone","args":{"contact":"فاطمة"}}
+{"id":"call-033","split":"test","type":"call","lang":"msa","text":"اتصل على علي","tool":"call_phone","args":{"contact":"علي"}}
+{"id":"call-034","split":"calibration","type":"call","lang":"msa","text":"كلم علي","tool":"call_phone","args":{"contact":"علي"}}
+{"id":"call-035","split":"test","type":"call","lang":"msa","text":"اتصل على نور","tool":"call_phone","args":{"contact":"نور"}}
+{"id":"call-036","split":"calibration","type":"call","lang":"msa","text":"كلم نور","tool":"call_phone","args":{"contact":"نور"}}
+{"id":"call-037","split":"test","type":"call","lang":"msa","text":"اتصل على خالد","tool":"call_phone","args":{"contact":"خالد"}}
+{"id":"call-038","split":"calibration","type":"call","lang":"msa","text":"كلم خالد","tool":"call_phone","args":{"contact":"خالد"}}
+{"id":"call-039","split":"test","type":"call","lang":"msa","text":"اتصل على ليلى","tool":"call_phone","args":{"contact":"ليلى"}}
+{"id":"call-040","split":"calibration","type":"call","lang":"msa","text":"كلم ليلى","tool":"call_phone","args":{"contact":"ليلى"}}
+{"id":"sms-001","split":"test","type":"sms","lang":"en","text":"text Ahmad running late","tool":"send_sms","args":{"contact":"Ahmad","body":"running late"}}
+{"id":"sms-002","split":"calibration","type":"sms","lang":"en","text":"sms Ahmad running late","tool":"send_sms","args":{"contact":"Ahmad","body":"running late"}}
+{"id":"sms-003","split":"test","type":"sms","lang":"en","text":"text Sara on my way","tool":"send_sms","args":{"contact":"Sara","body":"on my way"}}
+{"id":"sms-004","split":"calibration","type":"sms","lang":"en","text":"sms Sara on my way","tool":"send_sms","args":{"contact":"Sara","body":"on my way"}}
+{"id":"sms-005","split":"test","type":"sms","lang":"en","text":"text Mom I will be there","tool":"send_sms","args":{"contact":"Mom","body":"I will be there"}}
+{"id":"sms-006","split":"calibration","type":"sms","lang":"en","text":"sms Mom I will be there","tool":"send_sms","args":{"contact":"Mom","body":"I will be there"}}
+{"id":"sms-007","split":"test","type":"sms","lang":"en","text":"text Hassan see you soon","tool":"send_sms","args":{"contact":"Hassan","body":"see you soon"}}
+{"id":"sms-008","split":"calibration","type":"sms","lang":"en","text":"sms Hassan see you soon","tool":"send_sms","args":{"contact":"Hassan","body":"see you soon"}}
+{"id":"sms-009","split":"test","type":"sms","lang":"en","text":"text Layla call me back","tool":"send_sms","args":{"contact":"Layla","body":"call me back"}}
+{"id":"sms-010","split":"calibration","type":"sms","lang":"en","text":"sms Layla call me back","tool":"send_sms","args":{"contact":"Layla","body":"call me back"}}
+{"id":"sms-011","split":"test","type":"sms","lang":"en","text":"text Omar running late","tool":"send_sms","args":{"contact":"Omar","body":"running late"}}
+{"id":"sms-012","split":"calibration","type":"sms","lang":"en","text":"sms Omar running late","tool":"send_sms","args":{"contact":"Omar","body":"running late"}}
+{"id":"sms-013","split":"test","type":"sms","lang":"en","text":"text Noor on my way","tool":"send_sms","args":{"contact":"Noor","body":"on my way"}}
+{"id":"sms-014","split":"calibration","type":"sms","lang":"en","text":"sms Noor on my way","tool":"send_sms","args":{"contact":"Noor","body":"on my way"}}
+{"id":"sms-015","split":"test","type":"sms","lang":"en","text":"text Yusuf I will be there","tool":"send_sms","args":{"contact":"Yusuf","body":"I will be there"}}
+{"id":"sms-016","split":"calibration","type":"sms","lang":"en","text":"sms Yusuf I will be there","tool":"send_sms","args":{"contact":"Yusuf","body":"I will be there"}}
+{"id":"sms-017","split":"test","type":"sms","lang":"en","text":"text Hana see you soon","tool":"send_sms","args":{"contact":"Hana","body":"see you soon"}}
+{"id":"sms-018","split":"calibration","type":"sms","lang":"en","text":"sms Hana see you soon","tool":"send_sms","args":{"contact":"Hana","body":"see you soon"}}
+{"id":"sms-019","split":"test","type":"sms","lang":"en","text":"text Khalid call me back","tool":"send_sms","args":{"contact":"Khalid","body":"call me back"}}
+{"id":"sms-020","split":"calibration","type":"sms","lang":"en","text":"sms Khalid call me back","tool":"send_sms","args":{"contact":"Khalid","body":"call me back"}}
+{"id":"sms-021","split":"test","type":"sms","lang":"sdn","text":"رسل لأحمد إني متأخر","tool":"send_sms","args":{"contact":"أحمد","body":"إني متأخر"}}
+{"id":"sms-022","split":"calibration","type":"sms","lang":"sdn","text":"ابعت لأحمد إني متأخر","tool":"send_sms","args":{"contact":"أحمد","body":"إني متأخر"}}
+{"id":"sms-023","split":"test","type":"sms","lang":"msa","text":"رسل لسارة في الطريق","tool":"send_sms","args":{"contact":"سارة","body":"في الطريق"}}
+{"id":"sms-024","split":"calibration","type":"sms","lang":"sdn","text":"ابعت لسارة في الطريق","tool":"send_sms","args":{"contact":"سارة","body":"في الطريق"}}
+{"id":"sms-025","split":"test","type":"sms","lang":"sdn","text":"رسل لأخوي جايكم","tool":"send_sms","args":{"contact":"أخوي","body":"جايكم"}}
+{"id":"sms-026","split":"calibration","type":"sms","lang":"sdn","text":"ابعت لأخوي جايكم","tool":"send_sms","args":{"contact":"أخوي","body":"جايكم"}}
+{"id":"sms-027","split":"test","type":"sms","lang":"msa","text":"رسل لأمي أراك بعد شوي","tool":"send_sms","args":{"contact":"أمي","body":"أراك بعد شوي"}}
+{"id":"sms-028","split":"calibration","type":"sms","lang":"sdn","text":"ابعت لأمي أراك بعد شوي","tool":"send_sms","args":{"contact":"أمي","body":"أراك بعد شوي"}}
+{"id":"sms-029","split":"test","type":"sms","lang":"msa","text":"رسل لمحمد كلمني","tool":"send_sms","args":{"contact":"محمد","body":"كلمني"}}
+{"id":"sms-030","split":"calibration","type":"sms","lang":"sdn","text":"ابعت لمحمد كلمني","tool":"send_sms","args":{"contact":"محمد","body":"كلمني"}}
+{"id":"sms-031","split":"test","type":"sms","lang":"msa","text":"رسل لفاطمة إني متأخر","tool":"send_sms","args":{"contact":"فاطمة","body":"إني متأخر"}}
+{"id":"sms-032","split":"calibration","type":"sms","lang":"sdn","text":"ابعت لفاطمة إني متأخر","tool":"send_sms","args":{"contact":"فاطمة","body":"إني متأخر"}}
+{"id":"sms-033","split":"test","type":"sms","lang":"msa","text":"رسل لعلي في الطريق","tool":"send_sms","args":{"contact":"علي","body":"في الطريق"}}
+{"id":"sms-034","split":"calibration","type":"sms","lang":"sdn","text":"ابعت لعلي في الطريق","tool":"send_sms","args":{"contact":"علي","body":"في الطريق"}}
+{"id":"sms-035","split":"test","type":"sms","lang":"msa","text":"رسل لنور جايكم","tool":"send_sms","args":{"contact":"نور","body":"جايكم"}}
+{"id":"sms-036","split":"calibration","type":"sms","lang":"sdn","text":"ابعت لنور جايكم","tool":"send_sms","args":{"contact":"نور","body":"جايكم"}}
+{"id":"sms-037","split":"test","type":"sms","lang":"msa","text":"رسل لخالد أراك بعد شوي","tool":"send_sms","args":{"contact":"خالد","body":"أراك بعد شوي"}}
+{"id":"sms-038","split":"calibration","type":"sms","lang":"sdn","text":"ابعت لخالد أراك بعد شوي","tool":"send_sms","args":{"contact":"خالد","body":"أراك بعد شوي"}}
+{"id":"sms-039","split":"test","type":"sms","lang":"msa","text":"رسل لليلى كلمني","tool":"send_sms","args":{"contact":"ليلى","body":"كلمني"}}
+{"id":"sms-040","split":"calibration","type":"sms","lang":"sdn","text":"ابعت لليلى كلمني","tool":"send_sms","args":{"contact":"ليلى","body":"كلمني"}}
+{"id":"alarm-001","split":"test","type":"alarm","lang":"en","text":"set an alarm for 6","tool":"set_alarm","args":{"hour":"6","minute":"0"}}
+{"id":"alarm-002","split":"calibration","type":"alarm","lang":"en","text":"set an alarm for 6:30","tool":"set_alarm","args":{"hour":"6","minute":"30"}}
+{"id":"alarm-003","split":"test","type":"alarm","lang":"en","text":"set an alarm for 7 am","tool":"set_alarm","args":{"hour":"7","minute":"0"}}
+{"id":"alarm-004","split":"calibration","type":"alarm","lang":"en","text":"set an alarm for 6 pm","tool":"set_alarm","args":{"hour":"18","minute":"0"}}
+{"id":"alarm-005","split":"test","type":"alarm","lang":"en","text":"wake me at 5","tool":"set_alarm","args":{"hour":"5","minute":"0"}}
+{"id":"alarm-006","split":"calibration","type":"alarm","lang":"en","text":"wake me at 5:15","tool":"set_alarm","args":{"hour":"5","minute":"15"}}
+{"id":"alarm-007","split":"test","type":"alarm","lang":"en","text":"wake me at 8 am","tool":"set_alarm","args":{"hour":"8","minute":"0"}}
+{"id":"alarm-008","split":"calibration","type":"alarm","lang":"en","text":"wake me at 9 pm","tool":"set_alarm","args":{"hour":"21","minute":"0"}}
+{"id":"alarm-009","split":"test","type":"alarm","lang":"en","text":"set an alarm for 10","tool":"set_alarm","args":{"hour":"10","minute":"0"}}
+{"id":"alarm-010","split":"calibration","type":"alarm","lang":"en","text":"set an alarm for 11:45","tool":"set_alarm","args":{"hour":"11","minute":"45"}}
+{"id":"alarm-011","split":"test","type":"alarm","lang":"sdn","text":"صحيني الساعة ستة","tool":"set_alarm","args":{"hour":"6","minute":"0"}}
+{"id":"alarm-012","split":"calibration","type":"alarm","lang":"sdn","text":"صحيني الساعة خمسة","tool":"set_alarm","args":{"hour":"5","minute":"0"}}
+{"id":"alarm-013","split":"test","type":"alarm","lang":"sdn","text":"صحيني الساعة سبعة","tool":"set_alarm","args":{"hour":"7","minute":"0"}}
+{"id":"alarm-014","split":"calibration","type":"alarm","lang":"sdn","text":"صحيني الساعة تسعة","tool":"set_alarm","args":{"hour":"9","minute":"0"}}
+{"id":"alarm-015","split":"test","type":"alarm","lang":"msa","text":"اضبط المنبه الساعة ستة","tool":"set_alarm","args":{"hour":"6","minute":"0"}}
+{"id":"alarm-016","split":"calibration","type":"alarm","lang":"msa","text":"اضبط المنبه الساعة خمسة","tool":"set_alarm","args":{"hour":"5","minute":"0"}}
+{"id":"alarm-017","split":"test","type":"alarm","lang":"msa","text":"اضبط المنبه الساعة سبعة","tool":"set_alarm","args":{"hour":"7","minute":"0"}}
+{"id":"alarm-018","split":"calibration","type":"alarm","lang":"msa","text":"اضبط المنبه الساعة عشرة","tool":"set_alarm","args":{"hour":"10","minute":"0"}}
+{"id":"alarm-019","split":"test","type":"alarm","lang":"msa","text":"صحيني الساعة ثلاثة","tool":"set_alarm","args":{"hour":"3","minute":"0"}}
+{"id":"alarm-020","split":"calibration","type":"alarm","lang":"msa","text":"اضبط المنبه الساعة أربعة","tool":"set_alarm","args":{"hour":"4","minute":"0"}}
+{"id":"alarm-021","split":"test","type":"alarm","lang":"en","text":"set an alarm for 4:05","tool":"set_alarm","args":{"hour":"4","minute":"5"}}
+{"id":"alarm-022","split":"calibration","type":"alarm","lang":"en","text":"wake me at 12 pm","tool":"set_alarm","args":{"hour":"12","minute":"0"}}
+{"id":"alarm-023","split":"test","type":"alarm","lang":"en","text":"set an alarm for 12 am","tool":"set_alarm","args":{"hour":"0","minute":"0"}}
+{"id":"alarm-024","split":"calibration","type":"alarm","lang":"sdn","text":"صحيني الساعة اتناشر","tool":"set_alarm","args":{"hour":"12","minute":"0"}}
+{"id":"alarm-025","split":"test","type":"alarm","lang":"msa","text":"اضبط المنبه الساعة حداشر","tool":"set_alarm","args":{"hour":"11","minute":"0"}}
+{"id":"alarm-026","split":"calibration","type":"alarm","lang":"en","text":"wake me at 2:20","tool":"set_alarm","args":{"hour":"2","minute":"20"}}
+{"id":"alarm-027","split":"test","type":"alarm","lang":"en","text":"set an alarm for 3 pm","tool":"set_alarm","args":{"hour":"15","minute":"0"}}
+{"id":"alarm-028","split":"calibration","type":"alarm","lang":"msa","text":"صحيني الساعة ثمانية","tool":"set_alarm","args":{"hour":"8","minute":"0"}}
+{"id":"alarm-029","split":"test","type":"alarm","lang":"sdn","text":"صحيني الساعة تمانية","tool":"set_alarm","args":{"hour":"8","minute":"0"}}
+{"id":"alarm-030","split":"calibration","type":"alarm","lang":"msa","text":"اضبط المنبه الساعة اثنين","tool":"set_alarm","args":{"hour":"2","minute":"0"}}
+{"id":"timer-001","split":"test","type":"timer","lang":"en","text":"set a timer for 5 minutes","tool":"set_timer","args":{"seconds":"300"}}
+{"id":"timer-002","split":"calibration","type":"timer","lang":"en","text":"set a timer for 30 seconds","tool":"set_timer","args":{"seconds":"30"}}
+{"id":"timer-003","split":"test","type":"timer","lang":"en","text":"set a timer for 1 hour","tool":"set_timer","args":{"seconds":"3600"}}
+{"id":"timer-004","split":"calibration","type":"timer","lang":"en","text":"set a timer for 10 minutes","tool":"set_timer","args":{"seconds":"600"}}
+{"id":"timer-005","split":"test","type":"timer","lang":"en","text":"set a timer for 2 hours","tool":"set_timer","args":{"seconds":"7200"}}
+{"id":"timer-006","split":"calibration","type":"timer","lang":"en","text":"set a timer for 45 seconds","tool":"set_timer","args":{"seconds":"45"}}
+{"id":"timer-007","split":"test","type":"timer","lang":"en","text":"set a timer for 15 minutes","tool":"set_timer","args":{"seconds":"900"}}
+{"id":"timer-008","split":"calibration","type":"timer","lang":"en","text":"set a timer for 90 seconds","tool":"set_timer","args":{"seconds":"90"}}
+{"id":"timer-009","split":"test","type":"timer","lang":"en","text":"timer for 20 minutes","tool":"set_timer","args":{"seconds":"1200"}}
+{"id":"timer-010","split":"calibration","type":"timer","lang":"en","text":"timer for 3 minutes","tool":"set_timer","args":{"seconds":"180"}}
+{"id":"timer-011","split":"test","type":"timer","lang":"msa","text":"مؤقت 5 دقائق","tool":"set_timer","args":{"seconds":"300"}}
+{"id":"timer-012","split":"calibration","type":"timer","lang":"msa","text":"مؤقت 10 ثواني","tool":"set_timer","args":{"seconds":"10"}}
+{"id":"timer-013","split":"test","type":"timer","lang":"msa","text":"مؤقت 1 ساعة","tool":"set_timer","args":{"seconds":"3600"}}
+{"id":"timer-014","split":"calibration","type":"timer","lang":"msa","text":"مؤقت 2 دقيقة","tool":"set_timer","args":{"seconds":"120"}}
+{"id":"timer-015","split":"test","type":"timer","lang":"msa","text":"مؤقت 15 دقائق","tool":"set_timer","args":{"seconds":"900"}}
+{"id":"timer-016","split":"calibration","type":"timer","lang":"sdn","text":"مؤقت خمس دقائق","tool":"set_timer","args":{"seconds":"300"}}
+{"id":"timer-017","split":"test","type":"timer","lang":"msa","text":"مؤقت 3 دقائق","tool":"set_timer","args":{"seconds":"180"}}
+{"id":"timer-018","split":"calibration","type":"timer","lang":"msa","text":"مؤقت 20 ثانية","tool":"set_timer","args":{"seconds":"20"}}
+{"id":"timer-019","split":"test","type":"timer","lang":"en","text":"set a timer for 8 minutes","tool":"set_timer","args":{"seconds":"480"}}
+{"id":"timer-020","split":"calibration","type":"timer","lang":"en","text":"timer for 1 minute","tool":"set_timer","args":{"seconds":"60"}}
+{"id":"timer-021","split":"test","type":"timer","lang":"msa","text":"مؤقت 4 دقائق","tool":"set_timer","args":{"seconds":"240"}}
+{"id":"timer-022","split":"calibration","type":"timer","lang":"msa","text":"مؤقت 2 ساعة","tool":"set_timer","args":{"seconds":"7200"}}
+{"id":"timer-023","split":"test","type":"timer","lang":"en","text":"set a timer for 12 minutes","tool":"set_timer","args":{"seconds":"720"}}
+{"id":"timer-024","split":"calibration","type":"timer","lang":"sdn","text":"مؤقت عشر دقائق","tool":"set_timer","args":{"seconds":"600"}}
+{"id":"timer-025","split":"test","type":"timer","lang":"en","text":"timer for 6 minutes","tool":"set_timer","args":{"seconds":"360"}}
+{"id":"timer-026","split":"calibration","type":"timer","lang":"msa","text":"مؤقت 7 دقائق","tool":"set_timer","args":{"seconds":"420"}}
+{"id":"timer-027","split":"test","type":"timer","lang":"en","text":"set a timer for 25 minutes","tool":"set_timer","args":{"seconds":"1500"}}
+{"id":"timer-028","split":"calibration","type":"timer","lang":"msa","text":"مؤقت 9 ثواني","tool":"set_timer","args":{"seconds":"9"}}
+{"id":"timer-029","split":"test","type":"timer","lang":"en","text":"timer for 40 seconds","tool":"set_timer","args":{"seconds":"40"}}
+{"id":"timer-030","split":"calibration","type":"timer","lang":"msa","text":"مؤقت 6 دقائق","tool":"set_timer","args":{"seconds":"360"}}
+{"id":"open-001","split":"test","type":"open","lang":"en","text":"open WhatsApp","tool":"open_app","args":{"name":"WhatsApp"}}
+{"id":"open-002","split":"calibration","type":"open","lang":"en","text":"open Clock","tool":"open_app","args":{"name":"Clock"}}
+{"id":"open-003","split":"test","type":"open","lang":"en","text":"open Calendar","tool":"open_app","args":{"name":"Calendar"}}
+{"id":"open-004","split":"calibration","type":"open","lang":"en","text":"open Messages","tool":"open_app","args":{"name":"Messages"}}
+{"id":"open-005","split":"test","type":"open","lang":"en","text":"open Chrome","tool":"open_app","args":{"name":"Chrome"}}
+{"id":"open-006","split":"calibration","type":"open","lang":"en","text":"open Maps","tool":"open_app","args":{"name":"Maps"}}
+{"id":"open-007","split":"test","type":"open","lang":"en","text":"open Camera","tool":"open_app","args":{"name":"Camera"}}
+{"id":"open-008","split":"calibration","type":"open","lang":"en","text":"open Settings","tool":"open_app","args":{"name":"Settings"}}
+{"id":"open-009","split":"test","type":"open","lang":"en","text":"launch WhatsApp","tool":"open_app","args":{"name":"WhatsApp"}}
+{"id":"open-010","split":"calibration","type":"open","lang":"en","text":"launch Clock","tool":"open_app","args":{"name":"Clock"}}
+{"id":"open-011","split":"test","type":"open","lang":"msa","text":"افتح واتساب","tool":"open_app","args":{"name":"واتساب"}}
+{"id":"open-012","split":"calibration","type":"open","lang":"msa","text":"افتح الساعة","tool":"open_app","args":{"name":"الساعة"}}
+{"id":"open-013","split":"test","type":"open","lang":"msa","text":"افتح التقويم","tool":"open_app","args":{"name":"التقويم"}}
+{"id":"open-014","split":"calibration","type":"open","lang":"msa","text":"افتح الرسائل","tool":"open_app","args":{"name":"الرسائل"}}
+{"id":"open-015","split":"test","type":"open","lang":"msa","text":"افتح كروم","tool":"open_app","args":{"name":"كروم"}}
+{"id":"open-016","split":"calibration","type":"open","lang":"msa","text":"افتح الخرائط","tool":"open_app","args":{"name":"الخرائط"}}
+{"id":"open-017","split":"test","type":"open","lang":"sdn","text":"شغل واتساب","tool":"open_app","args":{"name":"واتساب"}}
+{"id":"open-018","split":"calibration","type":"open","lang":"sdn","text":"شغل الساعة","tool":"open_app","args":{"name":"الساعة"}}
+{"id":"open-019","split":"test","type":"open","lang":"msa","text":"افتح الكاميرا","tool":"open_app","args":{"name":"الكاميرا"}}
+{"id":"open-020","split":"calibration","type":"open","lang":"en","text":"open Photos","tool":"open_app","args":{"name":"Photos"}}
+{"id":"open-021","split":"test","type":"open","lang":"en","text":"launch Maps","tool":"open_app","args":{"name":"Maps"}}
+{"id":"open-022","split":"calibration","type":"open","lang":"msa","text":"افتح الصور","tool":"open_app","args":{"name":"الصور"}}
+{"id":"open-023","split":"test","type":"open","lang":"en","text":"open YouTube","tool":"open_app","args":{"name":"YouTube"}}
+{"id":"open-024","split":"calibration","type":"open","lang":"msa","text":"افتح يوتيوب","tool":"open_app","args":{"name":"يوتيوب"}}
+{"id":"open-025","split":"test","type":"open","lang":"en","text":"launch Camera","tool":"open_app","args":{"name":"Camera"}}
+{"id":"open-026","split":"calibration","type":"open","lang":"sdn","text":"شغل الخرائط","tool":"open_app","args":{"name":"الخرائط"}}
+{"id":"open-027","split":"test","type":"open","lang":"en","text":"open Files","tool":"open_app","args":{"name":"Files"}}
+{"id":"open-028","split":"calibration","type":"open","lang":"msa","text":"افتح الملفات","tool":"open_app","args":{"name":"الملفات"}}
+{"id":"open-029","split":"test","type":"open","lang":"en","text":"launch Photos","tool":"open_app","args":{"name":"Photos"}}
+{"id":"open-030","split":"calibration","type":"open","lang":"sdn","text":"شغل الكاميرا","tool":"open_app","args":{"name":"الكاميرا"}}
+{"id":"calendar-001","split":"test","type":"calendar","lang":"en","text":"add event Dentist at 15:00","tool":"add_calendar_event","args":{"title":"Dentist","hour":"15","minute":"0"}}
+{"id":"calendar-002","split":"calibration","type":"calendar","lang":"en","text":"add event Lunch at 1 pm","tool":"add_calendar_event","args":{"title":"Lunch","hour":"13","minute":"0"}}
+{"id":"calendar-003","split":"test","type":"calendar","lang":"en","text":"add event Standup at 9:30","tool":"add_calendar_event","args":{"title":"Standup","hour":"9","minute":"30"}}
+{"id":"calendar-004","split":"calibration","type":"calendar","lang":"en","text":"add event School run at 7 am","tool":"add_calendar_event","args":{"title":"School run","hour":"7","minute":"0"}}
+{"id":"calendar-005","split":"test","type":"calendar","lang":"en","text":"add an event Dinner at 8 pm","tool":"add_calendar_event","args":{"title":"Dinner","hour":"20","minute":"0"}}
+{"id":"calendar-006","split":"calibration","type":"calendar","lang":"en","text":"add event Prayer at 5:45","tool":"add_calendar_event","args":{"title":"Prayer","hour":"5","minute":"45"}}
+{"id":"calendar-007","split":"test","type":"calendar","lang":"en","text":"add event Flight at 6","tool":"add_calendar_event","args":{"title":"Flight","hour":"6","minute":"0"}}
+{"id":"calendar-008","split":"calibration","type":"calendar","lang":"en","text":"add event Meeting at 11:15","tool":"add_calendar_event","args":{"title":"Meeting","hour":"11","minute":"15"}}
+{"id":"calendar-009","split":"test","type":"calendar","lang":"msa","text":"أضف موعد طبيب الساعة ثلاثة","tool":"add_calendar_event","args":{"title":"طبيب","hour":"3","minute":"0"}}
+{"id":"calendar-010","split":"calibration","type":"calendar","lang":"msa","text":"أضف موعد غداء الساعة خمسة","tool":"add_calendar_event","args":{"title":"غداء","hour":"5","minute":"0"}}
+{"id":"calendar-011","split":"test","type":"calendar","lang":"msa","text":"أضف موعد اجتماع الساعة عشرة","tool":"add_calendar_event","args":{"title":"اجتماع","hour":"10","minute":"0"}}
+{"id":"calendar-012","split":"calibration","type":"calendar","lang":"msa","text":"أضف موعد المدرسة الساعة سبعة","tool":"add_calendar_event","args":{"title":"المدرسة","hour":"7","minute":"0"}}
+{"id":"calendar-013","split":"test","type":"calendar","lang":"sdn","text":"ضيف موعد طبيب الساعة ستة","tool":"add_calendar_event","args":{"title":"طبيب","hour":"6","minute":"0"}}
+{"id":"calendar-014","split":"calibration","type":"calendar","lang":"msa","text":"أضف موعد عشاء الساعة تسعة","tool":"add_calendar_event","args":{"title":"عشاء","hour":"9","minute":"0"}}
+{"id":"calendar-015","split":"test","type":"calendar","lang":"en","text":"add event Gym at 18:00","tool":"add_calendar_event","args":{"title":"Gym","hour":"18","minute":"0"}}
+{"id":"calendar-016","split":"calibration","type":"calendar","lang":"en","text":"add an event Call at 4 pm","tool":"add_calendar_event","args":{"title":"Call","hour":"16","minute":"0"}}
+{"id":"calendar-017","split":"test","type":"calendar","lang":"msa","text":"أضف موعد الدوام الساعة ثمانية","tool":"add_calendar_event","args":{"title":"الدوام","hour":"8","minute":"0"}}
+{"id":"calendar-018","split":"calibration","type":"calendar","lang":"sdn","text":"ضيف موعد القهوة الساعة أربعة","tool":"add_calendar_event","args":{"title":"القهوة","hour":"4","minute":"0"}}
+{"id":"calendar-019","split":"test","type":"calendar","lang":"en","text":"add event Pickup at 2:10","tool":"add_calendar_event","args":{"title":"Pickup","hour":"2","minute":"10"}}
+{"id":"calendar-020","split":"calibration","type":"calendar","lang":"msa","text":"أضف موعد الفطور الساعة ستة","tool":"add_calendar_event","args":{"title":"الفطور","hour":"6","minute":"0"}}
+{"id":"calendar-021","split":"test","type":"calendar","lang":"en","text":"add event Review at 16:30","tool":"add_calendar_event","args":{"title":"Review","hour":"16","minute":"30"}}
+{"id":"calendar-022","split":"calibration","type":"calendar","lang":"msa","text":"أضف موعد التدريب الساعة خمسة","tool":"add_calendar_event","args":{"title":"التدريب","hour":"5","minute":"0"}}
+{"id":"calendar-023","split":"test","type":"calendar","lang":"en","text":"add an event Walk at 6:20","tool":"add_calendar_event","args":{"title":"Walk","hour":"6","minute":"20"}}
+{"id":"calendar-024","split":"calibration","type":"calendar","lang":"sdn","text":"ضيف موعد السوق الساعة حداشر","tool":"add_calendar_event","args":{"title":"السوق","hour":"11","minute":"0"}}
+{"id":"calendar-025","split":"test","type":"calendar","lang":"en","text":"add event Class at 8 am","tool":"add_calendar_event","args":{"title":"Class","hour":"8","minute":"0"}}
+{"id":"calendar-026","split":"calibration","type":"calendar","lang":"msa","text":"أضف موعد النوم الساعة عشرة","tool":"add_calendar_event","args":{"title":"النوم","hour":"10","minute":"0"}}
+{"id":"calendar-027","split":"test","type":"calendar","lang":"en","text":"add event Interview at 3:40","tool":"add_calendar_event","args":{"title":"Interview","hour":"3","minute":"40"}}
+{"id":"calendar-028","split":"calibration","type":"calendar","lang":"msa","text":"أضف موعد الزيارة الساعة اثنين","tool":"add_calendar_event","args":{"title":"الزيارة","hour":"2","minute":"0"}}
+{"id":"calendar-029","split":"test","type":"calendar","lang":"en","text":"add an event Break at 12 pm","tool":"add_calendar_event","args":{"title":"Break","hour":"12","minute":"0"}}
+{"id":"calendar-030","split":"calibration","type":"calendar","lang":"sdn","text":"ضيف موعد البيت الساعة تسعة","tool":"add_calendar_event","args":{"title":"البيت","hour":"9","minute":"0"}}

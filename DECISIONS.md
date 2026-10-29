@@ -195,3 +195,11 @@ Not copied: LLM provider clients, the social manager, finance, food, and transpo
 
 Checks on 29 Oct 2026: `./gradlew :app:ktlintCheck :app:detekt :app:testFossDebugUnitTest --tests app.kawkab.android.domain.safety.HandsSafetyTest --tests app.kawkab.android.domain.models.ToolClassificationTest` passed. A full `check` for this tree is still to run before `m1`. No gate is BLOCKED. GitHub Actions was not run from this machine.
 
+## 2026-10-29 — command eval set frozen
+
+`evals/commands/v1/commands.jsonl` is version 1 of the typed command set. SHA-256 of the file bytes: `fe82846673bca8d93f604ef3cb4e8af8c3e6f155ce6acd7987b7cf5d500847d7`.
+
+200 commands, one JSON object per line. Types: call 40, sms 40, alarm 30, timer 30, open 30, calendar 30. Languages: English 103, Modern Standard Arabic 67, Sudanese 30. Splits: test 100 and calibration 100, alternating within each type (even index test, odd index calibration). Each line has an id, split, type, lang, text, tool, and args. The three examples from the spec are in the file: "رسل لأحمد إني متأخر", "صحيني الساعة ستة", "اتصل على أخوي".
+
+This commit does not add a parser. Later changes need a new version. The test split is the only split a gate may score.
+
