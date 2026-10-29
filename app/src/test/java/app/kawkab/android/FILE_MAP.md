@@ -392,6 +392,8 @@ Only Kotlin files appear inside the generated blocks.
     - `ToolApprovalPolicyTest.kt` - Unit tests for `ToolApprovalPolicy`.
     - `ToolClassificationTest.kt` - Every registered local tool is in `safety/tool_classification.csv`, and every outbound-capable tool is `ToolRisk.OUTBOUND`.
     - `TriggerTelemetryTest.kt` - Pins the stable `telemetryKind` strings for every `TriggerCondition` variant.
+  - `phoneaccess/` - Tests for the phone-access status lines and the missing-permission card.
+    - `PhoneAccessStatusTest.kt` - Status lines and the card a command shows when a grant is missing.
   - `pipelineio/` - Tests for the pipeline import/export gateway.
     - `CookbookRecipeValidationTest.kt` - Validates the pipeline recipes published in `docs/recipes/`, which [docs/cookbook.md] tells a reader to download and import.
     - `ImportedPipelineClaimsTest.kt` - `ImportedPipelineClaims` — an imported pipeline's `uses · …` hints keep only the tools its own TOOL nodes call.

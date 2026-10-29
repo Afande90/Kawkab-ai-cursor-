@@ -131,7 +131,13 @@ class OnboardingScreenPagerTest {
         composeTestRule.onNodeWithText(text = openChatLabel).performClick()
 
         verify(exactly = 1) { vm.finishOnboarding() }
-        assertEquals("onCompleted should fire exactly once on finish", 1, completed)
+        assertEquals("finish shows phone access before leaving setup", 0, completed)
+
+        val phoneAccessTitle = ctx.getString(app.kawkab.android.R.string.phone_access_title)
+        val phoneAccessDone = ctx.getString(app.kawkab.android.R.string.phone_access_done)
+        composeTestRule.onNodeWithText(text = phoneAccessTitle).assertIsDisplayed()
+        composeTestRule.onNodeWithText(text = phoneAccessDone).performClick()
+        assertEquals("onCompleted should fire exactly once after phone access", 1, completed)
     }
 
     @Test
