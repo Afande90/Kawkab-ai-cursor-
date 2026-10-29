@@ -279,3 +279,11 @@ Llamatik is the candidate llama.cpp runtime for the judge GGUF, under MIT. It is
 
 The steps for making Kawkab the default assistant are string resources, in English and Arabic, plus a role-request intent for the phone-access screen.
 
+## 2026-10-29 — command eval set v2 frozen
+
+`evals/commands/v2/commands.jsonl` is version 2 of the typed command set. SHA-256 of the file bytes: `7fc21d3c680d11e2576bb4021028167d131d66c63c6a2673664ea28e56a5a26a`.
+
+150 commands, one JSON object per line. None of them is a v1 line, and none contains a v1 line. Types: call 25, sms 25, alarm 25, timer 25, open 25, calendar 25. Splits: test 78 and calibration 72, alternating within each type. Languages are English, Modern Standard Arabic, Sudanese, and mixed Arabic and English. The lines include word-order changes, typos, and indirect requests such as "I'm late, tell Ahmad".
+
+This commit does not change the parser. The score is a later commit. v1 is unchanged.
+

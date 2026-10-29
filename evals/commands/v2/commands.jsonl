@@ -1,0 +1,150 @@
+{"id": "call-v2-001", "split": "test", "type": "call", "lang": "en", "text": "Ahmad call now", "tool": "call_phone", "args": {"contact": "Ahmad"}}
+{"id": "call-v2-002", "split": "calibration", "type": "call", "lang": "en", "text": "ring up Sara for me", "tool": "call_phone", "args": {"contact": "Sara"}}
+{"id": "call-v2-003", "split": "test", "type": "call", "lang": "en", "text": "cal Mom", "tool": "call_phone", "args": {"contact": "Mom"}}
+{"id": "call-v2-004", "split": "calibration", "type": "call", "lang": "mix", "text": "call أحمد", "tool": "call_phone", "args": {"contact": "أحمد"}}
+{"id": "call-v2-005", "split": "test", "type": "call", "lang": "sdn", "text": "يا زول كلم لي أخوي", "tool": "call_phone", "args": {"contact": "أخوي"}}
+{"id": "call-v2-006", "split": "calibration", "type": "call", "lang": "en", "text": "I need to talk to Hassan", "tool": "call_phone", "args": {"contact": "Hassan"}}
+{"id": "call-v2-007", "split": "test", "type": "call", "lang": "en", "text": "dial Layla this minute", "tool": "call_phone", "args": {"contact": "Layla"}}
+{"id": "call-v2-008", "split": "calibration", "type": "call", "lang": "en", "text": "phone Yusuf right away", "tool": "call_phone", "args": {"contact": "Yusuf"}}
+{"id": "call-v2-009", "split": "test", "type": "call", "lang": "en", "text": "could you ring Omar", "tool": "call_phone", "args": {"contact": "Omar"}}
+{"id": "call-v2-010", "split": "calibration", "type": "call", "lang": "msa", "text": "اتصل بسارة", "tool": "call_phone", "args": {"contact": "سارة"}}
+{"id": "call-v2-011", "split": "test", "type": "call", "lang": "msa", "text": "كلمي أمي", "tool": "call_phone", "args": {"contact": "أمي"}}
+{"id": "call-v2-012", "split": "calibration", "type": "call", "lang": "en", "text": "get my brother on the phone", "tool": "call_phone", "args": {"contact": "my brother"}}
+{"id": "call-v2-013", "split": "test", "type": "call", "lang": "en", "text": "please phone Noor tonight", "tool": "call_phone", "args": {"contact": "Noor"}}
+{"id": "call-v2-014", "split": "calibration", "type": "call", "lang": "en", "text": "Ahmad, give him a ring", "tool": "call_phone", "args": {"contact": "Ahmad"}}
+{"id": "call-v2-015", "split": "test", "type": "call", "lang": "en", "text": "ring Hassan", "tool": "call_phone", "args": {"contact": "Hassan"}}
+{"id": "call-v2-016", "split": "calibration", "type": "call", "lang": "msa", "text": "بعد الشغل اتصل بليلى", "tool": "call_phone", "args": {"contact": "ليلى"}}
+{"id": "call-v2-017", "split": "test", "type": "call", "lang": "sdn", "text": "كلم لي محمد هسع", "tool": "call_phone", "args": {"contact": "محمد"}}
+{"id": "call-v2-018", "split": "calibration", "type": "call", "lang": "en", "text": "calll Sara", "tool": "call_phone", "args": {"contact": "Sara"}}
+{"id": "call-v2-019", "split": "test", "type": "call", "lang": "mix", "text": "واتساب لا phone Mom", "tool": "call_phone", "args": {"contact": "Mom"}}
+{"id": "call-v2-020", "split": "calibration", "type": "call", "lang": "sdn", "text": "أخوي اتصل عليه", "tool": "call_phone", "args": {"contact": "أخوي"}}
+{"id": "call-v2-021", "split": "test", "type": "call", "lang": "en", "text": "dial the clinic", "tool": "call_phone", "args": {"contact": "the clinic"}}
+{"id": "call-v2-022", "split": "calibration", "type": "call", "lang": "mix", "text": "phone أم أحمد", "tool": "call_phone", "args": {"contact": "أم أحمد"}}
+{"id": "call-v2-023", "split": "test", "type": "call", "lang": "en", "text": "I should phone Yusuf", "tool": "call_phone", "args": {"contact": "Yusuf"}}
+{"id": "call-v2-024", "split": "calibration", "type": "call", "lang": "sdn", "text": "يا أخوي داير سارة في التلفون", "tool": "call_phone", "args": {"contact": "سارة"}}
+{"id": "call-v2-025", "split": "test", "type": "call", "lang": "en", "text": "ring Noor", "tool": "call_phone", "args": {"contact": "Noor"}}
+{"id": "sms-v2-001", "split": "test", "type": "sms", "lang": "en", "text": "I'm late, tell Ahmad", "tool": "send_sms", "args": {"contact": "Ahmad", "body": "I'm late"}}
+{"id": "sms-v2-002", "split": "calibration", "type": "sms", "lang": "en", "text": "Ahmad running late text", "tool": "send_sms", "args": {"contact": "Ahmad", "body": "running late"}}
+{"id": "sms-v2-003", "split": "test", "type": "sms", "lang": "en", "text": "txt Sara on my way", "tool": "send_sms", "args": {"contact": "Sara", "body": "on my way"}}
+{"id": "sms-v2-004", "split": "calibration", "type": "sms", "lang": "mix", "text": "text أحمد I'm late", "tool": "send_sms", "args": {"contact": "أحمد", "body": "I'm late"}}
+{"id": "sms-v2-005", "split": "test", "type": "sms", "lang": "sdn", "text": "ابعت لي أحمد قولي ليهو متأخر", "tool": "send_sms", "args": {"contact": "أحمد", "body": "متأخر"}}
+{"id": "sms-v2-006", "split": "calibration", "type": "sms", "lang": "en", "text": "let Mom know I will be there", "tool": "send_sms", "args": {"contact": "Mom", "body": "I will be there"}}
+{"id": "sms-v2-007", "split": "test", "type": "sms", "lang": "en", "text": "message Hassan see you soon", "tool": "send_sms", "args": {"contact": "Hassan", "body": "see you soon"}}
+{"id": "sms-v2-008", "split": "calibration", "type": "sms", "lang": "en", "text": "sms to Layla coming", "tool": "send_sms", "args": {"contact": "Layla", "body": "coming"}}
+{"id": "sms-v2-009", "split": "test", "type": "sms", "lang": "msa", "text": "أرسل إلى سارة في الطريق", "tool": "send_sms", "args": {"contact": "سارة", "body": "في الطريق"}}
+{"id": "sms-v2-010", "split": "calibration", "type": "sms", "lang": "sdn", "text": "قول لأخوي جايكم", "tool": "send_sms", "args": {"contact": "أخوي", "body": "جايكم"}}
+{"id": "sms-v2-011", "split": "test", "type": "sms", "lang": "en", "text": "tell Noor I am outside", "tool": "send_sms", "args": {"contact": "Noor", "body": "I am outside"}}
+{"id": "sms-v2-012", "split": "calibration", "type": "sms", "lang": "mix", "text": "ابعت لSara on my way", "tool": "send_sms", "args": {"contact": "Sara", "body": "on my way"}}
+{"id": "sms-v2-013", "split": "test", "type": "sms", "lang": "en", "text": "tex Mom dinner is ready", "tool": "send_sms", "args": {"contact": "Mom", "body": "dinner is ready"}}
+{"id": "sms-v2-014", "split": "calibration", "type": "sms", "lang": "sdn", "text": "متأخّر، قول لأحمد", "tool": "send_sms", "args": {"contact": "أحمد", "body": "متأخّر"}}
+{"id": "sms-v2-015", "split": "test", "type": "sms", "lang": "en", "text": "drop Yusuf a text that I arrived", "tool": "send_sms", "args": {"contact": "Yusuf", "body": "I arrived"}}
+{"id": "sms-v2-016", "split": "calibration", "type": "sms", "lang": "msa", "text": "ابعث لخالد كلمني", "tool": "send_sms", "args": {"contact": "خالد", "body": "كلمني"}}
+{"id": "sms-v2-017", "split": "test", "type": "sms", "lang": "en", "text": "text Omar: bring the keys", "tool": "send_sms", "args": {"contact": "Omar", "body": "bring the keys"}}
+{"id": "sms-v2-018", "split": "calibration", "type": "sms", "lang": "sdn", "text": "يا زول ابعت لأمي وصلت", "tool": "send_sms", "args": {"contact": "أمي", "body": "وصلت"}}
+{"id": "sms-v2-019", "split": "test", "type": "sms", "lang": "en", "text": "ping Hassan that practice moved", "tool": "send_sms", "args": {"contact": "Hassan", "body": "practice moved"}}
+{"id": "sms-v2-020", "split": "calibration", "type": "sms", "lang": "mix", "text": "sms ليلى جاية", "tool": "send_sms", "args": {"contact": "ليلى", "body": "جاية"}}
+{"id": "sms-v2-021", "split": "test", "type": "sms", "lang": "en", "text": "would you text Sara the address", "tool": "send_sms", "args": {"contact": "Sara", "body": "the address"}}
+{"id": "sms-v2-022", "split": "calibration", "type": "sms", "lang": "msa", "text": "راسل فاطمة إني بالباب", "tool": "send_sms", "args": {"contact": "فاطمة", "body": "إني بالباب"}}
+{"id": "sms-v2-023", "split": "test", "type": "sms", "lang": "en", "text": "send Ahmad a note saying thanks", "tool": "send_sms", "args": {"contact": "Ahmad", "body": "thanks"}}
+{"id": "sms-v2-024", "split": "calibration", "type": "sms", "lang": "sdn", "text": "قولي ليها سارة إني طالع", "tool": "send_sms", "args": {"contact": "سارة", "body": "إني طالع"}}
+{"id": "sms-v2-025", "split": "test", "type": "sms", "lang": "en", "text": "text Noor the gate code is 2214", "tool": "send_sms", "args": {"contact": "Noor", "body": "the gate code is 2214"}}
+{"id": "alarm-v2-001", "split": "test", "type": "alarm", "lang": "en", "text": "for 6:30 set an alarm", "tool": "set_alarm", "args": {"hour": "6", "minute": "30"}}
+{"id": "alarm-v2-002", "split": "calibration", "type": "alarm", "lang": "en", "text": "set an alram for 7", "tool": "set_alarm", "args": {"hour": "7", "minute": "0"}}
+{"id": "alarm-v2-003", "split": "test", "type": "alarm", "lang": "en", "text": "wake me up around 5", "tool": "set_alarm", "args": {"hour": "5", "minute": "0"}}
+{"id": "alarm-v2-004", "split": "calibration", "type": "alarm", "lang": "mix", "text": "set an alarm for ٦", "tool": "set_alarm", "args": {"hour": "6", "minute": "0"}}
+{"id": "alarm-v2-005", "split": "test", "type": "alarm", "lang": "sdn", "text": "نبّهني الصباح الساعة ستة", "tool": "set_alarm", "args": {"hour": "6", "minute": "0"}}
+{"id": "alarm-v2-006", "split": "calibration", "type": "alarm", "lang": "en", "text": "alarm at 6 please", "tool": "set_alarm", "args": {"hour": "6", "minute": "0"}}
+{"id": "alarm-v2-007", "split": "test", "type": "alarm", "lang": "en", "text": "I have to be up at 5:15", "tool": "set_alarm", "args": {"hour": "5", "minute": "15"}}
+{"id": "alarm-v2-008", "split": "calibration", "type": "alarm", "lang": "msa", "text": "المنبه على سبعة", "tool": "set_alarm", "args": {"hour": "7", "minute": "0"}}
+{"id": "alarm-v2-009", "split": "test", "type": "alarm", "lang": "sdn", "text": "صحّيني بكرة الساعة خمسة", "tool": "set_alarm", "args": {"hour": "5", "minute": "0"}}
+{"id": "alarm-v2-010", "split": "calibration", "type": "alarm", "lang": "en", "text": "set alarm 8 am", "tool": "set_alarm", "args": {"hour": "8", "minute": "0"}}
+{"id": "alarm-v2-011", "split": "test", "type": "alarm", "lang": "en", "text": "wakeme at 9 pm", "tool": "set_alarm", "args": {"hour": "21", "minute": "0"}}
+{"id": "alarm-v2-012", "split": "calibration", "type": "alarm", "lang": "mix", "text": "صحيني at 6", "tool": "set_alarm", "args": {"hour": "6", "minute": "0"}}
+{"id": "alarm-v2-013", "split": "test", "type": "alarm", "lang": "en", "text": "an alarm for half six", "tool": "set_alarm", "args": {"hour": "6", "minute": "30"}}
+{"id": "alarm-v2-014", "split": "calibration", "type": "alarm", "lang": "msa", "text": "اضبط المنبه على الرابعة", "tool": "set_alarm", "args": {"hour": "4", "minute": "0"}}
+{"id": "alarm-v2-015", "split": "test", "type": "alarm", "lang": "sdn", "text": "يا زول نبهني الساعة تمانية", "tool": "set_alarm", "args": {"hour": "8", "minute": "0"}}
+{"id": "alarm-v2-016", "split": "calibration", "type": "alarm", "lang": "en", "text": "set an alarm for 06:05", "tool": "set_alarm", "args": {"hour": "6", "minute": "5"}}
+{"id": "alarm-v2-017", "split": "test", "type": "alarm", "lang": "en", "text": "don't let me sleep past 7:45", "tool": "set_alarm", "args": {"hour": "7", "minute": "45"}}
+{"id": "alarm-v2-018", "split": "calibration", "type": "alarm", "lang": "msa", "text": "فزعني الساعة عشرة", "tool": "set_alarm", "args": {"hour": "10", "minute": "0"}}
+{"id": "alarm-v2-019", "split": "test", "type": "alarm", "lang": "en", "text": "alarm 6:30am", "tool": "set_alarm", "args": {"hour": "6", "minute": "30"}}
+{"id": "alarm-v2-020", "split": "calibration", "type": "alarm", "lang": "sdn", "text": "الصباح بدري صحيني الساعة أربعة", "tool": "set_alarm", "args": {"hour": "4", "minute": "0"}}
+{"id": "alarm-v2-021", "split": "test", "type": "alarm", "lang": "en", "text": "set an alerm for 11", "tool": "set_alarm", "args": {"hour": "11", "minute": "0"}}
+{"id": "alarm-v2-022", "split": "calibration", "type": "alarm", "lang": "mix", "text": "wake me at ٧", "tool": "set_alarm", "args": {"hour": "7", "minute": "0"}}
+{"id": "alarm-v2-023", "split": "test", "type": "alarm", "lang": "en", "text": "I need an alarm at quarter past six", "tool": "set_alarm", "args": {"hour": "6", "minute": "15"}}
+{"id": "alarm-v2-024", "split": "calibration", "type": "alarm", "lang": "msa", "text": "منبه الساعة 6:20", "tool": "set_alarm", "args": {"hour": "6", "minute": "20"}}
+{"id": "alarm-v2-025", "split": "test", "type": "alarm", "lang": "sdn", "text": "نبهني قبل الدوام الساعة ستة", "tool": "set_alarm", "args": {"hour": "6", "minute": "0"}}
+{"id": "timer-v2-001", "split": "test", "type": "timer", "lang": "en", "text": "5 minutes timer", "tool": "set_timer", "args": {"seconds": "300"}}
+{"id": "timer-v2-002", "split": "calibration", "type": "timer", "lang": "en", "text": "set a timmer for 10 minutes", "tool": "set_timer", "args": {"seconds": "600"}}
+{"id": "timer-v2-003", "split": "test", "type": "timer", "lang": "en", "text": "timer 30 seconds", "tool": "set_timer", "args": {"seconds": "30"}}
+{"id": "timer-v2-004", "split": "calibration", "type": "timer", "lang": "mix", "text": "set a timer for ٥ دقائق", "tool": "set_timer", "args": {"seconds": "300"}}
+{"id": "timer-v2-005", "split": "test", "type": "timer", "lang": "sdn", "text": "خلي مؤقت خمس دقايق", "tool": "set_timer", "args": {"seconds": "300"}}
+{"id": "timer-v2-006", "split": "calibration", "type": "timer", "lang": "en", "text": "give me 2 hours on a timer", "tool": "set_timer", "args": {"seconds": "7200"}}
+{"id": "timer-v2-007", "split": "test", "type": "timer", "lang": "en", "text": "countdown 45 seconds", "tool": "set_timer", "args": {"seconds": "45"}}
+{"id": "timer-v2-008", "split": "calibration", "type": "timer", "lang": "msa", "text": "ضع عداد لعشر دقائق", "tool": "set_timer", "args": {"seconds": "600"}}
+{"id": "timer-v2-009", "split": "test", "type": "timer", "lang": "sdn", "text": "يا زول ظبط مؤقت دقيقة", "tool": "set_timer", "args": {"seconds": "60"}}
+{"id": "timer-v2-010", "split": "calibration", "type": "timer", "lang": "en", "text": "start a 15 minute timer", "tool": "set_timer", "args": {"seconds": "900"}}
+{"id": "timer-v2-011", "split": "test", "type": "timer", "lang": "en", "text": "timer for 1 hr", "tool": "set_timer", "args": {"seconds": "3600"}}
+{"id": "timer-v2-012", "split": "calibration", "type": "timer", "lang": "mix", "text": "مؤقت 5 minutes", "tool": "set_timer", "args": {"seconds": "300"}}
+{"id": "timer-v2-013", "split": "test", "type": "timer", "lang": "en", "text": "set timer 90 secs", "tool": "set_timer", "args": {"seconds": "90"}}
+{"id": "timer-v2-014", "split": "calibration", "type": "timer", "lang": "msa", "text": "عداد 20 ثانية", "tool": "set_timer", "args": {"seconds": "20"}}
+{"id": "timer-v2-015", "split": "test", "type": "timer", "lang": "sdn", "text": "مؤقت ربع ساعة", "tool": "set_timer", "args": {"seconds": "900"}}
+{"id": "timer-v2-016", "split": "calibration", "type": "timer", "lang": "en", "text": "time me for 3 minutes", "tool": "set_timer", "args": {"seconds": "180"}}
+{"id": "timer-v2-017", "split": "test", "type": "timer", "lang": "en", "text": "a timer of 12 minutes please", "tool": "set_timer", "args": {"seconds": "720"}}
+{"id": "timer-v2-018", "split": "calibration", "type": "timer", "lang": "en", "text": "set a timer for ten minutes", "tool": "set_timer", "args": {"seconds": "600"}}
+{"id": "timer-v2-019", "split": "test", "type": "timer", "lang": "sdn", "text": "دقايق عشر مؤقت", "tool": "set_timer", "args": {"seconds": "600"}}
+{"id": "timer-v2-020", "split": "calibration", "type": "timer", "lang": "en", "text": "timer for 2hrs", "tool": "set_timer", "args": {"seconds": "7200"}}
+{"id": "timer-v2-021", "split": "test", "type": "timer", "lang": "mix", "text": "set a timer for عشر دقائق", "tool": "set_timer", "args": {"seconds": "600"}}
+{"id": "timer-v2-022", "split": "calibration", "type": "timer", "lang": "msa", "text": "مؤقت لنصف ساعة", "tool": "set_timer", "args": {"seconds": "1800"}}
+{"id": "timer-v2-023", "split": "test", "type": "timer", "lang": "en", "text": "ping me in 8 minutes", "tool": "set_timer", "args": {"seconds": "480"}}
+{"id": "timer-v2-024", "split": "calibration", "type": "timer", "lang": "sdn", "text": "خلّي الساعة تعد خمس دقايق", "tool": "set_timer", "args": {"seconds": "300"}}
+{"id": "timer-v2-025", "split": "test", "type": "timer", "lang": "en", "text": "set a timer for 40 second", "tool": "set_timer", "args": {"seconds": "40"}}
+{"id": "open-v2-001", "split": "test", "type": "open", "lang": "en", "text": "WhatsApp open please", "tool": "open_app", "args": {"name": "WhatsApp"}}
+{"id": "open-v2-002", "split": "calibration", "type": "open", "lang": "en", "text": "opne Clock", "tool": "open_app", "args": {"name": "Clock"}}
+{"id": "open-v2-003", "split": "test", "type": "open", "lang": "en", "text": "launch the Calendar", "tool": "open_app", "args": {"name": "Calendar"}}
+{"id": "open-v2-004", "split": "calibration", "type": "open", "lang": "mix", "text": "open واتساب", "tool": "open_app", "args": {"name": "واتساب"}}
+{"id": "open-v2-005", "split": "test", "type": "open", "lang": "sdn", "text": "وريني الواتساب", "tool": "open_app", "args": {"name": "واتساب"}}
+{"id": "open-v2-006", "split": "calibration", "type": "open", "lang": "en", "text": "can you launch Messages", "tool": "open_app", "args": {"name": "Messages"}}
+{"id": "open-v2-007", "split": "test", "type": "open", "lang": "en", "text": "fire up Maps", "tool": "open_app", "args": {"name": "Maps"}}
+{"id": "open-v2-008", "split": "calibration", "type": "open", "lang": "msa", "text": "شغّل لي الساعة", "tool": "open_app", "args": {"name": "الساعة"}}
+{"id": "open-v2-009", "split": "test", "type": "open", "lang": "sdn", "text": "يا زول وريني الخرائط", "tool": "open_app", "args": {"name": "الخرائط"}}
+{"id": "open-v2-010", "split": "calibration", "type": "open", "lang": "en", "text": "open camra", "tool": "open_app", "args": {"name": "Camera"}}
+{"id": "open-v2-011", "split": "test", "type": "open", "lang": "en", "text": "bring up Settings", "tool": "open_app", "args": {"name": "Settings"}}
+{"id": "open-v2-012", "split": "calibration", "type": "open", "lang": "mix", "text": "افتح WhatsApp", "tool": "open_app", "args": {"name": "WhatsApp"}}
+{"id": "open-v2-013", "split": "test", "type": "open", "lang": "en", "text": "start Chrome for me", "tool": "open_app", "args": {"name": "Chrome"}}
+{"id": "open-v2-014", "split": "calibration", "type": "open", "lang": "msa", "text": "قم بفتح الصور", "tool": "open_app", "args": {"name": "الصور"}}
+{"id": "open-v2-015", "split": "test", "type": "open", "lang": "sdn", "text": "وريني الكاميرا", "tool": "open_app", "args": {"name": "الكاميرا"}}
+{"id": "open-v2-016", "split": "calibration", "type": "open", "lang": "en", "text": "open the clock app", "tool": "open_app", "args": {"name": "Clock"}}
+{"id": "open-v2-017", "split": "test", "type": "open", "lang": "en", "text": "laucnh Maps", "tool": "open_app", "args": {"name": "Maps"}}
+{"id": "open-v2-018", "split": "calibration", "type": "open", "lang": "mix", "text": "شغل Clock", "tool": "open_app", "args": {"name": "Clock"}}
+{"id": "open-v2-019", "split": "test", "type": "open", "lang": "en", "text": "I want WhatsApp", "tool": "open_app", "args": {"name": "WhatsApp"}}
+{"id": "open-v2-020", "split": "calibration", "type": "open", "lang": "sdn", "text": "داير الواتساب", "tool": "open_app", "args": {"name": "واتساب"}}
+{"id": "open-v2-021", "split": "test", "type": "open", "lang": "en", "text": "open Gmail", "tool": "open_app", "args": {"name": "Gmail"}}
+{"id": "open-v2-022", "split": "calibration", "type": "open", "lang": "msa", "text": "ادخل على الرسائل", "tool": "open_app", "args": {"name": "الرسائل"}}
+{"id": "open-v2-023", "split": "test", "type": "open", "lang": "en", "text": "pop Calendar open", "tool": "open_app", "args": {"name": "Calendar"}}
+{"id": "open-v2-024", "split": "calibration", "type": "open", "lang": "sdn", "text": "شغل لي التقويم", "tool": "open_app", "args": {"name": "التقويم"}}
+{"id": "open-v2-025", "split": "test", "type": "open", "lang": "en", "text": "open Phone", "tool": "open_app", "args": {"name": "Phone"}}
+{"id": "calendar-v2-001", "split": "test", "type": "calendar", "lang": "en", "text": "at 3 add event Dentist", "tool": "add_calendar_event", "args": {"title": "Dentist", "hour": "15", "minute": "0"}}
+{"id": "calendar-v2-002", "split": "calibration", "type": "calendar", "lang": "en", "text": "add evnet Lunch at 1 pm", "tool": "add_calendar_event", "args": {"title": "Lunch", "hour": "13", "minute": "0"}}
+{"id": "calendar-v2-003", "split": "test", "type": "calendar", "lang": "en", "text": "put Standup on the calendar at 9:30", "tool": "add_calendar_event", "args": {"title": "Standup", "hour": "9", "minute": "30"}}
+{"id": "calendar-v2-004", "split": "calibration", "type": "calendar", "lang": "mix", "text": "add event طبيب at 4", "tool": "add_calendar_event", "args": {"title": "طبيب", "hour": "4", "minute": "0"}}
+{"id": "calendar-v2-005", "split": "test", "type": "calendar", "lang": "sdn", "text": "حط لي موعد السوق الساعة تمانية", "tool": "add_calendar_event", "args": {"title": "السوق", "hour": "8", "minute": "0"}}
+{"id": "calendar-v2-006", "split": "calibration", "type": "calendar", "lang": "en", "text": "calendar Dinner at 8 pm", "tool": "add_calendar_event", "args": {"title": "Dinner", "hour": "20", "minute": "0"}}
+{"id": "calendar-v2-007", "split": "test", "type": "calendar", "lang": "en", "text": "I'm meeting Sara at 6, add it", "tool": "add_calendar_event", "args": {"title": "meeting Sara", "hour": "6", "minute": "0"}}
+{"id": "calendar-v2-008", "split": "calibration", "type": "calendar", "lang": "msa", "text": "سجّل موعد الفطور الساعة سبعة", "tool": "add_calendar_event", "args": {"title": "الفطور", "hour": "7", "minute": "0"}}
+{"id": "calendar-v2-009", "split": "test", "type": "calendar", "lang": "sdn", "text": "يا زول ضيف القهوة الساعة أربعة", "tool": "add_calendar_event", "args": {"title": "القهوة", "hour": "4", "minute": "0"}}
+{"id": "calendar-v2-010", "split": "calibration", "type": "calendar", "lang": "en", "text": "add event School run at 7am", "tool": "add_calendar_event", "args": {"title": "School run", "hour": "7", "minute": "0"}}
+{"id": "calendar-v2-011", "split": "test", "type": "calendar", "lang": "en", "text": "new event Prayer at 5:45", "tool": "add_calendar_event", "args": {"title": "Prayer", "hour": "5", "minute": "45"}}
+{"id": "calendar-v2-012", "split": "calibration", "type": "calendar", "lang": "mix", "text": "ضيف موعد Meeting الساعة 11", "tool": "add_calendar_event", "args": {"title": "Meeting", "hour": "11", "minute": "0"}}
+{"id": "calendar-v2-013", "split": "test", "type": "calendar", "lang": "en", "text": "schedule Flight at 6:10", "tool": "add_calendar_event", "args": {"title": "Flight", "hour": "6", "minute": "10"}}
+{"id": "calendar-v2-014", "split": "calibration", "type": "calendar", "lang": "msa", "text": "أضف اجتماع الساعة التاسعة والنصف", "tool": "add_calendar_event", "args": {"title": "اجتماع", "hour": "9", "minute": "30"}}
+{"id": "calendar-v2-015", "split": "test", "type": "calendar", "lang": "sdn", "text": "موعد البيت حطّو الساعة تسعة", "tool": "add_calendar_event", "args": {"title": "البيت", "hour": "9", "minute": "0"}}
+{"id": "calendar-v2-016", "split": "calibration", "type": "calendar", "lang": "en", "text": "add an event Gym at half past five", "tool": "add_calendar_event", "args": {"title": "Gym", "hour": "5", "minute": "30"}}
+{"id": "calendar-v2-017", "split": "test", "type": "calendar", "lang": "en", "text": "book Dentist for 15:30", "tool": "add_calendar_event", "args": {"title": "Dentist", "hour": "15", "minute": "30"}}
+{"id": "calendar-v2-018", "split": "calibration", "type": "calendar", "lang": "mix", "text": "add event غداء at 2 pm", "tool": "add_calendar_event", "args": {"title": "غداء", "hour": "14", "minute": "0"}}
+{"id": "calendar-v2-019", "split": "test", "type": "calendar", "lang": "en", "text": "remind me about Pickup at 4:15", "tool": "add_calendar_event", "args": {"title": "Pickup", "hour": "4", "minute": "15"}}
+{"id": "calendar-v2-020", "split": "calibration", "type": "calendar", "lang": "sdn", "text": "التمرين ضيفو الساعة ستة", "tool": "add_calendar_event", "args": {"title": "التمرين", "hour": "6", "minute": "0"}}
+{"id": "calendar-v2-021", "split": "test", "type": "calendar", "lang": "en", "text": "add event Call mom at 8", "tool": "add_calendar_event", "args": {"title": "Call mom", "hour": "8", "minute": "0"}}
+{"id": "calendar-v2-022", "split": "calibration", "type": "calendar", "lang": "msa", "text": "موعد التدريب الساعة 6:40", "tool": "add_calendar_event", "args": {"title": "التدريب", "hour": "6", "minute": "40"}}
+{"id": "calendar-v2-023", "split": "test", "type": "calendar", "lang": "en", "text": "put Lunch at noon on my calendar", "tool": "add_calendar_event", "args": {"title": "Lunch", "hour": "12", "minute": "0"}}
+{"id": "calendar-v2-024", "split": "calibration", "type": "calendar", "lang": "sdn", "text": "حط السوق بكرة الساعة عشرة", "tool": "add_calendar_event", "args": {"title": "السوق", "hour": "10", "minute": "0"}}
+{"id": "calendar-v2-025", "split": "test", "type": "calendar", "lang": "en", "text": "add event Workshop at 09:05", "tool": "add_calendar_event", "args": {"title": "Workshop", "hour": "9", "minute": "5"}}
