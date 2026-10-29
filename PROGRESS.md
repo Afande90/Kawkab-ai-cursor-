@@ -20,12 +20,14 @@ Dates are calendar dates in Asia/Dubai. The owner asked for commits on `main` an
 | Task | Status | Date | Commit |
 |---|---|---|---|
 | 9. `OUTBOUND` risk tier, tool classification table and test | done | 29 Oct 2026 | `d8d162c3` |
-| 10. OpenDroid accessibility as `LocalToolExecutor`s, plus the tap guard | not started | | |
-| 11. Denylist (three layers) and the activity log | not started | | |
+| 10. OpenDroid accessibility as `LocalToolExecutor`s, plus the tap guard | done | 29 Oct 2026 | `3d3c03e2` |
+| 11. Denylist (three layers) and the activity log | done | 29 Oct 2026 | `3d3c03e2` |
 | 12. Freeze the command eval set | not started | | |
 | 13. Deterministic Arabic/English fast path, stub messenger, M1 gates, tag `m1` | not started | | |
 
-Next task: 10.
+Next task: 12.
+
+Tasks 10 and 11 share `3d3c03e2` because the accessibility service checks the tap guard and the denylist on the same path. Checks on 29 Oct 2026: `./gradlew :app:ktlintCheck :app:detekt :app:testFossDebugUnitTest --tests app.kawkab.android.domain.safety.HandsSafetyTest --tests app.kawkab.android.domain.models.ToolClassificationTest` passed, and `:app:verifyFileMap` and `:app:verifyDocLinks` passed. A full `check` is still to run before `m1`. No gate is BLOCKED. GitHub Actions was not run from this machine. The emulator was not run.
 
 Task 9 checks, 29 Oct 2026: `./gradlew check :buildSrc:test` passed in 13m 15s: foss 6059 tests, full 6063, catalog 1037, buildSrc 501, 0 failures. Detekt reported 0 findings. The Roborazzi threshold was not changed. GitHub Actions was not run from this machine. No gate is BLOCKED.
 
