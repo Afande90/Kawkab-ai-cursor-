@@ -220,3 +220,17 @@ not in the APK and were not copied.
     https://github.com/ferranpons/Llamatik
   * Qwen3 1.7B — Apache License 2.0
     Weights are not downloaded by this build.
+  * OnDevice LLM — MIT License
+    https://github.com/sebytzr16/on-device-llm
+  * FunctionGemma 270M — Gemma Terms of Use
+    https://ai.google.dev/gemma/terms
+    Weights are not downloaded by this build.
+  * Parakeet TDT 0.6B v3 — Creative Commons Attribution 4.0
+    https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3
+    Weights are not downloaded by this build.
+  * Kokoro 82M — Apache License 2.0
+    https://huggingface.co/hexgrad/Kokoro-82M
+    Weights are not downloaded by this build.
+  * Qwen3-ASR 0.6B — Apache License 2.0
+    https://huggingface.co/Qwen/Qwen3-ASR-0.6B
+    Weights are not downloaded by this build.

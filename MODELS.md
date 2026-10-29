@@ -33,4 +33,15 @@ M1.5 tool-calling candidates, recorded on 29 Oct 2026. None of these files are i
 | Qwen3 1.7B (Apache-2.0) | no | not measured | not measured | Tool-call candidate only. Not downloaded |
 | Llamatik (MIT, llama.cpp) | no | not measured | not measured | Candidate runtime for the judge GGUF. Not a Gradle dependency, so its native libraries are not in the APK |
 
-Local Assistant's author reports Qwen3 1.7B choosing the right tool 10 of 10 times, and Gemma 4 E2B 2 of 10. That is their measurement, not a Kawkab measurement. This machine has no model file and no phone, and the v2 command set is not frozen, so Kawkab's scores stay "not measured". The tool-call default does not move to Qwen. Gemma stays the image model.
+Local Assistant's author reports Qwen3 1.7B choosing the right tool 10 of 10 times, and Gemma 4 E2B 2 of 10. That is their measurement, not a Kawkab measurement. This machine has no model file and no phone, so Kawkab's scores stay "not measured". The tool-call default does not move to Qwen. Gemma stays the image model. Llamatik stays the candidate runtime for the judge GGUF and is not a Gradle dependency.
+
+M1.5 further candidates, recorded on 29 Oct 2026. None of these files are in the repository or the APK. None was fine-tuned here.
+
+| Candidate | Licence on the model card | Role | Notes |
+|---|---|---|---|
+| FunctionGemma 270M (google/functiongemma-270m-it) | Gemma Terms of Use, gated | Candidate tier-2 intent model | Mobile Actions is Google's fine-tune recipe, not a file in this repo. Google reports 58 percent before that fine-tune and 85 percent after. Those are their numbers. This machine did not fine-tune it |
+| Parakeet TDT 0.6B v3 (nvidia/parakeet-tdt-0.6b-v3) | CC-BY-4.0 | M4 speech-to-text candidate | The card says 25 European languages. Arabic is not in that list, so it is not treated as covering the owner's Arabic |
+| Kokoro 82M (hexgrad/Kokoro-82M) | Apache-2.0 | M4 speech candidate | Weights are not downloaded. The card also names CC BY clips in the training set |
+| Qwen3-ASR 0.6B (Qwen/Qwen3-ASR-0.6B) | Apache-2.0 | Extra M4 speech-to-text candidate | The card lists Arabic among its languages. Not downloaded. Not measured here |
+
+OnDevice LLM is credited for naming Parakeet and Kokoro. No code was copied. None of these candidates ships.

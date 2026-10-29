@@ -432,4 +432,9 @@ The image loader (`io.coil-kt.coil3:coil-compose:3.6.3`) is a direct dependency 
 | Local Assistant (github.com/sergarsilla/local-assistant) | Apache-2.0 | credited; no code copied | https://github.com/sergarsilla/local-assistant | no |
 | Llamatik (github.com/ferranpons/Llamatik) | MIT | candidate llama.cpp runtime; not a Gradle dependency; no code copied | https://github.com/ferranpons/Llamatik | no |
 | Qwen3 1.7B | Apache-2.0 | tool-call candidate; weights not downloaded | task 20b; Apache-2.0 model card | no |
+| OnDevice LLM (github.com/sebytzr16/on-device-llm) | MIT | credited; no code copied | https://github.com/sebytzr16/on-device-llm | no |
+| FunctionGemma 270M (google/functiongemma-270m-it) | Gemma Terms of Use | gated; tier-2 intent candidate; not downloaded; not fine-tuned here | https://huggingface.co/google/functiongemma-270m-it | no |
+| Parakeet TDT 0.6B v3 (nvidia/parakeet-tdt-0.6b-v3) | CC-BY-4.0 | M4 speech candidate; 25 European languages on the card; Arabic not listed; not downloaded | https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3 | no |
+| Kokoro 82M (hexgrad/Kokoro-82M) | Apache-2.0 | M4 speech candidate; weights not downloaded | https://huggingface.co/hexgrad/Kokoro-82M | no |
+| Qwen3-ASR 0.6B (Qwen/Qwen3-ASR-0.6B) | Apache-2.0 | M4 speech candidate; card lists Arabic; weights not downloaded | https://huggingface.co/Qwen/Qwen3-ASR-0.6B | no |
 

@@ -293,3 +293,11 @@ The parser, unchanged, matches 25 of 150 lines. On the test split that is 10 of 
 
 Phone, Messages, Clock, Calendar, WhatsApp and Gmail each have a stored map: a package id, the screens a replay looks for, and macros for opening the app and for one common task. Replay walks those steps and does not call a model. After every step the screen text must contain one of that screen's markers, in English or Arabic. Anything else stops the replay so the caller can fall back to tier 3. An outbound step is not run until the owner has tapped. The package ids are the public store ids, not a reading of the owner's phone. PhoneCLI is credited for the idea. No code was copied. A typed chat line still uses the three tiers. These maps wait for a caller that already has room for another function.
 
+## 2026-10-29 — remaining model candidates
+
+FunctionGemma 270M, Parakeet TDT 0.6B v3, Kokoro 82M and Qwen3-ASR 0.6B are recorded and not shipped. No weight was downloaded. No Gradle dependency was added. Llamatik stays as already recorded and is not listed a second time.
+
+FunctionGemma is under the Gemma Terms of Use and is gated. Mobile Actions is Google's fine-tune recipe. Google reports 58 percent for the base model and 85 percent after that fine-tune. Those are their numbers. This machine has no free fine-tune run, so none was started. The tool-call default stays Gemma 4 E2B.
+
+Parakeet's card says 25 European languages and does not list Arabic, so it is not treated as covering the owner's Arabic. Kokoro's card is Apache-2.0. Qwen3-ASR 0.6B's card is Apache-2.0 and lists Arabic. None of the three has a Kawkab measurement. OnDevice LLM is credited for naming Parakeet and Kokoro. No code was copied.
+
