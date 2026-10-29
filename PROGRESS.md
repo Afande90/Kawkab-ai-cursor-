@@ -25,7 +25,23 @@ Dates are calendar dates in Asia/Dubai. The owner asked for commits on `main` an
 | 12. Freeze the command eval set | done | 29 Oct 2026 | `8d7feef9` |
 | 13. Deterministic Arabic/English fast path, stub messenger, M1 gates, tag `m1` | done | 29 Oct 2026 | `3c2a6115` (`eeae2f0e` gates, `9ff6afd3` denylist pattern, `489ee2af` editor labels, `d57e10ab` telephony) |
 
-Next task: none. M1 is tagged. Later milestones are not listed yet.
+## M1.5
+
+| Task | Status | Date | Commit |
+|---|---|---|---|
+| 14. User-visible Kawkab name, planet mark, companion card | done | 29 Oct 2026 | `8add0c2f` |
+| 15. Performance defaults | not started | | |
+| 16. Kawkab assistant pipeline as the default chat | not started | | |
+| 17. Three-tier routing and the fast path in chat | not started | | |
+| 18. Harder command set, frozen then scored | not started | | |
+| 19. App maps and macros | not started | | |
+| 20. Model candidates, not shipped | not started | | |
+| 21. Phone-access setup | not started | | |
+| 22. Close out M1.5 and tag `m1.5` | not started | | |
+
+Next task: 15.
+
+Task 14, 29 Oct 2026: notifications, backup copy, onboarding and the status-bar icon say Kawkab. The About screen still credits Knotwork. `BrandNameTest` and the restore semantics line were checked with `:app:testFossDebugUnitTest --tests app.kawkab.android.i18n.BrandNameTest` and `:catalog:testDebugUnitTest --tests app.kawkab.design.screens.settings.backup.BackupContentSemanticsTest`, and ktlint passed. Snapshot goldens for the changed screens were re-recorded. The comparison threshold was not changed. No gate is BLOCKED. GitHub Actions was not run from this machine.
 
 Task 13, 29 Oct 2026: the fast path matched the frozen test split in full: call 20/20, sms 20/20, alarm 15/15, timer 15/15, open 15/15, calendar 15/15. The gate is 90 percent per type. A constant call parser scores under that gate on every type. `./gradlew check :buildSrc:test --offline` passed in 9m 59s: foss 6070 tests, full 6074, catalog 1037, buildSrc 501, 0 failures. Detekt reported 0 findings. No gate is BLOCKED. GitHub Actions was not run from this machine. The emulator was not run. `Tier1FastPathStateTest` is written for CI and was not executed here. Tag `m1` points at this commit.
 
