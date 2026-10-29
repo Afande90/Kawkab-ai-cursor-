@@ -428,6 +428,7 @@ The image loader (`io.coil-kt.coil3:coil-compose:3.6.3`) is a direct dependency 
 | ARTEMIS embedded Minitap mobile-use | not ported | check third_party/mobile_use before any copy | spec section 0.3 | no |
 | VoiceStudio | AGPL (reference only) | never copied | spec section 0.3 | no |
 | 30u30 and CC BY-NC-ND material | non-commercial | never copied | spec section 0.3 | no |
+| PhoneCLI (github.com/HKUDS/PhoneCLI) | MIT | credited; no code copied | https://github.com/HKUDS/PhoneCLI | no |
 | Local Assistant (github.com/sergarsilla/local-assistant) | Apache-2.0 | credited; no code copied | https://github.com/sergarsilla/local-assistant | no |
 | Llamatik (github.com/ferranpons/Llamatik) | MIT | candidate llama.cpp runtime; not a Gradle dependency; no code copied | https://github.com/ferranpons/Llamatik | no |
 | Qwen3 1.7B | Apache-2.0 | tool-call candidate; weights not downloaded | task 20b; Apache-2.0 model card | no |

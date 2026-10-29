@@ -910,6 +910,8 @@ Only Kotlin files appear inside the generated blocks.
   - `AliasResolver.kt` - Maps a short phrase to one action hint.
   - `AndroidContactBook.kt` - Reads the owner's contacts when READ_CONTACTS has been granted.
   - `AndroidPhoneHands.kt` - Intent and accessibility implementation of `PhoneHands`.
+  - `AppMapReplay.kt` - Replays a stored macro and checks the screen after every step.
+  - `BundledAppMaps.kt` - Stored maps for Phone, Messages, Clock, Calendar, WhatsApp and Gmail.
   - `DurationParser.kt` - Parses a short duration phrase into seconds.
   - `HabitRoutineEngine.kt` - Groups recent actions into half-hour sessions and suggests a sequence that comes back at least `detect`'s minimum number of times in the same part of the day.
   - `HandsDispatch.kt` - Runs one recorded step on `PhoneHands`.

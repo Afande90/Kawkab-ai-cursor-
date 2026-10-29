@@ -45,6 +45,7 @@ Fine-tunes inherit those terms. EmbeddingGemma has no verified model card in thi
 - ARTEMIS / Minitap mobile-use: not ported. No `third_party/mobile_use` tree yet.
 - VoiceStudio (AGPL) and non-commercial material (30u30, CC BY-NC-ND): reference only, never copied.
 - Pocket LLM (github.com/dineshsoudagar/local-llms-on-android, MIT): named as a Gemma 4 GPU and NPU idea. No code was copied.
+- PhoneCLI (github.com/HKUDS/PhoneCLI, MIT): the idea of stored app maps and macros replayed with no model call. No code was copied.
 - Local Assistant (github.com/sergarsilla/local-assistant, Apache-2.0): the idea of registering as the digital assistant and of trying Qwen3 1.7B for tool calls. No code was copied. Their published tool-choice counts are theirs, not a Kawkab measurement.
 - Llamatik (github.com/ferranpons/Llamatik, MIT): a Kotlin library over llama.cpp, recorded as the candidate runtime for the judge GGUF. Not a Gradle dependency. Not downloaded. No code was copied.
 - Qwen3 1.7B (Apache-2.0): a tool-calling brain candidate. Weights are not downloaded and are not in the APK.

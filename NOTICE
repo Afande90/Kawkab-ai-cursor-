@@ -212,6 +212,8 @@ Credited, not bundled in the application
 These projects are named because an idea was reused. Their code and weights are
 not in the APK and were not copied.
 
+  * PhoneCLI — MIT License
+    https://github.com/HKUDS/PhoneCLI
   * Local Assistant — Apache License 2.0
     https://github.com/sergarsilla/local-assistant
   * Llamatik — MIT License
