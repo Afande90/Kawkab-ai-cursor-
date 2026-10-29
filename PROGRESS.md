@@ -35,13 +35,15 @@ Dates are calendar dates in Asia/Dubai. The owner asked for commits on `main` an
 | 17. Three-tier routing and the fast path in chat | done | 29 Oct 2026 | `284d0402` |
 | 18. Harder command set, frozen then scored | done | 29 Oct 2026 | `c38bf3d3` |
 | 19. App maps and macros | done | 29 Oct 2026 | `67b3a9f4` |
-| 20. Model candidates, not shipped | not started | | |
+| 20. Model candidates, not shipped | done | 29 Oct 2026 | `594bbeea` |
 | 20b. System assistant, Qwen3 1.7B, and the Llamatik runtime | done | 29 Oct 2026 | `cbbcf491` |
 | 20c. Small-model harness rules | not started | | |
 | 21. Phone-access setup | not started | | |
 | 22. Close out M1.5 and tag `m1.5` | not started | | |
 
-Next task: 20. Record the remaining model candidates (FunctionGemma, Parakeet, Kokoro, Qwen3-ASR). Llamatik is already recorded. Then 20c, 21, and 22.
+Next task: 20c. Small-model harness rules from Genie and PocketClaw. Then 21 and 22.
+
+Task 20, 29 Oct 2026: FunctionGemma 270M, Parakeet TDT 0.6B v3, Kokoro 82M and Qwen3-ASR 0.6B are recorded with the licence on each model card. None is downloaded or in the APK. Parakeet's card lists 25 European languages and does not list Arabic. FunctionGemma was not fine-tuned. Llamatik stays as recorded in task 20b. Checks: `:app:verifyDocLinks` passed (`/tmp/gradle-t20-docs.log`, BUILD SUCCESSFUL in 1s). No application source changed, so the unit suite was not re-run for this notes-only task. No gate is BLOCKED. GitHub Actions was not run. The emulator was not run.
 
 Task 19, 29 Oct 2026: Phone, Messages, Clock, Calendar, WhatsApp and Gmail each have a stored map and macros. Replay does not call a model. A screen that misses the stored marker stops the replay so the caller can use tier 3. An outbound step is not run until the owner has tapped. Chat still routes a typed line through the three tiers. Checks: `:app:ktlintFormat`, `:app:ktlintCheck`, `:app:detekt`, `:app:testFossDebugUnitTest` for `AppMapReplayTest` (4 tests, 0 failures), `:app:generateFileMap`, `:app:verifyFileMap`, and `:app:verifyDocLinks` passed. The test run is `/tmp/gradle-t19-tests2.log` (BUILD SUCCESSFUL in 47s). The file-map check is `/tmp/gradle-t19-verify.log` (BUILD SUCCESSFUL in 1s). The emulator was not run. No gate is BLOCKED. GitHub Actions was not run.
 
