@@ -43,6 +43,9 @@ uses-permission app.kawkab.android.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 exported activity app.kawkab.android.presentation.share.ShareReceiverActivity permission=none
 exported activity app.kawkab.android.presentation.ui.MainActivity permission=none
 exported receiver app.kawkab.android.presentation.receivers.ExternalAutomationReceiver permission=none
+exported service app.kawkab.android.assistant.KawkabAssistantSessionService permission=android.permission.BIND_VOICE_INTERACTION
+exported service app.kawkab.android.assistant.KawkabRecognitionService permission=android.permission.BIND_RECOGNITION_SERVICE
+exported service app.kawkab.android.assistant.KawkabVoiceInteractionService permission=android.permission.BIND_VOICE_INTERACTION
 exported service app.kawkab.android.data.tools.local.appfunctions.KnotworkAppFunctionService permission=android.permission.BIND_APP_FUNCTION_SERVICE
 exported service app.kawkab.android.presentation.tile.DutyPipelineTileService permission=android.permission.BIND_QUICK_SETTINGS_TILE
 

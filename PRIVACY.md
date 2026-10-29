@@ -363,6 +363,10 @@ it does not list is kept but goes unused. The app opens no connection to do it.
   would hand one to a cloud step is stopped before it runs; a voice message is
   transcribed on the device, and only its text joins the conversation, like a
   message you typed.
+- **Text from the current screen.** If you make Kawkab the phone's assistant,
+  the text of the screen you are on is kept only when you turn that on and tap
+  to read it. It stays on the phone. The recognition service the assistant
+  contract requires does not send audio anywhere.
 - **Nothing is sent to the developer on its own.** The only two paths that can
   reach the developer at all are the optional crash reports of section 3.5 and
   a report you compose yourself. When you flag a model response, **Open issue**

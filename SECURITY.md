@@ -378,7 +378,7 @@ new risk surface, and the design constrains it deliberately:
   from any app on the device, and from `adb`: the share target
   (`ShareReceiverActivity`) and the external-automation receiver
   (`ExternalAutomationReceiver`), both below. The Quick Settings tile and the
-  AppFunctions service are exported too, but only the system can bind them. A
+  AppFunctions service and the digital-assistant services are exported too, but only the system can bind them. A
   build-time test holds this list to the manifests, so a new export fails the
   build until it is added — and, if it asks for no permission, named here.
 - **One function is published to other apps.** `KnotworkAppFunctionService`
