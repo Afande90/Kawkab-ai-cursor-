@@ -213,3 +213,5 @@ The activity log file is `activity-log.jsonl` under the app files directory. It 
 
 The browser editor's tool labels live next to the generator. Adding the twelve hands tools extended that label list and the generator's fixture in the same change. The fixture must name every registered tool or the generator test cannot render. The older display-order checks are unchanged. No threshold was loosened.
 
+Telephony is optional. `CALL_PHONE` would otherwise mark the phone radio as required, and a tablet could not install. The manifest declares `android.hardware.telephony` with `required="false"`. A call still waits for the outbound tap, and it fails if the device has no dialer.
+

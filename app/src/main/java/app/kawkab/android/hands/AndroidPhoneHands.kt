@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.AlarmClock
 import android.provider.CalendarContract
+import androidx.core.net.toUri
 import app.kawkab.android.accessibility.KawkabAccessibilityService
 import app.kawkab.android.domain.safety.ActionDenylist
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -26,11 +27,11 @@ class AndroidPhoneHands @Inject constructor(
 
     override fun placeCall(number: String): String {
         val uri = "tel:${Uri.encode(number)}"
-        return start(Intent(Intent.ACTION_CALL, Uri.parse(uri)), "Called $number.")
+        return start(Intent(Intent.ACTION_CALL, uri.toUri()), "Called $number.")
     }
 
     override fun composeSms(number: String, body: String): String {
-        val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:${Uri.encode(number)}")).apply {
+        val intent = Intent(Intent.ACTION_SENDTO, "smsto:${Uri.encode(number)}".toUri()).apply {
             putExtra("sms_body", body)
         }
         val opened = start(intent, "Opened the message to $number.")
