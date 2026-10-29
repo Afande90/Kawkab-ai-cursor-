@@ -30,17 +30,15 @@ class KnotworkThemeTest {
     val composeTestRule = createComposeRule()
 
     @Test
-    fun `given KnotworkTheme light when read MaterialTheme primary then equals Accent600`() {
-        // Spec §1: light primary = accent-600 (L 0.58) so white on-primary clears
-        // the 3:1 UI-contrast floor on filled buttons; accent-500 fell short.
+    fun `given KnotworkTheme light when read MaterialTheme primary then equals indigo`() {
         val captured = captureInTheme(darkTheme = false) { MaterialTheme.colorScheme.primary }
-        assertEquals(KnotworkPalette.Accent600, captured)
+        assertEquals(KnotworkPalette.Indigo, captured)
     }
 
     @Test
-    fun `given KnotworkTheme dark when read MaterialTheme primary then equals Accent300`() {
+    fun `given KnotworkTheme dark when read MaterialTheme primary then equals indigo`() {
         val captured = captureInTheme(darkTheme = true) { MaterialTheme.colorScheme.primary }
-        assertEquals(KnotworkPalette.Accent300, captured)
+        assertEquals(KnotworkPalette.Indigo, captured)
     }
 
     @Test
@@ -64,8 +62,8 @@ class KnotworkThemeTest {
     @Test
     fun `given KnotworkTheme dark when read extended chatAgentBg then matches dark surface2`() {
         val captured = captureInTheme(darkTheme = true) { KnotworkTheme.extended.chatAgentBg }
-        // KnotworkExtendedColors.chatAgentBg in dark theme aliases surface2 (#221E1A).
-        assertEquals(Color(0xFF221E1A), captured)
+        // chatAgentBg in the dark theme aliases surface2.
+        assertEquals(Color(0xFF171C2C), captured)
     }
 
     @Test
@@ -89,13 +87,13 @@ class KnotworkThemeTest {
         // explicit assignment, surfaceContainer would inherit the Material
         // baseline tint instead of Knotwork Surface2.
         val captured = captureInTheme(darkTheme = false) { MaterialTheme.colorScheme.surfaceContainer }
-        assertEquals(Color(0xFFF6F2ED), captured)
+        assertEquals(Color(0xFFE6E8F2), captured)
     }
 
     @Test
     fun `given KnotworkTheme dark when read MaterialTheme surfaceContainerHighest then equals dark Surface4`() {
         val captured = captureInTheme(darkTheme = true) { MaterialTheme.colorScheme.surfaceContainerHighest }
-        assertEquals(Color(0xFF39342F), captured)
+        assertEquals(Color(0xFF2A3148), captured)
     }
 
     /**

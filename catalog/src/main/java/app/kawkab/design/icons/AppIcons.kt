@@ -134,7 +134,7 @@ object AppIcons {
     /** Knotwork wordmark glyph (used in compact contexts; the literal "Knotwork" text wordmark is rendered with Inter). */
     val Wordmark: ImageVector get() = knotworkWordmarkIcon
 
-    /** Knotwork brand mark (the in-app 24×24 simplification of the launcher icon). */
+    /** Kawkab planet mark (the in-app 24×24 simplification of the launcher icon). */
     val Mark: ImageVector get() = knotworkMarkIcon
 
     /** "Pipelines" bottom-nav tab — three connected nodes. */

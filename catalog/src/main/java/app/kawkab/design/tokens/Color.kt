@@ -12,15 +12,26 @@ import androidx.compose.ui.graphics.Color
  * sRGB hex values.
  *
  * Conversion pipeline: OKLCH → linear sRGB → sRGB hex, chroma clipped to gamut.
- * Individual hex values must not be hand-edited; updates flow from the upstream
- * OKLCH token spec, then are re-exported into this file.
+ * The ramp below is the imported OKLCH export. The three Kawkab pins that
+ * follow are owner colours and are set by hex on purpose.
  *
- * The accent ramp uses hue 70 (warm amber). Signal hues (155 success / 80 warn
- * / 25 error) are fixed and **must never** be re-themed by accent — they
- * convey state semantics and must read consistently across themes.
+ * Kawkab (29 Oct 2026) pins three owner colours on top of the ramp:
+ * deep-space ground [DeepSpace], electric indigo [Indigo] for the primary
+ * role only, and [NeedsYou] amber for confirmation. The node hues below stay
+ * put so a pipeline reads the same colour in either theme. Signal hues
+ * (155 success / 80 warn / 25 error) stay fixed and are not the needs-you amber.
  */
 object KnotworkPalette {
-    // Accent ramp (hue 70, warm amber)
+    /** Deep-space ground. Dark background and the launcher plate. */
+    val DeepSpace = Color(0xFF070A14)
+
+    /** Electric indigo. Primary role only — not a surface fill. */
+    val Indigo = Color(0xFF5457E8)
+
+    /** Amber for "needs you": the confirmation strip and the sensitive risk. */
+    val NeedsYou = Color(0xFFF2B45A)
+
+    // Accent ramp (hue 70, warm amber). Not the primary role.
     val Accent50 = Color(0xFFFFEFDD)
     val Accent100 = Color(0xFFFBE0C1)
     val Accent200 = Color(0xFFF0C595)
@@ -66,25 +77,25 @@ object KnotworkPalette {
  * [ColorScheme] and the Knotwork-specific [KnotworkExtendedColors].
  */
 object KnotworkLight {
-    val Surface0 = Color(0xFFFEFCFA)
-    val Surface1 = Color(0xFFFAF6F3)
-    val Surface2 = Color(0xFFF6F2ED)
-    val Surface3 = Color(0xFFF1ECE6)
-    val Surface4 = Color(0xFFEDE6DF)
-    val SurfaceInv = Color(0xFF1A1815)
+    val Surface0 = Color(0xFFF6F7FB)
+    val Surface1 = Color(0xFFEEF0F7)
+    val Surface2 = Color(0xFFE6E8F2)
+    val Surface3 = Color(0xFFDCDFEA)
+    val Surface4 = Color(0xFFD2D6E4)
+    val SurfaceInv = Color(0xFF12141C)
 
-    val OnSurface = Color(0xFF14110E)
-    val OnSurface2 = Color(0xFF3B3732)
-    val OnSurfaceMuted = Color(0xFF6D6863)
-    val OnSurfaceDim = Color(0xFF95918D)
+    val OnSurface = Color(0xFF12141C)
+    val OnSurface2 = Color(0xFF3A3E4C)
+    val OnSurfaceMuted = Color(0xFF6A6E7C)
+    val OnSurfaceDim = Color(0xFF9094A2)
 
-    val Outline = Color(0xFFD4D0CB)
-    val OutlineStrong = Color(0xFFAFAAA4)
-    val Divider = Color(0xFFE7E4E0)
+    val Outline = Color(0xFFD0D3E0)
+    val OutlineStrong = Color(0xFFA8ADBC)
+    val Divider = Color(0xFFE2E4EE)
 
-    val OnPrimary = Color(0xFFFEFBF8)
-    val PrimaryContainer = KnotworkPalette.Accent100
-    val OnPrimaryContainer = KnotworkPalette.Accent800
+    val OnPrimary = Color(0xFFFFFFFF)
+    val PrimaryContainer = Color(0xFFE4E6FC)
+    val OnPrimaryContainer = Color(0xFF1E2070)
 
     // Tertiary container — lighter cool-blue tint of `NodeCloud` (#5F9DB0)
     // paired with a near-black on-tone for AA contrast on the container.
@@ -92,12 +103,12 @@ object KnotworkLight {
     val OnTertiaryContainer = Color(0xFF173039)
 
     val RiskReadonly = Color(0xFF5F9DB0)
-    val RiskSensitive = KnotworkPalette.SignalWarn
+    val RiskSensitive = KnotworkPalette.NeedsYou
     val RiskDestructive = KnotworkPalette.SignalError
 
     // Chat bubble pairs: user / agent / tool, each bg + fg.
-    val ChatUserBg = KnotworkPalette.Accent100
-    val ChatUserFg = KnotworkPalette.Accent800
+    val ChatUserBg = PrimaryContainer
+    val ChatUserFg = OnPrimaryContainer
     val ChatAgentBg = Surface1
     val ChatAgentFg = OnSurface
     val ChatToolBg = Surface2
@@ -125,25 +136,25 @@ object KnotworkLight {
  * [ColorScheme] and the Knotwork-specific [KnotworkExtendedColors].
  */
 object KnotworkDark {
-    val Surface0 = Color(0xFF0F0D0B)
-    val Surface1 = Color(0xFF181512)
-    val Surface2 = Color(0xFF221E1A)
-    val Surface3 = Color(0xFF2C2823)
-    val Surface4 = Color(0xFF39342F)
-    val SurfaceInv = Color(0xFFF4F1ED)
+    val Surface0 = KnotworkPalette.DeepSpace
+    val Surface1 = Color(0xFF10141F)
+    val Surface2 = Color(0xFF171C2C)
+    val Surface3 = Color(0xFF1F2638)
+    val Surface4 = Color(0xFF2A3148)
+    val SurfaceInv = Color(0xFFF4F6FB)
 
-    val OnSurface = Color(0xFFF4F1EE)
-    val OnSurface2 = Color(0xFFC7C3BF)
-    val OnSurfaceMuted = Color(0xFF96918C)
-    val OnSurfaceDim = Color(0xFF67625D)
+    val OnSurface = Color(0xFFEEF1F8)
+    val OnSurface2 = Color(0xFFC5CAD6)
+    val OnSurfaceMuted = Color(0xFF8E95A8)
+    val OnSurfaceDim = Color(0xFF5E6578)
 
-    val Outline = Color(0xFF413C36)
-    val OutlineStrong = Color(0xFF635C55)
-    val Divider = Color(0xFF2C2824)
+    val Outline = Color(0xFF343B52)
+    val OutlineStrong = Color(0xFF4E5670)
+    val Divider = Color(0xFF222838)
 
-    val OnPrimary = Color(0xFF171008)
-    val PrimaryContainer = Color(0xFF462D0B)
-    val OnPrimaryContainer = KnotworkPalette.Accent200
+    val OnPrimary = Color(0xFFFFFFFF)
+    val PrimaryContainer = Color(0xFF2A2D6B)
+    val OnPrimaryContainer = Color(0xFFD6D8FF)
 
     // Tertiary container — dark cool-blue tone paired with a light cyan
     // foreground; symmetric to the light-theme TertiaryContainer.
@@ -151,18 +162,18 @@ object KnotworkDark {
     val OnTertiaryContainer = Color(0xFFC4DDE5)
 
     val RiskReadonly = Color(0xFF77B6CA)
-    val RiskSensitive = Color(0xFFE9B452)
+    val RiskSensitive = KnotworkPalette.NeedsYou
     val RiskDestructive = Color(0xFFF97770)
 
     // Chat bubble pairs: user / agent / tool, each bg + fg.
-    val ChatUserBg = Color(0xFF412805)
-    val ChatUserFg = KnotworkPalette.Accent100
+    val ChatUserBg = Color(0xFF232656)
+    val ChatUserFg = Color(0xFFD6D8FF)
     val ChatAgentBg = Surface2
     val ChatAgentFg = OnSurface
     val ChatToolBg = Surface3
     val ChatToolFg = OnSurface2
 
-    val ConsoleBg = Color(0xFF070504)
+    val ConsoleBg = KnotworkPalette.DeepSpace
     val ConsoleFg = Color(0xFFDAD7D3)
     val ConsoleTag = KnotworkPalette.Accent300
 
@@ -182,10 +193,9 @@ object KnotworkDark {
  * Builds the Material3 [ColorScheme] for the light Knotwork palette.
  *
  * Knotwork roles are mapped onto Material3 slots as follows:
- *  - `primary` → [KnotworkPalette.Accent600] (light) / `Accent300` (dark) —
- *    accent-600 (L 0.58) keeps white `on-primary` above the 3:1 UI-contrast
- *    floor on filled buttons; accent-500 (L 0.66) fell short.
- *  - `secondary` → `Accent700` (light) / `Accent300` (dark)
+ *  - `primary` → [KnotworkPalette.Indigo] in both themes. White on indigo
+ *    clears the UI-contrast floor. Indigo is not used as a surface fill.
+ *  - `secondary` → a deeper indigo, still not a surface fill.
  *  - `tertiary` → readonly-risk hue (the cool blue-cyan node colour)
  *  - `error` → [KnotworkPalette.SignalError] / dark equivalent
  *  - surfaces map to the Knotwork surface ramp
@@ -198,11 +208,11 @@ object KnotworkDark {
  * theme switch, so callers do not need to memoise.
  */
 fun knotworkLightColorScheme(): ColorScheme = lightColorScheme(
-    primary = KnotworkPalette.Accent600,
+    primary = KnotworkPalette.Indigo,
     onPrimary = KnotworkLight.OnPrimary,
     primaryContainer = KnotworkLight.PrimaryContainer,
     onPrimaryContainer = KnotworkLight.OnPrimaryContainer,
-    secondary = KnotworkPalette.Accent700,
+    secondary = Color(0xFF3A3CC4),
     onSecondary = KnotworkLight.OnPrimary,
     secondaryContainer = KnotworkLight.Surface3,
     onSecondaryContainer = KnotworkLight.OnSurface,
@@ -220,10 +230,10 @@ fun knotworkLightColorScheme(): ColorScheme = lightColorScheme(
     onSurface = KnotworkLight.OnSurface,
     surfaceVariant = KnotworkLight.Surface2,
     onSurfaceVariant = KnotworkLight.OnSurface2,
-    surfaceTint = KnotworkPalette.Accent500,
+    surfaceTint = KnotworkPalette.Indigo,
     inverseSurface = KnotworkLight.SurfaceInv,
     inverseOnSurface = KnotworkLight.OnPrimary,
-    inversePrimary = KnotworkPalette.Accent300,
+    inversePrimary = KnotworkPalette.Indigo,
     outline = KnotworkLight.Outline,
     outlineVariant = KnotworkLight.Divider,
     scrim = Color(0x66000000),
@@ -243,18 +253,17 @@ fun knotworkLightColorScheme(): ColorScheme = lightColorScheme(
 /**
  * Builds the Material3 [ColorScheme] for the dark Knotwork palette.
  *
- * The mapping mirrors [knotworkLightColorScheme] but pulls darker
- * accent steps (`Accent400`/`Accent300`) so contrast on dark surfaces
- * stays inside WCAG AA.
+ * The mapping mirrors [knotworkLightColorScheme]. The ground is
+ * [KnotworkPalette.DeepSpace]. Primary stays [KnotworkPalette.Indigo].
  *
  * @return a freshly built [ColorScheme]; cheap to recompute on theme flips.
  */
 fun knotworkDarkColorScheme(): ColorScheme = darkColorScheme(
-    primary = KnotworkPalette.Accent300,
+    primary = KnotworkPalette.Indigo,
     onPrimary = KnotworkDark.OnPrimary,
     primaryContainer = KnotworkDark.PrimaryContainer,
     onPrimaryContainer = KnotworkDark.OnPrimaryContainer,
-    secondary = KnotworkPalette.Accent300,
+    secondary = Color(0xFF8B8EF2),
     onSecondary = KnotworkDark.OnPrimary,
     secondaryContainer = KnotworkDark.Surface3,
     onSecondaryContainer = KnotworkDark.OnSurface,
@@ -272,10 +281,10 @@ fun knotworkDarkColorScheme(): ColorScheme = darkColorScheme(
     onSurface = KnotworkDark.OnSurface,
     surfaceVariant = KnotworkDark.Surface2,
     onSurfaceVariant = KnotworkDark.OnSurface2,
-    surfaceTint = KnotworkPalette.Accent400,
+    surfaceTint = KnotworkPalette.Indigo,
     inverseSurface = KnotworkDark.SurfaceInv,
-    inverseOnSurface = KnotworkDark.OnPrimary,
-    inversePrimary = KnotworkPalette.Accent700,
+    inverseOnSurface = Color(0xFF12141C),
+    inversePrimary = KnotworkPalette.Indigo,
     outline = KnotworkDark.Outline,
     outlineVariant = KnotworkDark.Divider,
     scrim = Color(0x99000000),

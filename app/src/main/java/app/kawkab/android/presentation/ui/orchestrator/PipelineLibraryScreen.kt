@@ -639,8 +639,8 @@ private val PipelineGraph.nodeCountText: String
 /** Number of rows considered "recent" by the Recent filter chip. */
 private const val RECENT_TAKE_COUNT = 3
 
-/** Packed ARGB of the leading-mark tint used by every library row (brand orange). */
-private const val LEADING_TINT_PACKED: Long = 0xFFC48225
+/** Packed ARGB of the leading-mark tint used by every library row (indigo). */
+private const val LEADING_TINT_PACKED: Long = 0xFF5457E8
 
 /** TestTag applied to the screen root so Espresso / Compose tests can anchor. */
 internal const val LIBRARY_ROOT_TEST_TAG = "pipeline_library_root"

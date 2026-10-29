@@ -28,9 +28,10 @@
 
         This stops being true the moment a range is allowed to reach 1, or the
         first translation lands for a language whose plural rules split above 1
-        (Russian does: 2 -> "шага", 5 -> "шагов"). `res/values-ru/strings.xml`
-        is still the documented placeholder it has always been; when it stops
-        being one, these become plurals.
+        (Russian does: 2 -> "шага", 5 -> "шагов"). The empty Russian
+        placeholder was removed on 29 Oct 2026: once Arabic existed, lint
+        treated that empty folder as a locale and demanded every string.
+        When a real Russian translation is added, these become plurals.
     -->
 
     <!-- ─── Surface A · the run-limits screen ─────────────────────────── -->
@@ -78,7 +79,7 @@
     <string name="run_limits_spend_state">Not measured</string>
     <string name="run_limits_spend_body">The app runs on your own API key, so it never sees your bill and cannot measure or cap what a run costs. The token limit above is the closest control.</string>
 
-    <string name="run_limits_soft_note">A run in an open chat warns you when it passes 75% of a limit, while there is still room to finish. The warning point is not adjustable, and a run that resumes after a pause may warn again.</string>
+    <string name="run_limits_soft_note">A run in an open chat warns you when it passes 75%% of a limit, while there is still room to finish. The warning point is not adjustable, and a run that resumes after a pause may warn again.</string>
 
 
     <!-- ─── Surface B · why a run stopped, all eight typed reasons ────── -->

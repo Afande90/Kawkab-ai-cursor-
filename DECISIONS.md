@@ -145,3 +145,20 @@ The Tier 1 engine is `StubLlmInferenceEngine` in the debug source set. It accept
 
 Checks on 28 Oct 2026, all passed: `ArabicStringKeysTest`, `StubLlmInferenceEngineTest`, `ArabicLayoutDirectionTest`, `:app:compileFossDebugAndroidTestKotlin`, `:app:ktlintCheck`, `:catalog:ktlintCheck`, `:app:detekt`, `:catalog:detekt`, `:app:verifyFileMap`, `:app:verifyComplianceSource`. No gate is BLOCKED.
 
+## 2026-10-29 — Kawkab restyle
+
+The three owner colours are hex pins in the catalog tokens. The old note that the OKLCH export must not be hand-edited does not cover these three.
+
+- Deep space `#070A14` is the dark ground and the launcher plate. Light mode stays a cool light ground (`#F6F7FB` and the matching surface steps) so body text stays readable. Deep space is not painted behind light-mode text.
+- Indigo `#5457E8` is the primary, the surface tint, and the inverse primary in both themes. Secondary is `#3A3CC4` in light mode and `#8B8EF2` in dark mode. Indigo is not a surface fill. The pipeline-library row mark uses the same indigo.
+- Amber `#F2B45A` is the "needs you" colour. It is `riskSensitive` in both themes, so the confirmation strip and the sensitive risk pill use it. On a light ground, 11 px text in that amber is below a comfortable contrast. The spec hex stays exact. The signal-warn hue stays `#D5A13C` and is a different colour.
+- Node hues and the memory manual, auto, and compact tags are unchanged. The light console background stays `#191511`.
+- The Compose mark and the adaptive launcher (background, foreground, monochrome) draw a planet: an indigo disc and an amber ring. The vector is still named Mark and the composable is still `KnotworkLogo`, so existing call sites keep working. The density webp launcher bitmaps are the previous mark. minSdk 34 installs the anydpi adaptive icon, so those bitmaps are not the icon the phone shows.
+- 743 screenshot goldens were re-recorded in this same commit. The comparison threshold was not changed. `KnotworkThemeTest` assertions for primary and the three surface colours that moved were updated in this same commit. The theme test and the token change have to pass together, the same exception as the earlier golden re-records.
+
+`THIRD_PARTY.md` and `LICENSES-AUDIT.md` do not change: the restyle adds no dependency. `MODELS.md` records that M0 measured no on-device brain. The owner check for this milestone is `docs/owner-checks/M0.md`.
+
+The first full `check` after the Arabic resources landed failed in `:app:lintFullDebug` with 1345 `MissingTranslation` errors, 7 `Untranslatable` errors, and 1 `StringFormatCount` error. Cause: `app/src/main/res/values-ru/strings.xml` was an empty placeholder. Lint ignored it while every locale was empty, then treated it as a real locale once `values-ar` had translations, and demanded a Russian copy of every string. The placeholder is removed. The seven Arabic copies of `translatable="false"` placeholders stay, because the Arabic key test requires every key, and they carry `tools:ignore="Untranslatable"`. `run_limits_soft_note` said "75% of", which lint reads as an octal format (`%o` with a space flag) in English and as no format in Arabic. Both strings now escape the percent (`75%%`). The rendered sentence is unchanged.
+
+Checks on 29 Oct 2026: `./gradlew :catalog:recordRoborazziDebug` passed in 1m 28s. `./gradlew :catalog:verifyRoborazziDebug` passed in 1m 17s. `./gradlew check :buildSrc:test` passed in 6m 45s (foss 6056 tests, full 6060, catalog 1036, buildSrc 501, 0 failures). No gate is BLOCKED. The comparison threshold was not changed. GitHub Actions was not run from this machine.
+

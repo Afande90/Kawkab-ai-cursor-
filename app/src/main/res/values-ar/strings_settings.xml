@@ -56,7 +56,7 @@
 
     <!-- Provider forms: a server you run, OpenRouter, Groq -->
     <string name="settings_address_label">عنوان الخادم</string>
-    <string name="settings_address_placeholder_compat" translatable="false" tools:ignore="TypographyDashes">http://192.168.1.20:8000/v1</string>
+    <string name="settings_address_placeholder_compat" translatable="false" tools:ignore="TypographyDashes,Untranslatable">http://192.168.1.20:8000/v1</string>
     <string name="settings_address_hint_v1">أدرج /v1 — معظم الخوادم تقدّم OpenAI API تحته.</string>
     <string name="settings_address_error_empty">أدخل عنوان الخادم.</string>
     <string name="settings_address_error_not_url">ليس عنوانًا. يبدأ بـ http:// أو https://.</string>
@@ -68,13 +68,13 @@
     <string name="settings_marker_optional">اختياري</string>
     <string name="settings_marker_required">مطلوب</string>
     <string name="settings_key_hint_compat">اتركه فارغًا إن لم يكن للخادم مفتاح. يُرسل رمز Bearer.</string>
-    <string name="settings_key_placeholder_compat" translatable="false" tools:ignore="TypographyDashes">sk-…</string>
-    <string name="settings_key_placeholder_openrouter" translatable="false" tools:ignore="TypographyDashes">sk-or-v1-…</string>
-    <string name="settings_key_placeholder_groq" translatable="false" tools:ignore="TypographyDashes">gsk_…</string>
+    <string name="settings_key_placeholder_compat" translatable="false" tools:ignore="TypographyDashes,Untranslatable">sk-…</string>
+    <string name="settings_key_placeholder_openrouter" translatable="false" tools:ignore="TypographyDashes,Untranslatable">sk-or-v1-…</string>
+    <string name="settings_key_placeholder_groq" translatable="false" tools:ignore="TypographyDashes,Untranslatable">gsk_…</string>
     <string name="settings_model_label_free">معرّف النموذج</string>
-    <string name="settings_model_placeholder_compat" translatable="false" tools:ignore="TypographyDashes">qwen2.5-7b-instruct</string>
-    <string name="settings_model_placeholder_openrouter" translatable="false" tools:ignore="TypographyDashes">meta-llama/llama-3.3-70b-instruct</string>
-    <string name="settings_model_placeholder_groq" translatable="false" tools:ignore="TypographyDashes">llama-3.3-70b-versatile</string>
+    <string name="settings_model_placeholder_compat" translatable="false" tools:ignore="TypographyDashes,Untranslatable">qwen2.5-7b-instruct</string>
+    <string name="settings_model_placeholder_openrouter" translatable="false" tools:ignore="TypographyDashes,Untranslatable">meta-llama/llama-3.3-70b-instruct</string>
+    <string name="settings_model_placeholder_groq" translatable="false" tools:ignore="TypographyDashes,Untranslatable">llama-3.3-70b-versatile</string>
     <string name="settings_model_note_before_test">اكتب المعرّف، أو اضغط اختبار لتختار من قائمة الخادم.</string>
     <string name="settings_model_action_choose">اختيار</string>
     <string name="settings_model_note_no_list">لم يرسل هذا الخادم قائمة نماذج. اكتب المعرّف الذي يقدّمه.</string>

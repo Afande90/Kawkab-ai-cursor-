@@ -5,12 +5,8 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!--
-      Adaptive launcher background — solid Knotwork accent (matches
-      project_docs/design/compose/brand/ic_launcher_background.svg).
-      Color = accent-500 in the OKLCH palette.
-    -->
+    <!-- Deep-space ground. The planet sits on this plate. -->
     <path
         android:pathData="M0,0 h108 v108 h-108 Z"
-        android:fillColor="#C48225" />
+        android:fillColor="#070A14" />
 </vector>
