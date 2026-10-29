@@ -34,14 +34,16 @@ Dates are calendar dates in Asia/Dubai. The owner asked for commits on `main` an
 | 16. Kawkab assistant pipeline as the default chat | done | 29 Oct 2026 | `095468cb` |
 | 17. Three-tier routing and the fast path in chat | done | 29 Oct 2026 | `284d0402` |
 | 18. Harder command set, frozen then scored | done | 29 Oct 2026 | `c38bf3d3` |
-| 19. App maps and macros | not started | | |
+| 19. App maps and macros | done | 29 Oct 2026 | `67b3a9f4` |
 | 20. Model candidates, not shipped | not started | | |
 | 20b. System assistant, Qwen3 1.7B, and the Llamatik runtime | done | 29 Oct 2026 | `cbbcf491` |
 | 20c. Small-model harness rules | not started | | |
 | 21. Phone-access setup | not started | | |
 | 22. Close out M1.5 and tag `m1.5` | not started | | |
 
-Next task: 19. App maps and macros for Phone, Messages, Clock, Calendar, WhatsApp and Gmail. Then the remaining candidates from 20 (Llamatik is already recorded), 20c, 21, and 22.
+Next task: 20. Record the remaining model candidates (FunctionGemma, Parakeet, Kokoro, Qwen3-ASR). Llamatik is already recorded. Then 20c, 21, and 22.
+
+Task 19, 29 Oct 2026: Phone, Messages, Clock, Calendar, WhatsApp and Gmail each have a stored map and macros. Replay does not call a model. A screen that misses the stored marker stops the replay so the caller can use tier 3. An outbound step is not run until the owner has tapped. Chat still routes a typed line through the three tiers. Checks: `:app:ktlintFormat`, `:app:ktlintCheck`, `:app:detekt`, `:app:testFossDebugUnitTest` for `AppMapReplayTest` (4 tests, 0 failures), `:app:generateFileMap`, `:app:verifyFileMap`, and `:app:verifyDocLinks` passed. The test run is `/tmp/gradle-t19-tests2.log` (BUILD SUCCESSFUL in 47s). The file-map check is `/tmp/gradle-t19-verify.log` (BUILD SUCCESSFUL in 1s). The emulator was not run. No gate is BLOCKED. GitHub Actions was not run.
 
 Task 18, 29 Oct 2026: `evals/commands/v2/commands.jsonl` is 150 commands. SHA-256 `7fc21d3c680d11e2576bb4021028167d131d66c63c6a2673664ea28e56a5a26a`, recorded in `DECISIONS.md`. No v1 line was reused. The parser was not changed. It matches 25 of 150. On the test split that is 10 of 78: call 3/13, sms 1/13, alarm 0/13, timer 2/13, open 2/13, calendar 2/13. The calibration split is 15 of 72. The v1 gate stays 90 percent on the v1 test split, and that test still matches every line. v2 was not given that gate. Checks: `:app:ktlintCheck` and `:app:testFossDebugUnitTest` for `CommandFastPathV2Test` and `CommandFastPathTest` passed (`/tmp/gradle-t18-score2.log`, BUILD SUCCESSFUL in 16s). No gate is BLOCKED. GitHub Actions was not run. The emulator was not run.
 
