@@ -32,16 +32,18 @@ Dates are calendar dates in Asia/Dubai. The owner asked for commits on `main` an
 | 14. User-visible Kawkab name, planet mark, companion card | done | 29 Oct 2026 | `1881edde` |
 | 15. Performance defaults | done | 29 Oct 2026 | `a6fba56c` |
 | 16. Kawkab assistant pipeline as the default chat | done | 29 Oct 2026 | `095468cb` |
-| 17. Three-tier routing and the fast path in chat | not started | | |
+| 17. Three-tier routing and the fast path in chat | done | 29 Oct 2026 | `284d0402` |
 | 18. Harder command set, frozen then scored | not started | | |
 | 19. App maps and macros | not started | | |
 | 20. Model candidates, not shipped | not started | | |
-| 20b. System assistant and the Qwen3 1.7B tool-calling score | not started | | |
+| 20b. System assistant, Qwen3 1.7B, and the Llamatik runtime | not started | | |
 | 20c. Small-model harness rules | not started | | |
 | 21. Phone-access setup | not started | | |
 | 22. Close out M1.5 and tag `m1.5` | not started | | |
 
-Next task: 17.
+Next task: 20b. The owner moved it ahead of 18. Llamatik, from task 20, is part of that step. Then 18, 19, 20c, 21, and 22.
+
+Task 17, 29 Oct 2026: a line the grammar knows runs before any model load and still goes through the tap gate. Reply, read-last-messages, and screenshot-reminder are fixed skills: the model writes only the words, and a send still asks. An unchanged `read_screen` is a third stuck signal. Native tool calling is off. Checks: `:app:ktlintFormat`, `:app:ktlintCheck`, `:app:detekt`, `:app:generateFileMap`, `:app:verifyFileMap`, and `:app:testFossDebugUnitTest` for `ChatTierRouterTest`, `GraphStuckDetectorTest`, and `ChatHomeViewModelTest` passed (`/tmp/gradle-t17-tests3.log`, BUILD SUCCESSFUL in 22s). `:app:compileFossDebugAndroidTestKotlin` passed, so `TierOneAlarmChatTest` compiles. The emulator was not run. No gate is BLOCKED. GitHub Actions was not run.
 
 Task 16, 29 Oct 2026: the first launch seeds the Kawkab assistant and marks it the default. A new chat starts on that default. The featured onboarding card materialises the same preset. The mood-router companion stays in the assets, marked internal, so the first-run gallery does not list it and it can still be loaded by id. An existing default whose prompts say "You are Mila" is pointed at a new assistant on the next launch. The old pipeline stays in the library. Checks: `:app:ktlintFormat`, `:app:ktlintCheck`, `:catalog:ktlintCheck`, `:app:detekt`, `:app:generateBrowserEditorConstants`, `:app:verifyBrowserEditorConstants`, `:app:verifyFileMap`, `:app:verifyDocLinks`, and `:app:testFossDebugUnitTest` for `InitializeAppUseCaseTest`, `PipelinePresetCatalogValidationTest`, `OnboardingScenarioCatalogTest`, `GoldenTraceCatalogueTest`, and `GoldenTraceTest` passed (`/tmp/gradle-t16-check.log`, BUILD SUCCESSFUL in 1m 11s). The assistant golden trace was recorded with `-PrecordGoldenTraces` and then matched without that flag. No gate is BLOCKED. GitHub Actions was not run. The emulator was not run.
 
