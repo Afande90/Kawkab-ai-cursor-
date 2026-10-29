@@ -15,6 +15,13 @@ Only Kotlin files appear inside the generated blocks.
   - `AccessibilityNodeTraversal.kt` - Walks an accessibility tree.
   - `KawkabAccessibilityService.kt` - Accessibility service that reads the screen and taps only through `GuardedTap`.
 - `App.kt` - Main Android Application class.
+- `assistant/` - The digital-assistant panel: a power-button long-press opens Kawkab over the current app, and a tap still gates every hands command.
+  - `AssistantRoleRequest.kt` - Builds the system intent that asks the owner to make Kawkab the digital assistant.
+  - `AssistScreenNodes.kt` - Reads an assistant-API screen into the plain screen tree.
+  - `KawkabAssistantSession.kt` - The panel a long-press of the power button opens over the current app.
+  - `KawkabAssistantSessionService.kt` - Opens one Kawkab assistant panel over the current app.
+  - `KawkabRecognitionService.kt` - Satisfies the assistant service contract without sending speech off the phone.
+  - `KawkabVoiceInteractionService.kt` - Registers Kawkab as a digital assistant.
 - `data/` - Data layer encompassing local, remote, and repository implementations.
   - `audio/` - Voice-input capture.
     - `AudioRecorderImpl.kt` - `AudioRecorder` backed by platform `AudioRecord`: captures 16 kHz mono 16-bit PCM into a WAV inside `AudioCaptureStore`, ticks elapsed seconds into `RecordingState`, and auto-stops at the limit. Mic opened only after the composer permission gate (`@SuppressLint("MissingPermission")`). Excluded from Kover (Android-bound).
@@ -387,6 +394,14 @@ Only Kotlin files appear inside the generated blocks.
   - `SafetyModule.kt` - Wires the on-device safety checks and the phone hands.
   - `SettingsModule.kt` - Hilt bindings of the settings sections and of the transitional `SettingsRepository` composite.
 - `domain/` - Domain layer containing core business logic and Use Cases.
+  - `assistant/` - Screen-text consent, model release after the panel hides, and the tool-call scores.
+    - `AssistantCommandRunner.kt` - Runs a panel command through the same tap gate as chat.
+    - `AssistantModelRelease.kt` - Unloads the model a few seconds after the assistant panel hides.
+    - `AssistantPlanner.kt` - Splits a typed assistant line into a hands command or a chat handoff.
+    - `DefaultAssistantGuide.kt` - String names for the steps that make Kawkab the phone's digital assistant.
+    - `ScreenTextCollector.kt` - Joins the visible text of a screen tree into one block.
+    - `ScreenTextPolicy.kt` - Decides when text from the assistant API may be read.
+    - `ToolCallReport.kt` - Tool-calling brains and the scores Kawkab has actually measured.
   - `backup/` - Backup archive format contract: header, key-derivation bounds, read failures, entry-name rule.
     - `BackupDocuments.kt` - The documents the user picks for a backup, by URI: opened for writing, named, finished, deleted.
     - `BackupEntryName.kt` - The rule every entry name inside an archive obeys, checked by the writer before it writes an entry and by the reader before it hands one out.

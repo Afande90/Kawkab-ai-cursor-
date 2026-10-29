@@ -44,4 +44,19 @@
     <string name="tile_subtitle_ready">جاهز</string>
     <string name="tile_subtitle_unconfigured">غير مُعدّ</string>
     <string name="accessibility_service_desc">كوكب يقرأ الشاشة وينقر العناصر التي تؤكدها. لا يعمل داخل تطبيقات البنوك أو المحفظة أو كلمات المرور.</string>
+    <string name="assistant_service_label">كوكب</string>
+    <string name="assistant_panel_title">كوكب</string>
+    <string name="assistant_panel_hint">اسأل كوكب</string>
+    <string name="assistant_send">أرسل</string>
+    <string name="assistant_use_screen">استخدم نص الشاشة</string>
+    <string name="assistant_read_screen">اقرأ هذه الشاشة</string>
+    <string name="assistant_screen_off">فعّل «استخدم نص الشاشة» أولاً.</string>
+    <string name="assistant_screen_empty">لا يوجد نص على هذه الشاشة.</string>
+    <string name="assistant_approve">موافق</string>
+    <string name="assistant_deny">ارفض</string>
+    <string name="assistant_needs_you">هذا يحتاج نقرك.</string>
+    <string name="assistant_done">تم.</string>
+    <string name="assistant_step_settings">افتح الإعدادات، ثم التطبيقات، ثم التطبيقات التلقائية، ثم تطبيق المساعد الرقمي.</string>
+    <string name="assistant_step_choose">اختر كوكب.</string>
+    <string name="assistant_step_confirm">أكّد عندما يطلب أندرويد ذلك. بعدها يفتح الضغط المطوّل على زر الطاقة كوكب فوق التطبيق الحالي.</string>
 </resources>

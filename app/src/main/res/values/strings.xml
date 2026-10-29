@@ -46,4 +46,19 @@
     <string name="tile_subtitle_ready">Ready</string>
     <string name="tile_subtitle_unconfigured">Not set up</string>
     <string name="accessibility_service_desc">Kawkab reads the screen and taps controls you confirm. It does not act in banking, wallet, or password screens.</string>
+    <string name="assistant_service_label">Kawkab</string>
+    <string name="assistant_panel_title">Kawkab</string>
+    <string name="assistant_panel_hint">Ask Kawkab</string>
+    <string name="assistant_send">Send</string>
+    <string name="assistant_use_screen">Use text from screen</string>
+    <string name="assistant_read_screen">Read this screen</string>
+    <string name="assistant_screen_off">Turn on use text from screen first.</string>
+    <string name="assistant_screen_empty">No text on this screen.</string>
+    <string name="assistant_approve">Approve</string>
+    <string name="assistant_deny">Deny</string>
+    <string name="assistant_needs_you">This needs your tap.</string>
+    <string name="assistant_done">Done.</string>
+    <string name="assistant_step_settings">Open Settings, then Apps, then Default apps, then Digital assistant app.</string>
+    <string name="assistant_step_choose">Choose Kawkab.</string>
+    <string name="assistant_step_confirm">Confirm when Android asks. A long-press of the power button then opens Kawkab over the current app.</string>
 </resources>

@@ -182,6 +182,8 @@ fun AppNavGraph(
                             chatHomeViewModel.threads.createNewSessionWithPipeline(pipelineId = null)
                         is ChatEntryRequest.OpenThread ->
                             chatHomeViewModel.selectThread(request.threadId)
+                        is ChatEntryRequest.Prefill ->
+                            chatHomeViewModel.onComposerValueChange(request.text)
                     }
                 }
             }

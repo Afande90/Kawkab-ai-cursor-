@@ -204,3 +204,17 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+================================================================================
+Credited, not bundled in the application
+================================================================================
+
+These projects are named because an idea was reused. Their code and weights are
+not in the APK and were not copied.
+
+  * Local Assistant — Apache License 2.0
+    https://github.com/sergarsilla/local-assistant
+  * Llamatik — MIT License
+    https://github.com/ferranpons/Llamatik
+  * Qwen3 1.7B — Apache License 2.0
+    Weights are not downloaded by this build.

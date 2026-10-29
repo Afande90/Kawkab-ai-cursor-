@@ -3,8 +3,8 @@ package app.kawkab.android.domain.repositories
 import kotlinx.coroutines.flow.Flow
 
 /**
- * What the app records about itself: the crash-reporting opt-in, on-device usage statistics, and
- * how long run traces are kept.
+ * What the app records about itself: the crash-reporting opt-in, on-device usage statistics,
+ * whether the assistant may read on-screen text, and how long run traces are kept.
  *
  * One of the sections [SettingsRepository] is made of.
  */
@@ -85,4 +85,19 @@ interface PrivacySettings {
      *   statistics screen's reset action to clear them).
      */
     suspend fun setUsageTelemetryEnabled(enabled: Boolean)
+
+    /**
+     * Whether the assistant may read text from the current screen.
+     *
+     * Off until the owner turns it on. A request on the assistant panel is still required
+     * on top of this switch: storing the flag does not read the screen by itself.
+     */
+    val useScreenText: Flow<Boolean>
+
+    /**
+     * Stores the owner's choice for [useScreenText].
+     *
+     * @param enabled `true` when the assistant may read screen text after an explicit request.
+     */
+    suspend fun setUseScreenText(enabled: Boolean)
 }

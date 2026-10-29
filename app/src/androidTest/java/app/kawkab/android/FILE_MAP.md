@@ -52,6 +52,7 @@ Only Kotlin files appear inside the generated blocks.
         - `ClarificationIntegrationTest.kt` - Tests for the Clarification HITL flow.
         - `HitlIntegrationTest.kt` - Tests for the HITL approval / deny flow.
         - `ImageViewerInstrumentedTest.kt` - Instrumented UI tests for the full-screen `ImageViewer` opened when an attachment thumbnail is tapped: header metadata, the close / share actions, and the missing-file fallback.
+        - `TierOneAlarmChatTest.kt` - Types a hands command on the chat screen and checks the alarm intent, not the model.
     - `discover/` - Compose tests for the model-discovery surface.
       - `DiscoverFlowInstrumentedTest.kt` - Instrumented UI tests for the model-discovery flow: the list surface (network error / empty degradations) and the detail surface up to and including the licence-confirmation dialog — the gate the task requires ("Discover flow up to licence confirmation").
     - `help/` - On-device checks that the bundled documentation survives packaging, and that a link between two bundled documents lands on its anchor.

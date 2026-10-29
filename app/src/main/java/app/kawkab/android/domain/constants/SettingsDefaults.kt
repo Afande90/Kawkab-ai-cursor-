@@ -497,6 +497,13 @@ object SettingsDefaults {
     const val CRASH_REPORTING_ENABLED_DEFAULT: Boolean = false
 
     /**
+     * Default for reading text from the screen in the assistant panel.
+     * Off, so a long-press of the power button does not copy the current app's text
+     * until the owner turns the switch on and then asks.
+     */
+    const val USE_SCREEN_TEXT_DEFAULT: Boolean = false
+
+    /**
      * Default for the on-device usage-statistics opt-in. `true` so the
      * dogfooding window gathers usage signal out of the box — but the data is
      * **local-only**: no figure ever leaves the device regardless of this flag,

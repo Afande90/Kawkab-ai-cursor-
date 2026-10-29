@@ -265,3 +265,17 @@ Tier 3 stays the existing pipeline walk. LiteRT-LM 0.17.1 can call tools by itse
 
 The stuck detector already had repeated-step and no-new-output. A third signal, unchanged screen, fires when the last three steps since progress all returned the same `read_screen` text. A step that did not read the screen carries no screen fingerprint, so existing runs keep their old verdicts. The step ceiling and the time budget were already on the walk. They were not raised.
 
+## 2026-10-29 — system assistant and the tool-calling brain
+
+Kawkab registers a voice-interaction service so the owner can make it the phone's digital assistant. The panel runs a line the grammar already knows through the same tool gate as chat. Approve and deny on the panel are the tap. A line the grammar does not know is placed in the main chat's composer and is not sent until the owner taps send there. The assistant chat row is named Kawkab and is created only when a panel command runs.
+
+Screen text from the assistant API is stored when the session receives it and is read only when the stored switch "use text from screen" is on and the owner taps "Read this screen". The switch defaults to off. It stays on this phone and is not written into a backup. The settings hub does not grow a new row for it; the panel itself is the control. The phone-access screen can show the same steps later.
+
+The model unloads five seconds after the panel hides, unless a chat session is visible. Showing the panel again cancels that unload. The two-minute idle unload is unchanged. The recognition service the assistant contract requires does not send audio anywhere: it reports that it cannot listen.
+
+Qwen3 1.7B is recorded as a tool-calling candidate under Apache-2.0. It is not downloaded and not in the APK. Gemma 4 E2B, Gemma 4 E4B and Qwen3 1.7B have no Kawkab score on the frozen v1 set or on v2. v2 is not frozen yet, and this machine has no model file and no phone. Local Assistant's author reports 10 of 10 for Qwen3 1.7B and 2 of 10 for Gemma 4 E2B. That is their measurement. With no Kawkab measurement, the tool-call default stays Gemma 4 E2B. Gemma stays the image model.
+
+Llamatik is the candidate llama.cpp runtime for the judge GGUF, under MIT. It is not a Gradle dependency, so its native libraries are not in the APK. No weights are shipped. Local Assistant is credited. None of its code was copied.
+
+The steps for making Kawkab the default assistant are string resources, in English and Arabic, plus a role-request intent for the phone-access screen.
+

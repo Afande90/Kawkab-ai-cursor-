@@ -30,6 +30,7 @@ class PrivacySettingsStore @Inject constructor(private val dataStore: DataStore<
         val USAGE_TELEMETRY_ENABLED = booleanPreferencesKey("usage_telemetry_enabled")
         val TRACE_RETENTION_RUNS_PER_SESSION = intPreferencesKey("trace_retention_runs_per_session")
         val TRACE_RETENTION_MAX_AGE_DAYS = intPreferencesKey("trace_retention_max_age_days")
+        val USE_SCREEN_TEXT = booleanPreferencesKey("use_screen_text")
     }
 
     override val traceRetentionRunsPerSession: Flow<Int> = dataStore.preferencesOrEmpty()
@@ -86,6 +87,17 @@ class PrivacySettingsStore @Inject constructor(private val dataStore: DataStore<
         }
     }
 
+    override val useScreenText: Flow<Boolean> = dataStore.preferencesOrEmpty()
+        .map { preferences ->
+            preferences[Keys.USE_SCREEN_TEXT] ?: SettingsDefaults.USE_SCREEN_TEXT_DEFAULT
+        }
+
+    override suspend fun setUseScreenText(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[Keys.USE_SCREEN_TEXT] = enabled
+        }
+    }
+
     /**
      * Writes this section's recommended defaults into [preferences], as part of the one atomic edit
      * of "Reset all settings". Both consent switches return to their defaults with the rest.
@@ -97,5 +109,6 @@ class PrivacySettingsStore @Inject constructor(private val dataStore: DataStore<
         preferences[Keys.TRACE_RETENTION_MAX_AGE_DAYS] = SettingsDefaults.TRACE_RETENTION_MAX_AGE_DAYS_DEFAULT
         preferences[Keys.CRASH_REPORTING_ENABLED] = SettingsDefaults.CRASH_REPORTING_ENABLED_DEFAULT
         preferences[Keys.USAGE_TELEMETRY_ENABLED] = SettingsDefaults.USAGE_TELEMETRY_ENABLED_DEFAULT
+        preferences[Keys.USE_SCREEN_TEXT] = SettingsDefaults.USE_SCREEN_TEXT_DEFAULT
     }
 }

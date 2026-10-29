@@ -16,6 +16,13 @@ sealed interface ChatEntryRequest {
 
     /** Switch the chat home to an existing session (recent-chat shortcut, share, notification). */
     data class OpenThread(val threadId: String) : ChatEntryRequest
+
+    /**
+     * Put [text] in the composer. The assistant panel uses this for a line the grammar does not know.
+     *
+     * @property text The trimmed line to show in the composer. Nothing is sent until the owner taps send.
+     */
+    data class Prefill(val text: String) : ChatEntryRequest
 }
 
 /**
@@ -53,5 +60,14 @@ class ChatEntryRequestRelay @Inject constructor() {
     /** Posts a "switch to [threadId]" request. Non-suspending fire-and-forget. */
     fun openThread(threadId: String) {
         channel.trySend(ChatEntryRequest.OpenThread(threadId))
+    }
+
+    /**
+     * Posts a composer prefill. Non-suspending fire-and-forget.
+     *
+     * @param text The line to place in the composer.
+     */
+    fun prefill(text: String) {
+        channel.trySend(ChatEntryRequest.Prefill(text))
     }
 }

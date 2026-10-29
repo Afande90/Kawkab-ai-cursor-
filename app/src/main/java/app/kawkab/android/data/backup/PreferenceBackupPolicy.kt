@@ -59,6 +59,7 @@ internal object PreferenceBackupPolicy {
         "local_backend_failure_streak" to "this phone's crash count for the backend",
         "last_test_probe_result" to "a benchmark of this phone",
         "crash_reporting_enabled" to "consent given to this build; the foss build has no collector",
+        "use_screen_text" to "consent to read text from this phone's screen",
         "share_admission_times" to "this phone's rate-limit ledger",
         "unfinished_backup_document" to "a document on this phone a backup was being written to",
         "hugging_face_token" to "a legacy plain copy of a secret; secrets travel only through the secrets entry",
