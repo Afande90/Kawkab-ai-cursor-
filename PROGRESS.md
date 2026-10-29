@@ -29,17 +29,20 @@ Dates are calendar dates in Asia/Dubai. The owner asked for commits on `main` an
 
 | Task | Status | Date | Commit |
 |---|---|---|---|
-| 14. User-visible Kawkab name, planet mark, companion card | done | 29 Oct 2026 | `8add0c2f` |
-| 15. Performance defaults | not started | | |
+| 14. User-visible Kawkab name, planet mark, companion card | done | 29 Oct 2026 | `00da5af0` |
+| 15. Performance defaults | done | 29 Oct 2026 | `33687b00` |
 | 16. Kawkab assistant pipeline as the default chat | not started | | |
 | 17. Three-tier routing and the fast path in chat | not started | | |
 | 18. Harder command set, frozen then scored | not started | | |
 | 19. App maps and macros | not started | | |
 | 20. Model candidates, not shipped | not started | | |
+| 20b. System assistant and the Qwen3 1.7B tool-calling score | not started | | |
 | 21. Phone-access setup | not started | | |
 | 22. Close out M1.5 and tag `m1.5` | not started | | |
 
-Next task: 15.
+Next task: 16.
+
+Task 15, 29 Oct 2026: a first install stays on CPU and logs the backend that started. Phones under 16 GiB of RAM pre-select Gemma 4 E2B. The context default is 1,500 tokens, history compression starts at 1,000, and a file read is budgeted at 700. The model unloads after 2 idle minutes and stays loaded between messages. Thinking is off. A tool or JSON tail caps output at 300 tokens. Replies were already streamed. Multi-token prediction stays off because LiteRT-LM 0.17.1 has no switch. NPU stays withdrawn: no phone self-test has shown it starting and beating CPU. Time to first token and tokens per second are not measured. The Settings test-backend row stores both when the owner runs it. Checks: `:app:ktlintFormat`, `:app:ktlintCheck`, `:app:detekt`, `:app:generateFileMap`, `:app:verifyFileMap`, `:app:verifyDocLinks`, and `:app:testFossDebugUnitTest` for `SettingsDefaultsTest`, `AgentIdleManagerTest`, `PrepareInferenceBackendUseCaseTest`, `ReplyBudgetTest`, `NpuTrialPolicyTest`, `DefaultBrainTest`, `OnboardingViewModelTest`, and `LiteRTLlmEngineTest` passed (`/tmp/gradle-t15-test.log`, BUILD SUCCESSFUL in 1m 17s). No gate is BLOCKED. GitHub Actions was not run. The emulator was not run.
 
 Task 14, 29 Oct 2026: notifications, backup copy, onboarding and the status-bar icon say Kawkab. The About screen still credits Knotwork. `BrandNameTest` and the restore semantics line were checked with `:app:testFossDebugUnitTest --tests app.kawkab.android.i18n.BrandNameTest` and `:catalog:testDebugUnitTest --tests app.kawkab.design.screens.settings.backup.BackupContentSemanticsTest`, and ktlint passed. Snapshot goldens for the changed screens were re-recorded. The comparison threshold was not changed. No gate is BLOCKED. GitHub Actions was not run from this machine.
 
