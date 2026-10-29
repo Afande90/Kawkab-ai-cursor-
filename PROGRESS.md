@@ -22,10 +22,12 @@ Dates are calendar dates in Asia/Dubai. The owner asked for commits on `main` an
 | 9. `OUTBOUND` risk tier, tool classification table and test | done | 29 Oct 2026 | `d8d162c3` |
 | 10. OpenDroid accessibility as `LocalToolExecutor`s, plus the tap guard | done | 29 Oct 2026 | `3d3c03e2` |
 | 11. Denylist (three layers) and the activity log | done | 29 Oct 2026 | `3d3c03e2` |
-| 12. Freeze the command eval set | not started | | |
+| 12. Freeze the command eval set | done | 29 Oct 2026 | `8d7feef9` |
 | 13. Deterministic Arabic/English fast path, stub messenger, M1 gates, tag `m1` | not started | | |
 
-Next task: 12.
+Next task: 13.
+
+Task 12, 29 Oct 2026: `evals/commands/v1/commands.jsonl` is 200 commands. SHA-256 `fe82846673bca8d93f604ef3cb4e8af8c3e6f155ce6acd7987b7cf5d500847d7`, recorded in `DECISIONS.md`. No parser is in that commit. No gate is BLOCKED.
 
 Tasks 10 and 11 share `3d3c03e2` because the accessibility service checks the tap guard and the denylist on the same path. Checks on 29 Oct 2026: `./gradlew :app:ktlintCheck :app:detekt :app:testFossDebugUnitTest --tests app.kawkab.android.domain.safety.HandsSafetyTest --tests app.kawkab.android.domain.models.ToolClassificationTest` passed, and `:app:verifyFileMap` and `:app:verifyDocLinks` passed. A full `check` is still to run before `m1`. No gate is BLOCKED. GitHub Actions was not run from this machine. The emulator was not run.
 
