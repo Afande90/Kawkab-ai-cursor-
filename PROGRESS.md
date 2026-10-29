@@ -13,7 +13,7 @@ Dates are calendar dates in Asia/Dubai. The owner asked for commits on `main` an
 | 5. Licence audit, `THIRD_PARTY.md`, `NOTICE`, About credits | done | 28 Oct 2026 | `44c481a2` |
 | 6. GitHub Actions: build, unit tests, compliance, APK size, `foss` arm64 artifact | done | 28 Oct 2026 | `eda85647` |
 | 7. Arabic and RTL tests, emulator setup, Tier 1 harness with a stub engine | done | 28 Oct 2026 | `8213ab74` (`2a6a97ce` catalog strings, `c59fdac8` seven app files) |
-| 8. Kawkab restyle, then tag `m0` | not started | | |
+| 8. Kawkab restyle, then tag `m0` | done | 29 Oct 2026 | `8f4c9c1b` |
 
 ## M1
 
@@ -25,7 +25,9 @@ Dates are calendar dates in Asia/Dubai. The owner asked for commits on `main` an
 | 12. Freeze the command eval set | not started | | |
 | 13. Deterministic Arabic/English fast path, stub messenger, M1 gates, tag `m1` | not started | | |
 
-Next task: 8.
+Next task: 9.
+
+Task 8 checks, 29 Oct 2026: `./gradlew :catalog:recordRoborazziDebug` passed in 1m 28s (743 goldens). `./gradlew :catalog:verifyRoborazziDebug` passed in 1m 17s. `./gradlew check :buildSrc:test` passed in 6m 45s: foss 6056 tests, full 6060, catalog 1036, buildSrc 501, 0 failures. The comparison threshold was not changed. GitHub Actions was not run from this machine. No gate is BLOCKED. Tag `m0` points at this commit.
 
 Task 7 checks, 28 Oct 2026, all passed: `ArabicStringKeysTest`, `StubLlmInferenceEngineTest`, `ArabicLayoutDirectionTest`, `:app:compileFossDebugAndroidTestKotlin`, `:app:ktlintCheck`, `:catalog:ktlintCheck`, `:app:detekt`, `:catalog:detekt`, `:app:verifyFileMap`, `:app:verifyComplianceSource`. The emulator script was not run: this machine has no emulator. No gate is BLOCKED.
 
