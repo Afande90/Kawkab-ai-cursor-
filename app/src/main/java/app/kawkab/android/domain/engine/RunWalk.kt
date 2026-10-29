@@ -398,6 +398,7 @@ class RunWalk(
      */
     private suspend fun observe(node: NodeModel, step: Step): Boolean {
         if (node.type == NodeType.OUTPUT) return false
+        val screenText = step.result?.outputText?.takeIf { step.result?.resolvedToolName == READ_SCREEN_TOOL }
         val observation = RunStepObservation(
             nodeId = node.id,
             inputFingerprint = GraphStuckDetector.fingerprint(step.input),
@@ -405,6 +406,7 @@ class RunWalk(
             // forward its input, so the fingerprints match and the step reads as
             // the pass-through it is.
             outputFingerprint = GraphStuckDetector.fingerprint(step.result?.outputText ?: step.input),
+            screenFingerprint = screenText?.let(GraphStuckDetector::fingerprint),
         )
         if (step.replayed) {
             // Rebuild the window from history without re-deciding it: the attempt
@@ -581,6 +583,9 @@ class RunWalk(
     }
 
     private companion object {
+        /** Tool whose output is the screen the owner is looking at. */
+        const val READ_SCREEN_TOOL: String = "read_screen"
+
         /**
          * Injected into the run's own context the first time the stuck-detector
          * decides the run is going in circles, so the model gets a chance to break

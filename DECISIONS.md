@@ -255,3 +255,13 @@ The assistant prompt says it is Kawkab, that it runs fully offline on the phone 
 
 The code-level factory remains the fallback when the assistant asset cannot be read. The showcase preset stays in the gallery. It is no longer the first-launch seed.
 
+## 2026-10-29 — three-tier routing
+
+A typed line the grammar already knows is tier 1. It runs before any model load, through the same tool gate as a pipeline tool node, with `runId` null so a missed tap does not park a pipeline run. The outbound and sensitive cards are unchanged: the gate still asks, and the executor still sees `confirmed = true` only after that ask.
+
+Tier 2 is three phrases: reply to someone, read my last messages, and set a reminder from a screenshot. The model writes only the words. A named contact is then `send_sms` through the gate. "reply to a message", with nobody named, keeps the written text as the answer and does not send. A reminder needs an attached picture; the title is the model's line and the event starts one hour ahead, again through the gate. The same words without a picture stay on the agent loop. Tier 2 is not taken when the model is not loaded, so that send still loads the model and then uses the pipeline.
+
+Tier 3 stays the existing pipeline walk. LiteRT-LM 0.17.1 can call tools by itself (`automaticToolCalling`). That switch is now false on every conversation this app opens. Native tool providers are not attached. A tool call the model emits inside the pipeline still has to pass the tap gate in app code. Turning the switch on would let a call run before that gate.
+
+The stuck detector already had repeated-step and no-new-output. A third signal, unchanged screen, fires when the last three steps since progress all returned the same `read_screen` text. A step that did not read the screen carries no screen fingerprint, so existing runs keep their old verdicts. The step ceiling and the time budget were already on the walk. They were not raised.
+

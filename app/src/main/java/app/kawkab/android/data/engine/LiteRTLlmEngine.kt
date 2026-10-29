@@ -820,6 +820,8 @@ class LiteRTLlmEngine @Inject constructor(
             temperature = generationSettings.temperature.first().toDouble(),
             seed = Random.nextInt(from = 1, until = Int.MAX_VALUE),
         ),
+        // Off so a native tool call cannot run before the tap gate sees it.
+        automaticToolCalling = false,
     )
 
     /**
@@ -837,6 +839,8 @@ class LiteRTLlmEngine @Inject constructor(
             temperature = sampling.sampler.temperature,
             seed = sampling.seed,
         ),
+        // Off so a native tool call cannot run before the tap gate sees it.
+        automaticToolCalling = false,
     )
 
     private companion object {

@@ -375,6 +375,7 @@ Only Kotlin files appear inside the generated blocks.
   - `ApplicationScope.kt` - `@Qualifier` for the application-lifetime `CoroutineScope` provided by `CoroutinesModule`.
   - `AppModule.kt` - General app-level DI module.
   - `BackupModule.kt` - Wires the encrypted backup: the exporter, the key derivation, the database snapshot, the content it gathers, and every owner of encrypted-store entries (`BackedUpSecrets`).
+  - `ChatTierModule.kt` - Binds the chat router that runs a matched command or skill ahead of the pipeline.
   - `CloudLlmBindingsModule.kt` - Domain bindings for the cloud model clients.
   - `CoroutinesModule.kt` - Provides the `@ApplicationScope` application-lifetime `CoroutineScope` (`SupervisorJob` + `Dispatchers.Default`) for singletons that own fire-and-forget background work (e.g. the voice recorder).
   - `DataModule.kt` - Data layer DI module.
@@ -499,7 +500,9 @@ Only Kotlin files appear inside the generated blocks.
     - `TextEmbeddingEngine.kt` - Text embedding engine interface.
     - `TraceHashing.kt` - The one hash function of the run trace: SHA-256 over a text's UTF-8 bytes, as lowercase hex.
   - `fastpath/` - Deterministic Arabic and English grammar for the five core commands. It plans a tool call and does not run it.
+    - `ChatTierRouter.kt` - Decides whether a typed line skips the pipeline.
     - `CommandFastPath.kt` - Deterministic Arabic and English grammar for the five core commands.
+    - `TierTwoRecipes.kt` - Matches the three skill phrases.
   - `memoryio/` - JSON serialisation gateway for long-term memory export/import.
     - `MemoryJsonSerializer.kt` - Two-way mapper between the memory table and the portable `schemaVersion: 1` export document (`embeddingProviderId` + `exportedAt` + per-chunk `id`/`text`/`embedding`/`source`/`timestamp`/`isPinned`/`tags` and an optional `history` of earlier versions). Never-throwing `parse` returns `Success / SchemaMismatch / Failure`.
     - `MemorySourceJson.kt` - Single source of truth for the `MemorySource` ↔ JSON wire shape; shared by the Room `source` column converter (`data/local/Converters`) and `MemoryJsonSerializer` so the column encoding and the export file stay byte-identical.

@@ -50,4 +50,15 @@ enum class StuckSignal(val diagnostic: String) {
      * [GraphStuckDetector] for what "anything new" means operationally.
      */
     NO_NEW_OUTPUT("no-new-output"),
+
+    /**
+     * The last few steps since progress all read the same screen.
+     *
+     * A phone agent can change its prompt on every look and still be staring
+     * at one unchanged screen. The repeated-step signal misses that, because
+     * the input changed. This one keys only on the screen text a `read_screen`
+     * step returned. A step that did not read the screen carries no fingerprint
+     * and cannot trip it.
+     */
+    UNCHANGED_SCREEN("unchanged-screen"),
 }

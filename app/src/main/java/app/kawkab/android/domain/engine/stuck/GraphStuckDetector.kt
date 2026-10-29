@@ -267,8 +267,18 @@ class GraphStuckDetector(
                 it.inputFingerprint == last.inputFingerprint &&
                 it.outputFingerprint == last.outputFingerprint
         }
+        val screenTail = sinceProgress.takeLast(repeatThreshold)
+        val screen = screenTail.lastOrNull()?.screenFingerprint
+        val unchangedScreen = screenTail.size >= repeatThreshold &&
+            screen != null &&
+            screenTail.all { it.screenFingerprint == screen }
         return when {
             identical >= repeatThreshold -> StuckSignal.REPEATED_STEP
+            // Same screen, even when the prompt that asked for it changed.
+            // Counted only over steps that actually returned a screen. A null
+            // fingerprint is "this step did not look", not "the screen is blank",
+            // so a run that never calls read_screen cannot trip this.
+            unchangedScreen -> StuckSignal.UNCHANGED_SCREEN
             // The weaker signal carries the extra condition, because on its own
             // it accuses a perfectly healthy queue. Draining twelve recipients
             // through a tool that answers `{"status":"ok"}` for each produces

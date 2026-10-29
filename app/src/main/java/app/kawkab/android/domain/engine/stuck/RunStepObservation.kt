@@ -24,8 +24,16 @@ package app.kawkab.android.domain.engine.stuck
  *   to [inputFingerprint] when the node forwarded its input untouched, which is
  *   how a pass-through is recognised without the detector having to carry a
  *   node-type table it would then have to keep in step with `NodeType`.
+ * @property screenFingerprint Fingerprint of the screen a `read_screen` step
+ *   returned, or null when this step did not read the screen. Null never
+ *   counts as "the screen stayed the same".
  */
-data class RunStepObservation(val nodeId: String, val inputFingerprint: String, val outputFingerprint: String) {
+data class RunStepObservation(
+    val nodeId: String,
+    val inputFingerprint: String,
+    val outputFingerprint: String,
+    val screenFingerprint: String? = null,
+) {
     /**
      * Whether this step forwarded its input without changing it.
      *

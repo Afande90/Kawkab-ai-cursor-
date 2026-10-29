@@ -4,6 +4,8 @@ import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.kawkab.android.domain.engine.LlmInferenceEngine
+import app.kawkab.android.domain.fastpath.ChatTierRouter
+import app.kawkab.android.domain.fastpath.PassthroughChatTierRouter
 import app.kawkab.android.domain.models.AgentOrchestratorState
 import app.kawkab.android.domain.models.ChatMessage
 import app.kawkab.android.domain.models.ChatSession
@@ -162,6 +164,7 @@ constructor(
     private val unarchiveChatUseCase: UnarchiveChatUseCase,
     private val runUseCases: ChatHomeRunUseCases,
     private val resolveApprovalRequestContext: ResolveApprovalRequestContextUseCase,
+    private val chatTierRouter: ChatTierRouter = PassthroughChatTierRouter(),
 ) : ViewModel() {
 
     private val _state: MutableStateFlow<ChatHomeScreenState> = MutableStateFlow(ChatHomeScreenState())
@@ -469,17 +472,18 @@ constructor(
     }
 
     /**
-     * Sends the current composer draft through [AgentOrchestratorUseCase].
-     * No-op when the composer is blank, when generation is already in
-     * flight, or when no LLM model is loaded (in the last case the surface
-     * flips to [ChatHomeUiState.Error] so the user sees actionable
-     * guidance).
+     * Sends the current composer draft.
      *
-     * The user prompt itself is persisted by the orchestrator's pipeline
-     * (see `TaskQueueManagerImpl.processTask` step 1), not by this VM —
-     * persisting it twice would surface duplicate rows in the display
-     * flow. Same for the final agent reply: `OutputNodeExecutor` writes
-     * the `isFinal = true` row when the pipeline reaches OUTPUT.
+     * A line the grammar knows runs straight to the hands tools, with no model
+     * load and no pipeline. The outbound tap card still appears, because that
+     * path uses the same gate as a tool node. Anything else goes through
+     * [AgentOrchestratorUseCase] once a model is loaded. When the model is not
+     * loaded, the surface loads it and sends again, unless the line was already
+     * a hands command.
+     *
+     * The pipeline persists the user prompt itself (see
+     * `TaskQueueManagerImpl.processTask` step 1). The hands path persists its
+     * own row, because it never enters that pipeline.
      */
     fun sendMessage() {
         val draftText = _state.value.composer.value.trim()
@@ -490,6 +494,32 @@ constructor(
         // A single `is Generating` covers both, so a second tap cannot cancel
         // and restart the in-progress load.
         if (_state.value.visual is ChatHomeUiState.Generating) return
+        // Tier 1 is checked before the model gate. A picture is never a hands
+        // command: the grammar has no image, and a screenshot reminder is tier 2.
+        val tierOne = if (readyAttachment == null) chatTierRouter.command(draftText) else null
+        if (tierOne != null) {
+            val sessionId = _state.value.thread.currentSessionId
+            if (sessionId.isNotBlank()) {
+                _state.update { it.copy(composer = it.composer.copy(value = "", attachment = null)) }
+                sessionDrafts.remove(sessionId)
+                threads.autoRenameIfDefault(sessionId, draftText)
+                resetConsoleCachesForNewRun()
+                val sendingTurn = sendingUserTurnFor(sessionId, content = draftText, attachment = null)
+                _state.update { current ->
+                    current.withPendingCleared().withConsoleProjectionsCleared().copy(
+                        visual = ChatHomeUiState.Generating(),
+                        tokens = current.tokens.copy(streaming = 0),
+                        runNotice = null,
+                        sendingUserTurn = sendingTurn,
+                    )
+                }
+                generationJob?.cancel()
+                generationJob = viewModelScope.launch {
+                    chatTierRouter.runCommand(sessionId, draftText, tierOne, ::handleOrchestratorState)
+                }
+            }
+            return
+        }
         if (!llmInferenceEngine.isInitialized) {
             // The model isn't loaded yet — instead of dead-ending on an error
             // tile that forces the user to tap Retry (load) and then Send
@@ -562,6 +592,39 @@ constructor(
         // image-only message (empty draft) must not title the chat with the
         // internal default instruction.
         threads.autoRenameIfDefault(sessionId, draftText)
+
+        // Tier 2 only runs once the model is loaded. The caller already passed
+        // that guard, so a miss here falls through to the agent loop.
+        val recipe = chatTierRouter.recipe(draftText, hasImage = readyAttachment != null)
+        if (recipe != null) {
+            resetConsoleCachesForNewRun()
+            val sendingTurn = sendingUserTurnFor(
+                sessionId,
+                content = content.displayContent ?: draftText,
+                attachment = readyAttachment,
+            )
+            _state.update { current ->
+                current.withPendingCleared().withConsoleProjectionsCleared().copy(
+                    visual = ChatHomeUiState.Generating(),
+                    tokens = current.tokens.copy(streaming = 0),
+                    runNotice = null,
+                    sendingUserTurn = sendingTurn,
+                )
+            }
+            val imagePath = readyAttachment?.let { attachmentStore.absolutePathFor(it.path) }
+            generationJob?.cancel()
+            generationJob = viewModelScope.launch {
+                chatTierRouter.runRecipe(
+                    sessionId = sessionId,
+                    text = draftText.ifBlank { content.prompt },
+                    recipe = recipe,
+                    imagePath = imagePath,
+                    attachment = readyAttachment,
+                    onState = ::handleOrchestratorState,
+                )
+            }
+            return
+        }
 
         launchRun(
             sessionId = sessionId,
