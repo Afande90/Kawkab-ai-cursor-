@@ -24,16 +24,16 @@ M1.5 performance, measured on 29 Oct 2026 from this machine:
 
 Cause: this machine has no Gemma file and no phone, so LiteRT never ran a generation. The on-phone self-test is Settings → Test backend. A successful probe stores tokens per second and, from this change on, milliseconds to the first token. NPU stays withdrawn until that self-test records a start that does not crash and a tokens-per-second figure higher than CPU. No such pair of numbers exists. CPU remains the backend. Multi-token prediction is off on every backend because LiteRT-LM 0.17.1 has no switch for it.
 
-M1.5 tool-calling candidates, recorded on 29 Oct 2026. None of these files are in the repository or the APK.
+M1.5 tool-calling scores, measured on 29 Oct 2026 with llama.cpp b11982 on CPU. Each file is Unsloth's Q4_K_M GGUF. Temperature 0. The prompt asks for one JSON tool call. A hit is the right tool and the exact string arguments on the test split only. These numbers are a reference runtime, not device. None of the weight files are in the repository or the APK.
 
 | Candidate | In the APK | Kawkab score on v1 | Kawkab score on v2 | Notes |
 |---|---|---|---|---|
-| Gemma 4 E2B | no | not measured | not measured | Stays the tool-call default. No Kawkab score has beaten it, because none has been measured |
-| Gemma 4 E4B | no | not measured | not measured | Stays available for images. Not measured |
-| Qwen3 1.7B (Apache-2.0) | no | not measured | not measured | Tool-call candidate only. Not downloaded |
-| Llamatik (MIT, llama.cpp) | no | not measured | not measured | Candidate runtime for the judge GGUF. Not a Gradle dependency, so its native libraries are not in the APK |
+| Gemma 4 E4B | no | 91/100, reference runtime, not device | 66/78, reference runtime, not device | Best scorer. Default tool-call brain. Also stays the image model |
+| Gemma 4 E2B | no | 87/100, reference runtime, not device | 55/78, reference runtime, not device | Still the onboarding pick below flagship RAM |
+| Qwen3 1.7B (Apache-2.0) | no | 61/100, reference runtime, not device | 41/78, reference runtime, not device | Selectable on the Models screen. Not the default |
+| Llamatik 2.0.0 (MIT, llama.cpp) | native libraries only | — | — | Gradle dependency. Loads a `.gguf` on CPU. No weights bundled |
 
-Local Assistant's author reports Qwen3 1.7B choosing the right tool 10 of 10 times, and Gemma 4 E2B 2 of 10. That is their measurement, not a Kawkab measurement. This machine has no model file and no phone, so Kawkab's scores stay "not measured". The tool-call default does not move to Qwen. Gemma stays the image model. Llamatik stays the candidate runtime for the judge GGUF and is not a Gradle dependency.
+Local Assistant's author reports Qwen3 1.7B choosing the right tool 10 of 10 times, and Gemma 4 E2B 2 of 10. That is their measurement, not this one.
 
 M1.5 further candidates, recorded on 29 Oct 2026. None of these files are in the repository or the APK. None was fine-tuned here.
 

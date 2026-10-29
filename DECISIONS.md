@@ -283,6 +283,8 @@ The steps for making Kawkab the default assistant are string resources, in Engli
 
 Llamatik 2.0.0 (`com.llamatik:core`, MIT) is a Gradle dependency. Its arm64 native libraries are in the foss APK. No weight file is in the repository or the APK. Qwen3 1.7B Q4_K_M is a row on the Models screen. A file whose name ends in `.gguf` is loaded with llama.cpp on CPU. A request for vision or audio does not load that file: images and audio stay on Gemma.
 
+The same day, llama.cpp b11982 on this machine scored Unsloth Q4_K_M GGUFs on the v1 and v2 test splits through a tier-3 JSON tool call. Gemma 4 E4B scored 91/100 and 66/78. Gemma 4 E2B scored 87/100 and 55/78. Qwen3 1.7B scored 61/100 and 41/78. Those figures are a reference runtime, not a device. E4B is the tool-call default. A phone below flagship RAM still starts onboarding on E2B, because that split is about RAM, not about this score. Images stay on Gemma.
+
 ## 2026-10-29 — command eval set v2 frozen
 
 `evals/commands/v2/commands.jsonl` is version 2 of the typed command set. SHA-256 of the file bytes: `7fc21d3c680d11e2576bb4021028167d131d66c63c6a2673664ea28e56a5a26a`.
