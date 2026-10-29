@@ -116,8 +116,8 @@ class ActionDenylist(val store: DenylistStore, private val securityPackages: Set
     /** Parsers and the text heuristics. */
     companion object {
         private val securityPage = Regex(
-            "(?i)security|password|fingerprint|screen lock|encryption|credential|\\bpin\\b|" +
-                "كلمة المرور|البصمة|الأمان",
+            """security|password|fingerprint|screen lock|encryption|credential|\bpin\b|كلمة المرور|البصمة|الأمان""",
+            RegexOption.IGNORE_CASE,
         )
         private val iban = Regex("""\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b""")
         private val cardCandidate = Regex("""(?:\d[ -]?){13,19}""")

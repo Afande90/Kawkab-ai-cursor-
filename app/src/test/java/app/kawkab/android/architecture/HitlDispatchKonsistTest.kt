@@ -179,8 +179,15 @@ class HitlDispatchKonsistTest {
             CallSite("$JAVA/domain/usecases/SubmitApprovalDecisionUseCase.kt", "taskQueueManager"),
         ).sortedWith(compareBy(CallSite::file, CallSite::receiver))
 
-        /** Files besides an executor's own that may name it: the binding module and the dispatcher. */
-        val EXECUTOR_REFERRERS = setOf("$JAVA/di/LocalToolsModule.kt", TOOL_REPOSITORY_IMPL)
+        /**
+         * Files besides an executor's own that may name it. The hands catalog reads the
+         * tool name, description, and parameters. It does not call execute().
+         */
+        val EXECUTOR_REFERRERS = setOf(
+            "$JAVA/di/LocalToolsModule.kt",
+            TOOL_REPOSITORY_IMPL,
+            "$JAVA/data/tools/local/HandAgentTools.kt",
+        )
 
         fun productionSources(): Map<String, String> = ProductionSources.code.also {
             check(GATE in it) { "production sources not found under ${ProductionSources.moduleDirectory()}/src" }
