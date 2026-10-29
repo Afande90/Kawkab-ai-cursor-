@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -36,7 +37,7 @@ fun GrowthScreen(onBack: () -> Unit, viewModel: GrowthViewModel = hiltViewModel(
         }
         skills.forEach { skill ->
             Text(skill.key)
-            Text(stringResource(R.string.growth_count, skill.successes))
+            Text(pluralStringResource(R.plurals.growth_count, skill.successes, skill.successes))
             TextButton(onClick = { viewModel.delete(skill.key) }) {
                 Text(stringResource(R.string.growth_delete))
             }

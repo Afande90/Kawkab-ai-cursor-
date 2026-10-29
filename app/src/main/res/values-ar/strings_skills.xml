@@ -97,6 +97,13 @@
     <string name="growth_body">الخطط الناجحة تُعاد بلا نموذج. يمكنك حذف أي واحدة.</string>
     <string name="growth_empty">لا خطط محفوظة بعد.</string>
     <string name="growth_delete">حذف</string>
-    <string name="growth_count">نجح %1$d مرة</string>
+    <plurals name="growth_count">
+        <item quantity="zero">لم ينجح</item>
+        <item quantity="one">نجح مرة واحدة</item>
+        <item quantity="two">نجح مرتين</item>
+        <item quantity="few">نجح %1$d مرات</item>
+        <item quantity="many">نجح %1$d مرة</item>
+        <item quantity="other">نجح %1$d مرة</item>
+    </plurals>
     <string name="growth_back">رجوع</string>
 </resources>

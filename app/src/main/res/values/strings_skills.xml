@@ -93,6 +93,9 @@
     <string name="growth_body">Successful plans replay with no model. You can delete any of them.</string>
     <string name="growth_empty">No saved plans yet.</string>
     <string name="growth_delete">Delete</string>
-    <string name="growth_count">Succeeded %1$d times</string>
+    <plurals name="growth_count">
+        <item quantity="one">Succeeded %1$d time</item>
+        <item quantity="other">Succeeded %1$d times</item>
+    </plurals>
     <string name="growth_back">Back</string>
 </resources>
