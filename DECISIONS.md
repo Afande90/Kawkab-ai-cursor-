@@ -179,3 +179,19 @@ These existing tests name the old tier or the old approval table, so they are up
 
 Checks on 29 Oct 2026: `./gradlew check :buildSrc:test` passed in 13m 15s (foss 6059 tests, full 6063, catalog 1037, buildSrc 501, 0 failures). Detekt reported 0 findings. The Roborazzi threshold was not changed. GitHub Actions was not run from this machine. No gate is BLOCKED.
 
+## 2026-10-29 — OpenDroid hands, the tap guard, and the denylist
+
+Upstream is yashab-cyber/opendroid at c08175cb815344da038f92c80e301929b28d79e8 (shallow clone of main, no tags on that clone). The owner's zip `kawkab-tools/opendroid-main.zip` is not in this repo, so that snapshot was not compared file by file.
+
+What landed, rewritten so detekt and ktlint pass with no baseline change and no size-suppression added:
+
+- `KawkabAccessibilityService`, the name `scripts/emulator-setup.sh` already reserved, plus node traversal. Clicks go through `GuardedTap` and `safety/outbound_patterns.txt`.
+- Alias matching (exact, then longest phrase; a compound sentence stays unmatched), macro recording, and in-memory habit detection. Phrase tables for finance, food, transport, and social actions were not copied, because those action groups were not ported.
+- Intent tools for call (`ACTION_CALL`, `CALL_PHONE`), SMS (`ACTION_SENDTO`, no `SEND_SMS`), alarm, timer, open app, and calendar insert. No `SYSTEM_ALERT_WINDOW`. No `READ_PHONE_STATE`.
+- The three denylist layers and a private JSON-lines activity log. Editing the package set throws unless `DeviceConfirmation` just returned true. There is no settings screen for that edit yet.
+- Package ids are the public store ids written down on 29 Oct 2026. The owner can change them after a device confirmation.
+
+Not copied: LLM provider clients, the social manager, finance, food, and transport actions, and the MCP server.
+
+Checks on 29 Oct 2026: `./gradlew :app:ktlintCheck :app:detekt :app:testFossDebugUnitTest --tests app.kawkab.android.domain.safety.HandsSafetyTest --tests app.kawkab.android.domain.models.ToolClassificationTest` passed. A full `check` for this tree is still to run before `m1`. No gate is BLOCKED. GitHub Actions was not run from this machine.
+

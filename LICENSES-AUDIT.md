@@ -422,7 +422,7 @@ The image loader (`io.coil-kt.coil3:coil-compose:3.6.3`) is a direct dependency 
 | Piper voices | per voice, not yet chosen | no download link until each voice is checked | spec section 0.3 | no |
 | Sudanese Whisper fine-tunes | unknown | evaluation only; never shipped or downloaded by the app | spec section 0.3 | no |
 | arbml datasets | unknown | evaluation only; never shipped or downloaded by the app | spec section 0.3 | no |
-| OpenDroid | not ported | no files copied in this task | task 10 | no |
+| OpenDroid (yashab-cyber/opendroid @ c08175cb) | Apache-2.0 | adapted into the app. LLM providers, social manager, finance, food, transport, and the MCP server were not copied | application source under accessibility and hands | yes, as adapted source |
 | ARTEMIS embedded Minitap mobile-use | not ported | check third_party/mobile_use before any copy | spec section 0.3 | no |
 | VoiceStudio | AGPL (reference only) | never copied | spec section 0.3 | no |
 | 30u30 and CC BY-NC-ND material | non-commercial | never copied | spec section 0.3 | no |

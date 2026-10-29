@@ -31,6 +31,15 @@ the device** unless the user has explicitly configured an outbound integration
 (such as a cloud LLM provider). The following protections apply to local
 storage and credentials:
 
+### Hands
+
+The accessibility service can tap the screen, so every tap is checked against
+`safety/outbound_patterns.txt` and the three denylist layers in
+`safety/package_denylist.txt` plus the on-screen heuristics and the intent
+guard. An outbound action, including a replayed macro, waits for a tap that no
+setting can turn off. The activity log stays in the app's private files. The
+service does not receive `SEND_SMS` or draw over other apps.
+
 ### Local database (at-rest encryption)
 
 - The Room database `agent_database.db` is encrypted with **SQLCipher**

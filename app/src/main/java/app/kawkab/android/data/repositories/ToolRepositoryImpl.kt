@@ -14,6 +14,7 @@ import app.kawkab.android.data.tools.local.executors.ListFilesExecutor
 import app.kawkab.android.data.tools.local.executors.ReadFileExecutor
 import app.kawkab.android.data.tools.local.executors.ScheduleTaskExecutor
 import app.kawkab.android.data.tools.local.executors.WriteFileExecutor
+import app.kawkab.android.data.tools.local.handAgentTools
 import app.kawkab.android.domain.models.AgentTool
 import app.kawkab.android.domain.models.McpServerConfig
 import app.kawkab.android.domain.models.RegisteredTools
@@ -144,6 +145,7 @@ class ToolRepositoryImpl @Inject constructor(
                 risk = RegisteredTools.risk(HttpRequestExecutor.TOOL_NAME),
             ),
         )
+        baseTools.addAll(handAgentTools())
 
         if (availableModels.isEmpty()) {
             return baseTools

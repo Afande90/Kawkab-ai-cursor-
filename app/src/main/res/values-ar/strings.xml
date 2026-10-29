@@ -43,4 +43,5 @@
     <string name="tile_not_configured">اختر مسار الإعدادات السريعة من الإعدادات ← الخلفية.</string>
     <string name="tile_subtitle_ready">جاهز</string>
     <string name="tile_subtitle_unconfigured">غير مُعدّ</string>
+    <string name="accessibility_service_desc">كوكب يقرأ الشاشة وينقر العناصر التي تؤكدها. لا يعمل داخل تطبيقات البنوك أو المحفظة أو كلمات المرور.</string>
 </resources>

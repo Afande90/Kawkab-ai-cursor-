@@ -461,3 +461,24 @@ Questions about this policy, or a request about your data: write to
 <https://github.com/alexeyw/knotwork/issues> if the question is not private.
 Suspected vulnerabilities should go through the private channel described in
 [SECURITY.md](SECURITY.md#reporting-a-vulnerability) instead.
+
+---
+
+## 11. Accessibility, the denylist, and the activity log
+
+Kawkab can read the screen and tap controls through an accessibility service.
+That service stays on the phone. Screen text is not uploaded.
+
+A tap whose label matches `safety/outbound_patterns.txt` waits for a confirmation
+tap. Calls use the phone app after that same confirmation. Text messages open
+the message app. Kawkab does not hold the SMS-sending permission.
+
+Kawkab refuses to act inside the packages in `safety/package_denylist.txt`
+(banks, wallets, authenticators, password managers, and Settings security
+pages), on a secure or password screen, on a screen that shows a card, an IBAN,
+a one-time code, or a checkout, and on a payment link. The store refuses a
+change to that package list unless the caller just confirmed with biometric
+or device PIN.
+
+Every action is written to a private activity log on the phone. You can export
+the file yourself. Kawkab does not upload it.

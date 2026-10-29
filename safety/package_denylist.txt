@@ -1,0 +1,26 @@
+# Package denylist. One package id per line. A line ending in "security-pages"
+# blocks that package only when the screen looks like a security setting.
+# Comments start with #. Ids are the public store ids recorded on 29 Oct 2026.
+com.emiratesnbd.android
+com.adcb.bank
+ae.bankfab.mobile
+com.mashreqbank.neo
+com.cbd.mobilebanking
+com.dib.mobile
+com.rakbank.android
+ae.hsbc.hsbcuae
+com.liv.android
+com.wio.bank
+com.google.android.apps.walletnfcrel
+com.paypal.android.p2pmobile
+com.samsung.android.spay
+com.google.android.apps.authenticator2
+com.azure.authenticator
+com.authy.authy
+com.duosecurity.duomobile
+com.onepassword.android
+com.x8bit.bitwarden
+com.lastpass.lpandroid
+com.dashlane
+com.kunzisoft.keepass.free
+com.android.settings security-pages

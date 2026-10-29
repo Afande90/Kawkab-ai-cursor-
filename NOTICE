@@ -51,6 +51,10 @@ required for their redistribution beyond this acknowledgment:
   * Bouncy Castle (bcprov) — The Legion of the Bouncy Castle Inc. (MIT; full notice below)
   * Firebase Android SDK (Crashlytics) — Google LLC — the `full` flavour only
   * Firebase encoders — Google LLC — Apache-2.0 transitive of MediaPipe, including the `foss` flavour
+  * OpenDroid — OpenDroid Contributors, Apache-2.0. Accessibility traversal, alias
+    matching, macro recording, and habit detection were adapted from
+    yashab-cyber/opendroid commit c08175cb. LLM providers, the social manager,
+    finance, food, transport, and the MCP server were not copied.
 
 --------------------------------------------------------------------------------
 SQLCipher for Android — BSD 3-Clause License

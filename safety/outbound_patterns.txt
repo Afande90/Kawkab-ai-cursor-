@@ -1,0 +1,19 @@
+# Outbound tap patterns. A tap whose text, content description, or view id
+# contains one of these (case-insensitive for Latin) is OUTBOUND.
+# Lines starting with # are comments. Blank lines are ignored.
+send
+post
+pay
+buy
+share
+submit
+transfer
+confirm order
+ارسال
+إرسال
+ابعت
+دفع
+شراء
+تحويل
+مشاركة
+تأكيد

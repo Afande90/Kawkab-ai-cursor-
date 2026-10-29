@@ -78,6 +78,18 @@ object RegisteredTools {
         RegisteredTool("append_file", ToolRisk.SENSITIVE, outboundCapable = false),
         RegisteredTool("delete_file", ToolRisk.OUTBOUND, outboundCapable = true),
         RegisteredTool("http_request", ToolRisk.OUTBOUND, outboundCapable = true),
+        RegisteredTool("add_calendar_event", ToolRisk.SENSITIVE, outboundCapable = false),
+        RegisteredTool("call_phone", ToolRisk.OUTBOUND, outboundCapable = true),
+        RegisteredTool("detect_habits", ToolRisk.READ_ONLY, outboundCapable = false),
+        RegisteredTool("macro_send", ToolRisk.OUTBOUND, outboundCapable = true),
+        RegisteredTool("open_app", ToolRisk.SENSITIVE, outboundCapable = false),
+        RegisteredTool("read_screen", ToolRisk.READ_ONLY, outboundCapable = false),
+        RegisteredTool("record_macro", ToolRisk.SENSITIVE, outboundCapable = false),
+        RegisteredTool("send_message", ToolRisk.OUTBOUND, outboundCapable = true),
+        RegisteredTool("send_sms", ToolRisk.OUTBOUND, outboundCapable = true),
+        RegisteredTool("set_alarm", ToolRisk.SENSITIVE, outboundCapable = false),
+        RegisteredTool("set_timer", ToolRisk.SENSITIVE, outboundCapable = false),
+        RegisteredTool("submit_tap", ToolRisk.OUTBOUND, outboundCapable = true),
     )
 
     /** Strictest tier registered for [name]. */

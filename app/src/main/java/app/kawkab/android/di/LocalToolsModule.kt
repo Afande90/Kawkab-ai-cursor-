@@ -1,25 +1,29 @@
 package app.kawkab.android.di
 
-import app.kawkab.android.data.engine.KoogClientFactory
-import app.kawkab.android.data.engine.KoogCloudLlmModelResolver
-import app.kawkab.android.data.engine.KoogCloudModelCatalog
-import app.kawkab.android.data.engine.KoogStructuredInferenceClientFactory
 import app.kawkab.android.data.tools.local.SearchTool
+import app.kawkab.android.data.tools.local.executors.AddCalendarEventExecutor
 import app.kawkab.android.data.tools.local.executors.AppendFileExecutor
+import app.kawkab.android.data.tools.local.executors.CallPhoneExecutor
 import app.kawkab.android.data.tools.local.executors.DelegateTaskExecutor
 import app.kawkab.android.data.tools.local.executors.DeleteFileExecutor
+import app.kawkab.android.data.tools.local.executors.DetectHabitsExecutor
 import app.kawkab.android.data.tools.local.executors.EditFileExecutor
 import app.kawkab.android.data.tools.local.executors.FindFilesExecutor
 import app.kawkab.android.data.tools.local.executors.HttpRequestExecutor
 import app.kawkab.android.data.tools.local.executors.ListFilesExecutor
+import app.kawkab.android.data.tools.local.executors.MacroSendExecutor
+import app.kawkab.android.data.tools.local.executors.OpenAppExecutor
 import app.kawkab.android.data.tools.local.executors.ReadFileExecutor
+import app.kawkab.android.data.tools.local.executors.ReadScreenExecutor
+import app.kawkab.android.data.tools.local.executors.RecordMacroExecutor
 import app.kawkab.android.data.tools.local.executors.ScheduleTaskExecutor
 import app.kawkab.android.data.tools.local.executors.SearchToolExecutor
+import app.kawkab.android.data.tools.local.executors.SendMessageExecutor
+import app.kawkab.android.data.tools.local.executors.SendSmsExecutor
+import app.kawkab.android.data.tools.local.executors.SetAlarmExecutor
+import app.kawkab.android.data.tools.local.executors.SetTimerExecutor
+import app.kawkab.android.data.tools.local.executors.SubmitTapExecutor
 import app.kawkab.android.data.tools.local.executors.WriteFileExecutor
-import app.kawkab.android.domain.engine.CloudLlmClientFactory
-import app.kawkab.android.domain.engine.CloudLlmModelResolver
-import app.kawkab.android.domain.engine.CloudModelCatalog
-import app.kawkab.android.domain.engine.structured.CloudStructuredInferenceClientFactory
 import app.kawkab.android.domain.repositories.LocalToolExecutor
 import dagger.Binds
 import dagger.Module
@@ -27,7 +31,6 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dagger.multibindings.IntoMap
 import dagger.multibindings.StringKey
-import javax.inject.Singleton
 
 /**
  * DI module wiring the [LocalToolExecutor] multibinding map and the cloud LLM
@@ -98,40 +101,63 @@ abstract class LocalToolsModule {
     @StringKey(HttpRequestExecutor.TOOL_NAME)
     abstract fun bindHttpRequestExecutor(executor: HttpRequestExecutor): LocalToolExecutor
 
-    /**
-     * Domain-level binding for the cloud client factory. The data-layer impl
-     * [KoogClientFactory] keeps its public per-provider helpers for `DelegateTaskTool`
-     * while exposing the provider-keyed [CloudLlmClientFactory.createClient] entry-point
-     * to domain consumers.
-     */
     @Binds
-    @Singleton
-    abstract fun bindCloudLlmClientFactory(impl: KoogClientFactory): CloudLlmClientFactory
+    @IntoMap
+    @StringKey(CallPhoneExecutor.TOOL_NAME)
+    abstract fun bindCallPhoneExecutor(executor: CallPhoneExecutor): LocalToolExecutor
 
-    /**
-     * Domain-level binding for the cloud model resolver.
-     */
     @Binds
-    @Singleton
-    abstract fun bindCloudLlmModelResolver(impl: KoogCloudLlmModelResolver): CloudLlmModelResolver
+    @IntoMap
+    @StringKey(SendSmsExecutor.TOOL_NAME)
+    abstract fun bindSendSmsExecutor(executor: SendSmsExecutor): LocalToolExecutor
 
-    /**
-     * Domain-level binding for the cloud model catalog: the models the app offers and the model a
-     * run uses — read by the resolver and by every screen that names a provider's model.
-     */
     @Binds
-    @Singleton
-    abstract fun bindCloudModelCatalog(impl: KoogCloudModelCatalog): CloudModelCatalog
+    @IntoMap
+    @StringKey(SendMessageExecutor.TOOL_NAME)
+    abstract fun bindSendMessageExecutor(executor: SendMessageExecutor): LocalToolExecutor
 
-    /**
-     * Domain-level binding for the cloud structured-inference client factory.
-     * The data-layer impl [KoogStructuredInferenceClientFactory] backs the
-     * structured-output gate's cloud path for structured node types whose
-     * `cloudProvider` is set.
-     */
     @Binds
-    @Singleton
-    abstract fun bindCloudStructuredInferenceClientFactory(
-        impl: KoogStructuredInferenceClientFactory,
-    ): CloudStructuredInferenceClientFactory
+    @IntoMap
+    @StringKey(SetAlarmExecutor.TOOL_NAME)
+    abstract fun bindSetAlarmExecutor(executor: SetAlarmExecutor): LocalToolExecutor
+
+    @Binds
+    @IntoMap
+    @StringKey(SetTimerExecutor.TOOL_NAME)
+    abstract fun bindSetTimerExecutor(executor: SetTimerExecutor): LocalToolExecutor
+
+    @Binds
+    @IntoMap
+    @StringKey(OpenAppExecutor.TOOL_NAME)
+    abstract fun bindOpenAppExecutor(executor: OpenAppExecutor): LocalToolExecutor
+
+    @Binds
+    @IntoMap
+    @StringKey(AddCalendarEventExecutor.TOOL_NAME)
+    abstract fun bindAddCalendarEventExecutor(executor: AddCalendarEventExecutor): LocalToolExecutor
+
+    @Binds
+    @IntoMap
+    @StringKey(ReadScreenExecutor.TOOL_NAME)
+    abstract fun bindReadScreenExecutor(executor: ReadScreenExecutor): LocalToolExecutor
+
+    @Binds
+    @IntoMap
+    @StringKey(SubmitTapExecutor.TOOL_NAME)
+    abstract fun bindSubmitTapExecutor(executor: SubmitTapExecutor): LocalToolExecutor
+
+    @Binds
+    @IntoMap
+    @StringKey(RecordMacroExecutor.TOOL_NAME)
+    abstract fun bindRecordMacroExecutor(executor: RecordMacroExecutor): LocalToolExecutor
+
+    @Binds
+    @IntoMap
+    @StringKey(MacroSendExecutor.TOOL_NAME)
+    abstract fun bindMacroSendExecutor(executor: MacroSendExecutor): LocalToolExecutor
+
+    @Binds
+    @IntoMap
+    @StringKey(DetectHabitsExecutor.TOOL_NAME)
+    abstract fun bindDetectHabitsExecutor(executor: DetectHabitsExecutor): LocalToolExecutor
 }

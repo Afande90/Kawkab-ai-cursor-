@@ -11,6 +11,9 @@ removing or reordering one by hand is undone by the next run.
 Only Kotlin files appear inside the generated blocks.
 
 <!-- AUTO-GEN:FILE_MAP -->
+- `accessibility/` - Screen reading and taps. Every click goes through the outbound tap guard, and every event is checked against the denylist.
+  - `AccessibilityNodeTraversal.kt` - Walks an accessibility tree.
+  - `KawkabAccessibilityService.kt` - Accessibility service that reads the screen and taps only through `GuardedTap`.
 - `App.kt` - Main Android Application class.
 - `data/` - Data layer encompassing local, remote, and repository implementations.
   - `audio/` - Voice-input capture.
@@ -339,25 +342,39 @@ Only Kotlin files appear inside the generated blocks.
         - `SearchAppFunction.kt` - Body of the published `search` AppFunction: argument checks (blank query, `lang` fallback/edition) and the call into `SearchTool.executeSearch`, the same path the agent uses; injected into `AgentAppFunctionService`.
       - `DelegateTaskTool.kt` - Task delegation tool; builds its client and model through `CloudLlmClientFactory` and `CloudLlmModelResolver`, like a Cloud node.
       - `executors/` - `LocalToolExecutor` implementations registered via Hilt multibinding.
+        - `AddCalendarEventExecutor.kt` - Adds a calendar event through the calendar app.
         - `AppendFileExecutor.kt` - `LocalToolExecutor` for the SENSITIVE `append_file` tool; adds UTF-8 content to the END of a workspace file via `AgentWorkspace.appendText` (creating it on first call, no overwrite flag), for accumulating entries in a log/report; maps every `WorkspaceError` to a readable observation.
+        - `CallPhoneExecutor.kt` - Places a phone call with ACTION_CALL after the outbound card has been tapped.
         - `DelegateTaskExecutor.kt` - `LocalToolExecutor` bridging the `delegate_task` tool to `DelegateTaskTool`; with no `targetModel` it picks the first configured provider, the default the schema names.
         - `DeleteFileExecutor.kt` - `LocalToolExecutor` for the DESTRUCTIVE `delete_file` tool; removes a single workspace file via `AgentWorkspace.delete` (always behind the typed-confirm HITL gate by its risk classification).
+        - `DetectHabitsExecutor.kt` - Records an action and reports routines that have repeated.
         - `EditFileExecutor.kt` - `LocalToolExecutor` for the SENSITIVE `edit_file` tool; replaces a uniquely-matching `oldText` anchor with `newText` via `AgentWorkspace.editText` (empty `oldText` rejected before I/O), surfacing the occurrence count when the anchor is ambiguous.
         - `FindFilesExecutor.kt` - `LocalToolExecutor` for the READ_ONLY `find_files` tool; filters the workspace listing by a `WorkspaceGlob` pattern and renders matches via `WorkspaceListingFormat`.
         - `HttpRequestExecutor.kt` - `LocalToolExecutor` for the outbound `http_request` tool (GET/POST/PUT/DELETE over the shared `OkHttpClient`). Enforces the security stack before any byte leaves the device: method gate, domain allowlist (`ToolSettings.allowedHttpDomains` — empty ⇒ refuse), https-only for public hosts (local-IP cleartext exception), stored-credential leak refusal (`ApiKeyRepository` values), manual redirect following with per-hop allowlist re-validation, and a `httpToolMaxResponseBytes`-capped response with a truncation marker. Per-method risk (`GET` SENSITIVE / writes DESTRUCTIVE) is resolved upstream by `ToolRepositoryImpl.getRisk` from the same `HttpRequestPolicy`.
         - `ListFilesExecutor.kt` - `LocalToolExecutor` for the READ_ONLY `list_files` tool; renders the (optionally sub-directory-scoped, containment-validated) workspace listing via `WorkspaceListingFormat`.
+        - `MacroSendExecutor.kt` - Replays a saved macro.
+        - `OpenAppExecutor.kt` - Opens an installed app by its label or package name.
         - `ReadFileExecutor.kt` - `LocalToolExecutor` for the READ_ONLY `read_file` tool; reads a workspace text file with byte `offset`/`limit` paging, caps the served window to the per-read token budget (UTF-8-boundary-aligned so pages stitch without splitting a multi-byte char), and maps every `WorkspaceError` to a readable observation.
+        - `ReadScreenExecutor.kt` - Reads the text of the screen the owner is looking at.
+        - `RecordMacroExecutor.kt` - Records a successful hands step, and saves the run when a name is given.
         - `ScheduleTaskExecutor.kt` - `LocalToolExecutor` bridging the `schedule_task` tool to `ScheduleTaskUseCase`.
         - `SearchToolExecutor.kt` - `LocalToolExecutor` bridging the `search_tool` tool to `SearchTool`.
+        - `SendMessageExecutor.kt` - Sends a message inside another app, including the stub messenger, by tapping that app's send control.
+        - `SendSmsExecutor.kt` - Opens the SMS app with the message filled in and taps send.
+        - `SetAlarmExecutor.kt` - Sets an alarm through the clock app.
+        - `SetTimerExecutor.kt` - Starts a countdown in the clock app.
+        - `SubmitTapExecutor.kt` - Generic accessibility tap.
         - `WorkspaceListingFormat.kt` - Shared, capped line-per-file rendering (path with control characters escaped + size + ISO-8601 UTC mtime) used by `list_files` and `find_files`.
         - `WorkspaceToolMessages.kt` - Observation text shared by the workspace file tools where the wording must not drift between them.
         - `WriteFileExecutor.kt` - `LocalToolExecutor` for the SENSITIVE `write_file` tool; writes UTF-8 content via `AgentWorkspace.writeText`, refusing an implicit overwrite (without `overwrite: true`) so existing content is never clobbered; maps every `WorkspaceError` to a readable observation.
+      - `HandAgentTools.kt` - The hands tools published next to the original built-ins.
       - `LocalAppFunctionManager.kt` - Manager for local app functions.
       - `SearchTool.kt` - Local web search tool.
 - `di/` - Dependency Injection configurations (Hilt).
   - `ApplicationScope.kt` - `@Qualifier` for the application-lifetime `CoroutineScope` provided by `CoroutinesModule`.
   - `AppModule.kt` - General app-level DI module.
   - `BackupModule.kt` - Wires the encrypted backup: the exporter, the key derivation, the database snapshot, the content it gathers, and every owner of encrypted-store entries (`BackedUpSecrets`).
+  - `CloudLlmBindingsModule.kt` - Domain bindings for the cloud model clients.
   - `CoroutinesModule.kt` - Provides the `@ApplicationScope` application-lifetime `CoroutineScope` (`SupervisorJob` + `Dispatchers.Default`) for singletons that own fire-and-forget background work (e.g. the voice recorder).
   - `DataModule.kt` - Data layer DI module.
   - `EmbeddingModule.kt` - Hilt multibinding for the `EmbeddingProvider` map (`use` / `openai_3_small` / `ollama`) and the `KoogEmbedderFactory` binding.
@@ -365,6 +382,7 @@ Only Kotlin files appear inside the generated blocks.
   - `IoDispatcher.kt` - Qualifies the `kotlinx.coroutines.CoroutineDispatcher` for blocking I/O that `CoroutinesModule` provides as `kotlinx.coroutines.Dispatchers.IO`.
   - `LocalToolsModule.kt` - Hilt multibinding for `LocalToolExecutor` map and bindings for `CloudLlmClientFactory` / `CloudLlmModelResolver`.
   - `PromptTemplateModule.kt` - Hilt multibinding module for prompt variable providers.
+  - `SafetyModule.kt` - Wires the on-device safety checks and the phone hands.
   - `SettingsModule.kt` - Hilt bindings of the settings sections and of the transitional `SettingsRepository` composite.
 - `domain/` - Domain layer containing core business logic and Use Cases.
   - `backup/` - Backup archive format contract: header, key-derivation bounds, read failures, entry-name rule.
@@ -669,6 +687,12 @@ Only Kotlin files appear inside the generated blocks.
     - `TriggerJournalRepository.kt` - Trigger-evaluation journal port: `recordEvaluation` / `recordRunOutcome(runId, …)` / `recordHitlEvent(runId, event)` (folds one HITL transition onto the row; no-op for runs with no row) / `observeByTrigger` / `observeHealthInputs` (per-trigger latest-eval + latest-fired-outcome map for the list health-badge) / `readAll` (one-shot newest-first snapshot of the whole journal, backing the debug soak dump) / `applyRetention(olderThan, maxRecords)`. Best-effort observer contract (storage failures absorbed, never propagated into the observed run). Data-layer impl: `TriggerJournalRepositoryImpl`.
     - `TriggerRepository.kt` - Automation-trigger repository interface: `observeTriggers` / `observeActiveTriggers` (enabled + bound; backs the scheduler sync) + `getTriggerById` / `saveTrigger` / `deleteTrigger` / `setEnabled` / `setArmed` / `markFired`. Data-layer impl: `TriggerRepositoryImpl`.
     - `UsageTelemetryRepository.kt` - On-device usage-statistics store interface: live `summary` (counters + derived weekly retention), opt-in-gated `recordPipelineRunOutcome` / `recordTriggerFired`, `isEnabled`, `reset`. No network on this path.
+  - `safety/` - The outbound tap guard, the three denylist layers, the on-device activity log, and the runner every hands action goes through.
+    - `ActionDenylist.kt` - Package denylist, screen heuristics, and the intent guard.
+    - `ActionRunner.kt` - The only way a hands action runs.
+    - `ActivityLog.kt` - The on-device activity log.
+    - `DenylistStore.kt` - The editable package denylist.
+    - `OutboundTapGuard.kt` - Decides whether a tap target looks outbound from `safety/outbound_patterns.txt`.
   - `services/` - Domain-level services.
     - `AgentWorkspace.kt` - Domain interface for the agent's jailed file sandbox (`resolve` / `readText` / `writeText` / `editText` / `delete` / `list`, plus the Files-screen surface `usage` / `readTextPreview` / `importBytes` / `exportTo` / `stageForShare`); the single trust boundary for agent file I/O (path containment + size quotas + text-only agent surface; byte-faithful stream import/export for the user-facing screen). Operations return typed `WorkspaceResult`/`WorkspaceError` instead of throwing. Data-layer impl: `AgentWorkspaceImpl`.
     - `ApprovalNotifier.kt` - Notifier for approval requests: the transient live-phase prompt, the persistent parked-run variant (ongoing, runId-addressed actions, re-posted on dismissal), and the cancel used when the request settles elsewhere.
@@ -857,6 +881,17 @@ Only Kotlin files appear inside the generated blocks.
     - `VerificationEvent.kt` - What a running check reports, in order: one `CallChecked` per repeated call, one `VisitSettled` per visit whose calls are all done, and one terminal event — `Finished`, `Stopped` or `Failed`.
     - `VerificationPlan.kt` - What a check of a finished run will do, decided before it starts: every node visit of the run tree in the order the run made them, and for each either the on-device calls it will repeat or why it will not.
     - `VerifyRunUseCase.kt` - Checks a finished run by repeating its on-device model calls.
+- `hands/` - Phone actions ported from OpenDroid: alias phrases, macro recording, habit detection, and the intent calls for the five core commands.
+  - `AliasResolver.kt` - Maps a short phrase to one action hint.
+  - `AndroidContactBook.kt` - Reads the owner's contacts when READ_CONTACTS has been granted.
+  - `AndroidPhoneHands.kt` - Intent and accessibility implementation of `PhoneHands`.
+  - `DurationParser.kt` - Parses a short duration phrase into seconds.
+  - `HabitRoutineEngine.kt` - Groups recent actions into half-hour sessions and suggests a sequence that comes back at least `detect`'s minimum number of times in the same part of the day.
+  - `HandsDispatch.kt` - Runs one recorded step on `PhoneHands`.
+  - `MacroRecording.kt` - Turns a fully successful history into macro steps.
+  - `MacroStore.kt` - In-memory macros.
+  - `PhoneHands.kt` - What the phone can do for the five core commands, plus a screen read and a guarded tap.
+  - `ToolArgs.kt` - Reads string and integer arguments from a tool's JSON object.
 - `presentation/` - UI and presentation layer.
   - `common/` - Cross-feature presentation utilities.
     - `BoundedText.kt` - What reading a picked file within a size limit produced.

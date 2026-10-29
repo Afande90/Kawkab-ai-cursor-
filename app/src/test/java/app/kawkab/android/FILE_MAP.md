@@ -414,6 +414,8 @@ Only Kotlin files appear inside the generated blocks.
     - `ContentReportComposerTest.kt` - Unit tests for `ContentReportComposer`.
   - `repositories/` - Tests of the definitions the domain repository contracts carry beside their accessors.
     - `ApiKeyRepositoryTest.kt` - Unit tests for the definitions `ApiKeyRepository` carries beside its accessors: `requiredCredential` and `isConfigured`.
+  - `safety/` - Unit tests for the tap guard, the denylist, the activity log, macro replay, and habit detection.
+    - `HandsSafetyTest.kt` - Tap guard, denylist, activity log, macro replay, and habit detection.
   - `services/` - Tests for the domain service interfaces and their pure helpers.
     - `ChatHistoryCompressionCoordinatorTest.kt` - Unit tests for `ChatHistoryCompressionCoordinator`.
     - `CleartextPolicyTest.kt` - Unit tests for `CleartextPolicy` — the rule that replaced the hand-written IP list in `network_security_config.xml`.
