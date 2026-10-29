@@ -27,9 +27,8 @@ enum class OnboardingStep(val pageIndex: Int, val indicatorLabel: String) {
  * copy (title, value line) is drawn from string resources in `OnboardingContent`
  * so the design-system layer stays localisation-friendly.
  *
- * Rendering order is the enum order: Styled Translation leads (on-identity),
- * Share Handler second, and the **featured** Virtual Companion is third — the
- * featured treatment must never make it the first impression (VISION §2).
+ * Rendering order is the enum order: Styled Translation leads, Share Handler
+ * is second, and the featured Kawkab assistant is third.
  *
  * @property id stable scenario id (matches the bundled preset filename stem and
  *   the `:app` `OnboardingScenarioCatalog` id).
@@ -38,7 +37,7 @@ enum class OnboardingStep(val pageIndex: Int, val indicatorLabel: String) {
  *   scenario targets Gemma 4 E4B — the smaller E2B stays reachable under
  *   "Or choose another" as the genuinely lighter alternative.
  * @property featured `true` for the highlighted card (accent border + "Most
- *   popular" badge). Only Virtual Companion is featured.
+ *   popular" badge). Only the Kawkab assistant is featured.
  * @property bindsShareSurface `true` when set-up binds the system Share sheet to
  *   the materialised pipeline (Share Handler). Drives the card meta row and the
  *   "Ready" entry-surface / safety rows.
@@ -65,9 +64,9 @@ enum class OnboardingScenario(
         bindsShareSurface = true,
     ),
 
-    /** Mood-routing companion. Featured, but the third card (identity guardrail). */
+    /** On-device Kawkab assistant. Featured card; materialises `kawkab_assistant`. */
     VirtualCompanion(
-        id = "virtual_companion_mood_router",
+        id = "kawkab_assistant",
         requiredModel = OnboardingLiteRtModel.Gemma4E4B,
         featured = true,
         bindsShareSurface = false,

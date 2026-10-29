@@ -1,5 +1,6 @@
 package app.kawkab.android.domain.usecases
 
+import app.kawkab.android.domain.constants.BundledPresetCatalog
 import app.kawkab.android.domain.constants.DefaultPrompts
 import app.kawkab.android.domain.engine.DefaultPipelineFactory
 import app.kawkab.android.domain.models.PipelineRunStatus
@@ -17,7 +18,7 @@ import javax.inject.Inject
  * Use case executed when the application is launched.
  * It checks if this is the first launch, and if so, initializes default settings,
  * such as saving the default system prompts to the settings repository,
- * and materialises the bundled showcase pipeline as the application default.
+ * and materialises the bundled Kawkab assistant as the application default.
  *
  * On **every** invocation (not just the first launch) it additionally sweeps
  * orphaned pipeline-run records: every non-terminal run whose owning process
@@ -48,14 +49,17 @@ class InitializeAppUseCase @Inject constructor(
      * Executes the initialization logic.
      *
      * On the very first launch the seed pipeline is materialised from the
-     * bundled [SHOWCASE_PRESET_ID] preset via [LoadPipelineFromPresetUseCase]
-     * (fresh node / connection ids, validated, persisted). This gives the new
-     * user a pipeline that exercises the full breadth of the agent — intent
-     * routing, a local/cloud fork, task decomposition, a tool call, a
-     * human-in-the-loop clarification, summarisation and evaluation — instead
-     * of a minimal stub. If the preset cannot be loaded (e.g. a corrupt or
-     * missing asset) the seed falls back to the code-level
-     * [DefaultPipelineFactory] so first launch never leaves the library empty.
+     * bundled [ASSISTANT_PRESET_ID] preset via [LoadPipelineFromPresetUseCase]
+     * (fresh node / connection ids, validated, persisted). That pipeline is
+     * the default for the first chat and for any new chat that inherits the
+     * default. If the preset cannot be loaded (e.g. a corrupt or missing
+     * asset) the seed falls back to the code-level [DefaultPipelineFactory]
+     * so first launch never leaves the library empty.
+     *
+     * On a later launch, a default pipeline that still speaks as the retired
+     * mood-router companion is replaced with the assistant. The old pipeline
+     * stays in the library. Chats that were bound to it explicitly keep that
+     * binding; unbound chats, including a new chat, follow the new default.
      */
     suspend operator fun invoke() {
         sweepOrphanedRuns()
@@ -71,9 +75,9 @@ class InitializeAppUseCase @Inject constructor(
             // Save the default prompt to settings so the user can edit it later.
             generationSettings.setSystemPromptPrefix(DefaultPrompts.SYSTEM_PROMPT_PREFIX)
 
-            // Materialise the bundled showcase pipeline as the seed; fall back
-            // to the code-level factory if the preset asset is unavailable.
-            val seededPipelineId = loadPipelineFromPresetUseCase(SHOWCASE_PRESET_ID)
+            // Materialise the bundled assistant as the seed; fall back to the
+            // code-level factory if the preset asset is unavailable.
+            val seededPipelineId = loadPipelineFromPresetUseCase(ASSISTANT_PRESET_ID)
                 .getOrNull()
                 ?: seedFallbackPipeline()
 
@@ -85,7 +89,27 @@ class InitializeAppUseCase @Inject constructor(
 
             // Mark first launch as complete
             appStateSettings.setFirstLaunch(false)
+        } else {
+            replaceRetiredCompanionDefault()
         }
+    }
+
+    /**
+     * Points the default pipeline at the Kawkab assistant when the current
+     * default still uses the retired companion persona. No-op when there is
+     * no default, the pipeline is gone, or its prompts do not carry
+     * [COMPANION_MARKER]. A failed preset load leaves the existing default
+     * in place.
+     */
+    private suspend fun replaceRetiredCompanionDefault() {
+        val defaultId = entryPointSettings.defaultPipelineId.first() ?: return
+        val graph = pipelineRepository.getPipelineById(defaultId) ?: return
+        val retired = graph.nodes.any { node ->
+            node.systemPrompt?.contains(COMPANION_MARKER) == true
+        }
+        if (!retired) return
+        val assistantId = loadPipelineFromPresetUseCase(ASSISTANT_PRESET_ID).getOrNull() ?: return
+        entryPointSettings.setDefaultPipelineId(assistantId)
     }
 
     /**
@@ -116,7 +140,7 @@ class InitializeAppUseCase @Inject constructor(
 
     /**
      * Builds and persists the code-level default pipeline, returning its id.
-     * Used only when the bundled showcase preset fails to materialise.
+     * Used only when the bundled assistant preset fails to materialise.
      */
     private suspend fun seedFallbackPipeline(): String {
         val defaultPipeline = DefaultPipelineFactory.create("Default System Pipeline")
@@ -126,11 +150,17 @@ class InitializeAppUseCase @Inject constructor(
 
     private companion object {
         /**
-         * Stable id of the bundled showcase preset
-         * (`assets/presets/pipelines/showcase_full_agent.json`) materialised as
-         * the first-launch seed pipeline.
+         * Stable id of the bundled assistant preset materialised as the
+         * first-launch seed pipeline and as the replacement for a retired
+         * companion default.
          */
-        const val SHOWCASE_PRESET_ID = "showcase_full_agent"
+        const val ASSISTANT_PRESET_ID = BundledPresetCatalog.KAWKAB_ASSISTANT_ID
+
+        /**
+         * Phrase that identifies the retired mood-router persona. Present only
+         * in that preset's node prompts.
+         */
+        const val COMPANION_MARKER = "You are Mila"
 
         /**
          * Reason written into run records finalised by the orphan sweep —

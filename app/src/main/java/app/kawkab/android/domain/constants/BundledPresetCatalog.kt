@@ -9,10 +9,11 @@ package app.kawkab.android.domain.constants
  * The bundled catalogue is the first thing a new user browses, so its order is
  * a product decision rather than a filesystem accident.
  *
- * The order is: the scenarios offered during onboarding first (they are the
- * ones a new user has already been introduced to), then the end-to-end
- * showcases, then the building-block templates someone would start their own
- * pipeline from.
+ * The order is: the Kawkab assistant first (it is the default chat), then the
+ * other scenarios offered during onboarding, then the end-to-end showcases,
+ * then the building-block templates someone would start their own pipeline
+ * from. The mood-router companion is not listed: it stays in the assets as an
+ * importable preset and is hidden from this first-run gallery.
  *
  * Ids not listed here sort **after** every listed one, preserving their
  * relative order — so a preset added without touching this list degrades to
@@ -24,12 +25,18 @@ package app.kawkab.android.domain.constants
  */
 object BundledPresetCatalog {
 
-    /** Bundled preset ids, in the order the picker should present them. */
+    /** Stable id of the default assistant preset. The filename stem matches. */
+    const val KAWKAB_ASSISTANT_ID: String = "kawkab_assistant"
+
+    /**
+     * Bundled preset ids, in the order the picker should present them.
+     * Each id is a string literal: the browser editor reads this list as text.
+     */
     val DISPLAY_ORDER: List<String> = listOf(
-        // Onboarding scenarios.
+        // Default assistant, then the other onboarding scenarios.
+        "kawkab_assistant",
         "styled_translation",
         "share_handler",
-        "virtual_companion_mood_router",
         // End-to-end showcases.
         "showcase_full_agent",
         "showcase_research_to_file",

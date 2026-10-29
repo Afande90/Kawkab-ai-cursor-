@@ -1,0 +1,151 @@
+{
+  "schemaVersion": 1,
+  "id": "kawkab_assistant",
+  "name": "Kawkab",
+  "description": "The on-device assistant. It answers briefly in your language and uses the phone tools. Fully offline, no server.",
+  "category": "local",
+  "tags": [
+    "assistant",
+    "offline",
+    "phone"
+  ],
+  "updatedAt": 1761696000000,
+  "samplePrompts": [
+    {
+      "title": "Set an alarm for 6",
+      "toolsHint": "set_alarm"
+    },
+    {
+      "title": "Open Messages",
+      "toolsHint": "open_app"
+    },
+    {
+      "title": "Add lunch tomorrow at 1",
+      "toolsHint": "add_calendar_event"
+    }
+  ],
+  "memoryRetrievalQuery": "the owner's name, language, plans and preferences",
+  "nodes": [
+    {
+      "id": "input",
+      "type": "INPUT",
+      "position": {
+        "x": 80,
+        "y": 200
+      },
+      "label": "Message",
+      "config": {
+        "systemPrompt": null,
+        "cloudProvider": null,
+        "modelPath": null,
+        "toolName": null,
+        "targetPipelineId": null,
+        "skillId": null,
+        "clarificationTimeoutMs": null,
+        "conditionPrompt": null,
+        "conditionKeywords": null,
+        "conditionComplexity": null,
+        "conditionHasImage": null
+      },
+      "contextConfig": {
+        "chatHistory": false,
+        "originalTask": false,
+        "nodeInput": true,
+        "longTermMemory": false,
+        "toolResults": false
+      },
+      "nodeConfig": {
+        "v": 1,
+        "type": "INPUT",
+        "title": "Message",
+        "inputName": "user.message"
+      }
+    },
+    {
+      "id": "lite_rt",
+      "type": "LITE_RT",
+      "position": {
+        "x": 360,
+        "y": 200
+      },
+      "label": "Kawkab",
+      "config": {
+        "systemPrompt": "You are Kawkab. You run fully offline on the owner's phone. There is no server. Answer briefly in the user's language ($LANG): Sudanese Arabic, Modern Standard Arabic, or English, matching how they wrote. Use the phone tools when the request needs one ($TOOLS): a call, a message, an alarm, a timer, opening an app, or a calendar event. Do not say an action happened unless a tool result says it did. Today is $DATE.",
+        "cloudProvider": null,
+        "modelPath": null,
+        "toolName": null,
+        "targetPipelineId": null,
+        "skillId": null,
+        "clarificationTimeoutMs": null,
+        "conditionPrompt": null,
+        "conditionKeywords": null,
+        "conditionComplexity": null,
+        "conditionHasImage": null
+      },
+      "contextConfig": {
+        "chatHistory": true,
+        "originalTask": true,
+        "nodeInput": true,
+        "longTermMemory": true,
+        "toolResults": false
+      },
+      "nodeConfig": {
+        "v": 1,
+        "type": "LITE_RT",
+        "title": "Kawkab",
+        "modelId": "",
+        "systemPrompt": "You are Kawkab. You run fully offline on the owner's phone. There is no server. Answer briefly in the user's language ($LANG): Sudanese Arabic, Modern Standard Arabic, or English, matching how they wrote. Use the phone tools when the request needs one ($TOOLS): a call, a message, an alarm, a timer, opening an app, or a calendar event. Do not say an action happened unless a tool result says it did. Today is $DATE."
+      }
+    },
+    {
+      "id": "output",
+      "type": "OUTPUT",
+      "position": {
+        "x": 640,
+        "y": 200
+      },
+      "label": "Reply",
+      "config": {
+        "systemPrompt": null,
+        "cloudProvider": null,
+        "modelPath": null,
+        "toolName": null,
+        "targetPipelineId": null,
+        "skillId": null,
+        "clarificationTimeoutMs": null,
+        "conditionPrompt": null,
+        "conditionKeywords": null,
+        "conditionComplexity": null,
+        "conditionHasImage": null
+      },
+      "contextConfig": {
+        "chatHistory": false,
+        "originalTask": false,
+        "nodeInput": true,
+        "longTermMemory": false,
+        "toolResults": false
+      },
+      "nodeConfig": {
+        "v": 1,
+        "type": "OUTPUT",
+        "title": "Reply",
+        "format": "PLAIN_TEXT",
+        "systemPrompt": ""
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "c1",
+      "fromNodeId": "input",
+      "toNodeId": "lite_rt",
+      "label": null
+    },
+    {
+      "id": "c2",
+      "fromNodeId": "lite_rt",
+      "toNodeId": "output",
+      "label": null
+    }
+  ]
+}

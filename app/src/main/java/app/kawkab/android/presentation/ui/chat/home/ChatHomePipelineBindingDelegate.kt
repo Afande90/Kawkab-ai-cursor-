@@ -205,8 +205,8 @@ class ChatHomePipelineBindingDelegate(
 
     /**
      * Returns the active session's pipeline binding (or `null` when the session
-     * inherits the default). Surfaced to the screen so the new-thread picker can
-     * pre-select the same pipeline as the current chat.
+     * inherits the default). A new chat does not copy this binding: the
+     * new-thread sheet starts on the application default.
      */
     fun currentPipelineId(): String? =
         sessions().firstOrNull { it.id == state.value.thread.currentSessionId }?.pipelineId

@@ -1223,11 +1223,13 @@ share sheet and the Quick Settings tile. No row is marked as the one
 open in the editor — which pipeline the editor last showed is not a
 setting, and it changes nothing about what runs.
 
-On the very first launch the app seeds a **showcase** graph into your
-library, materialised from the bundled `showcase_full_agent` preset. It
-is the default pipeline unless you pick a scenario during onboarding — in
-which case that scenario's pipeline is added and becomes the default
-instead, while the showcase stays in your library to explore. It triages
+On the very first launch the app seeds the **Kawkab** assistant into your
+library. That pipeline is the default for the first chat and for a new
+chat, unless you pick another scenario during onboarding — in which case
+that scenario's pipeline is added and becomes the default instead. The
+assistant answers briefly, on the phone, with no server. The older
+showcase graph is still in the preset gallery if you want it. The
+showcase triages
 each message into
 **chat**, **factual** or **task** and runs a tailored branch: a quick
 on-device reply for chat; a Wikipedia-grounded lookup for factual
@@ -1236,9 +1238,8 @@ small research loop); and a plan → subtask-loop → synthesis flow for
 actionable tasks, including a human-in-the-loop clarification step when
 a subtask needs your input. The task loop is **composed**: each subtask
 runs as one of four bundled sub-pipelines (Clarify / Lookup / Act /
-Process) called through Pipeline nodes, so the showcase seeds a parent
-pipeline plus those four sub-pipelines into your library. It runs
-entirely on-device. Everything is an ordinary pipeline: edit, duplicate,
+Process) called through Pipeline nodes. Adding the showcase also adds
+those four sub-pipelines. It runs entirely on-device. Everything is an ordinary pipeline: edit, duplicate,
 rename or delete any of them like any other (see
 [Composing pipelines](#composing-pipelines-the-pipeline-node)).
 

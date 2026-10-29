@@ -793,7 +793,7 @@ fun ChatHomeScreen(
             ) {
                 NewThreadPipelinePickerSheetContent(
                     pipelines = screenState.availablePipelines,
-                    initialPipelineId = viewModel.pipelineBinding.currentPipelineId(),
+                    initialPipelineId = null,
                     onCancel = { newThreadSheetVisible = false },
                     onCreate = { pipelineId ->
                         newThreadSheetVisible = false
@@ -948,9 +948,9 @@ private fun RenameSessionSheetContent(
 }
 
 /**
- * Body of the new-thread pipeline picker `ModalBottomSheet`. Pre-selects
- * the user's current pipeline binding so a "create" tap creates a chat
- * bound to the same pipeline by default.
+ * Body of the new-thread pipeline picker `ModalBottomSheet`. A new chat
+ * starts on the application default (the Kawkab assistant, unless the owner
+ * marked another pipeline). The sheet still lists every saved pipeline.
  *
  * @param pipelines pipelines the user can pick from.
  * @param initialPipelineId pipeline id to pre-select (`null` = inherit

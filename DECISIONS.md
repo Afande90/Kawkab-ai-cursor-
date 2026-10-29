@@ -245,3 +245,13 @@ Multi-token prediction stays off on CPU and on GPU. LiteRT-LM 0.17.1 `EngineConf
 
 NPU stays withdrawn. `NpuTrialPolicy` returns NPU only when a self-test started and decoded faster than CPU. This machine cannot run that test. Time to first token and tokens per second are not measured. The Settings "Test backend" row stores both numbers when the owner runs it on a phone. Pocket LLM was read as an idea only. No code was copied.
 
+## 2026-10-29 — Kawkab assistant is the default chat
+
+The first launch materialises `kawkab_assistant` and marks it the default pipeline. A new chat opens on that default. The new-chat sheet starts on "Use default pipeline" rather than copying the chat that was open.
+
+The mood-router file stays in the assets so it can still be loaded by its id. It is marked internal, so the first-run gallery does not list it. The featured onboarding card now materialises the assistant, not that router. An install that already marked the companion as the default (a node prompt containing "You are Mila") is pointed at a newly materialised assistant on the next launch. The old pipeline is left in the library. A chat that was bound to it explicitly keeps that binding.
+
+The assistant prompt says it is Kawkab, that it runs fully offline on the phone with no server, that it answers briefly in Sudanese Arabic, Modern Standard Arabic or English, and that it uses the phone tools. The same identity is the stored system-prompt prefix. The pipeline itself is one local model step. Dispatch of those tools is the fast path and the agent loop, which are later tasks, so this pipeline does not add a second tool-calling graph on every message. The prompt tells the model not to claim an action that no tool result confirmed.
+
+The code-level factory remains the fallback when the assistant asset cannot be read. The showcase preset stays in the gallery. It is no longer the first-launch seed.
+
