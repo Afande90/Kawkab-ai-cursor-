@@ -99,7 +99,8 @@ class LiteRtNodeExecutorTest {
         executor.execute(node, "input", "session-1", "prompt").toList()
 
         val capturedPrompt = promptSlot.captured
-        assertTrue(capturedPrompt.contains("You are a helpful AI assistant"))
+        assertTrue(capturedPrompt.contains("You are Kawkab"))
+        assertTrue(capturedPrompt.contains("Owner:"))
     }
 
     @Test

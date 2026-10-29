@@ -2,6 +2,7 @@ package app.kawkab.android.domain.fastpath
 
 import app.kawkab.android.domain.engine.LlmInferenceEngine
 import app.kawkab.android.domain.engine.executors.ToolInvocationGate
+import app.kawkab.android.domain.harness.SkillCache
 import app.kawkab.android.domain.models.AgentOrchestratorState
 import app.kawkab.android.domain.models.ChatMessage
 import app.kawkab.android.domain.models.NodeExecutionResult
@@ -111,6 +112,18 @@ class ChatTierRouterTest {
         coVerify(exactly = 0) { engine.generateResponseStream(any(), any(), any()) }
         assertEquals(Role.AGENT, saved.last().role)
         assertTrue(saved.last().content.contains("no messages"))
+    }
+
+    @Test
+    fun `a saved plan replays when the grammar does not match`() = runTest {
+        val cache = SkillCache()
+        val withCache = HandsChatTierRouter(gate, chatRepository, engine, cache)
+        cache.remember("water the plants", "open_app", mapOf("name" to "Plants"))
+        assertNull(router.command("water the plants"))
+        val saved = withCache.command("water the plants")
+        assertEquals("open_app", saved?.tool)
+        assertEquals("Plants", saved?.args?.get("name"))
+        coVerify(exactly = 0) { engine.generateResponseStream(any(), any(), any()) }
     }
 
     private fun stubGate(output: String) {
