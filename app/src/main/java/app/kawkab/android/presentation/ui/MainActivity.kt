@@ -37,6 +37,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import javax.inject.Inject
 
 /**
@@ -161,8 +162,8 @@ class MainActivity : ComponentActivity() {
                 // fires for warm shortcut / share / notification taps.
                 LaunchedEffect(navController) {
                     deepLinkIntents.collect { newIntent ->
-                        val permission = newIntent.getStringExtra(AndroidPhoneAccess.PERMISSION_EXTRA)
-                        if (!permission.isNullOrBlank()) {
+                        val permission = grantPermissionOf(newIntent)
+                        if (permission != null) {
                             navController.navigate(NavRoutes.phoneAccessRoute(permission))
                         } else {
                             navController.navigateToDeepLink(newIntent, chatEntryRequestRelay)
@@ -204,11 +205,22 @@ class MainActivity : ComponentActivity() {
                         showOnboarding = !hasCompletedOnboarding,
                         pendingDeepLink = pendingDeepLink,
                         chatEntryRequestRelay = chatEntryRequestRelay,
-                        grantPermission = intent?.getStringExtra(AndroidPhoneAccess.PERMISSION_EXTRA),
+                        grantPermission = grantPermissionOf(intent),
                         modifier = Modifier.padding(innerPadding),
                     )
                 }
             }
         }
+    }
+
+    /**
+     * Reads the phone-access extra. A hostile parcel throws, and this activity is exported,
+     * so the throw stays inside this function and the launch continues without the extra.
+     */
+    private fun grantPermissionOf(source: Intent?): String? = try {
+        source?.getStringExtra(AndroidPhoneAccess.PERMISSION_EXTRA)?.takeIf { it.isNotBlank() }
+    } catch (e: RuntimeException) {
+        Timber.w(e, "Unreadable phone-access extra")
+        null
     }
 }

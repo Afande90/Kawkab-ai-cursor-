@@ -69,6 +69,7 @@ fun PhoneAccessScreen(onDone: () -> Unit, requestPermission: String? = null) {
             .padding(all = 16.dp),
     ) {
         Text(stringResource(R.string.phone_access_title))
+        TextButton(onClick = onDone) { Text(stringResource(R.string.phone_access_done)) }
         lines.forEach { line ->
             Text(stringResource(reasonOf(line.item)))
             Text(stringResource(if (line.on) R.string.phone_access_on else R.string.phone_access_off))
@@ -114,7 +115,6 @@ fun PhoneAccessScreen(onDone: () -> Unit, requestPermission: String? = null) {
                 Text(stringResource(R.string.phone_access_assistant_open))
             }
         }
-        TextButton(onClick = onDone) { Text(stringResource(R.string.phone_access_done)) }
     }
 }
 
