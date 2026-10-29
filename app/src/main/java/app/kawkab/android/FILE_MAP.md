@@ -661,6 +661,8 @@ Only Kotlin files appear inside the generated blocks.
     - `WorkspaceResult.kt` - Sealed `Success(value)` / `Failure(WorkspaceError)` result for `AgentWorkspace` operations (typed-error analogue of `kotlin.Result`).
     - `WorkspaceTextPreview.kt` - Bounded read-only preview of a workspace text file (`text`, `totalBytes`, `truncated`); unlike `readText` it always returns a leading slice so any text file can be shown, flagging truncation when the file exceeds the preview budget.
     - `WorkspaceUsage.kt` - Storage-budget snapshot (`usedBytes`, `limitBytes`, derived `fraction`) for the Files screen quota indicator; read-side view of the total-size ceiling the workspace enforces on writes.
+  - `phoneaccess/` - Status lines for each phone-access item, and the card a command shows when a grant is missing.
+    - `PhoneAccessStatus.kt` - Status lines for the phone-access screen.
   - `pipelineio/` - JSON serialisation gateway for pipeline import/export.
     - `ImportedPipelineClaims.kt` - Checks what an imported pipeline says about itself against what its graph does, before the import use cases store it.
     - `PipelineBundleIdRemapper.kt` - Pure id regeneration for the "import as copy" path: regenerates every pipeline/node/connection id and remaps intra-bundle `targetPipelineId` references so a copied composition never points back at the originals.
@@ -1105,6 +1107,9 @@ Only Kotlin files appear inside the generated blocks.
         - `PresetPickerSheet.kt` - `ModalBottomSheet` exposing the bundled/user catalogue as a tap-to-instantiate picker with category chips and a graph-flow preview per card.
         - `SaveAsPresetDialog.kt` - `AlertDialog` capturing name/description/category/tags; shared by the library row overflow and the editor overflow.
       - `ProviderAvailability.kt` - Which providers are set up on this device, for the node sheet's *Provider* and *Engine* fields.
+    - `phoneaccess/` - The Phone access screen and the Android reads behind its status lines.
+      - `AndroidPhoneAccess.kt` - Reads the phone's current grants.
+      - `PhoneAccessScreen.kt` - Shows each phone-access item, with a grant path when it is off.
     - `pipeline/` - Pipeline editor surface.
       - `editor/` - Production pipeline editor — toolbar, ZoomRail, MiniMap, FilterBar, EmptyPipelineState, DotGridBackground, ValidationAutoFix, copy/paste, search, grid toggle. Composes pipelines only; execution belongs to chat / triggers.
         - `bars/` - Editor chrome bars — toolbar, validation bar, node palette.

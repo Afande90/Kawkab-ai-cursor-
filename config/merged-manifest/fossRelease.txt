@@ -31,6 +31,7 @@ uses-permission android.permission.READ_CALENDAR
 uses-permission android.permission.READ_CONTACTS
 uses-permission android.permission.RECEIVE_BOOT_COMPLETED  # added by androidx.work, not by the app's manifest
 uses-permission android.permission.RECORD_AUDIO
+uses-permission android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
 uses-permission android.permission.WAKE_LOCK
 uses-permission android.permission.WRITE_CALENDAR
 uses-permission com.android.alarm.permission.SET_ALARM

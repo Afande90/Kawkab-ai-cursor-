@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="phone_access_title">الوصول إلى الهاتف</string>
+    <string name="phone_access_open">الوصول إلى الهاتف</string>
+    <string name="phone_access_done">متابعة</string>
+    <string name="phone_access_on">مفعّل</string>
+    <string name="phone_access_off">متوقف</string>
+    <string name="phone_access_grant">سماح</string>
+    <string name="phone_access_card">هذا يحتاج إذناً ما زال متوقفاً.</string>
+    <string name="phone_access_reason_contacts">حتى يصبح الاسم رقم هاتف.</string>
+    <string name="phone_access_reason_phone">حتى يجري كوكب المكالمة بعد أن تضغط.</string>
+    <string name="phone_access_reason_calendar">حتى يُكتب التذكير في التقويم.</string>
+    <string name="phone_access_reason_notifications">حتى يخبرك كوكب عندما يحتاج إليك.</string>
+    <string name="phone_access_reason_microphone">حتى تتكلم بدل أن تكتب.</string>
+    <string name="phone_access_reason_accessibility">ينظر كوكب إلى الشاشة ويضغط فقط بعد أن تسمح بهذا. يبقى على هذا الهاتف.</string>
+    <string name="phone_access_reason_battery">حتى يكتمل الطلب والشاشة مغلقة.</string>
+    <string name="phone_access_restricted_title">السماح بالإعدادات المقيّدة</string>
+    <string name="phone_access_restricted_body">على أندرويد 13 وما بعده: افتح معلومات التطبيق، اضغط القائمة الظاهرة هنا، ثم اسمح بالإعدادات المقيّدة. بعدها شغّل خدمة إمكانية الوصول.</string>
+    <string name="phone_access_menu_cd">قائمة النقاط الثلاث في معلومات التطبيق</string>
+    <string name="phone_access_accessibility_open">فتح إعدادات إمكانية الوصول</string>
+    <string name="phone_access_battery_open">السماح للهاتف بإبقاء كوكب يعمل</string>
+    <string name="phone_access_nothing">على نظام Nothing، اسمح أيضًا بالعمل في الخلفية دون تقييد من إعدادات البطارية، وإلا قد يوقف الهاتف كوكب.</string>
+    <string name="phone_access_assistant_title">المساعد الافتراضي</string>
+    <string name="phone_access_assistant_open">اجعل كوكب المساعد</string>
+    <string name="phone_access_assistant_held">كوكب هو المساعد بالفعل.</string>
+</resources>

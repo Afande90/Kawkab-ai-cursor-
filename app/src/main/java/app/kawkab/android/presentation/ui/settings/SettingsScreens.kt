@@ -7,7 +7,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -99,6 +102,7 @@ import app.kawkab.design.screens.settings.MemoryImportDialog as CatalogMemoryImp
  * @property onOpenExternalAutomationJournal Open the external-automation request
  *   journal.
  * @property onOpenRunLimits Open the run-limits screen.
+ * @property onOpenPhoneAccess Open the phone-access screen.
  */
 data class SettingsNavActions(
     val onBack: () -> Unit,
@@ -113,6 +117,7 @@ data class SettingsNavActions(
     val onOpenBackup: () -> Unit,
     val onOpenExternalAutomationJournal: () -> Unit,
     val onOpenRunLimits: () -> Unit,
+    val onOpenPhoneAccess: () -> Unit = {},
 )
 
 /** Settings hub: search field, the five inline Basic controls and the category list. */
@@ -366,12 +371,22 @@ fun PrivacySettingsScreen(viewModel: SettingsViewModel, nav: SettingsNavActions)
     val callbacks = rememberSettingsCallbacks(viewModel, nav)
     val highlight = rememberCategoryHighlight(viewModel, uiState.pendingHighlightAnchor, DomainCategoryId.PRIVACY)
     SettingsSurface(viewModel) {
-        CompositionLocalProvider(LocalSettingsHighlightKey provides highlight.key) {
-            PrivacySettingsContent(
-                state = buildPrivacyViewState(uiState),
-                callbacks = callbacks,
-                advancedExpanded = highlight.advancedExpanded,
-            )
+        Box(modifier = Modifier.fillMaxSize()) {
+            CompositionLocalProvider(LocalSettingsHighlightKey provides highlight.key) {
+                PrivacySettingsContent(
+                    state = buildPrivacyViewState(uiState),
+                    callbacks = callbacks,
+                    advancedExpanded = highlight.advancedExpanded,
+                )
+            }
+            TextButton(
+                onClick = nav.onOpenPhoneAccess,
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(all = 8.dp),
+            ) {
+                Text(text = stringResource(R.string.phone_access_open))
+            }
         }
     }
 }

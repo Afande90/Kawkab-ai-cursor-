@@ -31,6 +31,7 @@ import app.kawkab.android.presentation.ui.navigation.AppNavGraph
 import app.kawkab.android.presentation.ui.navigation.AppShellScaffold
 import app.kawkab.android.presentation.ui.navigation.NavRoutes
 import app.kawkab.android.presentation.ui.navigation.navigateToDeepLink
+import app.kawkab.android.presentation.ui.phoneaccess.AndroidPhoneAccess
 import com.jakewharton.processphoenix.ProcessPhoenix
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -160,7 +161,12 @@ class MainActivity : ComponentActivity() {
                 // fires for warm shortcut / share / notification taps.
                 LaunchedEffect(navController) {
                     deepLinkIntents.collect { newIntent ->
-                        navController.navigateToDeepLink(newIntent, chatEntryRequestRelay)
+                        val permission = newIntent.getStringExtra(AndroidPhoneAccess.PERMISSION_EXTRA)
+                        if (!permission.isNullOrBlank()) {
+                            navController.navigate(NavRoutes.phoneAccessRoute(permission))
+                        } else {
+                            navController.navigateToDeepLink(newIntent, chatEntryRequestRelay)
+                        }
                     }
                 }
                 // Onboarding gate: invert `hasCompletedOnboarding` instead
@@ -198,6 +204,7 @@ class MainActivity : ComponentActivity() {
                         showOnboarding = !hasCompletedOnboarding,
                         pendingDeepLink = pendingDeepLink,
                         chatEntryRequestRelay = chatEntryRequestRelay,
+                        grantPermission = intent?.getStringExtra(AndroidPhoneAccess.PERMISSION_EXTRA),
                         modifier = Modifier.padding(innerPadding),
                     )
                 }

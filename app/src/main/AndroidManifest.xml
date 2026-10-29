@@ -30,6 +30,8 @@
     <uses-permission android:name="android.permission.READ_CALENDAR" />
     <uses-permission android:name="android.permission.WRITE_CALENDAR" />
     <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
+    <!-- Lets the phone-access screen ask Android to leave Kawkab out of battery optimisation. -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
 <!--    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />-->
 

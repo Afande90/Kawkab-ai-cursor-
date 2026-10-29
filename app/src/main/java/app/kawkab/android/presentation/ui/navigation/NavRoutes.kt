@@ -231,6 +231,20 @@ object NavRoutes {
     /** Settings → Privacy → Backup & restore. */
     const val SETTINGS_PRIVACY_BACKUP: String = "settings/privacy/backup"
 
+    /**
+     * Settings → Phone access. [permission] is optional and names a grant to ask for immediately.
+     */
+    const val SETTINGS_PHONE_ACCESS: String = "settings/phone-access?permission={permission}"
+
+    /**
+     * Route for [SETTINGS_PHONE_ACCESS].
+     */
+    fun phoneAccessRoute(permission: String? = null): String = if (permission.isNullOrBlank()) {
+        "settings/phone-access"
+    } else {
+        "settings/phone-access?permission=${android.net.Uri.encode(permission)}"
+    }
+
     /** About category sub-screen. */
     const val SETTINGS_ABOUT: String = "settings/about"
 

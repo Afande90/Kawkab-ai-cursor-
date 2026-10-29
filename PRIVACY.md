@@ -392,6 +392,7 @@ it does not list is kept but goes unused. The app opens no connection to do it.
 | Contacts | Turn a name you said into a number for a confirmed call or message | Asked when a call or message needs a contact. The list stays on the phone |
 | Calendar | Read and add an event you confirmed | Asked when an event is added |
 | Set an alarm | Ask the clock to set an alarm or a timer you confirmed | Granted with the install. It does not read existing alarms |
+| Ignore battery optimisation | Let a request finish while the screen is off | Asked from Phone access, during setup and in Settings. The system still asks you to allow it |
 
 The Wi-Fi network name obtained under the location permission is used on the
 device to decide whether a trigger fires, and never leaves it. Background

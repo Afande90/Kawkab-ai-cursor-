@@ -37,6 +37,7 @@ import app.kawkab.android.presentation.ui.onboarding.OnboardingScreen
 import app.kawkab.android.presentation.ui.orchestrator.OrchestratorViewModel
 import app.kawkab.android.presentation.ui.orchestrator.PipelineLibraryScreen
 import app.kawkab.android.presentation.ui.orchestrator.presets.PipelinePresetsManagerScreen
+import app.kawkab.android.presentation.ui.phoneaccess.PhoneAccessScreen
 import app.kawkab.android.presentation.ui.pipeline.editor.PipelineEditorScreen
 import app.kawkab.android.presentation.ui.prompts.PromptLibraryScreen
 import app.kawkab.android.presentation.ui.settings.AboutSettingsScreen
@@ -113,6 +114,8 @@ import app.kawkab.design.screens.settings.SettingsCategoryId
  *        entry surfaces to the single chat home: the deep-link handler posts an
  *        open-thread / new-chat request and the `CHAT_TAB` composable drains it
  *        into `selectThread` / `createNewSessionWithPipeline`.
+ * @param grantPermission a runtime permission a command still needs. When set,
+ *        the splash lands on Phone access and asks for it.
  * @param modifier Inset-padding passthrough from [AppShellScaffold].
  */
 @Composable
@@ -121,6 +124,7 @@ fun AppNavGraph(
     showOnboarding: Boolean,
     pendingDeepLink: Intent?,
     chatEntryRequestRelay: ChatEntryRequestRelay,
+    grantPermission: String? = null,
     modifier: Modifier = Modifier,
 ) {
     NavHost(
@@ -143,6 +147,9 @@ fun AppNavGraph(
                     // a first-run user has no sessions to deep-link into yet.
                     if (!showOnboarding) {
                         pendingDeepLink?.let { navController.navigateToDeepLink(it, chatEntryRequestRelay) }
+                        if (!grantPermission.isNullOrBlank()) {
+                            navController.navigate(NavRoutes.phoneAccessRoute(grantPermission))
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxSize(),
@@ -195,6 +202,7 @@ fun AppNavGraph(
                 onOpenArchive = { navController.navigate(NavRoutes.CHAT_ARCHIVE) },
                 onOpenRunLimits = { navController.navigate(NavRoutes.SETTINGS_PIPELINES_RUN_LIMITS) },
                 onOpenGenerationSettings = { navController.navigate(NavRoutes.SETTINGS_GENERATION) },
+                onOpenPhoneAccess = { navController.navigate(NavRoutes.phoneAccessRoute()) },
             )
             // Over the chat, the first time it opens after a restore: what is left to do, or *Restored*. Hosted
             // here rather than in ChatHomeScreen, which the instrumented tests draw without Hilt.
@@ -413,6 +421,21 @@ fun AppNavGraph(
             composable(NavRoutes.SETTINGS_PRIVACY_BACKUP) {
                 BackupScreen(onBack = { navController.popBackStack() })
             }
+            composable(
+                route = NavRoutes.SETTINGS_PHONE_ACCESS,
+                arguments = listOf(
+                    navArgument("permission") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                ),
+            ) { entry ->
+                PhoneAccessScreen(
+                    onDone = { navController.popBackStack() },
+                    requestPermission = entry.arguments?.getString("permission"),
+                )
+            }
             composable(NavRoutes.SETTINGS_ABOUT) { entry ->
                 AboutSettingsScreen(viewModel = settingsGraphViewModel(navController, entry), nav = nav)
             }
@@ -617,6 +640,7 @@ private fun settingsNavActions(navController: NavHostController): SettingsNavAct
         navController.navigate(NavRoutes.SETTINGS_BACKGROUND_EXTERNAL_AUTOMATION)
     },
     onOpenRunLimits = { navController.navigate(NavRoutes.SETTINGS_PIPELINES_RUN_LIMITS) },
+    onOpenPhoneAccess = { navController.navigate(NavRoutes.phoneAccessRoute()) },
 )
 
 /** Maps a settings category id to its sub-screen route. */

@@ -54,6 +54,7 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -70,6 +71,8 @@ import app.kawkab.android.presentation.ui.common.RunTerminationAction
 import app.kawkab.android.presentation.ui.common.RunTerminationCopyMapper
 import app.kawkab.android.presentation.ui.common.rememberJournalExportHandlers
 import app.kawkab.android.presentation.ui.common.resolve
+import app.kawkab.android.presentation.ui.phoneaccess.MissingPermissionPrompt
+import app.kawkab.android.presentation.ui.phoneaccess.permissionInThread
 import app.kawkab.design.components.buttons.KnotworkPrimaryButton
 import app.kawkab.design.components.buttons.KnotworkTextButton
 import app.kawkab.design.components.chat.AudioSourceChooserSheet
@@ -121,6 +124,7 @@ import kotlinx.coroutines.withTimeoutOrNull
  *   outcome, where retrying the same turn cannot.
  * @param onOpenGenerationSettings opens Settings → Generation, where the run strip
  *   sends a context-window mismatch.
+ * @param onOpenPhoneAccess opens Phone access, from the card a missing grant shows.
  * @param modifier optional layout modifier applied to the screen root.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -133,6 +137,7 @@ fun ChatHomeScreen(
     onOpenArchive: () -> Unit = {},
     onOpenRunLimits: () -> Unit = {},
     onOpenGenerationSettings: () -> Unit = {},
+    onOpenPhoneAccess: () -> Unit = {},
 ) {
     // Single subscription to the consolidated screen state — the immutable
     // sub-structures (composer, console, pending, thread, model, tokens)
@@ -628,6 +633,15 @@ fun ChatHomeScreen(
             // composer, console strip and run notices, whatever their height.
             snackbarHost = { KnotworkSnackbarHost(hostState = snackbarHostState) },
         )
+        permissionInThread(viewState.messages)?.let { permission ->
+            MissingPermissionPrompt(
+                permission = permission,
+                onOpenList = onOpenPhoneAccess,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(start = 16.dp, end = 16.dp, bottom = 112.dp),
+            )
+        }
         ChatHomeDebugStatePicker(
             expanded = debugPickerExpanded,
             onDismiss = { debugPickerExpanded = false },

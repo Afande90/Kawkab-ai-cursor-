@@ -23,10 +23,12 @@ import app.kawkab.android.domain.assistant.ScreenTextCollector
 import app.kawkab.android.domain.assistant.ScreenTextPolicy
 import app.kawkab.android.domain.engine.LlmInferenceEngine
 import app.kawkab.android.domain.models.AgentOrchestratorState
+import app.kawkab.android.domain.phoneaccess.MissingPermission
 import app.kawkab.android.domain.repositories.PrivacySettings
 import app.kawkab.android.presentation.state.ActiveSessionTracker
 import app.kawkab.android.presentation.state.ChatEntryRequestRelay
 import app.kawkab.android.presentation.ui.MainActivity
+import app.kawkab.android.presentation.ui.phoneaccess.AndroidPhoneAccess
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -65,6 +67,7 @@ class KawkabAssistantSession(
     private lateinit var screenText: TextView
     private lateinit var approve: Button
     private lateinit var deny: Button
+    private lateinit var grant: Button
     private lateinit var screenSwitch: Switch
 
     override fun onCreateContentView(): View = buildPanel()
@@ -112,9 +115,11 @@ class KawkabAssistantSession(
         deny = button(appContext.getString(R.string.assistant_deny), INDIGO)
         approve.visibility = View.GONE
         deny.visibility = View.GONE
+        grant = button(appContext.getString(R.string.phone_access_grant), AMBER)
+        grant.visibility = View.GONE
         val send = button(appContext.getString(R.string.assistant_send), INDIGO)
         val read = button(appContext.getString(R.string.assistant_read_screen), INDIGO)
-        listOf(input, screenSwitch, read, screenText, send, status, approve, deny).forEach {
+        listOf(input, screenSwitch, read, screenText, send, status, approve, deny, grant).forEach {
             root.addView(it, wrap())
         }
         wire(send, read)
@@ -129,6 +134,15 @@ class KawkabAssistantSession(
         }
         deny.setOnClickListener {
             pendingRequestId?.let { requestId -> uiScope.launch { runner.answer(requestId, approved = false) } }
+        }
+        grant.setOnClickListener {
+            val permission = MissingPermission.permissionIn(status.text.toString()) ?: return@setOnClickListener
+            val intent = Intent(appContext, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                putExtra(AndroidPhoneAccess.PERMISSION_EXTRA, permission)
+            }
+            startAssistantActivity(intent)
+            hide()
         }
         uiScope.launch {
             privacy.useScreenText.collect { allowed ->
@@ -195,18 +209,25 @@ class KawkabAssistantSession(
                 status.text = appContext.getString(R.string.assistant_needs_you)
                 approve.visibility = View.VISIBLE
                 deny.visibility = View.VISIBLE
+                grant.visibility = View.GONE
             }
             is AgentOrchestratorState.Completed -> {
                 pendingRequestId = null
                 approve.visibility = View.GONE
                 deny.visibility = View.GONE
                 status.text = state.finalResponse.ifBlank { appContext.getString(R.string.assistant_done) }
+                grant.visibility = if (MissingPermission.permissionIn(status.text.toString()) == null) {
+                    View.GONE
+                } else {
+                    View.VISIBLE
+                }
                 busy = false
             }
             is AgentOrchestratorState.Error -> {
                 pendingRequestId = null
                 approve.visibility = View.GONE
                 deny.visibility = View.GONE
+                grant.visibility = View.GONE
                 status.text = state.message
                 busy = false
             }

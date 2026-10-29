@@ -323,3 +323,11 @@ Old images in the prompt become a text note capped at 100 tokens. The latest ima
 
 Gecko 110M was not measured. EmbeddingGemma stays. PocketClaw's author reports 1–3 seconds to the first chat token and about 5 seconds for images on a Snapdragon 7s Gen 3. Those are their numbers. Unused native libraries already excluded from the APK stay excluded: the desktop Jansi binaries, and the MediaPipe text-generation library the app does not load. No further library was shown to be unused on this machine, so none was newly stripped.
 
+## 2026-10-29 — phone access
+
+Setup does not gain a new pager step. The existing steps already drive every onboarding snapshot, and a new step would change all of them. After the owner finishes setup, the phone-access list is shown, and Continue enters the chat. Skip and Start from scratch still enter the chat immediately. Settings reaches the same list from the privacy screen, so the privacy snapshot stays as it is.
+
+Each item has a status line. A missing answer is off, never hidden. Contacts, phone, calendar, notifications and the microphone each have a one-line reason and a grant button. The accessibility class stays `KawkabAccessibilityService`. The screen explains it in plain words, shows the three-dot menu picture for the Android 13 restricted-settings step, and opens the system accessibility settings. Battery optimisation is requested with the system dialog, and the screen says to allow unrestricted background use on Nothing OS. The default-assistant steps from the earlier assistant work are on the same list.
+
+A call, a text to a name, or a calendar event that is missing a permission returns a sentence naming that permission. The chat and the assistant panel show a card whose Grant button asks for that permission. It does not start the action, and it does not fail with an empty error. The tap rule is unchanged. The biometric check still does not replace the tap.
+

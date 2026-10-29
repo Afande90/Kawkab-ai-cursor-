@@ -24,6 +24,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.currentStateAsState
 import app.kawkab.android.domain.constants.DocumentationLinks
 import app.kawkab.android.presentation.ui.common.openDocumentation
+import app.kawkab.android.presentation.ui.phoneaccess.PhoneAccessScreen
 import app.kawkab.design.R
 import app.kawkab.design.components.buttons.KnotworkPrimaryButton
 import app.kawkab.design.components.buttons.KnotworkTextButton
@@ -65,8 +66,9 @@ import kotlinx.coroutines.flow.Flow
  * collapse the cancel and commit paths into a single dispatch.
  *
  * @param onCompleted Pop onboarding off the back-stack and navigate to the
- * Chat tab. Invoked exactly once when the user taps `Open {scenario}` on step 4,
- * `Skip` on steps 1-3, or `Start from scratch` on the gallery step.
+ * Chat tab. Invoked exactly once when the user taps Continue on the phone-access
+ * list that follows a finished setup, `Skip` on steps 1-3, or `Start from scratch`
+ * on the gallery step.
  * @param onOpenDocument Navigates to the in-app reader for a bundled document. The
  * FAQ link on the Ready step ships in the app, and this is the step where the network
  * may not be set up yet — without a reader the link opened the browser instead.
@@ -91,6 +93,7 @@ fun OnboardingScreen(
     }
     val activity = LocalActivity.current
     var exitConfirmVisible by rememberSaveable { mutableStateOf(value = false) }
+    var showPhoneAccess by rememberSaveable { mutableStateOf(value = false) }
 
     val context = LocalContext.current
     val callbacks = remember(viewModel, context, onOpenDocument) {
@@ -102,7 +105,7 @@ fun OnboardingScreen(
             },
             onFinish = {
                 viewModel.finishOnboarding()
-                onCompleted()
+                showPhoneAccess = true
             },
             onScenarioPick = viewModel::pickScenario,
             onSetUpScenario = viewModel::setUpScenario,
@@ -133,23 +136,27 @@ fun OnboardingScreen(
     // the pager on every canceled swipe.
     PredictiveBackHandler { progress: Flow<androidx.activity.BackEventCompat> ->
         progress.collect { /* observe to keep the handler alive */ }
-        if (state.step == OnboardingStep.Welcome) {
+        if (!showPhoneAccess && state.step == OnboardingStep.Welcome) {
             exitConfirmVisible = true
-        } else {
+        } else if (!showPhoneAccess) {
             viewModel.back()
         }
     }
 
-    OnboardingContent(
-        state = state,
-        callbacks = callbacks,
-        modifier = Modifier
-            .fillMaxSize()
-            .safeDrawingPadding()
-            .testTag(tag = ONBOARDING_ROOT_TEST_TAG),
-    )
+    if (showPhoneAccess) {
+        PhoneAccessScreen(onDone = onCompleted)
+    } else {
+        OnboardingContent(
+            state = state,
+            callbacks = callbacks,
+            modifier = Modifier
+                .fillMaxSize()
+                .safeDrawingPadding()
+                .testTag(tag = ONBOARDING_ROOT_TEST_TAG),
+        )
+    }
 
-    if (exitConfirmVisible) {
+    if (exitConfirmVisible && !showPhoneAccess) {
         AlertDialog(
             onDismissRequest = { exitConfirmVisible = false },
             title = { Text(text = stringResource(R.string.knotwork_onboarding_exit_title)) },

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="phone_access_title">Phone access</string>
+    <string name="phone_access_open">Phone access</string>
+    <string name="phone_access_done">Continue</string>
+    <string name="phone_access_on">On</string>
+    <string name="phone_access_off">Off</string>
+    <string name="phone_access_grant">Grant</string>
+    <string name="phone_access_card">This needs a permission that is still off.</string>
+    <string name="phone_access_reason_contacts">So a name can become a phone number.</string>
+    <string name="phone_access_reason_phone">So Kawkab can place a call after you tap.</string>
+    <string name="phone_access_reason_calendar">So a reminder can be written on the calendar.</string>
+    <string name="phone_access_reason_notifications">So Kawkab can tell you when it needs you.</string>
+    <string name="phone_access_reason_microphone">So you can speak instead of type.</string>
+    <string name="phone_access_reason_accessibility">Kawkab looks at the screen and taps only after you allow this. It stays on this phone.</string>
+    <string name="phone_access_reason_battery">So a request can finish while the screen is off.</string>
+    <string name="phone_access_restricted_title">Allow restricted settings</string>
+    <string name="phone_access_restricted_body">On Android 13 and newer: open App info, tap the menu shown here, then Allow restricted settings. Then turn the accessibility service on.</string>
+    <string name="phone_access_menu_cd">The three-dot menu in App info</string>
+    <string name="phone_access_accessibility_open">Open accessibility settings</string>
+    <string name="phone_access_battery_open">Allow the phone to keep Kawkab running</string>
+    <string name="phone_access_nothing">On Nothing OS, also allow unrestricted background use in the app\'s battery settings, or the phone may stop Kawkab.</string>
+    <string name="phone_access_assistant_title">Default assistant</string>
+    <string name="phone_access_assistant_open">Make Kawkab the assistant</string>
+    <string name="phone_access_assistant_held">Kawkab is already the assistant.</string>
+</resources>

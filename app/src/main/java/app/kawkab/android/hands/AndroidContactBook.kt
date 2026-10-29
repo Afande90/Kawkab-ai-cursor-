@@ -13,9 +13,13 @@ import javax.inject.Singleton
  */
 @Singleton
 class AndroidContactBook @Inject constructor(@ApplicationContext private val context: Context) : ContactBook {
+    override fun canRead(): Boolean = ContextCompat.checkSelfPermission(
+        context,
+        android.Manifest.permission.READ_CONTACTS,
+    ) == PackageManager.PERMISSION_GRANTED
+
     override fun resolve(spoken: String): List<ContactMatch> {
-        val granted = ContextCompat.checkSelfPermission(context, android.Manifest.permission.READ_CONTACTS)
-        if (granted != PackageManager.PERMISSION_GRANTED) return emptyList()
+        if (!canRead()) return emptyList()
         val selection = "${ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME} LIKE ?"
         val cursor = context.contentResolver.query(
             ContactsContract.CommonDataKinds.Phone.CONTENT_URI,

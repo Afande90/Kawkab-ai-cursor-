@@ -1,5 +1,8 @@
 package app.kawkab.android.hands
 
+import app.kawkab.android.domain.phoneaccess.MissingPermission
+import app.kawkab.android.domain.phoneaccess.MissingPermissionCard
+
 /**
  * What the phone can do for the five core commands, plus a screen read and a guarded tap.
  * Android is behind this interface so tests can record the calls.
@@ -47,6 +50,11 @@ data class ContactMatch(val name: String, val phone: String)
 interface ContactBook {
     /** Matches for [spoken], empty when nobody fits. */
     fun resolve(spoken: String): List<ContactMatch>
+
+    /**
+     * True when the book can read contacts. A missing grant is not an empty address book.
+     */
+    fun canRead(): Boolean = true
 }
 
 /**
@@ -61,22 +69,35 @@ object ContactLookup {
      */
     fun numberOrNull(spoken: String, book: ContactBook, failure: (String) -> Unit): String? {
         val trimmed = spoken.trim()
-        if (trimmed.isEmpty()) {
-            failure("Missing contact.")
-            return null
-        }
         val digits = trimmed.filter { it.isDigit() }
-        if (digits.length >= MIN_DIGITS && trimmed.all { it.isDigit() || it == '+' || it == ' ' || it == '-' }) {
-            return trimmed.filter { it.isDigit() || it == '+' }
+        val direct = digits.length >= MIN_DIGITS && trimmed.all { it.isDigit() || it == '+' || it == ' ' || it == '-' }
+        return when {
+            trimmed.isEmpty() -> {
+                failure("Missing contact.")
+                null
+            }
+            direct -> trimmed.filter { it.isDigit() || it == '+' }
+            !book.canRead() -> {
+                failure(MissingPermissionCard(MissingPermission.READ_CONTACTS, "contacts").sentence())
+                null
+            }
+            else -> match(trimmed, book, failure)
         }
+    }
+
+    private fun match(trimmed: String, book: ContactBook, failure: (String) -> Unit): String? {
         val matches = book.resolve(trimmed)
-        if (matches.size == 1) return matches.first().phone
-        if (matches.isEmpty()) {
-            failure("Contact '$trimmed' was not found.")
-            return null
+        return when (matches.size) {
+            1 -> matches.first().phone
+            0 -> {
+                failure("Contact '$trimmed' was not found.")
+                null
+            }
+            else -> {
+                val choices = matches.joinToString { "${it.name} (${it.phone})" }
+                failure("Which '$trimmed'? $choices")
+                null
+            }
         }
-        val choices = matches.joinToString { "${it.name} (${it.phone})" }
-        failure("Which '$trimmed'? $choices")
-        return null
     }
 }

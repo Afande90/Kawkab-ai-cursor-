@@ -6,8 +6,10 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.AlarmClock
 import android.provider.CalendarContract
+import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import app.kawkab.android.accessibility.KawkabAccessibilityService
+import app.kawkab.android.domain.phoneaccess.MissingPermission
 import app.kawkab.android.domain.safety.ActionDenylist
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.TimeZone
@@ -26,6 +28,7 @@ class AndroidPhoneHands @Inject constructor(
 ) : PhoneHands {
 
     override fun placeCall(number: String): String {
+        MissingPermission.card("call_phone", grantedNow(), number)?.let { return it.sentence() }
         val uri = "tel:${Uri.encode(number)}"
         return start(Intent(Intent.ACTION_CALL, uri.toUri()), "Called $number.")
     }
@@ -74,6 +77,7 @@ class AndroidPhoneHands @Inject constructor(
     }
 
     override fun addCalendarEvent(title: String, startEpochMs: Long): String {
+        MissingPermission.card("add_calendar_event", grantedNow())?.let { return it.sentence() }
         val intent = Intent(Intent.ACTION_INSERT).apply {
             data = CalendarContract.Events.CONTENT_URI
             putExtra(CalendarContract.Events.TITLE, title)
@@ -90,6 +94,14 @@ class AndroidPhoneHands @Inject constructor(
         val clicked = KawkabAccessibilityService.tap(text, viewId, confirmed)
         return if (clicked) "Tapped." else "Did not tap. The control is missing, or it still needs a tap."
     }
+
+    private fun grantedNow(): Set<String> = listOf(
+        MissingPermission.CALL_PHONE,
+        MissingPermission.READ_CONTACTS,
+        MissingPermission.WRITE_CALENDAR,
+    ).filter { name ->
+        ContextCompat.checkSelfPermission(context, name) == PackageManager.PERMISSION_GRANTED
+    }.toSet()
 
     private fun start(intent: Intent, success: String): String {
         val blocked = denylist.inspectIntent(intent.`package`, intent.dataString)
