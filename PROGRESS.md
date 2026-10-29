@@ -29,14 +29,15 @@ Dates are calendar dates in Asia/Dubai. The owner asked for commits on `main` an
 
 | Task | Status | Date | Commit |
 |---|---|---|---|
-| 14. User-visible Kawkab name, planet mark, companion card | done | 29 Oct 2026 | `00da5af0` |
-| 15. Performance defaults | done | 29 Oct 2026 | `33687b00` |
+| 14. User-visible Kawkab name, planet mark, companion card | done | 29 Oct 2026 | `1881edde` |
+| 15. Performance defaults | done | 29 Oct 2026 | `a6fba56c` |
 | 16. Kawkab assistant pipeline as the default chat | not started | | |
 | 17. Three-tier routing and the fast path in chat | not started | | |
 | 18. Harder command set, frozen then scored | not started | | |
 | 19. App maps and macros | not started | | |
 | 20. Model candidates, not shipped | not started | | |
 | 20b. System assistant and the Qwen3 1.7B tool-calling score | not started | | |
+| 20c. Small-model harness rules | not started | | |
 | 21. Phone-access setup | not started | | |
 | 22. Close out M1.5 and tag `m1.5` | not started | | |
 
