@@ -5,6 +5,7 @@ import androidx.datastore.preferences.preferencesDataStoreFile
 import app.kawkab.android.data.backup.RestoreLayout
 import app.kawkab.android.data.local.AgentWorkspaceImpl
 import app.kawkab.android.data.local.AttachmentStoreImpl
+import app.kawkab.android.domain.safety.FileActivityLog
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
@@ -108,6 +109,7 @@ class PersistentStorageInventoryGuardTest {
         assertEquals("${AttachmentStoreImpl.ATTACHMENTS_DIR}/", StorageRoot.ATTACHMENTS.plaintextPath)
         assertEquals("${AgentWorkspaceImpl.WORKSPACE_DIR_NAME}/", StorageRoot.WORKSPACE.plaintextPath)
         assertEquals("${RestoreLayout.RESTORE_DIR}/", StorageRoot.RESTORE.plaintextPath)
+        assertEquals(FileActivityLog.FILE_NAME, StorageRoot.ACTIVITY_LOG.plaintextPath)
     }
 
     @Test
@@ -401,6 +403,19 @@ class PersistentStorageInventoryGuardTest {
             archive = emptyList(),
             notArchived = "a note about a download on this phone",
         ),
+
+        /**
+         * The hands activity log, one JSON-lines file. Readable, so it is excluded by name.
+         * The recovery wipe is the locked-database escape and does not delete it.
+         */
+        ACTIVITY_LOG(
+            domain = "file",
+            plaintextPath = "activity-log.jsonl",
+            erasedBy = null,
+            kept = "a private record of hands actions on this install; the locked-database wipe does not clear it",
+            archive = emptyList(),
+            notArchived = "a private action record of this phone; a backup must not copy it",
+        ),
     }
 
     private companion object {
@@ -442,7 +457,7 @@ class PersistentStorageInventoryGuardTest {
         val FILES_DIR_USE = Regex("""\bfilesDir\b""")
 
         /** Names a `filesDir` use must carry: the inventoried directories' production constants. */
-        val FILES_DIR_NAMES = listOf("ATTACHMENTS_DIR", "WORKSPACE_DIR_NAME", "RESTORE_DIR")
+        val FILES_DIR_NAMES = listOf("ATTACHMENTS_DIR", "WORKSPACE_DIR_NAME", "RESTORE_DIR", "FILE_NAME")
 
         /** Every production file that reaches a storage root, by path suffix, with the root. */
         val KNOWN_SITES = mapOf(
@@ -462,6 +477,7 @@ class PersistentStorageInventoryGuardTest {
             "/data/backup/BackupFileSource.kt" to "WORKSPACE and ATTACHMENTS, read for a backup",
             "/data/backup/RestoreLayout.kt" to "RESTORE, and the DATABASE, WORKSPACE, ATTACHMENTS it replaces",
             "/data/backup/StagedDatabasePreparer.kt" to "RESTORE: the staged database, opened once through Room",
+            "/di/SafetyModule.kt" to "ACTIVITY_LOG",
         )
     }
 }

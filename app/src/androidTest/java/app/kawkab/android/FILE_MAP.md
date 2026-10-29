@@ -104,5 +104,6 @@ Only Kotlin files appear inside the generated blocks.
 - `testing/` - The `@DeviceOnlyInstrumentedTest` annotation, which names an instrumented test that cannot produce a meaningful verdict on an emulator.
   - `DeviceOnlyInstrumentedTest.kt` - Marks an instrumented test that **cannot produce a meaningful verdict on an emulator** and is therefore excluded from every automated CI run by name.
 - `tier1/` - Tier 1 emulator harness. Inference is the debug stub engine, so the test never loads a model.
+  - `Tier1FastPathStateTest.kt` - Tier 1 check that a planned message is the row the stub messenger stored.
   - `Tier1StubEngineTest.kt` - Tier 1 emulator harness (spec §12.1).
 <!-- /AUTO-GEN:FILE_MAP -->

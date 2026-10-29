@@ -355,6 +355,8 @@ Only Kotlin files appear inside the generated blocks.
       - `GraphStuckDetectorTest.kt` - Unit tests for `GraphStuckDetector`.
     - `TestGraphExecutionEngine.kt` - Builds a `GraphExecutionEngine` for a test from the flat list of dependencies the test fakes.
     - `TraceHashingTest.kt` - `TraceHashing` is plain SHA-256 over UTF-8 — what a reader of an exported trace recomputes with any tool.
+  - `fastpath/` - Scores the frozen command set against the deterministic grammar, including the constant-parser check.
+    - `CommandFastPathTest.kt` - Scores the frozen command set.
   - `memoryio/` - Tests for the long-term-memory export/import gateway.
     - `MemoryJsonSerializerTest.kt` - Unit tests for `MemoryJsonSerializer` — the serialize → parse round-trip, the provenance / tag fidelity, and the never-throwing failure paths.
     - `MemorySourceJsonTest.kt` - Unit tests for `MemorySourceJson` — the shared `MemorySource` ↔ JSON codec used by both the Room column converter and the memory export file.
@@ -416,6 +418,7 @@ Only Kotlin files appear inside the generated blocks.
     - `ApiKeyRepositoryTest.kt` - Unit tests for the definitions `ApiKeyRepository` carries beside its accessors: `requiredCredential` and `isConfigured`.
   - `safety/` - Unit tests for the tap guard, the denylist, the activity log, macro replay, and habit detection.
     - `HandsSafetyTest.kt` - Tap guard, denylist, activity log, macro replay, and habit detection.
+    - `M1GateTest.kt` - Milestone gates for outbound confirmation, the three denylist layers, and the activity log.
   - `services/` - Tests for the domain service interfaces and their pure helpers.
     - `ChatHistoryCompressionCoordinatorTest.kt` - Unit tests for `ChatHistoryCompressionCoordinator`.
     - `CleartextPolicyTest.kt` - Unit tests for `CleartextPolicy` — the rule that replaced the hand-written IP list in `network_security_config.xml`.
