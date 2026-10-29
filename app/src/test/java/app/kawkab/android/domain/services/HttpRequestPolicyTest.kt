@@ -25,10 +25,10 @@ class HttpRequestPolicyTest {
     }
 
     @Test
-    fun `given POST PUT DELETE when methodRisk then DESTRUCTIVE`() {
-        assertEquals(ToolRisk.DESTRUCTIVE, HttpRequestPolicy.methodRisk("POST"))
-        assertEquals(ToolRisk.DESTRUCTIVE, HttpRequestPolicy.methodRisk("PUT"))
-        assertEquals(ToolRisk.DESTRUCTIVE, HttpRequestPolicy.methodRisk("DELETE"))
+    fun `given POST PUT DELETE when methodRisk then OUTBOUND`() {
+        assertEquals(ToolRisk.OUTBOUND, HttpRequestPolicy.methodRisk("POST"))
+        assertEquals(ToolRisk.OUTBOUND, HttpRequestPolicy.methodRisk("PUT"))
+        assertEquals(ToolRisk.OUTBOUND, HttpRequestPolicy.methodRisk("DELETE"))
     }
 
     @Test

@@ -28,10 +28,58 @@ enum class ToolRisk {
     SENSITIVE,
 
     /**
-     * Tool whose effects are hard or impossible to reverse (sending messages,
-     * deleting files, purchases, system-level mutations). Prompts under every
+     * Tool whose effects are hard or impossible to reverse (local irreversible
+     * edits that are not an outbound action). Prompts under every
      * [ToolApprovalPolicy]; the one control that removes the prompt is the
      * destructive block, and it refuses the call instead of running it.
      */
     DESTRUCTIVE,
+
+    /**
+     * Above [DESTRUCTIVE]. Sending, calling, posting, sharing, paying, submitting,
+     * or deleting the owner's data. Always shows a confirmation card that needs
+     * a tap. No approval policy, per-tool override, or MCP override can quiet it,
+     * and the destructive block does not replace the card with a refusal.
+     */
+    OUTBOUND,
+}
+
+/**
+ * A classified risk ignores a quieter override. Only [ToolRisk.OUTBOUND] has
+ * that floor: a user setting must not let an outbound call run unasked.
+ */
+fun ToolRisk.notQuietedBy(override: ToolRisk?): ToolRisk =
+    if (this == ToolRisk.OUTBOUND) ToolRisk.OUTBOUND else override ?: this
+
+/**
+ * One built-in tool in the classification table.
+ *
+ * @property name Tool name, the same string the executor registers under.
+ * @property risk Strictest tier this tool can take. A `GET` on `http_request` is still sensitive.
+ * @property outboundCapable True when the tool can send, post, pay, share, or delete the owner's data.
+ */
+data class RegisteredTool(val name: String, val risk: ToolRisk, val outboundCapable: Boolean)
+
+/**
+ * Built-in tools and the tier the approval gate uses.
+ * `safety/tool_classification.csv` is the committed copy the CI test checks against [all].
+ */
+object RegisteredTools {
+    /** Every built-in, in a stable order. */
+    val all: List<RegisteredTool> = listOf(
+        RegisteredTool("schedule_task", ToolRisk.SENSITIVE, outboundCapable = false),
+        RegisteredTool("delegate_task", ToolRisk.SENSITIVE, outboundCapable = false),
+        RegisteredTool("search_tool", ToolRisk.READ_ONLY, outboundCapable = false),
+        RegisteredTool("read_file", ToolRisk.READ_ONLY, outboundCapable = false),
+        RegisteredTool("list_files", ToolRisk.READ_ONLY, outboundCapable = false),
+        RegisteredTool("find_files", ToolRisk.READ_ONLY, outboundCapable = false),
+        RegisteredTool("write_file", ToolRisk.SENSITIVE, outboundCapable = false),
+        RegisteredTool("edit_file", ToolRisk.SENSITIVE, outboundCapable = false),
+        RegisteredTool("append_file", ToolRisk.SENSITIVE, outboundCapable = false),
+        RegisteredTool("delete_file", ToolRisk.OUTBOUND, outboundCapable = true),
+        RegisteredTool("http_request", ToolRisk.OUTBOUND, outboundCapable = true),
+    )
+
+    /** Strictest tier registered for [name]. */
+    fun risk(name: String): ToolRisk = all.first { it.name == name }.risk
 }

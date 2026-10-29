@@ -451,6 +451,7 @@ matters.
     - `HitlRequestContextTest.kt` - `label` — the one place that names whose words a request is.
     - `ImageAttachmentCatalogPageSnapshotTest.kt` - Roborazzi snapshot baseline for `ImageAttachmentCatalogContent` in both themes plus a reduced-motion variant.
     - `InterruptedRunCardTest.kt` - Behavioural coverage for `InterruptedRunCard` — the status card the chat stream pins when the session's most recent pipeline run died with its process.
+    - `OutboundConfirmationStateTest.kt` - An outbound card is a tap.
   - `chips/` - chips and pills. The behavioural tests here exist for one reason: colour is never the only signal, so every variant must announce its state.
     - `KnotworkChipsSnapshotTest.kt` - Roborazzi snapshot baseline for `KnotworkChipsCatalogContent` in both themes.
     - `KnotworkChipTest.kt` - Behavioural tests for `KnotworkChip`.

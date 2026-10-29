@@ -27,7 +27,7 @@ object HitlConfirmationState {
      * @return `true` if the Allow CTA should accept taps.
      */
     fun isAllowOnceEnabled(risk: Risk, pendingTypedConfirm: String): Boolean = when (risk) {
-        Risk.Readonly, Risk.Sensitive -> true
+        Risk.Readonly, Risk.Sensitive, Risk.Outbound -> true
         Risk.Destructive -> pendingTypedConfirm.trim().equals(DESTRUCTIVE_CONFIRM_WORD, ignoreCase = true)
     }
 

@@ -469,4 +469,5 @@ private fun riskBorderColor(risk: Risk): Color = when (risk) {
     Risk.Readonly -> KnotworkTheme.extended.riskReadonly
     Risk.Sensitive -> KnotworkTheme.extended.riskSensitive
     Risk.Destructive -> KnotworkTheme.extended.riskDestructive
+    Risk.Outbound -> KnotworkTheme.extended.riskSensitive
 }

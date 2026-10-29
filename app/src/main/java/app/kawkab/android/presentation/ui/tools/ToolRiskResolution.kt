@@ -77,6 +77,7 @@ internal object ToolRiskResolution {
         ToolRisk.READ_ONLY -> BuiltInToolRisk.ReadOnly
         ToolRisk.SENSITIVE -> BuiltInToolRisk.Sensitive
         ToolRisk.DESTRUCTIVE -> BuiltInToolRisk.Destructive
+        ToolRisk.OUTBOUND -> BuiltInToolRisk.Outbound
     }
 
     /** Maps the catalog's UI enum back onto the domain risk level. */
@@ -84,5 +85,6 @@ internal object ToolRiskResolution {
         BuiltInToolRisk.ReadOnly -> ToolRisk.READ_ONLY
         BuiltInToolRisk.Sensitive -> ToolRisk.SENSITIVE
         BuiltInToolRisk.Destructive -> ToolRisk.DESTRUCTIVE
+        BuiltInToolRisk.Outbound -> ToolRisk.OUTBOUND
     }
 }

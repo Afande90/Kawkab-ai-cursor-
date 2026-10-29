@@ -162,3 +162,20 @@ The first full `check` after the Arabic resources landed failed in `:app:lintFul
 
 Checks on 29 Oct 2026: `./gradlew :catalog:recordRoborazziDebug` passed in 1m 28s. `./gradlew :catalog:verifyRoborazziDebug` passed in 1m 17s. `./gradlew check :buildSrc:test` passed in 6m 45s (foss 6056 tests, full 6060, catalog 1036, buildSrc 501, 0 failures). No gate is BLOCKED. The comparison threshold was not changed. GitHub Actions was not run from this machine.
 
+## 2026-10-29 — OUTBOUND risk tier
+
+`ToolRisk.OUTBOUND` sits above `DESTRUCTIVE`. Every approval policy, including "Approve tool calls: Never", still asks. A per-tool or MCP override cannot replace it with a quieter tier (`notQuietedBy`). The destructive block still refuses `DESTRUCTIVE` calls; it does not apply to outbound, because a refusal would remove the confirmation card.
+
+The card is a tap. It does not ask for the destructive word "yes", and it does not offer "always allow". The notification shade does not approve an outbound call; the owner opens the card and taps.
+
+Classified outbound among the tools that exist today:
+
+- `delete_file`, because it deletes the owner's data.
+- `http_request` writes (`POST`, `PUT`, `DELETE`, and a call whose method cannot be parsed). A `GET` stays `SENSITIVE`.
+
+The other built-ins stay on their previous tiers. `safety/tool_classification.csv` is the committed table. `RegisteredTools` is what the repository reads, and `ToolClassificationTest` fails if a registered executor is missing, if the two disagree, or if an outbound-capable tool is not `OUTBOUND`.
+
+These existing tests name the old tier or the old approval table, so they are updated in this same commit: `ToolRepositoryImplTest`, `HttpRequestPolicyTest`, `ToolInvocationGateTest`, and `ApprovalNotificationManagerTest`. The assertions got stricter (outbound still asks, and the shade cannot approve it). No threshold was loosened.
+
+Checks on 29 Oct 2026: `./gradlew check :buildSrc:test` passed in 13m 15s (foss 6059 tests, full 6063, catalog 1037, buildSrc 501, 0 failures). Detekt reported 0 findings. The Roborazzi threshold was not changed. GitHub Actions was not run from this machine. No gate is BLOCKED.
+

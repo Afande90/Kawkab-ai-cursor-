@@ -8,6 +8,7 @@
     <string name="approval_channel_destructive_description">Confirmations for irreversible tool executions (e.g. send, delete, purchase).</string>
     <string name="approval_notification_title_sensitive">Tool execution approval</string>
     <string name="approval_notification_title_destructive">Destructive action requires approval</string>
+    <string name="approval_notification_title_outbound">Outbound action needs your tap</string>
     <string name="approval_notification_text">Agent wants to use %1$s. Allow?</string>
     <string name="approval_notification_big_text">Agent wants to use %1$s with args:\n%2$s</string>
     <string name="approval_notification_waiting_text">Waiting for your approval to use %1$s.</string>

@@ -414,10 +414,10 @@ class ToolRepositoryImplTest {
     }
 
     @Test
-    fun `given builtin delete_file when getRisk then returns DESTRUCTIVE`() = runTest {
+    fun `given builtin delete_file when getRisk then returns OUTBOUND`() = runTest {
         coEvery { mcpClient.getTools() } returns emptyList()
 
-        assertEquals(ToolRisk.DESTRUCTIVE, repository.getRisk("delete_file"))
+        assertEquals(ToolRisk.OUTBOUND, repository.getRisk("delete_file"))
     }
 
     @Test
@@ -429,16 +429,16 @@ class ToolRepositoryImplTest {
     }
 
     @Test
-    fun `given http_request POST when getRisk then returns DESTRUCTIVE`() = runTest {
+    fun `given http_request POST when getRisk then returns OUTBOUND`() = runTest {
         assertEquals(
-            ToolRisk.DESTRUCTIVE,
+            ToolRisk.OUTBOUND,
             repository.getRisk("http_request", """{"method":"POST","url":"https://example.com"}"""),
         )
     }
 
     @Test
-    fun `given http_request with malformed args when getRisk then defaults to DESTRUCTIVE`() = runTest {
-        assertEquals(ToolRisk.DESTRUCTIVE, repository.getRisk("http_request", "not json"))
+    fun `given http_request with malformed args when getRisk then defaults to OUTBOUND`() = runTest {
+        assertEquals(ToolRisk.OUTBOUND, repository.getRisk("http_request", "not json"))
     }
 
     @Test
@@ -523,7 +523,7 @@ class ToolRepositoryImplTest {
 
         assertEquals(ToolRisk.SENSITIVE, tools.getValue("write_file").risk)
         assertEquals(ToolRisk.SENSITIVE, tools.getValue("edit_file").risk)
-        assertEquals(ToolRisk.DESTRUCTIVE, tools.getValue("delete_file").risk)
+        assertEquals(ToolRisk.OUTBOUND, tools.getValue("delete_file").risk)
     }
 
     @Test

@@ -1107,7 +1107,7 @@ effective
 [`ToolRisk`](../app/src/main/java/app/kawkab/android/domain/models/ToolRisk.kt):
 
 ```kotlin
-enum class ToolRisk { READ_ONLY, SENSITIVE, DESTRUCTIVE }
+enum class ToolRisk { READ_ONLY, SENSITIVE, DESTRUCTIVE, OUTBOUND }
 ```
 
 `AgentTool.risk` is informational on the model itself. The single source

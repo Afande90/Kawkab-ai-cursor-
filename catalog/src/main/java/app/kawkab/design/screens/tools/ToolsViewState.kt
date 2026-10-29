@@ -17,7 +17,7 @@ enum class ToolsVisualState {
 }
 
 /** Risk tier surfaced as the outline pill next to a built-in tool name. */
-enum class BuiltInToolRisk { ReadOnly, Sensitive, Destructive }
+enum class BuiltInToolRisk { ReadOnly, Sensitive, Destructive, Outbound }
 
 /** Connection state of one MCP server — drives the leading status dot. */
 enum class McpConnectionState {

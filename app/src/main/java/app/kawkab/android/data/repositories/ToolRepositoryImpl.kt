@@ -5,18 +5,22 @@ import app.kawkab.android.data.mcp.McpConnectionPool
 import app.kawkab.android.data.tools.local.LocalAppFunctionManager
 import app.kawkab.android.data.tools.local.SearchTool
 import app.kawkab.android.data.tools.local.executors.AppendFileExecutor
+import app.kawkab.android.data.tools.local.executors.DelegateTaskExecutor
 import app.kawkab.android.data.tools.local.executors.DeleteFileExecutor
 import app.kawkab.android.data.tools.local.executors.EditFileExecutor
 import app.kawkab.android.data.tools.local.executors.FindFilesExecutor
 import app.kawkab.android.data.tools.local.executors.HttpRequestExecutor
 import app.kawkab.android.data.tools.local.executors.ListFilesExecutor
 import app.kawkab.android.data.tools.local.executors.ReadFileExecutor
+import app.kawkab.android.data.tools.local.executors.ScheduleTaskExecutor
 import app.kawkab.android.data.tools.local.executors.WriteFileExecutor
 import app.kawkab.android.domain.models.AgentTool
 import app.kawkab.android.domain.models.McpServerConfig
+import app.kawkab.android.domain.models.RegisteredTools
 import app.kawkab.android.domain.models.ToolExecutionContext
 import app.kawkab.android.domain.models.ToolRisk
 import app.kawkab.android.domain.models.ToolSource
+import app.kawkab.android.domain.models.notQuietedBy
 import app.kawkab.android.domain.repositories.ApiKeyRepository
 import app.kawkab.android.domain.repositories.LocalToolExecutor
 import app.kawkab.android.domain.repositories.NetworkSettings
@@ -64,7 +68,7 @@ class ToolRepositoryImpl @Inject constructor(
         val availableModels = apiKeyRepository.configuredProviders()
 
         val scheduleTool = AgentTool(
-            name = "schedule_task",
+            name = ScheduleTaskExecutor.TOOL_NAME,
             description = "Schedules a task to be executed by the agent in the background. " +
                 "intervalHours: >0 for periodic, 0 for one-time. " +
                 "delayMinutes: >0 for delayed execution.",
@@ -79,12 +83,12 @@ class ToolRepositoryImpl @Inject constructor(
                   "required": ["prompt"]
                 }
             """.trimIndent(),
-            risk = ToolRisk.SENSITIVE,
+            risk = RegisteredTools.risk(ScheduleTaskExecutor.TOOL_NAME),
         )
 
         val baseTools = mutableListOf(
             scheduleTool,
-            searchTool.asAgentTool().copy(risk = ToolRisk.READ_ONLY),
+            searchTool.asAgentTool().copy(risk = RegisteredTools.risk(SearchTool.TOOL_NAME)),
             workspaceReadTool(
                 name = ReadFileExecutor.TOOL_NAME,
                 description = ReadFileExecutor.DESCRIPTION,
@@ -102,43 +106,42 @@ class ToolRepositoryImpl @Inject constructor(
             ),
             // Mutating workspace tools. write_file / edit_file are SENSITIVE (a
             // scoped, reversible change inside the sandbox); delete_file is
-            // DESTRUCTIVE (irreversible) and always routes through the typed
-            // confirmation path. The risk here is the single source the HITL gate
-            // reads via `getRisk`.
+            // OUTBOUND (it deletes the owner's data) and always stops for a tap.
+            // The risk here is the single source the HITL gate reads via `getRisk`.
             workspaceWriteTool(
                 name = WriteFileExecutor.TOOL_NAME,
                 description = WriteFileExecutor.DESCRIPTION,
                 parameters = WriteFileExecutor.PARAMETERS,
-                risk = ToolRisk.SENSITIVE,
+                risk = RegisteredTools.risk(WriteFileExecutor.TOOL_NAME),
             ),
             workspaceWriteTool(
                 name = EditFileExecutor.TOOL_NAME,
                 description = EditFileExecutor.DESCRIPTION,
                 parameters = EditFileExecutor.PARAMETERS,
-                risk = ToolRisk.SENSITIVE,
+                risk = RegisteredTools.risk(EditFileExecutor.TOOL_NAME),
             ),
             workspaceWriteTool(
                 name = AppendFileExecutor.TOOL_NAME,
                 description = AppendFileExecutor.DESCRIPTION,
                 parameters = AppendFileExecutor.PARAMETERS,
-                risk = ToolRisk.SENSITIVE,
+                risk = RegisteredTools.risk(AppendFileExecutor.TOOL_NAME),
             ),
             workspaceWriteTool(
                 name = DeleteFileExecutor.TOOL_NAME,
                 description = DeleteFileExecutor.DESCRIPTION,
                 parameters = DeleteFileExecutor.PARAMETERS,
-                risk = ToolRisk.DESTRUCTIVE,
+                risk = RegisteredTools.risk(DeleteFileExecutor.TOOL_NAME),
             ),
             // Outbound HTTP. Always present in the built-in set so executeTool and
             // getRisk can route to it, but published to the agent (getAvailableTools)
             // only when the domain allowlist is non-empty. The declared risk here is
             // the conservative maximum for display; the HITL gate resolves the real
-            // per-method risk via getRisk (GET → SENSITIVE, writes → DESTRUCTIVE).
+            // per-method risk via getRisk (GET → SENSITIVE, writes → OUTBOUND).
             AgentTool(
                 name = HttpRequestExecutor.TOOL_NAME,
                 description = HttpRequestExecutor.DESCRIPTION,
                 parameters = HttpRequestExecutor.PARAMETERS,
-                risk = ToolRisk.DESTRUCTIVE,
+                risk = RegisteredTools.risk(HttpRequestExecutor.TOOL_NAME),
             ),
         )
 
@@ -149,7 +152,7 @@ class ToolRepositoryImpl @Inject constructor(
         val modelsString = availableModels.joinToString(", ") { it.id }
         val defaultModel = availableModels.first().id
         val delegateTool = AgentTool(
-            name = "delegate_task",
+            name = DelegateTaskExecutor.TOOL_NAME,
             description = "Delegates a complex or specialized task to an external LLM and returns its " +
                 "answer. ONLY use this tool if you need cloud reasoning.",
             parameters = """
@@ -162,7 +165,7 @@ class ToolRepositoryImpl @Inject constructor(
                   "required": ["taskDescription"]
                 }
             """.trimIndent(),
-            risk = ToolRisk.SENSITIVE,
+            risk = RegisteredTools.risk(DelegateTaskExecutor.TOOL_NAME),
         )
 
         baseTools.add(delegateTool)
@@ -180,7 +183,7 @@ class ToolRepositoryImpl @Inject constructor(
         name = name,
         description = description,
         parameters = parameters,
-        risk = ToolRisk.READ_ONLY,
+        risk = RegisteredTools.risk(name),
     )
 
     /**
@@ -442,7 +445,7 @@ class ToolRepositoryImpl @Inject constructor(
 
         if (localAppFunctionManager.isDiscovered(toolName)) {
             val overrides = toolSettings.toolRiskOverrides.first()
-            return overrides[toolName] ?: ToolRisk.SENSITIVE
+            return ToolRisk.SENSITIVE.notQuietedBy(overrides[toolName])
         }
 
         // The same resolution `executeTool` dispatches with: the risk is the user's
@@ -465,7 +468,7 @@ class ToolRepositoryImpl @Inject constructor(
      */
     private suspend fun mcpRisk(server: ConnectedMcpServer, toolName: String): ToolRisk {
         val key = McpServerRepositoryImpl.mcpToolId(serverUrl = server.config.url, toolName = toolName)
-        return toolSettings.toolRiskOverrides.first()[key] ?: ToolRisk.SENSITIVE
+        return ToolRisk.SENSITIVE.notQuietedBy(toolSettings.toolRiskOverrides.first()[key])
     }
 
     /**
@@ -545,16 +548,16 @@ class ToolRepositoryImpl @Inject constructor(
      * Resolves the per-method risk of an `http_request` call from its [arguments].
      * Parses the `method` field and maps it via [HttpRequestPolicy.methodRisk];
      * a missing, unknown, or malformed method falls back to
-     * [ToolRisk.DESTRUCTIVE] so an unparsable call is gated at the strictest
+     * [ToolRisk.OUTBOUND] so an unparsable call is gated at the strictest
      * level rather than slipping through with a weaker prompt.
      */
     private fun httpRequestRisk(arguments: String): ToolRisk {
         val method = try {
             JSONObject(arguments).optString("method", "GET")
         } catch (e: JSONException) {
-            Timber.w(e, "http_request risk lookup: malformed arguments; defaulting to DESTRUCTIVE")
-            return ToolRisk.DESTRUCTIVE
+            Timber.w(e, "http_request risk lookup: malformed arguments; defaulting to OUTBOUND")
+            return ToolRisk.OUTBOUND
         }
-        return HttpRequestPolicy.methodRisk(method) ?: ToolRisk.DESTRUCTIVE
+        return HttpRequestPolicy.methodRisk(method) ?: ToolRisk.OUTBOUND
     }
 }

@@ -40,6 +40,9 @@ enum class Risk {
 
     /** High-risk tool requiring typed confirmation. */
     Destructive,
+
+    /** Outbound action. Always a tap, and nothing remembers an allow. */
+    Outbound,
 }
 
 /**
@@ -101,6 +104,7 @@ private fun riskColor(risk: Risk): Color = when (risk) {
     Risk.Readonly -> KnotworkTheme.extended.riskReadonly
     Risk.Sensitive -> KnotworkTheme.extended.riskSensitive
     Risk.Destructive -> KnotworkTheme.extended.riskDestructive
+    Risk.Outbound -> KnotworkTheme.extended.riskSensitive
 }
 
 /** Human-readable label rendered inside the pill (also used in `contentDescription`). */
@@ -109,6 +113,7 @@ private val Risk.label: String
         Risk.Readonly -> "Read only"
         Risk.Sensitive -> "Sensitive"
         Risk.Destructive -> "Destructive"
+        Risk.Outbound -> "Outbound"
     }
 
 private val RiskPillHeight = 24.dp

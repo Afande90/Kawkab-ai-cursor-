@@ -50,7 +50,8 @@ import javax.inject.Singleton
  *     request, if there is one — before anything can end the gate early;
  *  2. resolves the effective [ToolRisk] (canonical source: [ToolRepository.getRisk]);
  *  3. hard-denies the call when it is [ToolRisk.DESTRUCTIVE] and the user has
- *     blocked destructive tools in Settings;
+ *     blocked destructive tools in Settings. [ToolRisk.OUTBOUND] is not denied
+ *     this way: it still shows the confirmation card;
  *  4. applies the recorded decision whatever the current policy says — or, when
  *     there is none, raises a HITL approval gate when
  *     `ToolApprovalPolicy.requiresApproval` (or the node's `alwaysConfirm`) says

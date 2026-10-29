@@ -246,6 +246,7 @@
     <string name="knotwork_tools_pill_readonly">للقراءة فقط</string>
     <string name="knotwork_tools_pill_sensitive">حسّاس</string>
     <string name="knotwork_tools_pill_destructive">مدمّر</string>
+    <string name="knotwork_tools_pill_outbound">صادر</string>
     <string name="knotwork_tools_add_form_header">إضافة عنوان خادم MCP جديد</string>
     <string name="knotwork_tools_cleartext_consent_body">الحركة إلى %1$s غير مشفّرة. أي شخص على الشبكة نفسها يستطيع قراءة ما ترسله، بما في ذلك أي رمز يُضبط أدناه. وافق فقط إذا كان هذا العنوان جهازًا تثق به على شبكتك.</string>
     <string name="knotwork_tools_cleartext_consent_action">الموافقة على اتصال غير مشفّر</string>

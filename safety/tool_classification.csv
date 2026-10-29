@@ -1,0 +1,12 @@
+tool_name,risk,outbound_capable
+append_file,SENSITIVE,false
+delegate_task,SENSITIVE,false
+delete_file,OUTBOUND,true
+edit_file,SENSITIVE,false
+find_files,READ_ONLY,false
+http_request,OUTBOUND,true
+list_files,READ_ONLY,false
+read_file,READ_ONLY,false
+schedule_task,SENSITIVE,false
+search_tool,READ_ONLY,false
+write_file,SENSITIVE,false

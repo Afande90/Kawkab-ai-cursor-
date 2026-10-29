@@ -283,6 +283,7 @@ internal object ChatHomePreview {
             Risk.Readonly -> "calendar.read_events"
             Risk.Sensitive -> "calendar.create_event"
             Risk.Destructive -> "calendar.delete_event"
+            Risk.Outbound -> "messages.send"
         }
         // The request above the call is the user's last message, as in the app;
         // the live card has no agent-written summary, so the preview has none

@@ -419,8 +419,8 @@ class HttpRequestExecutor internal constructor(
                 "Supports GET, POST, PUT and DELETE. ONLY domains the user has explicitly added to the " +
                 "allowlist (Settings → Tools → Allowed domains) can be reached; any other host is refused. " +
                 "Public hosts must use https. Never put a stored API key in headers or body — such requests " +
-                "are refused. GET requires confirmation; POST/PUT/DELETE require an explicit destructive-action " +
-                "confirmation."
+                "are refused. GET requires confirmation; POST/PUT/DELETE are outbound and stop for a tap " +
+                "that no setting can skip."
 
         /** JSON-schema of the accepted arguments. */
         val PARAMETERS: String = """

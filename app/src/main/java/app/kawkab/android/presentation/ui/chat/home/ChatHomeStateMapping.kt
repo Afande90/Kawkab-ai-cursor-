@@ -448,11 +448,13 @@ internal fun hitlRow(modelName: String, risk: Risk): ChatHomeMessageRow {
         Risk.Readonly -> "calendar.list_events"
         Risk.Sensitive -> "calendar.create_event"
         Risk.Destructive -> "fs.delete_file"
+        Risk.Outbound -> "messages.send"
     }
     val summary = when (risk) {
         Risk.Readonly -> "Read tomorrow's events from your work calendar."
         Risk.Sensitive -> "Add a 30-minute meeting \"Rollout sync\" to your work calendar tomorrow at 10:00."
         Risk.Destructive -> "Permanently remove /Users/me/old-notes.md (4.2 KB)."
+        Risk.Outbound -> "Send \"running late\" to Ahmad."
     }
     val arguments = when (risk) {
         Risk.Readonly -> mapOf("calendar" to "\"work\"", "range" to "\"tomorrow\"")
@@ -465,6 +467,7 @@ internal fun hitlRow(modelName: String, risk: Risk): ChatHomeMessageRow {
             "path" to "\"/Users/me/old-notes.md\"",
             "recursive" to "false",
         )
+        Risk.Outbound -> mapOf("to" to "\"Ahmad\"", "body" to "\"running late\"")
     }
     return ChatHomeMessageRow(
         id = "a-hitl",

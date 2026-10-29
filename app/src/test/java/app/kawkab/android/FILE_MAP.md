@@ -379,6 +379,7 @@ Only Kotlin files appear inside the generated blocks.
     - `RunTreeContextTest.kt` - Unit coverage for `RunTreeContext`.
     - `RunTreeIdsTest.kt` - `RunTreeIds`: a child run id is derived from its parent, node and visit, and read back.
     - `ToolApprovalPolicyTest.kt` - Unit tests for `ToolApprovalPolicy`.
+    - `ToolClassificationTest.kt` - Every registered local tool is in `safety/tool_classification.csv`, and every outbound-capable tool is `ToolRisk.OUTBOUND`.
     - `TriggerTelemetryTest.kt` - Pins the stable `telemetryKind` strings for every `TriggerCondition` variant.
   - `pipelineio/` - Tests for the pipeline import/export gateway.
     - `CookbookRecipeValidationTest.kt` - Validates the pipeline recipes published in `docs/recipes/`, which [docs/cookbook.md] tells a reader to download and import.

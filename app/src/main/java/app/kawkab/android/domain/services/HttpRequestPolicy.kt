@@ -25,17 +25,16 @@ object HttpRequestPolicy {
 
     /**
      * HTTP methods the tool supports, each mapped to the [ToolRisk] the
-     * Human-in-the-Loop gate should apply. A read (`GET`) is reversible and
-     * scoped → [ToolRisk.SENSITIVE]; a state-changing write (`POST` / `PUT` /
-     * `DELETE`) can have an irreversible remote effect → [ToolRisk.DESTRUCTIVE]
-     * (the typed-confirmation path, also blockable by "block destructive
-     * tools"). Any other method is unsupported and rejected before dispatch.
+     * Human-in-the-Loop gate should apply. A read (`GET`) is scoped →
+     * [ToolRisk.SENSITIVE]. A write (`POST` / `PUT` / `DELETE`) can post,
+     * submit, or upload → [ToolRisk.OUTBOUND], which always stops for a tap.
+     * Any other method is unsupported and rejected before dispatch.
      */
     private val METHOD_RISK: Map<String, ToolRisk> = mapOf(
         "GET" to ToolRisk.SENSITIVE,
-        "POST" to ToolRisk.DESTRUCTIVE,
-        "PUT" to ToolRisk.DESTRUCTIVE,
-        "DELETE" to ToolRisk.DESTRUCTIVE,
+        "POST" to ToolRisk.OUTBOUND,
+        "PUT" to ToolRisk.OUTBOUND,
+        "DELETE" to ToolRisk.OUTBOUND,
     )
 
     /** Methods that carry a request body (the others must not). */

@@ -238,7 +238,7 @@ class ApprovalNotificationManagerTest {
                 post(risk)
 
                 val notification = Shadows.shadowOf(notificationManager()).allNotifications.single()
-                val expected = risk != ToolRisk.DESTRUCTIVE
+                val expected = risk != ToolRisk.DESTRUCTIVE && risk != ToolRisk.OUTBOUND
                 if (notification.approvesFromShade() != expected) {
                     failures += "$surface/$risk: Approve offered=${!expected}, expected=$expected"
                 }

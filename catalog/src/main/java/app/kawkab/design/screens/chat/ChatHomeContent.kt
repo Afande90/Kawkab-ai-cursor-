@@ -1149,7 +1149,7 @@ internal fun Modifier.absorbClicks(): Modifier {
 internal fun allowOnceEnabledFor(content: ChatContent, pendingTypedConfirm: String): Boolean {
     val confirmation = content as? ChatContent.Confirmation ?: return true
     return when (confirmation.model.risk) {
-        Risk.Readonly, Risk.Sensitive -> true
+        Risk.Readonly, Risk.Sensitive, Risk.Outbound -> true
         Risk.Destructive -> pendingTypedConfirm.trim().equals("yes", ignoreCase = true)
     }
 }

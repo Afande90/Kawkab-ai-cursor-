@@ -119,7 +119,7 @@ interface LiteRtRepository {
   was already asked. A denial applies at any risk.
 
 ```kotlin
-enum class ToolRisk { READ_ONLY, SENSITIVE, DESTRUCTIVE }
+enum class ToolRisk { READ_ONLY, SENSITIVE, DESTRUCTIVE, OUTBOUND }
 
 interface Tool {
     val id: String

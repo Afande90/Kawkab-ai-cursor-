@@ -246,7 +246,8 @@ class ToolInvocationGateTest {
                             when (policy) {
                                 ToolApprovalPolicy.AllCalls -> true
                                 ToolApprovalPolicy.SensitiveOrDestructive -> risk != ToolRisk.READ_ONLY
-                                ToolApprovalPolicy.NeverPrompt -> risk == ToolRisk.DESTRUCTIVE
+                                ToolApprovalPolicy.NeverPrompt ->
+                                    risk == ToolRisk.DESTRUCTIVE || risk == ToolRisk.OUTBOUND
                             }
                         val asked = outputs.filterStates<AgentOrchestratorState.WaitingForApproval>().isNotEmpty()
                         if (asked != expectedAsks) failures += "$combo: asked=$asked, expected $expectedAsks"

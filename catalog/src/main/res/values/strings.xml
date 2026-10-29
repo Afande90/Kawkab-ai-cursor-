@@ -368,6 +368,8 @@
     <string name="knotwork_tools_pill_sensitive">Sensitive</string>
     <!-- Outline pill label for a Destructive tool. -->
     <string name="knotwork_tools_pill_destructive">Destructive</string>
+    <!-- Outline pill label for an Outbound tool. Amber, and it always needs a tap. -->
+    <string name="knotwork_tools_pill_outbound">Outbound</string>
     <!-- Add-server form header. -->
     <string name="knotwork_tools_add_form_header">ADD NEW MCP SERVER URL</string>
     <string name="knotwork_tools_cleartext_consent_body">Traffic to %1$s is not encrypted. Anyone on the same network can read what you send, including any token set below. Approve it only if this address is a machine you trust on your own network.</string>

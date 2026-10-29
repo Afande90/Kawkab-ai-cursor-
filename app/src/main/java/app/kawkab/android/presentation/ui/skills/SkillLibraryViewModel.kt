@@ -363,6 +363,7 @@ private fun ToolRisk.toCatalogRisk(): Risk = when (this) {
     ToolRisk.READ_ONLY -> Risk.Readonly
     ToolRisk.SENSITIVE -> Risk.Sensitive
     ToolRisk.DESTRUCTIVE -> Risk.Destructive
+    ToolRisk.OUTBOUND -> Risk.Outbound
 }
 
 internal const val KEY_CHAT = "chat"

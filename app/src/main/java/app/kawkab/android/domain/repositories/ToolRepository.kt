@@ -74,7 +74,7 @@ interface ToolRepository {
      * Most tools have a single static risk and ignore [arguments]. The exception
      * is `http_request`, whose risk depends on the HTTP method carried in the
      * arguments (a read `GET` is [ToolRisk.SENSITIVE]; a state-changing
-     * `POST` / `PUT` / `DELETE` is [ToolRisk.DESTRUCTIVE]). The HITL gate passes
+     * `POST` / `PUT` / `DELETE` is [ToolRisk.OUTBOUND]). The HITL gate passes
      * the resolved argument string so the confirmation strength matches the
      * concrete call; callers that do not have the arguments (or for whom risk is
      * argument-independent) may rely on the empty default.

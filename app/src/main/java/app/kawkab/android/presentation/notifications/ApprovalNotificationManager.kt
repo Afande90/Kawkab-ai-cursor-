@@ -126,14 +126,15 @@ class ApprovalNotificationManager @Inject constructor(
 
         val channelId = when (risk) {
             ToolRisk.DESTRUCTIVE -> NotificationChannels.AGENT_APPROVAL_DESTRUCTIVE
-            ToolRisk.SENSITIVE, ToolRisk.READ_ONLY -> NotificationChannels.AGENT_APPROVAL
+            ToolRisk.OUTBOUND, ToolRisk.SENSITIVE, ToolRisk.READ_ONLY -> NotificationChannels.AGENT_APPROVAL
         }
         val smallIcon = when (risk) {
             ToolRisk.DESTRUCTIVE -> R.drawable.ic_notif_decision
-            ToolRisk.SENSITIVE, ToolRisk.READ_ONLY -> R.drawable.ic_notif_decision
+            ToolRisk.OUTBOUND, ToolRisk.SENSITIVE, ToolRisk.READ_ONLY -> R.drawable.ic_notif_decision
         }
         val title = when (risk) {
             ToolRisk.DESTRUCTIVE -> context.getString(R.string.approval_notification_title_destructive)
+            ToolRisk.OUTBOUND -> context.getString(R.string.approval_notification_title_outbound)
             ToolRisk.SENSITIVE, ToolRisk.READ_ONLY -> context.getString(R.string.approval_notification_title_sensitive)
         }
         val contentText = context.getString(R.string.approval_notification_text, toolName)
@@ -149,7 +150,7 @@ class ApprovalNotificationManager @Inject constructor(
             .setAutoCancel(true)
             .lockScreenVersion(context, channelId, smallIcon, title)
             .addDecisionActions(
-                approvable = risk != ToolRisk.DESTRUCTIVE && shade.whole,
+                approvable = risk != ToolRisk.DESTRUCTIVE && risk != ToolRisk.OUTBOUND && shade.whole,
                 sessionId = sessionId,
                 approveIntent = { decisionPendingIntent(address, ApprovalAction.APPROVE, APPROVE_OFFSET) },
                 denyIntent = decisionPendingIntent(address, ApprovalAction.DENY, DENY_OFFSET),
@@ -197,14 +198,15 @@ class ApprovalNotificationManager @Inject constructor(
 
         val channelId = when (risk) {
             ToolRisk.DESTRUCTIVE -> NotificationChannels.AGENT_APPROVAL_DESTRUCTIVE
-            ToolRisk.SENSITIVE, ToolRisk.READ_ONLY -> NotificationChannels.AGENT_APPROVAL
+            ToolRisk.OUTBOUND, ToolRisk.SENSITIVE, ToolRisk.READ_ONLY -> NotificationChannels.AGENT_APPROVAL
         }
         val smallIcon = when (risk) {
             ToolRisk.DESTRUCTIVE -> R.drawable.ic_notif_decision
-            ToolRisk.SENSITIVE, ToolRisk.READ_ONLY -> R.drawable.ic_notif_decision
+            ToolRisk.OUTBOUND, ToolRisk.SENSITIVE, ToolRisk.READ_ONLY -> R.drawable.ic_notif_decision
         }
         val title = when (risk) {
             ToolRisk.DESTRUCTIVE -> context.getString(R.string.approval_notification_title_destructive)
+            ToolRisk.OUTBOUND -> context.getString(R.string.approval_notification_title_outbound)
             ToolRisk.SENSITIVE, ToolRisk.READ_ONLY -> context.getString(R.string.approval_notification_title_sensitive)
         }
         val contentText = context.getString(R.string.approval_notification_waiting_text, toolName)
@@ -225,7 +227,7 @@ class ApprovalNotificationManager @Inject constructor(
             .setDeleteIntent(decisionPendingIntent(address, ApprovalAction.REPOST, REPOST_OFFSET))
             .lockScreenVersion(context, channelId, smallIcon, title)
             .addDecisionActions(
-                approvable = risk != ToolRisk.DESTRUCTIVE && shade.whole,
+                approvable = risk != ToolRisk.DESTRUCTIVE && risk != ToolRisk.OUTBOUND && shade.whole,
                 sessionId = sessionId,
                 approveIntent = { decisionPendingIntent(address, ApprovalAction.APPROVE, APPROVE_OFFSET) },
                 denyIntent = decisionPendingIntent(address, ApprovalAction.DENY, DENY_OFFSET),
@@ -267,11 +269,13 @@ class ApprovalNotificationManager @Inject constructor(
      * waiting phases so they cannot drift apart.
      *
      * A request that is not approvable from the shade gets a "Review in chat"
-     * deep link in place of Approve. Two kinds are not: [ToolRisk.DESTRUCTIVE],
+     * deep link in place of Approve. Three kinds are not: [ToolRisk.DESTRUCTIVE],
      * because the in-chat card asks for a typed confirmation before a
      * destructive call may run and a notification action cannot collect one;
-     * and a request whose arguments the shade cannot show whole, because an
-     * Approve there would authorise text the user never saw. [approveIntent] is
+     * [ToolRisk.OUTBOUND], because the confirmation is a tap on the card and
+     * the shade must not skip that card; and a request whose arguments the
+     * shade cannot show whole, because an Approve there would authorise text
+     * the user never saw. [approveIntent] is
      * a factory so that no Approve intent is even created for either. Deny is
      * always offered — refusing needs no ceremony.
      *
