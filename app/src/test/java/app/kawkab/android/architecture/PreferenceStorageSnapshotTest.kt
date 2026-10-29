@@ -207,6 +207,7 @@ class PreferenceStorageSnapshotTest {
             "top_p" to "float",
             "trace_retention_max_age_days" to "int",
             "trace_retention_runs_per_session" to "int",
+            "use_screen_text" to "boolean",
             "usage_telemetry_enabled" to "boolean",
             "verbose_memory_logging_enabled" to "boolean",
             "workspace_max_file_size_bytes" to "long",

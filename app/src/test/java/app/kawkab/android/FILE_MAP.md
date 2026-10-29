@@ -264,6 +264,8 @@ Only Kotlin files appear inside the generated blocks.
       - `LocalAppFunctionManagerTest.kt` - Unit tests for `LocalAppFunctionManager`.
       - `SearchToolTest.kt` - Unit tests for `SearchTool`.
 - `domain/` - Tests for the domain layer.
+  - `assistant/` - Tests for screen-text consent, model release, and the unmeasured tool-call scores.
+    - `AssistantPanelTest.kt` - The assistant panel's decisions: screen text, model release, scores, and the tap gate.
   - `backup/` - Backup format contract: key-derivation bounds and the entry-name rule.
     - `BackupEntryNameTest.kt` - `BackupEntryName`: relative file paths in any script pass; every name that could leave the directory it is unpacked into, or hide a character, is refused.
     - `BackupKdfParamsTest.kt` - `BackupKdfParams.isAcceptable`: the writer's parameters and every bound are accepted, one step past any bound is refused.
@@ -358,6 +360,7 @@ Only Kotlin files appear inside the generated blocks.
     - `TestGraphExecutionEngine.kt` - Builds a `GraphExecutionEngine` for a test from the flat list of dependencies the test fakes.
     - `TraceHashingTest.kt` - `TraceHashing` is plain SHA-256 over UTF-8 — what a reader of an exported trace recomputes with any tool.
   - `fastpath/` - Scores the frozen command set against the deterministic grammar, including the constant-parser check.
+    - `ChatTierRouterTest.kt` - The router plans a hands command with no model, and a skill with one text call.
     - `CommandFastPathTest.kt` - Scores the frozen command set.
   - `memoryio/` - Tests for the long-term-memory export/import gateway.
     - `MemoryJsonSerializerTest.kt` - Unit tests for `MemoryJsonSerializer` — the serialize → parse round-trip, the provenance / tag fidelity, and the never-throwing failure paths.
