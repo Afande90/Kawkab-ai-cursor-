@@ -408,21 +408,6 @@ class LiteRTLlmEngine @Inject constructor(
     }
 
     /**
-     * Generates a response stream from the LLM based on the provided prompt.
-     *
-     * @param prompt The input text prompt for the LLM.
-     * @param imagePath Absolute path of an image to send with [prompt], or `null`
-     *   for a text-only generation. When non-`null` the message is built as an
-     *   ordered [Contents] of the image (`Content.ImageFile`) followed by the
-     *   text, which requires the engine to have been initialized with
-     *   `enableVision = true`; the caller (`LiteRtNodeExecutor` via
-     *   `LoadModelUseCase`) guarantees that before issuing an image generation.
-     * @param sampling The sampler and seed to open the conversation with — a
-     *   pipeline run's, recorded with the call — or `null` to open it with the
-     *   user's sampler and a fresh seed (see [userConversationConfig]).
-     * @return A [Flow] of strings representing the generated tokens as they are produced.
-     */
-    /**
      * Loads a GGUF with llama.cpp. Vision and audio stay on Gemma, so a request for either does not load this file.
      */
     private fun openGguf(modelPath: String, enableVision: Boolean, enableAudio: Boolean): Result<Unit, AppError> {
@@ -441,6 +426,21 @@ class LiteRTLlmEngine @Inject constructor(
         return Result.Success(Unit)
     }
 
+    /**
+     * Generates a response stream from the LLM based on the provided prompt.
+     *
+     * @param prompt The input text prompt for the LLM.
+     * @param imagePath Absolute path of an image to send with [prompt], or `null`
+     *   for a text-only generation. When non-`null` the message is built as an
+     *   ordered [Contents] of the image (`Content.ImageFile`) followed by the
+     *   text, which requires the engine to have been initialized with
+     *   `enableVision = true`; the caller (`LiteRtNodeExecutor` via
+     *   `LoadModelUseCase`) guarantees that before issuing an image generation.
+     * @param sampling The sampler and seed to open the conversation with — a
+     *   pipeline run's, recorded with the call — or `null` to open it with the
+     *   user's sampler and a fresh seed (see [userConversationConfig]).
+     * @return A [Flow] of strings representing the generated tokens as they are produced.
+     */
     override fun generateResponseStream(prompt: String, imagePath: String?, sampling: LocalSampling?): Flow<String> {
         if (ggufReady) {
             // Images stay on Gemma. A GGUF brain never sees a picture.
