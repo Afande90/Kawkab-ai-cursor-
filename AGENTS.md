@@ -83,6 +83,9 @@ To know which task is next, read `PROGRESS.md`. Create it in task 1. After each 
 
 ### M1.5: Make it usable (owner-phone findings and proven donors, 29 Oct 2026)
 
+**Order change by the owner, 29 Oct 2026:** after task 17, do task 20b next (the system assistant and the Qwen3 1.7B tool-calling score), including the llama.cpp runtime it needs (Llamatik, task 20). Then continue 18, 19, 20c, 21, 22.
+
+
 The owner installed the `m1` APK on his Nothing Phone (3a). He found these problems:
 - The phone freezes while the model answers.
 - Typed commands do nothing.
