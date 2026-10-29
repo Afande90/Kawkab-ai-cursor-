@@ -131,7 +131,18 @@ Donors:
     - Parakeet TDT 0.6B v3 and Kokoro, as M4 speech candidates (from OnDevice LLM).
 
     Do not ship any of them without a passing licence check.
-21. **Close out M1.5.**
+21. **Phone-access setup.** The `m1` APK never asked for any permission. Add an onboarding step and a "Phone access" screen in Settings, in English and Arabic, with a status line for each item:
+    - **Runtime permissions:** ask for contacts, phone, calendar, notifications and microphone, each with a one-line reason.
+    - **Accessibility service:**
+      - explain it in plain words;
+      - deep-link to `Settings.ACTION_ACCESSIBILITY_SETTINGS`;
+      - show the Android 13+ "Allow restricted settings" step (App info → ⋮), with a picture;
+      - detect when the service is on, and show it as on.
+    - **Battery:** request exemption from battery optimisation, and explain the Nothing OS background setting.
+    - **Missing permissions:** when a command needs a permission that is missing, show a card that leads straight to granting it. The app must never fail silently.
+
+    Add tests for the status detection and for the missing-permission card.
+22. **Close out M1.5.**
     - Run the full check.
     - Update `docs/owner-checks/M1.5.md` with exactly what the owner should try on the phone.
     - Make sure the CI APK artifact exists.
