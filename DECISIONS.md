@@ -211,3 +211,5 @@ The stub messenger is a first-party test app, application id `app.kawkab.stubmes
 
 The activity log file is `activity-log.jsonl` under the app files directory. It is excluded from backup and device transfer by name. The recovery wipe does not delete it: that wipe is the locked-database escape, and the log is a private record of this install. The storage inventory names this root.
 
+The browser editor's tool labels live next to the generator. Adding the twelve hands tools extended that label list and the generator's fixture in the same change. The fixture must name every registered tool or the generator test cannot render. The older display-order checks are unchanged. No threshold was loosened.
+

@@ -110,6 +110,18 @@ object BrowserEditorConstantsGenerator {
         "append_file" to "Append File",
         "delete_file" to "Delete File",
         "http_request" to "HTTP Request",
+        "call_phone" to "Call",
+        "send_sms" to "Send SMS",
+        "send_message" to "Send Message",
+        "set_alarm" to "Set Alarm",
+        "set_timer" to "Set Timer",
+        "open_app" to "Open App",
+        "add_calendar_event" to "Add Calendar Event",
+        "read_screen" to "Read Screen",
+        "submit_tap" to "Submit Tap",
+        "record_macro" to "Record Macro",
+        "macro_send" to "Send Macro",
+        "detect_habits" to "Detect Habits",
     )
 
     /**

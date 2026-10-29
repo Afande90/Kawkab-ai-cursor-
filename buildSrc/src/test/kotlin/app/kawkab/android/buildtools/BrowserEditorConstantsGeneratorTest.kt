@@ -94,6 +94,30 @@ class BrowserEditorConstantsGeneratorTest {
             abstract fun bindDeleteFileExecutor(executor: DeleteFileExecutor): LocalToolExecutor
             @Binds @IntoMap @StringKey(HttpRequestExecutor.TOOL_NAME)
             abstract fun bindHttpRequestExecutor(executor: HttpRequestExecutor): LocalToolExecutor
+            @Binds @IntoMap @StringKey(CallPhoneExecutor.TOOL_NAME)
+            abstract fun bindCallPhoneExecutor(executor: CallPhoneExecutor): LocalToolExecutor
+            @Binds @IntoMap @StringKey(SendSmsExecutor.TOOL_NAME)
+            abstract fun bindSendSmsExecutor(executor: SendSmsExecutor): LocalToolExecutor
+            @Binds @IntoMap @StringKey(SendMessageExecutor.TOOL_NAME)
+            abstract fun bindSendMessageExecutor(executor: SendMessageExecutor): LocalToolExecutor
+            @Binds @IntoMap @StringKey(SetAlarmExecutor.TOOL_NAME)
+            abstract fun bindSetAlarmExecutor(executor: SetAlarmExecutor): LocalToolExecutor
+            @Binds @IntoMap @StringKey(SetTimerExecutor.TOOL_NAME)
+            abstract fun bindSetTimerExecutor(executor: SetTimerExecutor): LocalToolExecutor
+            @Binds @IntoMap @StringKey(OpenAppExecutor.TOOL_NAME)
+            abstract fun bindOpenAppExecutor(executor: OpenAppExecutor): LocalToolExecutor
+            @Binds @IntoMap @StringKey(AddCalendarEventExecutor.TOOL_NAME)
+            abstract fun bindAddCalendarEventExecutor(executor: AddCalendarEventExecutor): LocalToolExecutor
+            @Binds @IntoMap @StringKey(ReadScreenExecutor.TOOL_NAME)
+            abstract fun bindReadScreenExecutor(executor: ReadScreenExecutor): LocalToolExecutor
+            @Binds @IntoMap @StringKey(SubmitTapExecutor.TOOL_NAME)
+            abstract fun bindSubmitTapExecutor(executor: SubmitTapExecutor): LocalToolExecutor
+            @Binds @IntoMap @StringKey(RecordMacroExecutor.TOOL_NAME)
+            abstract fun bindRecordMacroExecutor(executor: RecordMacroExecutor): LocalToolExecutor
+            @Binds @IntoMap @StringKey(MacroSendExecutor.TOOL_NAME)
+            abstract fun bindMacroSendExecutor(executor: MacroSendExecutor): LocalToolExecutor
+            @Binds @IntoMap @StringKey(DetectHabitsExecutor.TOOL_NAME)
+            abstract fun bindDetectHabitsExecutor(executor: DetectHabitsExecutor): LocalToolExecutor
         }
     """.trimIndent()
 
@@ -133,6 +157,18 @@ class BrowserEditorConstantsGeneratorTest {
         "AppendFileExecutor" to toolSource("append_file"),
         "DeleteFileExecutor" to toolSource("delete_file"),
         "HttpRequestExecutor" to toolSource("http_request"),
+        "CallPhoneExecutor" to toolSource("call_phone"),
+        "SendSmsExecutor" to toolSource("send_sms"),
+        "SendMessageExecutor" to toolSource("send_message"),
+        "SetAlarmExecutor" to toolSource("set_alarm"),
+        "SetTimerExecutor" to toolSource("set_timer"),
+        "OpenAppExecutor" to toolSource("open_app"),
+        "AddCalendarEventExecutor" to toolSource("add_calendar_event"),
+        "ReadScreenExecutor" to toolSource("read_screen"),
+        "SubmitTapExecutor" to toolSource("submit_tap"),
+        "RecordMacroExecutor" to toolSource("record_macro"),
+        "MacroSendExecutor" to toolSource("macro_send"),
+        "DetectHabitsExecutor" to toolSource("detect_habits"),
     )
 
     private fun providerSource(key: String) = """
@@ -195,6 +231,18 @@ class BrowserEditorConstantsGeneratorTest {
                 "AppendFileExecutor",
                 "DeleteFileExecutor",
                 "HttpRequestExecutor",
+                "CallPhoneExecutor",
+                "SendSmsExecutor",
+                "SendMessageExecutor",
+                "SetAlarmExecutor",
+                "SetTimerExecutor",
+                "OpenAppExecutor",
+                "AddCalendarEventExecutor",
+                "ReadScreenExecutor",
+                "SubmitTapExecutor",
+                "RecordMacroExecutor",
+                "MacroSendExecutor",
+                "DetectHabitsExecutor",
             ),
             BrowserEditorConstantsGenerator.parseBoundToolClassNames(toolsModuleSource),
         )
@@ -316,10 +364,13 @@ class BrowserEditorConstantsGeneratorTest {
                 "schedule_task", "search_tool", "delegate_task",
                 "read_file", "list_files", "find_files",
                 "write_file", "edit_file", "append_file", "delete_file", "http_request",
+                "call_phone", "send_sms", "send_message", "set_alarm", "set_timer", "open_app",
+                "add_calendar_event", "read_screen", "submit_tap", "record_macro", "macro_send",
+                "detect_habits",
             ),
         )
         // Display order from TOOL_META: search, delegate, schedule, then the read
-        // workspace tools, then the mutating ones, then the outbound HTTP tool.
+        // workspace tools, then the mutating ones, then HTTP, then the hands tools.
         assertTrue(js.indexOf("search_tool") < js.indexOf("delegate_task"))
         assertTrue(js.indexOf("delegate_task") < js.indexOf("schedule_task"))
         assertTrue(js.indexOf("schedule_task") < js.indexOf("read_file"))
@@ -330,6 +381,9 @@ class BrowserEditorConstantsGeneratorTest {
         assertTrue(js.indexOf("edit_file") < js.indexOf("append_file"))
         assertTrue(js.indexOf("append_file") < js.indexOf("delete_file"))
         assertTrue(js.indexOf("delete_file") < js.indexOf("http_request"))
+        assertTrue(js.indexOf("http_request") < js.indexOf("call_phone"))
+        assertTrue(js.indexOf("call_phone") < js.indexOf("send_sms"))
+        assertTrue(js.indexOf("macro_send") < js.indexOf("detect_habits"))
     }
 
     @Test(expected = GenerationException::class)
