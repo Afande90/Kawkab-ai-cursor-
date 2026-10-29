@@ -114,9 +114,9 @@ import app.kawkab.design.screens.settings.SettingsCategoryId
  *        entry surfaces to the single chat home: the deep-link handler posts an
  *        open-thread / new-chat request and the `CHAT_TAB` composable drains it
  *        into `selectThread` / `createNewSessionWithPipeline`.
+ * @param modifier Inset-padding passthrough from [AppShellScaffold].
  * @param grantPermission a runtime permission a command still needs. When set,
  *        the splash lands on Phone access and asks for it.
- * @param modifier Inset-padding passthrough from [AppShellScaffold].
  */
 @Composable
 fun AppNavGraph(
@@ -124,8 +124,8 @@ fun AppNavGraph(
     showOnboarding: Boolean,
     pendingDeepLink: Intent?,
     chatEntryRequestRelay: ChatEntryRequestRelay,
-    grantPermission: String? = null,
     modifier: Modifier = Modifier,
+    grantPermission: String? = null,
 ) {
     NavHost(
         navController = navController,

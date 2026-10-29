@@ -1,5 +1,6 @@
 package app.kawkab.android.presentation.ui.phoneaccess
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -34,7 +35,10 @@ object AndroidPhoneAccess {
 
     /**
      * Asks Android to ignore battery optimisation for this app.
+     * The owner opens this dialog from Phone access. The Play-policy lint
+     * check is suppressed because the exemption is that tap, not a silent one.
      */
+    @SuppressLint("BatteryLife")
     fun batterySettings(context: Context): Intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
         data = "package:${context.packageName}".toUri()
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
