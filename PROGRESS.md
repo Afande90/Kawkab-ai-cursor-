@@ -23,13 +23,15 @@ Dates are calendar dates in Asia/Dubai. The owner asked for commits on `main` an
 | 10. OpenDroid accessibility as `LocalToolExecutor`s, plus the tap guard | done | 29 Oct 2026 | `3d3c03e2` |
 | 11. Denylist (three layers) and the activity log | done | 29 Oct 2026 | `3d3c03e2` |
 | 12. Freeze the command eval set | done | 29 Oct 2026 | `8d7feef9` |
-| 13. Deterministic Arabic/English fast path, stub messenger, M1 gates, tag `m1` | not started | | |
+| 13. Deterministic Arabic/English fast path, stub messenger, M1 gates, tag `m1` | done | 29 Oct 2026 | `3c2a6115` (`eeae2f0e` gates, `9ff6afd3` denylist pattern, `489ee2af` editor labels, `d57e10ab` telephony) |
 
-Next task: 13.
+Next task: none. M1 is tagged. Later milestones are not listed yet.
+
+Task 13, 29 Oct 2026: the fast path matched the frozen test split in full: call 20/20, sms 20/20, alarm 15/15, timer 15/15, open 15/15, calendar 15/15. The gate is 90 percent per type. A constant call parser scores under that gate on every type. `./gradlew check :buildSrc:test --offline` passed in 9m 59s: foss 6070 tests, full 6074, catalog 1037, buildSrc 501, 0 failures. Detekt reported 0 findings. No gate is BLOCKED. GitHub Actions was not run from this machine. The emulator was not run. `Tier1FastPathStateTest` is written for CI and was not executed here. Tag `m1` points at this commit.
 
 Task 12, 29 Oct 2026: `evals/commands/v1/commands.jsonl` is 200 commands. SHA-256 `fe82846673bca8d93f604ef3cb4e8af8c3e6f155ce6acd7987b7cf5d500847d7`, recorded in `DECISIONS.md`. No parser is in that commit. No gate is BLOCKED.
 
-Tasks 10 and 11 share `3d3c03e2` because the accessibility service checks the tap guard and the denylist on the same path. Checks on 29 Oct 2026: `./gradlew :app:ktlintCheck :app:detekt :app:testFossDebugUnitTest --tests app.kawkab.android.domain.safety.HandsSafetyTest --tests app.kawkab.android.domain.models.ToolClassificationTest` passed, and `:app:verifyFileMap` and `:app:verifyDocLinks` passed. A full `check` is still to run before `m1`. No gate is BLOCKED. GitHub Actions was not run from this machine. The emulator was not run.
+Tasks 10 and 11 share `3d3c03e2` because the accessibility service checks the tap guard and the denylist on the same path. Checks on 29 Oct 2026: `./gradlew :app:ktlintCheck :app:detekt :app:testFossDebugUnitTest --tests app.kawkab.android.domain.safety.HandsSafetyTest --tests app.kawkab.android.domain.models.ToolClassificationTest` passed, and `:app:verifyFileMap` and `:app:verifyDocLinks` passed. The full `check` for these tasks is recorded under task 13. No gate is BLOCKED. GitHub Actions was not run from this machine. The emulator was not run.
 
 Task 9 checks, 29 Oct 2026: `./gradlew check :buildSrc:test` passed in 13m 15s: foss 6059 tests, full 6063, catalog 1037, buildSrc 501, 0 failures. Detekt reported 0 findings. The Roborazzi threshold was not changed. GitHub Actions was not run from this machine. No gate is BLOCKED.
 

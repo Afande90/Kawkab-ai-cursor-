@@ -215,3 +215,9 @@ The browser editor's tool labels live next to the generator. Adding the twelve h
 
 Telephony is optional. `CALL_PHONE` would otherwise mark the phone radio as required, and a tablet could not install. The manifest declares `android.hardware.telephony` with `required="false"`. A call still waits for the outbound tap, and it fails if the device has no dialer.
 
+## 2026-10-29 — M1 gates measured
+
+On the frozen test split of 100 commands the fast path matched every line: call 20/20, sms 20/20, alarm 15/15, timer 15/15, open 15/15, calendar 15/15. That is 100 percent per type. The gate stays at 90 percent. A parser that always returns a call to the contact "x" scores under 90 percent on every type. The calibration split is not a gate.
+
+`./gradlew check :buildSrc:test --offline` passed in 9m 59s: foss 6070 tests, full 6074, catalog 1037, buildSrc 501, 0 failures. Detekt reported 0 findings. No gate is BLOCKED. GitHub Actions was not run from this machine. The emulator was not run. The instrumented fast-path test is compiled for CI and was not executed here.
+
