@@ -37,11 +37,13 @@ Dates are calendar dates in Asia/Dubai. The owner asked for commits on `main` an
 | 19. App maps and macros | done | 29 Oct 2026 | `67b3a9f4` |
 | 20. Model candidates, not shipped | done | 29 Oct 2026 | `594bbeea` |
 | 20b. System assistant, Qwen3 1.7B, and the Llamatik runtime | done | 29 Oct 2026 | `cbbcf491` |
-| 20c. Small-model harness rules | not started | | |
+| 20c. Small-model harness rules | done | 29 Oct 2026 | `66779270` |
 | 21. Phone-access setup | not started | | |
 | 22. Close out M1.5 and tag `m1.5` | not started | | |
 
-Next task: 20c. Small-model harness rules from Genie and PocketClaw. Then 21 and 22.
+Next task: 21. Phone-access setup, in English and Arabic, including the default-assistant steps. Then 22.
+
+Task 20c, 29 Oct 2026: a planner line must be one typed decision. The history keeps the goal and the last 9 steps. Four error tiers each have a recovery. The loop stops after 5 failures in a row, or the same unknown tool 3 times. Successful commands are stored on the Growth screen and can be deleted. The same sentence replays with no model when the grammar does not match. The owner line is first on every local and cloud prompt. Stated facts are injected when any are stored. A biometric check is asked only after the tap, and only when the tool tier and the words both say the step is risky. The hands path still completes on the tap, because the card has no fingerprint prompt yet. Older images in the prompt become a text note capped at 100 tokens. Gecko was not measured. EmbeddingGemma stays. PocketClaw's 1–3 second and 5 second figures are theirs. Checks: `:app:ktlintFormat`, `:app:ktlintCheck`, `:app:detekt`, and `:app:testFossDebugUnitTest` for `HarnessRulesTest` (10 tests, 0 failures), `ChatTierRouterTest`, `HandsSafetyTest`, `LiteRtNodeExecutorTest`, and `CloudLlmNodeExecutorTest` passed (`/tmp/gradle-t20c-tests2.log`, BUILD SUCCESSFUL in 10s). `:app:verifyFileMap` and `:app:verifyDocLinks` passed (`/tmp/gradle-t20c-verify.log`, BUILD SUCCESSFUL in 1s). The emulator was not run. No gate is BLOCKED. GitHub Actions was not run.
 
 Task 20, 29 Oct 2026: FunctionGemma 270M, Parakeet TDT 0.6B v3, Kokoro 82M and Qwen3-ASR 0.6B are recorded with the licence on each model card. None is downloaded or in the APK. Parakeet's card lists 25 European languages and does not list Arabic. FunctionGemma was not fine-tuned. Llamatik stays as recorded in task 20b. Checks: `:app:verifyDocLinks` passed (`/tmp/gradle-t20-docs.log`, BUILD SUCCESSFUL in 1s). No application source changed, so the unit suite was not re-run for this notes-only task. No gate is BLOCKED. GitHub Actions was not run. The emulator was not run.
 
