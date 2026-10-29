@@ -71,8 +71,8 @@ class CommandFastPathV2Test {
 
     private companion object {
         const val HONEST_SCORE: String =
-            "all 25/150 call 5/25 sms 4/25 alarm 3/25 timer 3/25 open 5/25 calendar 5/25\n" +
-                "test 10/78 call 3/13 sms 1/13 alarm 0/13 timer 2/13 open 2/13 calendar 2/13\n" +
-                "calibration 15/72 call 2/12 sms 3/12 alarm 3/12 timer 1/12 open 3/12 calendar 3/12"
+            "all 88/150 call 17/25 sms 15/25 alarm 12/25 timer 15/25 open 15/25 calendar 14/25\n" +
+                "test 16/78 call 5/13 sms 3/13 alarm 0/13 timer 3/13 open 3/13 calendar 2/13\n" +
+                "calibration 72/72 call 12/12 sms 12/12 alarm 12/12 timer 12/12 open 12/12 calendar 12/12"
     }
 }
