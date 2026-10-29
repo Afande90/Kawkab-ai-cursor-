@@ -1029,6 +1029,11 @@ val verifySizeSuppressions by tasks.registering(VerifySizeSuppressionsTask::clas
             listOf("app", "catalog", "buildSrc", "tools-probe").forEach { module ->
                 include("$module/*.kts", "$module/src/**/*.kt", "$module/src/**/*.kts")
             }
+            include(
+                "testapps/stubmessenger/*.kts",
+                "testapps/stubmessenger/src/**/*.kt",
+                "testapps/stubmessenger/src/**/*.kts",
+            )
         },
     )
     listFile.set(file("$rootDir/config/detekt/size-suppressions.txt"))
@@ -1077,6 +1082,7 @@ val verifyForbiddenVocabulary by tasks.registering(VerifyForbiddenVocabularyTask
         publicTextTree("$rootDir/catalog"),
         publicTextTree("$rootDir/buildSrc", "src/test/**"),
         publicTextTree("$rootDir/tools-probe"),
+        publicTextTree("$rootDir/testapps"),
         publicTextTree("$rootDir/docs"),
         publicTextTree("$rootDir/.github"),
         publicTextTree("$rootDir/fastlane"),
@@ -1090,6 +1096,7 @@ val verifyForbiddenVocabulary by tasks.registering(VerifyForbiddenVocabularyTask
             "catalog/",
             "buildSrc/",
             "tools-probe/",
+            "testapps/",
             "docs/",
             ".github/",
             "fastlane/",
@@ -2334,6 +2341,7 @@ dependencies {
 // `connectedFossDebugAndroidTest` (used when validating the F-Droid build) also
 // installs the probe instead of timing out on an empty discovery list.
 val toolsProbeInstall = ":tools-probe:installDebug"
+val stubMessengerInstall = ":stubmessenger:installDebug"
 val probeInstallHostTasks = setOf(
     "installFullDebugAndroidTest",
     "connectedFullDebugAndroidTest",
@@ -2341,7 +2349,7 @@ val probeInstallHostTasks = setOf(
     "connectedFossDebugAndroidTest",
 )
 tasks.matching { it.name in probeInstallHostTasks }
-    .configureEach { dependsOn(toolsProbeInstall) }
+    .configureEach { dependsOn(toolsProbeInstall, stubMessengerInstall) }
 
 // ─── R8 keep-rule guard (release builds) ─────────────────────────────────────
 // Some keep rules protect code whose failure mode is invisible to every test the

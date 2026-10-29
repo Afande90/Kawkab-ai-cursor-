@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="stub_app_name">Stub Messenger</string>
+    <string name="stub_contact_hint">Contact</string>
+    <string name="stub_message_hint">Message</string>
+    <string name="stub_send">Send</string>
+</resources>

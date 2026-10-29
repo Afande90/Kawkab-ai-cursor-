@@ -494,6 +494,8 @@ Only Kotlin files appear inside the generated blocks.
     - `TaskQueueManager.kt` - Task queue manager interface.
     - `TextEmbeddingEngine.kt` - Text embedding engine interface.
     - `TraceHashing.kt` - The one hash function of the run trace: SHA-256 over a text's UTF-8 bytes, as lowercase hex.
+  - `fastpath/` - Deterministic Arabic and English grammar for the five core commands. It plans a tool call and does not run it.
+    - `CommandFastPath.kt` - Deterministic Arabic and English grammar for the five core commands.
   - `memoryio/` - JSON serialisation gateway for long-term memory export/import.
     - `MemoryJsonSerializer.kt` - Two-way mapper between the memory table and the portable `schemaVersion: 1` export document (`embeddingProviderId` + `exportedAt` + per-chunk `id`/`text`/`embedding`/`source`/`timestamp`/`isPinned`/`tags` and an optional `history` of earlier versions). Never-throwing `parse` returns `Success / SchemaMismatch / Failure`.
     - `MemorySourceJson.kt` - Single source of truth for the `MemorySource` ↔ JSON wire shape; shared by the Room `source` column converter (`data/local/Converters`) and `MemoryJsonSerializer` so the column encoding and the export file stay byte-identical.

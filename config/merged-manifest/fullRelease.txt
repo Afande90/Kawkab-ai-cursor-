@@ -21,15 +21,20 @@
 uses-permission android.permission.ACCESS_COARSE_LOCATION
 uses-permission android.permission.ACCESS_FINE_LOCATION
 uses-permission android.permission.ACCESS_NETWORK_STATE
+uses-permission android.permission.CALL_PHONE
 uses-permission android.permission.EXECUTE_APP_FUNCTIONS
 uses-permission android.permission.FOREGROUND_SERVICE
 uses-permission android.permission.FOREGROUND_SERVICE_DATA_SYNC
 uses-permission android.permission.FOREGROUND_SERVICE_SPECIAL_USE
 uses-permission android.permission.INTERNET
 uses-permission android.permission.POST_NOTIFICATIONS
+uses-permission android.permission.READ_CALENDAR
+uses-permission android.permission.READ_CONTACTS
 uses-permission android.permission.RECEIVE_BOOT_COMPLETED  # added by androidx.work, not by the app's manifest
 uses-permission android.permission.RECORD_AUDIO
 uses-permission android.permission.WAKE_LOCK
+uses-permission android.permission.WRITE_CALENDAR
+uses-permission com.android.alarm.permission.SET_ALARM
 
 # ── Declared by androidx.core for its non-exported dynamic receivers ─────────
 permission app.kawkab.android.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION protectionLevel=signature
@@ -49,4 +54,11 @@ exported service androidx.work.impl.background.systemjob.SystemJobService permis
 
 # ── Package visibility ───────────────────────────────────────────────────────
 queries intent action=android.app.appfunctions.AppFunctionService
+queries intent action=android.intent.action.CALL
+queries intent action=android.intent.action.DIAL
+queries intent action=android.intent.action.INSERT data=mimeType:vnd.android.cursor.dir/event
+queries intent action=android.intent.action.MAIN category=android.intent.category.LAUNCHER
+queries intent action=android.intent.action.SENDTO data=scheme:smsto
+queries intent action=android.intent.action.SET_ALARM
+queries intent action=android.intent.action.SET_TIMER
 queries intent action=app.kawkab.android.action.RUN_RESULT

@@ -15,7 +15,7 @@
 
    android:allowBackup="false" in the manifest turns cloud backup off, but on some
    devices it does not stop a device-to-device transfer, so both sections exclude
-   every domain from its root. The four plain-text directories are also excluded by
+   every domain from its root. The four plain-text directories, and the hands activity log, are also excluded by
    name, so they stay out whatever a platform makes of the root rule.
    PersistentStorageInventoryGuardTest pins all of this against the storage the code
    actually uses.
@@ -35,6 +35,7 @@
         <exclude domain="file" path="attachments/" />
         <exclude domain="file" path="agent_workspace/" />
         <exclude domain="file" path="restore/" />
+        <exclude domain="file" path="activity-log.jsonl" />
     </cloud-backup>
     <device-transfer>
         <exclude domain="root" path="." />
@@ -50,5 +51,6 @@
         <exclude domain="file" path="attachments/" />
         <exclude domain="file" path="agent_workspace/" />
         <exclude domain="file" path="restore/" />
+        <exclude domain="file" path="activity-log.jsonl" />
     </device-transfer>
 </data-extraction-rules>

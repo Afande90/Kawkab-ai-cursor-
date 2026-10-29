@@ -18,6 +18,7 @@
 
     <queries>
         <package android:name="app.kawkab.android.toolsprobe" />
+        <provider android:authorities="app.kawkab.stubmessenger.inbox" />
     </queries>
 
     <application>

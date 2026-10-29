@@ -45,6 +45,10 @@ Fine-tunes inherit those terms. EmbeddingGemma has no verified model card in thi
 - ARTEMIS / Minitap mobile-use: not ported. No `third_party/mobile_use` tree yet.
 - VoiceStudio (AGPL) and non-commercial material (30u30, CC BY-NC-ND): reference only, never copied.
 
+## M1
+
+No new third-party component. The stub messenger is first-party test code and is not in the foss APK.
+
 ## Development tool, not in the APK
 
 Drawflow 0.0.60 is inlined in `pipeline-editor.html` under the MIT licence. The notice is in `NOTICE`.

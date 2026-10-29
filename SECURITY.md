@@ -38,7 +38,10 @@ The accessibility service can tap the screen, so every tap is checked against
 `safety/package_denylist.txt` plus the on-screen heuristics and the intent
 guard. An outbound action, including a replayed macro, waits for a tap that no
 setting can turn off. The activity log stays in the app's private files. The
-service does not receive `SEND_SMS` or draw over other apps.
+service does not receive `SEND_SMS` or draw over other apps. A call uses
+`CALL_PHONE`, a message is handed to the messaging app, and a calendar event
+is an insert. Each of those waits for a tap. Contacts are read only to turn a
+name into a number for that tap.
 
 ### Local database (at-rest encryption)
 
@@ -746,9 +749,11 @@ An agent that can act on your phone is a fair thing to be wary of. This
 section says what this one can reach, and how to check it without reading the
 code.
 
-The app asks Android for no access to your contacts, messages, call log,
-calendar, photos or files, and it is not an accessibility service, so it cannot
-read or operate other apps' screens. The permissions it does hold are listed,
+The app can place a call, hand a message to the messaging app, read contacts
+to find a number, and add a calendar event. Each of those waits for a tap.
+With the accessibility service on, it can read a screen and tap a control you
+confirm. It does not ask for the SMS send permission, the call log, photos, or
+a file you did not pick. The permissions it does hold are listed,
 with the reason for each, in
 [PRIVACY.md § 5](PRIVACY.md#5-permissions-and-why-they-are-requested); the build
 fails if one is added and nobody records it. The agent's file tools work

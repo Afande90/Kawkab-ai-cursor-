@@ -203,3 +203,11 @@ Checks on 29 Oct 2026: `./gradlew :app:ktlintCheck :app:detekt :app:testFossDebu
 
 This commit does not add a parser. Later changes need a new version. The test split is the only split a gate may score.
 
+## 2026-10-29 — fast path, stub messenger, and the activity-log file
+
+The fast path is a grammar of the command shapes (call, message, alarm, timer, open, calendar) in English, Modern Standard Arabic, and the Sudanese phrases in the frozen set. It is not a model, and it was not fit by editing the eval file. A line it does not know stays null. It plans a tool call. It does not run it: the outbound tap and the denylist still apply.
+
+The stub messenger is a first-party test app, application id `app.kawkab.stubmessenger`, under `testapps/stubmessenger`. It is not in the foss APK. Its send control is tagged `send_button`. Accepted messages are rows in an exported content provider so an instrumented test can read them back. The debug manifest of the agent makes that provider visible. Release manifests do not.
+
+The activity log file is `activity-log.jsonl` under the app files directory. It is excluded from backup and device transfer by name. The recovery wipe does not delete it: that wipe is the locked-database escape, and the log is a private record of this install. The storage inventory names this root.
+

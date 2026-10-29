@@ -384,6 +384,10 @@ it does not list is kept but goes unused. The app opens no connection to do it.
 | Foreground service, wake lock | Keeping a model download or a running pipeline alive while the screen is off | Used only while such work is running |
 | Run at boot | Re-arming your scheduled triggers after a restart, so an automation you set up does not silently stop | Declared by the scheduling library; used only if you created a trigger |
 | Execute app functions | Calling tool functions that other apps on the device expose | Declared, but Android grants it only to privileged system apps — on a normal install it is never granted and nothing uses it |
+| Phone | Place a call you confirmed with a tap | Asked when a call is placed. The call log is not read |
+| Contacts | Turn a name you said into a number for a confirmed call or message | Asked when a call or message needs a contact. The list stays on the phone |
+| Calendar | Read and add an event you confirmed | Asked when an event is added |
+| Set an alarm | Ask the clock to set an alarm or a timer you confirmed | Granted with the install. It does not read existing alarms |
 
 The Wi-Fi network name obtained under the location permission is used on the
 device to decide whether a trigger fires, and never leaves it. Background

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application
+        android:label="@string/stub_app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.StubMessenger">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!--
+            Test double only. Exported so the agent's instrumented test can read
+            the messages this screen stored. It is not part of the foss APK.
+        -->
+        <provider
+            android:name=".InboxProvider"
+            android:authorities="app.kawkab.stubmessenger.inbox"
+            android:exported="true"
+            tools:ignore="ExportedContentProvider" />
+    </application>
+</manifest>

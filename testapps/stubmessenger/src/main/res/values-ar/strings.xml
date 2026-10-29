@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="stub_app_name">رسول تجريبي</string>
+    <string name="stub_contact_hint">جهة الاتصال</string>
+    <string name="stub_message_hint">الرسالة</string>
+    <string name="stub_send">إرسال</string>
+</resources>

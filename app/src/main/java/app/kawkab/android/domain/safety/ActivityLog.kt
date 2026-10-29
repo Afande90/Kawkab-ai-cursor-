@@ -40,6 +40,12 @@ interface ActivityLog {
  * A JSON-lines file under the app's private files directory.
  */
 class FileActivityLog(private val file: File) : ActivityLog {
+    /** The file name under the app files directory. */
+    companion object {
+        /** Private JSON-lines log. Not a directory. */
+        const val FILE_NAME: String = "activity-log.jsonl"
+    }
+
     override fun record(entry: ActivityLogEntry) {
         file.parentFile?.mkdirs()
         file.appendText(encode(entry) + "\n")

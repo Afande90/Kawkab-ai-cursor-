@@ -11,3 +11,5 @@ Measured sizes are bytes on disk in this repository. A row with no file here is 
 | OCR, wake word, speech-to-text | no | not measured | Not in M0 |
 
 M0 proves the plumbing with `StubLlmInferenceEngine` on the debug variant. That stand-in reads no model file. The 5 GB budget is not measured until a brain is on a device.
+
+M1 adds no model file. The typed fast path is a grammar. The Tier 1 stub still reads no model.

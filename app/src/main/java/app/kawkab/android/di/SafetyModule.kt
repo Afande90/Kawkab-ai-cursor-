@@ -58,7 +58,7 @@ abstract class SafetyModule {
         @Provides
         @Singleton
         fun provideActivityLog(@ApplicationContext context: Context): ActivityLog =
-            FileActivityLog(File(context.filesDir, "activity-log.jsonl"))
+            FileActivityLog(File(context.filesDir, FileActivityLog.FILE_NAME))
 
         /** The gate every hands action goes through. */
         @Provides

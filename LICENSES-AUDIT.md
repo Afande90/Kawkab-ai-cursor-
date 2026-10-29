@@ -2,7 +2,9 @@
 
 Date: 28 Oct 2026 (Asia/Dubai).
 
-Scope: every library resolved on `fossReleaseRuntimeClasspath` (391 artifacts after version conflict resolution), plus bundled assets, the `full`-only Crashlytics SDK, models, voices, datasets, and material the spec names as reference-only. No ported file set exists yet.
+Scope: every library resolved on `fossReleaseRuntimeClasspath` (391 artifacts after version conflict resolution), plus bundled assets, the `full`-only Crashlytics SDK, models, voices, datasets, and material the spec names as reference-only.
+
+M1, 29 Oct 2026: no new third-party library. OpenDroid is adapted source and is recorded in the OpenDroid row of this audit. The stub messenger is first-party test code and is not in the foss APK.
 
 How a library row was verified: the licence element of that artifact's Maven POM in the Gradle module cache, unless the POM has none. Those exceptions cite the upstream licence URL or the jar's `META-INF/LICENSE.md` and are listed in `DECISIONS.md`.
 
