@@ -1,0 +1,124 @@
+# Golden run trace — written by GoldenTraceTest, never by hand.
+# Rewrite: ./gradlew :app:testFullDebugUnitTest --tests '*GoldenTraceTest*' -PrecordGoldenTraces
+pipeline: presets/kawkab_assistant
+scenario: default
+about: The default chat: one on-device reply from Kawkab.
+origin: CHAT
+outcome: COMPLETED
+settings: harness defaults
+prompt:
+  | What is the tallest mountain on Earth?
+
+run.create golden pipeline=kawkab_assistant parent=null status=QUEUED origin=CHAT hadImage=false
+    userPrompt:
+      | What is the tallest mountain on Earth?
+run.running golden pipeline=kawkab_assistant graphHash=9608761665aa3ab440a077b4f7321d159339df98585cfd2f3a81dc7d16df3c4d
+driver start
+crash.key active_pipeline_id=kawkab_assistant
+crash.key active_model=Golden Model
+run.header golden seed=20261005 t=0.55 k=17 p=0.85 app=golden (1) runtime=LiteRT-LM golden device=Golden Reference Phone · Android 16
+visit golden kawkab_assistant/input INPUT #1
+state Stage step=1 of=3 INPUT
+trace.console seq=0 run=golden depth=0 NodeExecution
+    message:
+      | ▶ INPUT
+state ConsoleLog run=golden events=1 (= trace.console run=golden seq=0)
+metrics.node INPUT tokens=null
+run.spend golden steps=1 tokens=0
+trace.console seq=1 run=golden depth=0 NodeExecution
+    message:
+      | ✓ INPUT in <ms>ms
+state ConsoleLog run=golden events=2 (= trace.console run=golden seq=1)
+visit golden kawkab_assistant/lite_rt LITE_RT #1
+state Stage step=2 of=3 LITE_RT
+trace.console seq=2 run=golden depth=0 NodeExecution
+    message:
+      | ▶ LITE_RT
+state ConsoleLog run=golden events=3 (= trace.console run=golden seq=2)
+memory.retrieve limit=null threshold=null
+    query:
+      | What is the tallest mountain on Earth?
+trace.console seq=3 run=golden depth=0 MemoryAccess
+    message:
+      | Memory: query='What is the tallest mountain on Earth?' [user prompt] → 2 hits (0.91, 0.74)
+      |   1. [0.91] The user prefers short answers with one example.
+      |   2. [0.74] The user is planning a trip to Lisbon in October.
+state ConsoleLog run=golden events=4 (= trace.console run=golden seq=3)
+memory.used ids=[11, 12]
+trace.memory seq=4 run=golden chunks=[11, 12]
+model.load path=null vision=false audio=false
+model local node=lite_rt call=1 seed=1974857103 t=0.55 k=17 p=0.85 image=none
+    prompt:
+      | [golden prefix] Answer in plain words.
+      | You are Kawkab. You run fully offline on the owner's phone. There is no server. Answer briefly in the user's language (en-US): Sudanese Arabic, Modern Standard Arabic, or English, matching how they wrote. Use the phone tools when the request needs one (search_tool — Looks a topic up in an encyclopedia.
+      | read_file — Reads a file from the agent workspace.
+      | write_file — Writes a file in the agent workspace.
+      | append_file — Appends to a file in the agent workspace.
+      | delete_file — Deletes a file from the agent workspace.): a call, a message, an alarm, a timer, opening an app, or a calendar event. Do not say an action happened unless a tool result says it did. Today is 15 September 2026.
+      |
+      |
+      | --- Original Task ---
+      | What is the tallest mountain on Earth?
+      |
+      | --- Chat History ---
+      | 1. USER: Earlier: what is a golden test?
+      | 2. AGENT: A test that compares output with a recorded reference.
+      |
+      | --- Long-Term Memory ---
+      | 1. The user prefers short answers with one example.
+      | 2. The user is planning a trip to Lisbon in October.
+      |
+      | --- Previous Node Output ---
+      | What is the tallest mountain on Earth?
+      | AGENT: ⏎
+    answer:
+      | Kawkab answer, visit 1.
+state Streaming thinking=1 answering=3
+    text:
+      | Kawkab answer, visit 1.
+metrics.update tokens=4
+modelPerformance.record path=/models/golden-model.litertlm tokens=4 benchmark=false
+trace.model.local seq=5 run=golden lite_rt LITE_RT visit=0 call=0 depth=0 seed=1974857103 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=070f3a2b6b1f output=2d1e0307a2fc
+metrics.node LITE_RT tokens=4
+run.spend golden steps=2 tokens=4
+trace.console seq=6 run=golden depth=0 NodeExecution
+    message:
+      | ✓ LITE_RT in <ms>ms
+state ConsoleLog run=golden events=5 (= trace.console run=golden seq=6)
+trace.node seq=7 run=golden lite_rt LITE_RT depth=0 visit=0 tokens=4 in=a5e1834650ad out=2d1e0307a2fc
+    input:
+      | --- Original Task ---
+      | What is the tallest mountain on Earth?
+      |
+      | --- Chat History ---
+      | 1. USER: Earlier: what is a golden test?
+      | 2. AGENT: A test that compares output with a recorded reference.
+      |
+      | --- Long-Term Memory ---
+      | 1. The user prefers short answers with one example.
+      | 2. The user is planning a trip to Lisbon in October.
+      |
+      | --- Previous Node Output ---
+      | What is the tallest mountain on Earth?
+    output:
+      | Kawkab answer, visit 1.
+state PipelineTrace steps=1 last=LITE_RT depth=0 tokens=4 (= trace.node seq=7)
+state NodeIO lite_rt LITE_RT depth=0 (= trace.node seq=7)
+visit golden kawkab_assistant/output OUTPUT #1
+state Stage step=3 of=3 OUTPUT
+trace.console seq=8 run=golden depth=0 NodeExecution
+    message:
+      | ▶ OUTPUT
+state ConsoleLog run=golden events=6 (= trace.console run=golden seq=8)
+chat.save AGENT final=true model=Golden Model
+    content:
+      | Kawkab answer, visit 1.
+end Completed
+    finalResponse:
+      | Kawkab answer, visit 1.
+metrics.node OUTPUT tokens=null
+run.spend golden steps=3 tokens=4
+trace.flush
+run.finish golden COMPLETED reason=null
+    error:
+      (empty)

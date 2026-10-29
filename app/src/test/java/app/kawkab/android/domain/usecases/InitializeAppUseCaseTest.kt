@@ -1,6 +1,9 @@
 package app.kawkab.android.domain.usecases
 
+import app.kawkab.android.domain.constants.BundledPresetCatalog
 import app.kawkab.android.domain.constants.DefaultPrompts
+import app.kawkab.android.domain.models.NodeModel
+import app.kawkab.android.domain.models.NodeType
 import app.kawkab.android.domain.models.PipelineGraph
 import app.kawkab.android.domain.models.PipelineRun
 import app.kawkab.android.domain.models.PipelineRunStatus
@@ -42,19 +45,19 @@ class InitializeAppUseCaseTest {
     )
 
     @Test
-    fun `invoke seeds from showcase preset and sets it as default on first launch`() = runTest {
-        // Given — first launch, and the bundled showcase preset materialises cleanly.
+    fun `invoke seeds the assistant preset and sets it as default on first launch`() = runTest {
+        // Given — first launch, and the bundled assistant preset materialises cleanly.
         every { settingsRepository.isFirstLaunch } returns flowOf(true)
-        coEvery { loadPipelineFromPresetUseCase(SHOWCASE_PRESET_ID) } returns Result.success(SEEDED_ID)
+        coEvery { loadPipelineFromPresetUseCase(ASSISTANT_PRESET_ID) } returns Result.success(SEEDED_ID)
 
         // When
         useCase()
 
         // Then — the default prompt is persisted, the seed is materialised from
-        // the showcase preset (not the code-level factory), the returned id
+        // the assistant preset (not the code-level factory), the returned id
         // becomes the application default, and first launch is cleared.
         coVerify { settingsRepository.setSystemPromptPrefix(DefaultPrompts.SYSTEM_PROMPT_PREFIX) }
-        coVerify { loadPipelineFromPresetUseCase(SHOWCASE_PRESET_ID) }
+        coVerify { loadPipelineFromPresetUseCase(ASSISTANT_PRESET_ID) }
         coVerify { settingsRepository.setDefaultPipelineId(SEEDED_ID) }
         coVerify { settingsRepository.setFirstLaunch(false) }
         // The factory fallback must not run when the preset loads.
@@ -62,10 +65,10 @@ class InitializeAppUseCaseTest {
     }
 
     @Test
-    fun `invoke falls back to factory pipeline when showcase preset fails`() = runTest {
-        // Given — first launch, but the showcase preset cannot be materialised.
+    fun `invoke falls back to factory pipeline when the assistant preset fails`() = runTest {
+        // Given — first launch, but the assistant preset cannot be materialised.
         every { settingsRepository.isFirstLaunch } returns flowOf(true)
-        coEvery { loadPipelineFromPresetUseCase(SHOWCASE_PRESET_ID) } returns
+        coEvery { loadPipelineFromPresetUseCase(ASSISTANT_PRESET_ID) } returns
             Result.failure(IllegalStateException("missing asset"))
         val savedPipeline = slot<PipelineGraph>()
 
@@ -84,6 +87,7 @@ class InitializeAppUseCaseTest {
     @Test
     fun `invoke should do nothing if not first launch`() = runTest {
         every { settingsRepository.isFirstLaunch } returns flowOf(false)
+        stubUnchangedDefault()
 
         useCase()
 
@@ -99,6 +103,7 @@ class InitializeAppUseCaseTest {
         // Given — NOT a first launch (the first-launch gate must not apply to
         // the skill seed, so upgrading users still receive the bundled set).
         every { settingsRepository.isFirstLaunch } returns flowOf(false)
+        stubUnchangedDefault()
 
         // When
         useCase()
@@ -113,6 +118,7 @@ class InitializeAppUseCaseTest {
         // process, including one suspended on a HITL approval (its in-memory
         // deferred died with the process, so nothing else can settle it).
         every { settingsRepository.isFirstLaunch } returns flowOf(false)
+        stubUnchangedDefault()
         coEvery { pipelineRunRepository.getOrphanedRuns() } returns listOf(
             orphanRun("run-1", PipelineRunStatus.RUNNING),
             orphanRun("run-2", PipelineRunStatus.QUEUED),
@@ -153,7 +159,7 @@ class InitializeAppUseCaseTest {
     fun `invoke sweeps orphaned runs on first launch too`() = runTest {
         // Given — first launch AND an orphaned run (e.g. data restored from backup).
         every { settingsRepository.isFirstLaunch } returns flowOf(true)
-        coEvery { loadPipelineFromPresetUseCase(SHOWCASE_PRESET_ID) } returns Result.success(SEEDED_ID)
+        coEvery { loadPipelineFromPresetUseCase(ASSISTANT_PRESET_ID) } returns Result.success(SEEDED_ID)
         coEvery { pipelineRunRepository.getOrphanedRuns() } returns listOf(
             orphanRun("run-1", PipelineRunStatus.RUNNING),
         )
@@ -175,6 +181,7 @@ class InitializeAppUseCaseTest {
     @Test
     fun `invoke leaves run store untouched when nothing is orphaned`() = runTest {
         every { settingsRepository.isFirstLaunch } returns flowOf(false)
+        stubUnchangedDefault()
         coEvery { pipelineRunRepository.getOrphanedRuns() } returns emptyList()
 
         useCase()
@@ -198,14 +205,56 @@ class InitializeAppUseCaseTest {
         graphContentHash = null,
     )
 
+    /**
+     * A later launch whose default is not the retired companion. The migration
+     * reads the default id and the saved graph, then leaves both alone.
+     */
+    private fun stubUnchangedDefault() {
+        every { settingsRepository.defaultPipelineId } returns flowOf("kept-id")
+        coEvery { pipelineRepository.getPipelineById("kept-id") } returns PipelineGraph(
+            id = "kept-id",
+            name = "Kept",
+            nodes = listOf(
+                NodeModel(id = "answer", type = NodeType.LITE_RT, x = 0f, y = 0f, systemPrompt = "Answer."),
+            ),
+        )
+    }
+
     private companion object {
-        const val SHOWCASE_PRESET_ID = "showcase_full_agent"
+        const val ASSISTANT_PRESET_ID = BundledPresetCatalog.KAWKAB_ASSISTANT_ID
         const val SEEDED_ID = "seeded-pipeline-id"
+    }
+
+    @Test
+    fun `invoke replaces a companion default with the assistant`() = runTest {
+        every { settingsRepository.isFirstLaunch } returns flowOf(false)
+        every { settingsRepository.defaultPipelineId } returns flowOf("companion-id")
+        coEvery { pipelineRepository.getPipelineById("companion-id") } returns PipelineGraph(
+            id = "companion-id",
+            name = "Kawkab",
+            nodes = listOf(
+                NodeModel(
+                    id = "persona",
+                    type = NodeType.LITE_RT,
+                    x = 0f,
+                    y = 0f,
+                    systemPrompt = "You are Mila, the user's warm girlfriend.",
+                ),
+            ),
+        )
+        coEvery { loadPipelineFromPresetUseCase(ASSISTANT_PRESET_ID) } returns Result.success(SEEDED_ID)
+
+        useCase()
+
+        coVerify { loadPipelineFromPresetUseCase(ASSISTANT_PRESET_ID) }
+        coVerify { settingsRepository.setDefaultPipelineId(SEEDED_ID) }
+        coVerify(exactly = 0) { pipelineRepository.savePipeline(any()) }
     }
 
     @Test
     fun `invoke exempts runs parked on a pending interaction from the orphan sweep`() = runTest {
         every { settingsRepository.isFirstLaunch } returns flowOf(false)
+        stubUnchangedDefault()
         coEvery { pendingInteractionRepository.getAllRunIds() } returns setOf("run-parked")
         coEvery { pipelineRunRepository.getOrphanedRuns() } returns listOf(
             orphanRun("run-parked", PipelineRunStatus.WAITING_APPROVAL),

@@ -19,7 +19,7 @@ class OnboardingScenarioCatalogTest {
             listOf(
                 OnboardingScenarioCatalog.ID_STYLED_TRANSLATION,
                 OnboardingScenarioCatalog.ID_SHARE_HANDLER,
-                OnboardingScenarioCatalog.ID_VIRTUAL_COMPANION,
+                OnboardingScenarioCatalog.ID_KAWKAB_ASSISTANT,
             ),
             OnboardingScenarioCatalog.SCENARIOS.map { it.id },
         )
@@ -47,9 +47,9 @@ class OnboardingScenarioCatalogTest {
     }
 
     @Test
-    fun `virtual companion binds no surface`() {
-        val spec = OnboardingScenarioCatalog.byId(OnboardingScenarioCatalog.ID_VIRTUAL_COMPANION)!!
-        assertEquals(OnboardingScenarioCatalog.ID_VIRTUAL_COMPANION, spec.presetId)
+    fun `kawkab assistant binds no surface`() {
+        val spec = OnboardingScenarioCatalog.byId(OnboardingScenarioCatalog.ID_KAWKAB_ASSISTANT)!!
+        assertEquals(OnboardingScenarioCatalog.ID_KAWKAB_ASSISTANT, spec.presetId)
         assertNull(spec.entrySurface)
     }
 

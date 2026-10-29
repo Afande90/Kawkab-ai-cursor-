@@ -24,10 +24,11 @@ import java.io.File
  * [PipelinePresetJsonSerializerTest]: the serializer test pins the
  * round-trip contract using synthetic fixtures, while this test pins the
  * *shipped* artefacts — the curated presets the user sees the first time they
- * open the library (including the comprehensive `showcase_full_agent`, which
- * doubles as the first-launch seed) plus the four internal sub-pipelines it
- * composes. A broken preset would otherwise only surface at runtime on a real
- * device.
+ * open the library (including the Kawkab assistant, which is the first-launch
+ * seed, and the comprehensive `showcase_full_agent`) plus the internal
+ * presets: the four sub-pipelines the showcase composes, and the retired
+ * mood-router companion, which stays loadable by id. A broken preset would
+ * otherwise only surface at runtime on a real device.
  *
  * The assertions per file are intentionally narrow:
  * - the filename set is the promised one (catches typos /
@@ -37,8 +38,8 @@ import java.io.File
  * - every embedded graph passes [PipelineGraph.validate] with zero errors;
  * - every `$VARIABLE` token used in any `systemPrompt` is one of the
  *   registered runtime providers from `di/PromptTemplateModule.kt`;
- * - exactly the composed sub-pipelines are flagged `internal`, and every
- *   user-facing preset declares starter prompts;
+ * - the composed sub-pipelines and the retired companion are flagged `internal`,
+ *   and every user-facing preset declares starter prompts;
  * - every node carries a `nodeConfig` envelope agreeing with its flat type,
  *   every `INTENT_ROUTER`'s declared classes match its outgoing edge labels,
  *   and every `PIPELINE` target resolves to a preset in this same catalogue.
@@ -74,6 +75,7 @@ class PipelinePresetCatalogValidationTest {
         "styled_translation.json",
         "share_handler.json",
         "virtual_companion_mood_router.json",
+        "kawkab_assistant.json",
     )
 
     /**
@@ -95,16 +97,18 @@ class PipelinePresetCatalogValidationTest {
     )
 
     /**
-     * Preset ids that are building blocks of a composed preset rather than
-     * catalogue entries. They are hidden from the picker
-     * (`PipelinePresetRepository.getBundledPresets`) but must stay resolvable
-     * by id, because `showcase_full_agent`'s `PIPELINE` nodes target them.
+     * Preset ids hidden from the first-run picker
+     * (`PipelinePresetRepository.getBundledPresets`) but still resolvable by
+     * id. The four sub-pipelines are composition targets of
+     * `showcase_full_agent`. The mood router is the retired companion demo:
+     * importable, and not offered on first run.
      */
     private val expectedInternalIds: Set<String> = setOf(
         "subtask_clarify",
         "subtask_lookup",
         "subtask_act",
         "subtask_process",
+        "virtual_companion_mood_router",
     )
 
     /**
@@ -212,14 +216,14 @@ class PipelinePresetCatalogValidationTest {
     }
 
     @Test
-    fun `exactly the composed sub-pipelines are flagged internal`() {
+    fun `internal presets are the composed sub-pipelines and the retired companion`() {
         val actual = mutableSetOf<String>()
         forEachBundledFile { file ->
             if (parseAsSuccess(file).preset.isInternal) actual += file.nameWithoutExtension
         }
         assertEquals(
-            "The internal flag hides a preset from the picker — it belongs only on " +
-                "sub-pipelines another preset composes.",
+            "The internal flag hides a preset from the first-run picker. It belongs on " +
+                "a sub-pipeline another preset composes, or on the retired companion demo.",
             expectedInternalIds,
             actual,
         )
@@ -401,6 +405,7 @@ class PipelinePresetCatalogValidationTest {
         "clarify_then_act/lite_rt" to PromptLanguage.USER,
         "cloud_assist/cloud" to PromptLanguage.USER,
         "local_only_qa/lite_rt" to PromptLanguage.USER,
+        "kawkab_assistant/lite_rt" to PromptLanguage.USER,
 
         // Research: the plan is machine-facing, the findings are what OUTPUT forwards.
         "multi_step_research/decomposition" to PromptLanguage.ENGLISH,

@@ -35,6 +35,7 @@ internal object GoldenScenarios {
         ) {
             settings = GoldenSettings(compressedHistory = true)
         },
+        preset("kawkab_assistant", "default", "The default chat: one on-device reply from Kawkab.", MOUNTAIN),
         preset("local_only_qa", "default", "The shortest shipped path: one on-device answer.", MOUNTAIN),
         preset(
             "local_only_qa",
