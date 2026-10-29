@@ -103,6 +103,7 @@ Donors:
     - Enable Multi-Token Prediction only on GPU.
     - Stream every reply.
     - Write the measured time to first token and tokens per second to `MODELS.md` (Tier 2), and add them to the on-phone self-test (Tier 3).
+    - Also try LiteRT-LM's NPU backend, which the owner's Snapdragon 7s Gen 3 has. Pocket LLM (github.com/dineshsoudagar/local-llms-on-android, MIT) runs Gemma 4 on GPU and NPU through LiteRT. Treat NPU as experimental: enable it only if the self-test shows it starts without crashing and is faster than CPU, otherwise keep CPU.
 16. **Kawkab assistant pipeline.** Make it the default for the first chat and for new chats, replacing "Virtual Companion". Its system prompt says:
     - it is Kawkab;
     - it runs fully offline on the owner's phone (no server);
@@ -129,6 +130,8 @@ Donors:
 20. **Model candidates.** Record these in `MODELS.md` and the licence audit:
     - FunctionGemma 270M Mobile Actions, as a candidate tier-2 intent model (fine-tune only if free compute is available);
     - Parakeet TDT 0.6B v3 and Kokoro, as M4 speech candidates (from OnDevice LLM).
+    - **Llamatik** (github.com/ferranpons/Llamatik, MIT), a Kotlin library over llama.cpp with schema-constrained JSON and embeddings, as the candidate runtime for the §5 judge GGUF instead of hand-written JNI;
+    - Qwen3-ASR-0.6B, as an extra M4 speech candidate.
 
     Do not ship any of them without a passing licence check.
 21. **Phone-access setup.** The `m1` APK never asked for any permission. Add an onboarding step and a "Phone access" screen in Settings, in English and Arabic, with a status line for each item:
