@@ -38,6 +38,7 @@ state ConsoleLog run=golden events=3 (= trace.console run=golden seq=2)
 model.load path=null vision=false audio=false
 model local node=node-2 call=1 seed=2036147 t=0.55 k=17 p=0.85 image=none
     prompt:
+      | Owner: the person who uses this phone.
       | [golden prefix] Answer in plain words.
       | You capture shared content into the user's workspace. Read the shared text in your input. Output STRICTLY one JSON object and nothing else, with exactly two string keys. The first key is path and its value is exactly inbox/captures.md. The second key is content: a Markdown block that begins with a newline, then a level-two heading with a short descriptive title for the item, then 3 to 6 concise bullet points capturing the key information, and if the text implies any tasks, a line with the bold text 'Action items:' followed by those tasks as bullets, then a trailing newline. Use only what the input actually says; never invent facts. Write in the user's language (en-US). Output only the JSON object.
       |
@@ -55,7 +56,7 @@ state Streaming thinking=1 answering=3
       | Structure answer, visit 1.
 metrics.update tokens=4
 modelPerformance.record path=/models/golden-model.litertlm tokens=4 benchmark=false
-trace.model.local seq=3 run=golden node-2 LITE_RT visit=0 call=0 depth=0 seed=2036147 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=f162a3e50519 output=e0484f424cd6
+trace.model.local seq=3 run=golden node-2 LITE_RT visit=0 call=0 depth=0 seed=2036147 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=9c88fa3ca13e output=e0484f424cd6
 metrics.node LITE_RT tokens=4
 run.spend golden steps=2 tokens=4
 trace.console seq=4 run=golden depth=0 NodeExecution

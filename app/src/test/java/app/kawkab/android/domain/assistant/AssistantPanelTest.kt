@@ -1,15 +1,15 @@
 package app.kawkab.android.domain.assistant
 
-import app.kawkab.android.domain.engine.executors.ToolInvocationGate
 import app.kawkab.android.domain.fastpath.ChatTierRouter
 import app.kawkab.android.domain.fastpath.PlannedCommand
 import app.kawkab.android.domain.models.AgentOrchestratorState
 import app.kawkab.android.domain.models.ChatSession
 import app.kawkab.android.domain.models.ToolRisk
 import app.kawkab.android.domain.repositories.ChatRepository
+import app.kawkab.android.domain.usecases.PendingSubmissionOutcome
+import app.kawkab.android.domain.usecases.SubmitApprovalDecisionUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.CompletableDeferred
@@ -117,8 +117,8 @@ class AssistantPanelTest {
     fun `a panel command is stored once and still goes through the gate`() = runTest {
         val router = mockk<ChatTierRouter>()
         val chats = mockk<ChatRepository>(relaxed = true)
-        val gate = mockk<ToolInvocationGate>()
-        val runner = AssistantCommandRunner(router, chats, gate)
+        val approvals = mockk<SubmitApprovalDecisionUseCase>()
+        val runner = AssistantCommandRunner(router, chats, approvals)
         coEvery { chats.getSessionById(AssistantCommandRunner.SESSION_ID) } returns null
         val command = PlannedCommand("set_alarm", mapOf("hour" to "6", "minute" to "0"))
         coEvery { router.runCommand(any(), any(), any(), any()) } coAnswers {
@@ -141,7 +141,9 @@ class AssistantPanelTest {
             router.runCommand(AssistantCommandRunner.SESSION_ID, "set an alarm for 6", command, any())
         }
         assertTrue(states.single() is AgentOrchestratorState.WaitingForApproval)
-        every { gate.resumeWithApproval(AssistantCommandRunner.SESSION_ID, "req-1", true) } returns true
+        coEvery {
+            approvals(AssistantCommandRunner.SESSION_ID, "req-1", true)
+        } returns PendingSubmissionOutcome.LiveResumed
         assertTrue(runner.answer("req-1", approved = true))
     }
 

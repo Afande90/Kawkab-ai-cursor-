@@ -38,6 +38,7 @@ state ConsoleLog run=golden events=3 (= trace.console run=golden seq=2)
 model.load path=null vision=false audio=false
 model local node=node-2 call=1 seed=2036147 t=0.55 k=17 p=0.85 image=none
     prompt:
+      | Owner: the person who uses this phone.
       | [golden prefix] Answer in plain words.
       | You translate the user's input text. TARGET: translate into Chilean Spanish (Spanish as actually spoken in Chile). REGISTER: use the everyday, casual register — natural, colloquial Chilean speech. To translate formally instead, replace the previous sentence with: use the official, formal register. To translate into a different language, change the TARGET line. Preserve the meaning, tone and politeness level of the original; keep names, numbers and line breaks. Do not add notes, alternatives or explanations. Output only the translated text.
       |
@@ -54,7 +55,7 @@ state Streaming thinking=1 answering=3
       | Translate answer, visit 1.
 metrics.update tokens=4
 modelPerformance.record path=/models/golden-model.litertlm tokens=4 benchmark=false
-trace.model.local seq=3 run=golden node-2 LITE_RT visit=0 call=0 depth=0 seed=2036147 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=ae05bd05efe4 output=f9a1cd339e14
+trace.model.local seq=3 run=golden node-2 LITE_RT visit=0 call=0 depth=0 seed=2036147 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=2cf54626908a output=f9a1cd339e14
 metrics.node LITE_RT tokens=4
 run.spend golden steps=2 tokens=4
 trace.console seq=4 run=golden depth=0 NodeExecution

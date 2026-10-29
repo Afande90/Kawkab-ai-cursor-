@@ -80,6 +80,8 @@ class LocalInferenceSeamKonsistTest {
             "$JAVA/data/tools/local/SearchTool.kt",
             "$JAVA/domain/engine/NodeInference.kt",
             "$JAVA/domain/engine/RecordingNodeInference.kt",
+            // Tier 3 reads the screen outside a pipeline run, so it is not a recorded node answer.
+            "$JAVA/domain/fastpath/ChatTierRouter.kt",
             "$JAVA/domain/usecases/CompressChatHistoryUseCase.kt",
             "$JAVA/domain/usecases/MemoryCompactionUseCase.kt",
             "$JAVA/domain/usecases/RunBenchmarkUseCase.kt",

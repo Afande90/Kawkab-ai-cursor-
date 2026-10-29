@@ -38,6 +38,7 @@ state ConsoleLog run=golden events=3 (= trace.console run=golden seq=2)
 model.load path=null vision=false audio=false
 model local node=draft call=1 seed=543738389 t=0.55 k=17 p=0.85 image=none
     prompt:
+      | Owner: the person who uses this phone.
       | [golden prefix] Answer in plain words.
       | Draft a short answer to the user's request.
       |
@@ -55,7 +56,7 @@ state Streaming thinking=1 answering=3
       | Draft answer, visit 1.
 metrics.update tokens=4
 modelPerformance.record path=/models/golden-model.litertlm tokens=4 benchmark=false
-trace.model.local seq=3 run=golden draft LITE_RT visit=0 call=0 depth=0 seed=543738389 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=e1125e930707 output=95ef455eab83
+trace.model.local seq=3 run=golden draft LITE_RT visit=0 call=0 depth=0 seed=543738389 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=7e815bb9f573 output=95ef455eab83
 metrics.node LITE_RT tokens=4
 run.spend golden steps=2 tokens=4
 trace.console seq=4 run=golden depth=0 NodeExecution
@@ -122,6 +123,7 @@ state ConsoleLog run=golden events=7 (= trace.console run=golden seq=10)
 model.load path=null vision=false audio=false
 model local node=apology call=1 seed=2092080568 t=0.55 k=17 p=0.85 image=none
     prompt:
+      | Owner: the person who uses this phone.
       | [golden prefix] Answer in plain words.
       | Say plainly that no good answer was found.
       |
@@ -139,7 +141,7 @@ state Streaming thinking=1 answering=3
       | Apologise answer, visit 1.
 metrics.update tokens=4
 modelPerformance.record path=/models/golden-model.litertlm tokens=4 benchmark=false
-trace.model.local seq=11 run=golden apology LITE_RT visit=0 call=0 depth=0 seed=2092080568 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=2e17096f74b5 output=93fbe70fc955
+trace.model.local seq=11 run=golden apology LITE_RT visit=0 call=0 depth=0 seed=2092080568 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=db1bb2970493 output=93fbe70fc955
 metrics.node LITE_RT tokens=4
 run.spend golden steps=4 tokens=8
 trace.console seq=12 run=golden depth=0 NodeExecution

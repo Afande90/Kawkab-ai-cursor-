@@ -131,6 +131,19 @@ class ExportedComponentInventoryTest {
                 Export(".presentation.ui.MainActivity", permission = null),
                 // Share target: must be startable on another app's behalf by the share sheet.
                 Export(".presentation.share.ShareReceiverActivity", permission = null),
+                // The system binds these when Kawkab is the digital assistant.
+                Export(
+                    ".assistant.KawkabVoiceInteractionService",
+                    permission = "android.permission.BIND_VOICE_INTERACTION",
+                ),
+                Export(
+                    ".assistant.KawkabAssistantSessionService",
+                    permission = "android.permission.BIND_VOICE_INTERACTION",
+                ),
+                Export(
+                    ".assistant.KawkabRecognitionService",
+                    permission = "android.permission.BIND_RECOGNITION_SERVICE",
+                ),
                 Export(
                     ".presentation.tile.DutyPipelineTileService",
                     permission = "android.permission.BIND_QUICK_SETTINGS_TILE",

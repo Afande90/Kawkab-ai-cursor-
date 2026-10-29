@@ -38,6 +38,7 @@ state ConsoleLog run=golden events=3 (= trace.console run=golden seq=2)
 model.load path=null vision=false audio=false
 model local node=node-23 call=1 seed=1338736591 t=0.55 k=17 p=0.85 image=none
     prompt:
+      | Owner: the person who uses this phone.
       | [golden prefix] Answer in plain words.
       | You are the intake step of an agent pipeline. You receive the user's message and, sometimes, an attached image.
       |
@@ -66,7 +67,7 @@ state Streaming thinking=1 answering=4
       | Vision intake answer, visit 1.
 metrics.update tokens=5
 modelPerformance.record path=/models/golden-model.litertlm tokens=5 benchmark=false
-trace.model.local seq=3 run=golden node-23 LITE_RT visit=0 call=0 depth=0 seed=1338736591 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=33018892a5d5 output=db994192ae1c
+trace.model.local seq=3 run=golden node-23 LITE_RT visit=0 call=0 depth=0 seed=1338736591 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=92f97aa450d3 output=db994192ae1c
 metrics.node LITE_RT tokens=5
 run.spend golden steps=2 tokens=5
 trace.console seq=4 run=golden depth=0 NodeExecution
@@ -156,6 +157,7 @@ state ConsoleLog run=golden events=7 (= trace.console run=golden seq=10)
 model.load path=null vision=false audio=false
 model local node=node-4 call=1 seed=524897445 t=0.55 k=17 p=0.85 image=none
     prompt:
+      | Owner: the person who uses this phone.
       | [golden prefix] Answer in plain words.
       | You are now in casual-conversation mode: the user's last message is small talk or a simple message that just needs a friendly, direct reply — there is nothing to research and no task to carry out.
       |
@@ -200,7 +202,7 @@ state Streaming thinking=1 answering=4
       | Chat Reply answer, visit 1.
 metrics.update tokens=5
 modelPerformance.record path=/models/golden-model.litertlm tokens=5 benchmark=false
-trace.model.local seq=11 run=golden node-4 LITE_RT visit=0 call=0 depth=0 seed=524897445 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=b005df04d9e6 output=6fb05559b6ef
+trace.model.local seq=11 run=golden node-4 LITE_RT visit=0 call=0 depth=0 seed=524897445 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=a0c175a7f9f3 output=6fb05559b6ef
 metrics.node LITE_RT tokens=5
 run.spend golden steps=4 tokens=10
 trace.console seq=12 run=golden depth=0 NodeExecution

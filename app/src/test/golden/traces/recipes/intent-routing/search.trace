@@ -159,6 +159,7 @@ state ConsoleLog run=golden events=8 (= trace.console run=golden seq=11)
 model.load path=null vision=false audio=false
 model local node=from_search call=1 seed=1276776086 t=0.55 k=17 p=0.85 image=none
     prompt:
+      | Owner: the person who uses this phone.
       | [golden prefix] Answer in plain words.
       | You are given the result of a lookup. Answer the user's question using only that result, in one short paragraph. If the result does not contain the answer, say so.
       |
@@ -185,7 +186,7 @@ state Streaming thinking=1 answering=6
       | Answer from the result answer, visit 1.
 metrics.update tokens=7
 modelPerformance.record path=/models/golden-model.litertlm tokens=7 benchmark=false
-trace.model.local seq=12 run=golden from_search LITE_RT visit=0 call=0 depth=0 seed=1276776086 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=481795d12c4e output=e546676ff592
+trace.model.local seq=12 run=golden from_search LITE_RT visit=0 call=0 depth=0 seed=1276776086 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=276566bee8c6 output=e546676ff592
 metrics.node LITE_RT tokens=7
 run.spend golden steps=4 tokens=7
 trace.console seq=13 run=golden depth=0 NodeExecution

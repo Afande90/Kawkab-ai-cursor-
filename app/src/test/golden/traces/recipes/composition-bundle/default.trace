@@ -38,6 +38,7 @@ state ConsoleLog run=golden events=3 (= trace.console run=golden seq=2)
 model.load path=null vision=false audio=false
 model local node=answer call=1 seed=1628932899 t=0.55 k=17 p=0.85 image=none
     prompt:
+      | Owner: the person who uses this phone.
       | [golden prefix] Answer in plain words.
       | Answer the user's question in one short paragraph. Today is 15 September 2026.
       |
@@ -57,7 +58,7 @@ state Streaming thinking=1 answering=3
       | Answer answer, visit 1.
 metrics.update tokens=4
 modelPerformance.record path=/models/golden-model.litertlm tokens=4 benchmark=false
-trace.model.local seq=3 run=golden answer LITE_RT visit=0 call=0 depth=0 seed=1628932899 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=7b6490effdd4 output=425a98138a5e
+trace.model.local seq=3 run=golden answer LITE_RT visit=0 call=0 depth=0 seed=1628932899 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=8bbf7c4160fe output=425a98138a5e
 metrics.node LITE_RT tokens=4
 run.spend golden steps=2 tokens=4
 trace.console seq=4 run=golden depth=0 NodeExecution
@@ -106,6 +107,7 @@ state ConsoleLog run=golden::tidy_call::0 events=3 (= trace.console run=golden::
 model.load path=null vision=false audio=false
 model local node=tidy call=1 seed=369621817 t=0.55 k=17 p=0.85 image=none
     prompt:
+      | Owner: the person who uses this phone.
       | [golden prefix] Answer in plain words.
       | Rewrite the text you are given as clean prose: fix grammar and punctuation, keep every fact, change nothing else. Reply with the rewritten text only.
       |
@@ -122,7 +124,7 @@ model local node=tidy call=1 seed=369621817 t=0.55 k=17 p=0.85 image=none
       | Tidy answer, visit 1.
 metrics.update tokens=4
 modelPerformance.record path=/models/golden-model.litertlm tokens=4 benchmark=false
-trace.model.local seq=3 run=golden::tidy_call::0 tidy LITE_RT visit=0 call=0 depth=1 seed=369621817 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=95bdaad84427 output=690b4af301a7
+trace.model.local seq=3 run=golden::tidy_call::0 tidy LITE_RT visit=0 call=0 depth=1 seed=369621817 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=dff209854e06 output=690b4af301a7
 metrics.node LITE_RT tokens=4
 run.spend golden steps=4 tokens=8
 trace.console seq=4 run=golden::tidy_call::0 depth=1 NodeExecution

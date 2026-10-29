@@ -125,10 +125,10 @@ class KawkabAssistantSession(
         send.setOnClickListener { sendLine() }
         read.setOnClickListener { readScreen() }
         approve.setOnClickListener {
-            pendingRequestId?.let { runner.answer(it, approved = true) }
+            pendingRequestId?.let { requestId -> uiScope.launch { runner.answer(requestId, approved = true) } }
         }
         deny.setOnClickListener {
-            pendingRequestId?.let { runner.answer(it, approved = false) }
+            pendingRequestId?.let { requestId -> uiScope.launch { runner.answer(requestId, approved = false) } }
         }
         uiScope.launch {
             privacy.useScreenText.collect { allowed ->

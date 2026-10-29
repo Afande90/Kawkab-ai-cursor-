@@ -38,6 +38,7 @@ state ConsoleLog run=golden events=3 (= trace.console run=golden seq=2)
 model.load path=null vision=false audio=false
 model local node=node-23 call=1 seed=1338736591 t=0.55 k=17 p=0.85 image=none
     prompt:
+      | Owner: the person who uses this phone.
       | [golden prefix] Answer in plain words.
       | You are the intake step of an agent pipeline. You receive the user's message and, sometimes, an attached image.
       |
@@ -66,7 +67,7 @@ state Streaming thinking=1 answering=4
       | Vision intake answer, visit 1.
 metrics.update tokens=5
 modelPerformance.record path=/models/golden-model.litertlm tokens=5 benchmark=false
-trace.model.local seq=3 run=golden node-23 LITE_RT visit=0 call=0 depth=0 seed=1338736591 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=ab830d04c893 output=db994192ae1c
+trace.model.local seq=3 run=golden node-23 LITE_RT visit=0 call=0 depth=0 seed=1338736591 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=e9534cda6804 output=db994192ae1c
 metrics.node LITE_RT tokens=5
 run.spend golden steps=2 tokens=5
 trace.console seq=4 run=golden depth=0 NodeExecution
@@ -656,6 +657,7 @@ state ConsoleLog run=golden::node-21::0 events=3 (= trace.console run=golden::no
 model.load path=null vision=false audio=false
 model local node=node-2 call=1 seed=846925822 t=0.55 k=17 p=0.85 image=none
     prompt:
+      | Owner: the person who uses this phone.
       | [golden prefix] Answer in plain words.
       | You are completing ONE subtask from a larger plan. It is a reasoning, writing, transformation, calculation or composition step — everything it needs is already available to you; you are not searching for facts, using tools, or asking the user.
       |
@@ -701,7 +703,7 @@ model local node=node-2 call=1 seed=846925822 t=0.55 k=17 p=0.85 image=none
       | Process answer, visit 1.
 metrics.update tokens=4
 modelPerformance.record path=/models/golden-model.litertlm tokens=4 benchmark=false
-trace.model.local seq=3 run=golden::node-21::0 node-2 LITE_RT visit=0 call=0 depth=1 seed=846925822 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=b88c961e29c4 output=529c888e15af
+trace.model.local seq=3 run=golden::node-21::0 node-2 LITE_RT visit=0 call=0 depth=1 seed=846925822 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=00e5085b59df output=529c888e15af
 metrics.node LITE_RT tokens=4
 run.spend golden steps=12 tokens=9
 trace.console seq=4 run=golden::node-21::0 depth=1 NodeExecution
@@ -901,6 +903,7 @@ state ConsoleLog run=golden::node-18::0 events=3 (= trace.console run=golden::no
 model.load path=null vision=false audio=false
 model local node=node-2 call=1 seed=1997039373 t=0.55 k=17 p=0.85 image=none
     prompt:
+      | Owner: the person who uses this phone.
       | [golden prefix] Answer in plain words.
       | The input is a single subtask from a task plan, possibly wrapped in workflow instructions. It has been routed here because it needs a factual lookup. Turn it into a Wikipedia search term for the lookup that runs in the very next step. Your output becomes the search term.
       |
@@ -951,7 +954,7 @@ model local node=node-2 call=1 seed=1997039373 t=0.55 k=17 p=0.85 image=none
       | Subtask Query Builder answer, visit 1.
 metrics.update tokens=6
 modelPerformance.record path=/models/golden-model.litertlm tokens=6 benchmark=false
-trace.model.local seq=3 run=golden::node-18::0 node-2 LITE_RT visit=0 call=0 depth=1 seed=1997039373 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=60b3383df059 output=9c8b5f7dbee6
+trace.model.local seq=3 run=golden::node-18::0 node-2 LITE_RT visit=0 call=0 depth=1 seed=1997039373 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=a59691bc177f output=9c8b5f7dbee6
 metrics.node LITE_RT tokens=6
 run.spend golden steps=17 tokens=15
 trace.console seq=4 run=golden::node-18::0 depth=1 NodeExecution

@@ -49,6 +49,7 @@ trace.memory seq=4 run=golden chunks=[11, 12]
 model.load path=null vision=false audio=false
 model local node=lite_rt call=1 seed=1974857103 t=0.55 k=17 p=0.85 image=none
     prompt:
+      | Owner: the person who uses this phone.
       | [golden prefix] Answer in plain words.
       | You are Kawkab. You run fully offline on the owner's phone. There is no server. Answer briefly in the user's language (en-US): Sudanese Arabic, Modern Standard Arabic, or English, matching how they wrote. Use the phone tools when the request needs one (search_tool — Looks a topic up in an encyclopedia.
       | read_file — Reads a file from the agent workspace.
@@ -78,7 +79,7 @@ state Streaming thinking=1 answering=3
       | Kawkab answer, visit 1.
 metrics.update tokens=4
 modelPerformance.record path=/models/golden-model.litertlm tokens=4 benchmark=false
-trace.model.local seq=5 run=golden lite_rt LITE_RT visit=0 call=0 depth=0 seed=1974857103 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=070f3a2b6b1f output=2d1e0307a2fc
+trace.model.local seq=5 run=golden lite_rt LITE_RT visit=0 call=0 depth=0 seed=1974857103 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=85d84b9ec3c1 output=2d1e0307a2fc
 metrics.node LITE_RT tokens=4
 run.spend golden steps=2 tokens=4
 trace.console seq=6 run=golden depth=0 NodeExecution

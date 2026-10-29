@@ -88,6 +88,7 @@ state ConsoleLog run=golden events=5 (= trace.console run=golden seq=6)
 model.load path=null vision=false audio=false
 model local node=answer call=1 seed=1628932899 t=0.55 k=17 p=0.85 image=none
     prompt:
+      | Owner: the person who uses this phone.
       | [golden prefix] Answer in plain words.
       | You are a concise assistant running on Golden Model. Today is 15 September 2026. Answer the user's question directly in one short paragraph.
       |
@@ -107,7 +108,7 @@ state Streaming thinking=1 answering=3
       | Answer answer, visit 1.
 metrics.update tokens=4
 modelPerformance.record path=/models/golden-model.litertlm tokens=4 benchmark=false
-trace.model.local seq=7 run=golden answer LITE_RT visit=0 call=0 depth=0 seed=1628932899 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=ed6d3a0acaf5 output=425a98138a5e
+trace.model.local seq=7 run=golden answer LITE_RT visit=0 call=0 depth=0 seed=1628932899 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=9db25d0fc9d2 output=425a98138a5e
 metrics.node LITE_RT tokens=4
 run.spend golden steps=3 tokens=4
 trace.console seq=8 run=golden depth=0 NodeExecution

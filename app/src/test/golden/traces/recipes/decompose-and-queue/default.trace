@@ -99,6 +99,7 @@ state ConsoleLog run=golden events=7 (= trace.console run=golden seq=9)
 model.load path=null vision=false audio=false
 model local node=work call=1 seed=175593264 t=0.55 k=17 p=0.85 image=none
     prompt:
+      | Owner: the person who uses this phone.
       | [golden prefix] Answer in plain words.
       | You are given one subtask from a larger task. Carry out that subtask and reply with its result only — no preamble, no restating the subtask.
       |
@@ -121,7 +122,7 @@ state Streaming thinking=1 answering=5
       | Do the subtask answer, visit 1.
 metrics.update tokens=6
 modelPerformance.record path=/models/golden-model.litertlm tokens=6 benchmark=false
-trace.model.local seq=10 run=golden work LITE_RT visit=0 call=0 depth=0 seed=175593264 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=b3933f210152 output=8a26671d7ff9
+trace.model.local seq=10 run=golden work LITE_RT visit=0 call=0 depth=0 seed=175593264 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=1db02084027e output=8a26671d7ff9
 metrics.node LITE_RT tokens=6
 run.spend golden steps=4 tokens=6
 trace.console seq=11 run=golden depth=0 NodeExecution
@@ -151,6 +152,7 @@ state ConsoleLog run=golden events=9 (= trace.console run=golden seq=13)
 model.load path=null vision=false audio=false
 model local node=work call=1 seed=1020167386 t=0.55 k=17 p=0.85 image=none
     prompt:
+      | Owner: the person who uses this phone.
       | [golden prefix] Answer in plain words.
       | You are given one subtask from a larger task. Carry out that subtask and reply with its result only — no preamble, no restating the subtask.
       |
@@ -179,7 +181,7 @@ state Streaming thinking=1 answering=5
       | Do the subtask answer, visit 2.
 metrics.update tokens=6
 modelPerformance.record path=/models/golden-model.litertlm tokens=6 benchmark=false
-trace.model.local seq=14 run=golden work LITE_RT visit=1 call=0 depth=0 seed=1020167386 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=1190e0c4aea6 output=000dbf13d072
+trace.model.local seq=14 run=golden work LITE_RT visit=1 call=0 depth=0 seed=1020167386 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=ce4316cbb1e1 output=000dbf13d072
 metrics.node LITE_RT tokens=6
 run.spend golden steps=5 tokens=12
 trace.console seq=15 run=golden depth=0 NodeExecution
@@ -215,6 +217,7 @@ state ConsoleLog run=golden events=11 (= trace.console run=golden seq=17)
 model.load path=null vision=false audio=false
 model local node=work call=1 seed=271187568 t=0.55 k=17 p=0.85 image=none
     prompt:
+      | Owner: the person who uses this phone.
       | [golden prefix] Answer in plain words.
       | You are given one subtask from a larger task. Carry out that subtask and reply with its result only — no preamble, no restating the subtask.
       |
@@ -246,7 +249,7 @@ state Streaming thinking=1 answering=5
       | Do the subtask answer, visit 3.
 metrics.update tokens=6
 modelPerformance.record path=/models/golden-model.litertlm tokens=6 benchmark=false
-trace.model.local seq=18 run=golden work LITE_RT visit=2 call=0 depth=0 seed=271187568 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=fc270b150a5d output=13e44ee9604c
+trace.model.local seq=18 run=golden work LITE_RT visit=2 call=0 depth=0 seed=271187568 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=947794a2097b output=13e44ee9604c
 metrics.node LITE_RT tokens=6
 run.spend golden steps=6 tokens=18
 trace.console seq=19 run=golden depth=0 NodeExecution

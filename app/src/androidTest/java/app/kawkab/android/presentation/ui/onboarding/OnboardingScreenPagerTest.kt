@@ -2,7 +2,10 @@ package app.kawkab.android.presentation.ui.onboarding
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNode
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.platform.app.InstrumentationRegistry
@@ -158,8 +161,8 @@ class OnboardingScreenPagerTest {
             ctx.getString(KnotworkR.string.knotwork_onboarding_scenario_translate_title),
         )
 
-        // Tapping a scenario card records the pick.
-        composeTestRule.onNodeWithText(text = companionTitle).performClick()
+        // The brand title and the scenario card both contain this name. The card is the clickable one.
+        composeTestRule.onNode(hasText(companionTitle) and hasClickAction()).performClick()
         verify(exactly = 1) { vm.pickScenario(OnboardingScenario.VirtualCompanion) }
 
         // The "Set up {scenario}" CTA materialises the picked scenario.

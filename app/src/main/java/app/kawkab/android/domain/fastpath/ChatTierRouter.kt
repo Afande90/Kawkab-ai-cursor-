@@ -9,6 +9,7 @@ import app.kawkab.android.domain.models.MessageAttachment
 import app.kawkab.android.domain.models.NodeExecutionResult
 import app.kawkab.android.domain.models.NodeOutput
 import app.kawkab.android.domain.models.Role
+import app.kawkab.android.domain.prompt.ChatTranscript
 import app.kawkab.android.domain.repositories.ChatRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
@@ -277,7 +278,7 @@ class HandsChatTierRouter @Inject constructor(
         .first()
         .filter { it.isFinal }
         .takeLast(RECENT_MESSAGES)
-        .joinToString(separator = "\n") { "${it.role}: ${it.content}" }
+        .joinToString(separator = "\n") { ChatTranscript.turn(it.role.name, it.content) }
 
     private suspend fun save(
         sessionId: String,

@@ -99,7 +99,8 @@ trace.memory seq=8 run=golden chunks=[11, 12]
 network.outbound
 model cloud openai model=golden-cloud-model prompt=default tools=0 node=cloud call=1 temperature=default image=none
     prompt:
-      | [User] [golden prefix] Answer in plain words.
+      | [User] Owner: the person who uses this phone.
+      | [golden prefix] Answer in plain words.
       | You are a cloud assistant handling a request the on-device router flagged as Complex. The current date is 15 September 2026. Use the conversation history to keep continuity. Reason step by step internally, then reply with a thorough, well-structured answer.
       |
       | Reply in the user's language (en-US). Do not restate, quote or summarise the material you were given — the conversation history, the remembered entries, or your own reasoning. Reply with the answer only.

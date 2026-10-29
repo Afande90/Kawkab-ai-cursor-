@@ -38,6 +38,7 @@ state ConsoleLog run=golden events=3 (= trace.console run=golden seq=2)
 model.load path=null vision=false audio=false
 model local node=node-23 call=1 seed=1338736591 t=0.55 k=17 p=0.85 image=none
     prompt:
+      | Owner: the person who uses this phone.
       | [golden prefix] Answer in plain words.
       | You are the intake step of an agent pipeline. You receive the user's message and, sometimes, an attached image.
       |
@@ -66,7 +67,7 @@ state Streaming thinking=1 answering=4
       | Vision intake answer, visit 1.
 metrics.update tokens=5
 modelPerformance.record path=/models/golden-model.litertlm tokens=5 benchmark=false
-trace.model.local seq=3 run=golden node-23 LITE_RT visit=0 call=0 depth=0 seed=1338736591 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=7fcb9ee3a20a output=db994192ae1c
+trace.model.local seq=3 run=golden node-23 LITE_RT visit=0 call=0 depth=0 seed=1338736591 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=c6a3f4c47be4 output=db994192ae1c
 metrics.node LITE_RT tokens=5
 run.spend golden steps=2 tokens=5
 trace.console seq=4 run=golden depth=0 NodeExecution
@@ -196,6 +197,7 @@ state ConsoleLog run=golden events=9 (= trace.console run=golden seq=14)
 model.load path=null vision=false audio=false
 model local node=node-7 call=1 seed=1882371410 t=0.55 k=17 p=0.85 image=none
     prompt:
+      | Owner: the person who uses this phone.
       | [golden prefix] Answer in plain words.
       | You prepare the user's question for a Wikipedia lookup that runs in the very next step. Your output becomes the search term.
       |
@@ -223,7 +225,7 @@ state Streaming thinking=1 answering=4
       | Query Builder answer, visit 1.
 metrics.update tokens=5
 modelPerformance.record path=/models/golden-model.litertlm tokens=5 benchmark=false
-trace.model.local seq=15 run=golden node-7 LITE_RT visit=0 call=0 depth=0 seed=1882371410 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=681aa1591360 output=ea4ba06a793c
+trace.model.local seq=15 run=golden node-7 LITE_RT visit=0 call=0 depth=0 seed=1882371410 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=86375bab0356 output=ea4ba06a793c
 metrics.node LITE_RT tokens=5
 run.spend golden steps=5 tokens=10
 trace.console seq=16 run=golden depth=0 NodeExecution
@@ -321,6 +323,7 @@ state ConsoleLog run=golden events=14 (= trace.console run=golden seq=23)
 model.load path=null vision=false audio=false
 model local node=node-8 call=1 seed=431671629 t=0.55 k=17 p=0.85 image=none
     prompt:
+      | Owner: the person who uses this phone.
       | [golden prefix] Answer in plain words.
       | You are answering a factual question for the user. An earlier step has already looked the topic up on Wikipedia, and the resulting article extract arrives in your input as the previous step's output.
       |
@@ -352,7 +355,7 @@ state Streaming thinking=1 answering=4
       | Grounded Answer answer, visit 1.
 metrics.update tokens=5
 modelPerformance.record path=/models/golden-model.litertlm tokens=5 benchmark=false
-trace.model.local seq=24 run=golden node-8 LITE_RT visit=0 call=0 depth=0 seed=431671629 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=6f82205d2011 output=6058c32e4026
+trace.model.local seq=24 run=golden node-8 LITE_RT visit=0 call=0 depth=0 seed=431671629 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=70d80458ef84 output=6058c32e4026
 metrics.node LITE_RT tokens=5
 run.spend golden steps=7 tokens=15
 trace.console seq=25 run=golden depth=0 NodeExecution

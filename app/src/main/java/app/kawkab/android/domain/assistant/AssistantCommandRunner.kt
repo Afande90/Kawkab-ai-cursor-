@@ -1,11 +1,12 @@
 package app.kawkab.android.domain.assistant
 
-import app.kawkab.android.domain.engine.executors.ToolInvocationGate
 import app.kawkab.android.domain.fastpath.ChatTierRouter
 import app.kawkab.android.domain.fastpath.PlannedCommand
 import app.kawkab.android.domain.models.AgentOrchestratorState
 import app.kawkab.android.domain.models.ChatSession
 import app.kawkab.android.domain.repositories.ChatRepository
+import app.kawkab.android.domain.usecases.PendingSubmissionOutcome
+import app.kawkab.android.domain.usecases.SubmitApprovalDecisionUseCase
 import javax.inject.Inject
 
 /**
@@ -13,12 +14,12 @@ import javax.inject.Inject
  *
  * @param router The tier router. A match goes through it, so the gate still asks.
  * @param chats Where the assistant chat row is stored, so the tap has a session.
- * @param gate The singleton gate. The panel's approve and deny buttons settle it.
+ * @param approvals The only way a tap settles a waiting tool. The panel does not call the gate itself.
  */
 class AssistantCommandRunner @Inject constructor(
     private val router: ChatTierRouter,
     private val chats: ChatRepository,
-    private val gate: ToolInvocationGate,
+    private val approvals: SubmitApprovalDecisionUseCase,
 ) {
     /**
      * Runs [command] for [text] and forwards each orchestrator state.
@@ -47,7 +48,8 @@ class AssistantCommandRunner @Inject constructor(
      * @param approved Whether the owner tapped approve.
      * @return Whether that request was still waiting.
      */
-    fun answer(requestId: String, approved: Boolean): Boolean = gate.resumeWithApproval(SESSION_ID, requestId, approved)
+    suspend fun answer(requestId: String, approved: Boolean): Boolean =
+        approvals(SESSION_ID, requestId, approved) == PendingSubmissionOutcome.LiveResumed
 
     /**
      * Ids of the assistant chat.
