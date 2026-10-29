@@ -40,7 +40,7 @@ This repository is dedicated to Kawkab. Work on `main`.
   - Keep upstream licence headers.
   - Credit every donor in `NOTICE` and `THIRD_PARTY.md`.
   - Mark AGPL and non-commercial items `personal-use only` in `THIRD_PARTY.md`, so they can be swapped out if the app is ever sold.
-  - Still never copy anything that calls Anthropic or Claude, or any cloud login.
+  - Still never copy anything that calls the provider banned in spec §0.1, or any cloud login.
 
 ## Environment setup (put this in the Jules environment setup script)
 
@@ -92,7 +92,7 @@ The owner installed the `m1` APK on his Nothing Phone (3a). He found these probl
 - The default chat is Knotwork's "Virtual Companion" demo.
 - "Knotwork" still shows on screen.
 
-These tasks fix that by reusing projects that already solved it. Each donor is reused with credit in `NOTICE` and `THIRD_PARTY.md`. Never copy cloud providers (Anthropic, OpenAI, Gemini API), and never copy donor names or trademarks.
+These tasks fix that by reusing projects that already solved it. Each donor is reused with credit in `NOTICE` and `THIRD_PARTY.md`. Never copy a hosted model provider, and never copy donor names or trademarks.
 
 Donors:
 - **PokeClaw** (github.com/agents-io/PokeClaw, Apache-2.0): Gemma 4 E2B on LiteRT-LM, phone control, 3-tier routing, skills, stuck detection.
@@ -171,7 +171,7 @@ Donors:
     - Consider Gecko 110M as a smaller embedding model than EmbeddingGemma, and measure it.
     - Exclude unused native libraries from the APK.
 
-    Never port a donor's cloud logins or subscription sign-ins (Claude, ChatGPT and so on).
+    Never port a donor's cloud logins or subscription sign-ins.
 21. **Phone-access setup.** The `m1` APK never asked for any permission. Add an onboarding step and a "Phone access" screen in Settings, in English and Arabic, with a status line for each item:
     - **Runtime permissions:** ask for contacts, phone, calendar, notifications and microphone, each with a one-line reason.
     - **Accessibility service:**
