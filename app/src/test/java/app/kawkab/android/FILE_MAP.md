@@ -590,6 +590,8 @@ Only Kotlin files appear inside the generated blocks.
     - `VerifyRunUseCaseTest.kt` - `VerifyRunUseCase`: each recorded call is sent again from its own prompt with its own sampler and seed, on the model it ran on, and its answer compared by SHA-256.
 - `editor/` - Guard over the browser pipeline editor: its context configuration must still mirror the domain sources.
   - `BrowserEditorContextConfigGuardTest.kt` - Drift guard for the browser pipeline editor's hand-maintained `defaultContextConfig(typeId)` JS function in `pipeline-editor.html`.
+- `hands/` - Tests for stored app maps: replay without a model, check the screen, and stop for an outbound tap.
+  - `AppMapReplayTest.kt` - Stored app maps replay without a model, check the screen, and still stop for an outbound tap.
 - `i18n/` - Arabic string-key coverage for the app and catalog resources.
   - `ArabicStringKeysTest.kt` - Fails when a default `strings.xml` key has no Arabic resource (spec §0.6).
   - `BrandNameTest.kt` - Fails when a user-visible string or a preset pipeline name says Knotwork.
