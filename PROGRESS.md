@@ -19,13 +19,15 @@ Dates are calendar dates in Asia/Dubai. The owner asked for commits on `main` an
 
 | Task | Status | Date | Commit |
 |---|---|---|---|
-| 9. `OUTBOUND` risk tier, tool classification table and test | not started | | |
+| 9. `OUTBOUND` risk tier, tool classification table and test | done | 29 Oct 2026 | `d8d162c3` |
 | 10. OpenDroid accessibility as `LocalToolExecutor`s, plus the tap guard | not started | | |
 | 11. Denylist (three layers) and the activity log | not started | | |
 | 12. Freeze the command eval set | not started | | |
 | 13. Deterministic Arabic/English fast path, stub messenger, M1 gates, tag `m1` | not started | | |
 
-Next task: 9.
+Next task: 10.
+
+Task 9 checks, 29 Oct 2026: `./gradlew check :buildSrc:test` passed in 13m 15s: foss 6059 tests, full 6063, catalog 1037, buildSrc 501, 0 failures. Detekt reported 0 findings. The Roborazzi threshold was not changed. GitHub Actions was not run from this machine. No gate is BLOCKED.
 
 Task 8 checks, 29 Oct 2026: `./gradlew :catalog:recordRoborazziDebug` passed in 1m 28s (743 goldens). `./gradlew :catalog:verifyRoborazziDebug` passed in 1m 17s. `./gradlew check :buildSrc:test` passed in 6m 45s: foss 6056 tests, full 6060, catalog 1036, buildSrc 501, 0 failures. The comparison threshold was not changed. GitHub Actions was not run from this machine. No gate is BLOCKED. Tag `m0` points at this commit.
 
