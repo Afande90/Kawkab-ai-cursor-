@@ -234,3 +234,8 @@ not in the APK and were not copied.
   * Qwen3-ASR 0.6B — Apache License 2.0
     https://huggingface.co/Qwen/Qwen3-ASR-0.6B
     Weights are not downloaded by this build.
+  * Genie
+    https://github.com/Akeem1955/Genie
+    No licence file on the repository. No code was copied.
+  * PocketClaw — MIT License
+    https://github.com/ManojRakshu/pocketclaw

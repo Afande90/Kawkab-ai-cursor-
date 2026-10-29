@@ -45,3 +45,5 @@ M1.5 further candidates, recorded on 29 Oct 2026. None of these files are in the
 | Qwen3-ASR 0.6B (Qwen/Qwen3-ASR-0.6B) | Apache-2.0 | Extra M4 speech-to-text candidate | The card lists Arabic among its languages. Not downloaded. Not measured here |
 
 OnDevice LLM is credited for naming Parakeet and Kokoro. No code was copied. None of these candidates ships.
+
+Gecko 110M is a smaller embedding candidate than EmbeddingGemma. It was not measured on 29 Oct 2026. EmbeddingGemma stays. PocketClaw's author reports a 1–3 second first token for chat and about 5 seconds for images on a Snapdragon 7s Gen 3. That is their measurement, not a Kawkab measurement.

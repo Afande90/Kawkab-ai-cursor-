@@ -240,6 +240,9 @@ object NavRoutes {
     /** Skill library (under More). */
     const val SKILLS: String = "skills"
 
+    /** Successful plans the owner can delete (under More). */
+    const val GROWTH: String = "growth"
+
     /** Triggers management (under More); navigating here opens the list. */
     const val TRIGGERS: String = "triggers"
 

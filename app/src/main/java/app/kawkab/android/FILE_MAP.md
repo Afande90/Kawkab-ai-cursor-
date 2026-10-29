@@ -518,6 +518,18 @@ Only Kotlin files appear inside the generated blocks.
     - `ChatTierRouter.kt` - Decides whether a typed line skips the pipeline.
     - `CommandFastPath.kt` - Deterministic Arabic and English grammar for the five core commands.
     - `TierTwoRecipes.kt` - Matches the three skill phrases.
+  - `harness/` - Typed planner decisions, a short history, error tiers, breakers, and the skill cache.
+    - `BiometricRisk.kt` - Whether a biometric check is required on top of the outbound tap.
+    - `CircuitBreaker.kt` - Stops the loop after five failures in a row, or after the same unknown tool three times.
+    - `EmbeddingChoice.kt` - Gecko 110M is a smaller embedding candidate.
+    - `ErrorRecovery.kt` - Classifies a failure sentence and names the recovery for that tier.
+    - `HarnessDecision.kt` - One typed planner decision.
+    - `HarnessFacts.kt` - Facts the owner stated, injected into every prompt.
+    - `HarnessLoop.kt` - Applies the planner rule and the breakers.
+    - `HarnessPrompt.kt` - Puts the owner's name and identity at the top of a system prompt, then any stated facts.
+    - `ImageMemory.kt` - Older images travel in the prompt as a short text note.
+    - `SkillCache.kt` - Successful plans, ranked by how often they succeeded.
+    - `SlidingHistory.kt` - The goal plus the last few steps.
   - `memoryio/` - JSON serialisation gateway for long-term memory export/import.
     - `MemoryJsonSerializer.kt` - Two-way mapper between the memory table and the portable `schemaVersion: 1` export document (`embeddingProviderId` + `exportedAt` + per-chunk `id`/`text`/`embedding`/`source`/`timestamp`/`isPinned`/`tags` and an optional `history` of earlier versions). Never-throwing `parse` returns `Success / SchemaMismatch / Failure`.
     - `MemorySourceJson.kt` - Single source of truth for the `MemorySource` ↔ JSON wire shape; shared by the Room `source` column converter (`data/local/Converters`) and `MemoryJsonSerializer` so the column encoding and the export file stay byte-identical.
@@ -1023,6 +1035,9 @@ Only Kotlin files appear inside the generated blocks.
       - `FilesScreen.kt` - Slim mapper. Subscribes to `FilesViewModel`, projects `FilesUiState` to the catalog `FilesContent`; owns the pure `toViewState` projection (quota tone + usage text, dir/basename split, byte/relative-time labels) and the Android plumbing: the SAF `OpenDocument` (import) / `CreateDocument` (save-as) launchers and the `FileProvider`-backed share sheet over the copies the ViewModel staged.
       - `FilesUiState.kt` - Files UI state: raw `WorkspaceFile` list + `WorkspaceUsage`, load/refresh flags, selection set, open `FilePreviewState`, pending-delete list and `CollisionState`; plus the `FilesEvent` one-shots (LaunchImport / LaunchSaveAs / ShareStaged) and the `FilesMessage` snackbar kinds.
       - `FilesViewModel.kt` - Hilt ViewModel injecting the six workspace use cases. Owns listing/refresh, selection (long-press, toggle, select-all), preview open/close, single + bulk delete with confirm, import with collision detection (re-openable stream factory so the user's choice is honoured without re-picking), save-as export (suspending `completeSaveAs` / `exportTo` so the destination stream stays open for the whole write) and share staging through `StageWorkspaceFileForShareUseCase`.
+    - `growth/` - The Growth screen lists successful plans and lets the owner delete one.
+      - `GrowthScreen.kt` - Lists successful plans and lets the owner delete one.
+      - `GrowthViewModel.kt` - The Growth screen: successful plans, ranked, and deletable.
     - `help/` - Help: the list of documents the app can open, and the reader that opens a bundled one offline.
       - `HelpReaderScreen.kt` - Reads one bundled document.
       - `HelpReaderViewModel.kt` - Drives the reader for one bundled document.

@@ -25,6 +25,7 @@ import app.kawkab.android.presentation.ui.chat.home.ChatHomeViewModel
 import app.kawkab.android.presentation.ui.discover.DiscoverDetailScreen
 import app.kawkab.android.presentation.ui.discover.DiscoverScreen
 import app.kawkab.android.presentation.ui.files.FilesScreen
+import app.kawkab.android.presentation.ui.growth.GrowthScreen
 import app.kawkab.android.presentation.ui.help.HelpReaderScreen
 import app.kawkab.android.presentation.ui.help.HelpScreen
 import app.kawkab.android.presentation.ui.memory.MemoryScreen
@@ -304,6 +305,7 @@ fun AppNavGraph(
                 onNavigateToSettings = { navController.navigate(NavRoutes.SETTINGS) },
                 onNavigateToPrompts = { navController.navigate(NavRoutes.PROMPTS) },
                 onNavigateToSkills = { navController.navigate(NavRoutes.SKILLS) },
+                onNavigateToGrowth = { navController.navigate(NavRoutes.GROWTH) },
                 onNavigateToTriggers = { navController.navigate(NavRoutes.TRIGGERS) },
                 onNavigateToAbout = { navController.navigate(NavRoutes.ABOUT) },
                 onNavigateToHelp = { navController.navigate(NavRoutes.HELP) },
@@ -463,6 +465,9 @@ fun AppNavGraph(
                 modifier = Modifier.fillMaxSize(),
                 onBack = { navController.popBackStack() },
             )
+        }
+        composable(NavRoutes.GROWTH) {
+            GrowthScreen(onBack = { navController.popBackStack() })
         }
         composable(NavRoutes.CHAT_ARCHIVE) {
             ChatArchiveScreen(

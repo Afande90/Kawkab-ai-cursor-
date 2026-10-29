@@ -54,6 +54,8 @@ Fine-tunes inherit those terms. EmbeddingGemma has no verified model card in thi
 - Parakeet TDT 0.6B v3 (nvidia/parakeet-tdt-0.6b-v3, CC-BY-4.0): an M4 speech-to-text candidate. The card lists 25 European languages and does not list Arabic. Not downloaded.
 - Kokoro 82M (hexgrad/Kokoro-82M, Apache-2.0): an M4 speech candidate. Not downloaded.
 - Qwen3-ASR 0.6B (Qwen/Qwen3-ASR-0.6B, Apache-2.0): an extra M4 speech-to-text candidate. The card lists Arabic. Not downloaded.
+- Genie (github.com/Akeem1955/Genie): the harness rules for one typed tool decision, a short history, error tiers, circuit breakers, a skill cache, stated facts, and a second risk signal before biometric confirmation. The repository lists no licence. No code was copied.
+- PocketClaw (github.com/ManojRakshu/pocketclaw, MIT): the owner line at the top of the prompt, old images kept as text, and Gecko as an embedding candidate. No code was copied. Their published timings are theirs, not a Kawkab measurement. This is not Pocket LLM.
 
 ## M1
 

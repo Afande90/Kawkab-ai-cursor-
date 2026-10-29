@@ -1,5 +1,6 @@
 package app.kawkab.android.domain.safety
 
+import app.kawkab.android.domain.harness.BiometricRisk
 import app.kawkab.android.domain.models.ToolRisk
 
 /**
@@ -27,6 +28,7 @@ class ActionRunner(
         confirmed: Boolean,
         intentPackage: String? = null,
         intentUri: String? = null,
+        deviceConfirmed: Boolean = true,
         perform: () -> String,
     ): String {
         val blocked = denylist.inspectScreen(screen.latest)
@@ -37,6 +39,17 @@ class ActionRunner(
         }
         if (risk == ToolRisk.OUTBOUND && !confirmed) {
             return NEEDS_TAP
+        }
+        val toolRisky = risk == ToolRisk.OUTBOUND || risk == ToolRisk.DESTRUCTIVE
+        if (
+            BiometricRisk.ask(
+                toolRisky = toolRisky,
+                wordsRisky = BiometricRisk.wordsLookOutbound(asked),
+                tapApproved = confirmed,
+            ) &&
+            !deviceConfirmed
+        ) {
+            return NEEDS_BIOMETRIC
         }
         val result = perform()
         val confirmation = if (risk == ToolRisk.OUTBOUND) "tap" else "none"
@@ -61,5 +74,12 @@ class ActionRunner(
     companion object {
         /** Returned when an outbound action has not been confirmed with a tap. */
         const val NEEDS_TAP: String = "Needs a tap before this outbound action can run."
+
+        /**
+         * Returned when the tap already happened and a biometric check is still required.
+         * The tap is not waived.
+         */
+        const val NEEDS_BIOMETRIC: String =
+            "Needs a biometric check on top of the tap. The tap is still required."
     }
 }

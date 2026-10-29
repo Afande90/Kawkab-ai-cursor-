@@ -87,4 +87,12 @@
     <!-- More-tab entry -->
     <string name="more_skills_title">Skill library</string>
     <string name="more_skills_subtitle">Reusable instruction + tools + context</string>
+    <string name="more_row_growth">Growth</string>
+    <string name="more_growth_subtitle">Successful plans, replayed with no model</string>
+    <string name="growth_title">Growth</string>
+    <string name="growth_body">Successful plans replay with no model. You can delete any of them.</string>
+    <string name="growth_empty">No saved plans yet.</string>
+    <string name="growth_delete">Delete</string>
+    <string name="growth_count">Succeeded %1$d times</string>
+    <string name="growth_back">Back</string>
 </resources>

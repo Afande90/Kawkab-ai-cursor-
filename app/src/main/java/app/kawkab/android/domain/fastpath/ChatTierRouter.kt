@@ -2,6 +2,7 @@ package app.kawkab.android.domain.fastpath
 
 import app.kawkab.android.domain.engine.LlmInferenceEngine
 import app.kawkab.android.domain.engine.executors.ToolInvocationGate
+import app.kawkab.android.domain.harness.SkillCache
 import app.kawkab.android.domain.models.AgentOrchestratorState
 import app.kawkab.android.domain.models.ChatMessage
 import app.kawkab.android.domain.models.MessageAttachment
@@ -111,8 +112,13 @@ class HandsChatTierRouter @Inject constructor(
     private val gate: ToolInvocationGate,
     private val chatRepository: ChatRepository,
     private val engine: LlmInferenceEngine,
+    private val skills: SkillCache = SkillCache(),
 ) : ChatTierRouter {
-    override fun command(text: String): PlannedCommand? = CommandFastPath.parse(text)
+    override fun command(text: String): PlannedCommand? {
+        CommandFastPath.parse(text)?.let { return it }
+        val saved = skills.replay(text.trim()) ?: return null
+        return PlannedCommand(saved.tool, saved.args)
+    }
 
     override fun recipe(text: String, hasImage: Boolean): TierTwoRecipe? = TierTwoRecipes.match(text, hasImage)
 
@@ -125,6 +131,9 @@ class HandsChatTierRouter @Inject constructor(
         save(sessionId, Role.USER, text, relayed = false, attachment = null)
         val outcome = dispatch(sessionId, command.tool, json(command.args), onState, FAST_PATH)
         finish(sessionId, outcome, onState, relayed = true)
+        if (outcome != null && outcome.error == null) {
+            skills.remember(text, command.tool, command.args)
+        }
     }
 
     override suspend fun runRecipe(

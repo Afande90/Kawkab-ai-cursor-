@@ -4,6 +4,8 @@ import app.kawkab.android.domain.constants.DefaultPrompts
 import app.kawkab.android.domain.engine.LlmInferenceEngine
 import app.kawkab.android.domain.engine.StreamInferenceMeter
 import app.kawkab.android.domain.engine.structured.ReasoningBlockSplitter
+import app.kawkab.android.domain.harness.HarnessFacts
+import app.kawkab.android.domain.harness.HarnessPrompt
 import app.kawkab.android.domain.models.AgentOrchestratorState
 import app.kawkab.android.domain.models.ConsoleEventType
 import app.kawkab.android.domain.models.ExecutionScope
@@ -42,6 +44,7 @@ class LiteRtNodeExecutor @Inject constructor(
     private val modelPerformanceRepository: ModelPerformanceRepository,
     private val nativeMemorySampler: NativeMemorySampler,
     private val loadModelUseCase: LoadModelUseCase,
+    private val facts: HarnessFacts = HarnessFacts(),
 ) : NodeExecutor {
 
     override fun execute(
@@ -54,7 +57,11 @@ class LiteRtNodeExecutor @Inject constructor(
     ): Flow<NodeOutput> = flow {
         val systemPromptPrefix = generationSettings.systemPromptPrefix.first()
         val nodeSystemPrompt = node.systemPrompt ?: DefaultPrompts.LiteRt.SYSTEM_FALLBACK
-        val baseSystemPrompt = "$systemPromptPrefix\n$nodeSystemPrompt\n"
+        val baseSystemPrompt = HarnessPrompt.top(
+            ownerName = "",
+            facts = facts.snapshot(),
+            rest = systemPromptPrefix,
+        ) + "\n$nodeSystemPrompt\n"
 
         // `inputText` is the assembled context produced upstream by NodeContextBuilder
         // according to the node's NodeContextConfig. Re-fetching chat history or

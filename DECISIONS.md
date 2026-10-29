@@ -301,3 +301,17 @@ FunctionGemma is under the Gemma Terms of Use and is gated. Mobile Actions is Go
 
 Parakeet's card says 25 European languages and does not list Arabic, so it is not treated as covering the owner's Arabic. Kokoro's card is Apache-2.0. Qwen3-ASR 0.6B's card is Apache-2.0 and lists Arabic. None of the three has a Kawkab measurement. OnDevice LLM is credited for naming Parakeet and Kokoro. No code was copied.
 
+## 2026-10-29 — small-model harness
+
+Genie and PocketClaw are credited for the rules below. Genie's GitHub repository has no licence file, so no code was copied. PocketClaw is MIT. No code was copied from either. Neither donor's cloud login was ported.
+
+Automatic tool calling stays off. A planner line is one typed decision: Act, Reply, or Finish. Two tool calls, or a plain sentence, are invalid. The sliding history keeps the goal and the last 9 steps, and drops transient errors after a success. Failures are four tiers: retry a transient miss once, send a bad-argument error back to the planner, count an unknown tool and do not run it, or stop and tell the owner. The loop stops after 5 failures in a row, or after the same unknown tool 3 times.
+
+A successful fast-path command is stored and shown on the Growth screen, ranked by how often it succeeded. The owner can delete it. The same sentence, when the grammar does not match, replays from that store with no model call. Stated facts are injected above the system prompt when any have been stored. The owner line is always first. With no stored name it reads as the person who uses this phone.
+
+A biometric check is asked only when two signals agree: the tool tier is outbound or destructive, and the words name an outbound action. It is asked only after the tap. The tap rule is unchanged. The hands executors still pass the device check as already satisfied, because the card has no fingerprint prompt yet. Stopping every outbound action with no way to continue would leave the owner stuck. The runner returns the biometric sentence when the caller says the device check has not happened.
+
+Old images in the prompt become a text note capped at 100 tokens. The latest image is unchanged, so the current picture can still reach the on-device model. Image bytes are not copied into the older turns.
+
+Gecko 110M was not measured. EmbeddingGemma stays. PocketClaw's author reports 1–3 seconds to the first chat token and about 5 seconds for images on a Snapdragon 7s Gen 3. Those are their numbers. Unused native libraries already excluded from the APK stay excluded: the desktop Jansi binaries, and the MediaPipe text-generation library the app does not load. No further library was shown to be unused on this machine, so none was newly stripped.
+

@@ -91,4 +91,12 @@
     <!-- More-tab entry -->
     <string name="more_skills_title">مكتبة المهارات</string>
     <string name="more_skills_subtitle">تعليمات + أدوات + سياق قابلة لإعادة الاستخدام</string>
+    <string name="more_row_growth">النمو</string>
+    <string name="more_growth_subtitle">خطط ناجحة تُعاد بلا نموذج</string>
+    <string name="growth_title">النمو</string>
+    <string name="growth_body">الخطط الناجحة تُعاد بلا نموذج. يمكنك حذف أي واحدة.</string>
+    <string name="growth_empty">لا خطط محفوظة بعد.</string>
+    <string name="growth_delete">حذف</string>
+    <string name="growth_count">نجح %1$d مرة</string>
+    <string name="growth_back">رجوع</string>
 </resources>

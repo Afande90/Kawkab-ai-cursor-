@@ -1,5 +1,6 @@
 package app.kawkab.android.domain.engine
 
+import app.kawkab.android.domain.harness.ImageMemory
 import app.kawkab.android.domain.models.ChatHistorySummary
 import app.kawkab.android.domain.models.ConsoleEventType
 import app.kawkab.android.domain.models.MemoryChunk
@@ -292,7 +293,9 @@ class NodeInputComposer private constructor(
     private suspend fun chatHistoryView(): ChatHistoryView {
         val settings = history ?: loadHistorySettings().also { history = it }
         // Re-read fresh: the list grows as message-writing nodes append rows.
-        val messages = sources.chatRepository.getMessagesForSession(sessionId).first()
+        val messages = ImageMemory.olderAsText(
+            sources.chatRepository.getMessagesForSession(sessionId).first(),
+        )
         val view = sources.chatHistoryWindowPlanner.plan(
             messages = messages,
             summary = settings.summary,

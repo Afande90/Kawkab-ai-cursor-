@@ -437,4 +437,7 @@ The image loader (`io.coil-kt.coil3:coil-compose:3.6.3`) is a direct dependency 
 | Parakeet TDT 0.6B v3 (nvidia/parakeet-tdt-0.6b-v3) | CC-BY-4.0 | M4 speech candidate; 25 European languages on the card; Arabic not listed; not downloaded | https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3 | no |
 | Kokoro 82M (hexgrad/Kokoro-82M) | Apache-2.0 | M4 speech candidate; weights not downloaded | https://huggingface.co/hexgrad/Kokoro-82M | no |
 | Qwen3-ASR 0.6B (Qwen/Qwen3-ASR-0.6B) | Apache-2.0 | M4 speech candidate; card lists Arabic; weights not downloaded | https://huggingface.co/Qwen/Qwen3-ASR-0.6B | no |
+| Genie (github.com/Akeem1955/Genie) | no licence file on the repository | credited; no code copied | https://github.com/Akeem1955/Genie | no |
+| PocketClaw (github.com/ManojRakshu/pocketclaw) | MIT | credited; no code copied; not Pocket LLM | https://github.com/ManojRakshu/pocketclaw | no |
+| Gecko 110M | not yet verified | embedding candidate; not measured; not downloaded | task 20c | no |
 

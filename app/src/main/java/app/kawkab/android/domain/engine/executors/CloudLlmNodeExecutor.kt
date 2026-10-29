@@ -13,6 +13,8 @@ import app.kawkab.android.domain.engine.CloudStreamEnd
 import app.kawkab.android.domain.engine.retry.CloudRetryListener
 import app.kawkab.android.domain.engine.retry.CollectingCloudRetryListener
 import app.kawkab.android.domain.engine.structured.ReasoningBlockSplitter
+import app.kawkab.android.domain.harness.HarnessFacts
+import app.kawkab.android.domain.harness.HarnessPrompt
 import app.kawkab.android.domain.models.AgentOrchestratorState
 import app.kawkab.android.domain.models.CloudProvider
 import app.kawkab.android.domain.models.ConsoleEventType
@@ -64,6 +66,7 @@ class CloudLlmNodeExecutor @Inject constructor(
     private val cloudLlmClientFactory: CloudLlmClientFactory,
     private val cloudLlmModelResolver: CloudLlmModelResolver,
     private val networkActivityTracker: NetworkActivityTracker,
+    private val facts: HarnessFacts = HarnessFacts(),
 ) : NodeExecutor {
 
     override fun execute(
@@ -76,7 +79,11 @@ class CloudLlmNodeExecutor @Inject constructor(
     ): Flow<NodeOutput> = channelFlow {
         val systemPromptPrefix = generationSettings.systemPromptPrefix.first()
         val nodeSystemPrompt = node.systemPrompt ?: DefaultPrompts.Cloud.SYSTEM_FALLBACK
-        val baseSystemPrompt = "$systemPromptPrefix\n$nodeSystemPrompt\n"
+        val baseSystemPrompt = HarnessPrompt.top(
+            ownerName = "",
+            facts = facts.snapshot(),
+            rest = systemPromptPrefix,
+        ) + "\n$nodeSystemPrompt\n"
 
         // `inputText` is the assembled context produced upstream by NodeContextBuilder
         // according to the node's NodeContextConfig. Re-fetching chat history or
