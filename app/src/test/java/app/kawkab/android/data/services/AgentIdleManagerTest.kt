@@ -169,7 +169,7 @@ class AgentIdleManagerTest {
     }
 
     @Test
-    fun `given default constructor when instantiated then the default idleTimeoutMs is 5 minutes`() {
+    fun `given default constructor when instantiated then the default idleTimeoutMs is 2 minutes`() {
         // Locks the documented default — bumping it requires updating the KDoc on
         // `AgentIdleManager.DEFAULT_IDLE_TIMEOUT_MINUTES` and this assertion together.
         val withDefault = AgentIdleManager(
@@ -180,7 +180,7 @@ class AgentIdleManagerTest {
         val field = AgentIdleManager::class.java.getDeclaredField("idleTimeoutMs")
         field.isAccessible = true
         val resolved = field.getLong(withDefault)
-        org.junit.Assert.assertEquals(5L * 60_000L, resolved)
+        org.junit.Assert.assertEquals(2L * 60_000L, resolved)
     }
 
     @Test

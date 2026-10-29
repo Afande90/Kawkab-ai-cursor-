@@ -174,6 +174,27 @@ class LiteRTLlmEngineTest {
         assertEquals(7, sampler?.topK)
         assertEquals(0.55, sampler?.topP ?: 0.0, TOLERANCE)
         assertEquals(0.25, sampler?.temperature ?: 0.0, TOLERANCE)
+        assertEquals(false, captured.captured.thinkingConfig?.enableThinking ?: true)
+        assertEquals(null, captured.captured.maxOutputToken)
+    }
+
+    @Test
+    fun `given a json tail when generating then output is capped and thinking stays off`() = runTest {
+        val tempFile = File.createTempFile("model", ".tflite")
+        tempFile.deleteOnExit()
+        every { settingsRepository.temperature } returns flowOf(0.7f)
+        every { settingsRepository.topK } returns flowOf(40)
+        every { settingsRepository.topP } returns flowOf(0.9f)
+        val captured = slot<ConversationConfig>()
+        val conversation = mockk<Conversation>(relaxed = true)
+        completesAtOnce(conversation)
+        every { anyConstructed<Engine>().createConversation(capture(captured)) } returns conversation
+        engine.initialize(tempFile.absolutePath)
+
+        engine.generateResponseStream("Reply with JSON OUTPUT: ").toList()
+
+        assertEquals(false, captured.captured.thinkingConfig?.enableThinking ?: true)
+        assertEquals(Integer.valueOf(300), captured.captured.maxOutputToken)
     }
 
     @Test

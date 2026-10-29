@@ -2,6 +2,8 @@ package app.kawkab.android.presentation.ui.onboarding
 
 import app.kawkab.android.data.network.AndroidModelDownloadManager
 import app.kawkab.android.domain.constants.OnboardingModelCatalog
+import app.kawkab.android.domain.engine.DeviceMemory
+import app.kawkab.android.domain.models.DefaultBrain
 import app.kawkab.android.domain.models.DownloadState
 import app.kawkab.android.domain.models.LocalBackend
 import app.kawkab.android.domain.models.LocalModel
@@ -106,7 +108,9 @@ class OnboardingViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun newViewModel(): OnboardingViewModel = OnboardingViewModel(
+    private fun newViewModel(
+        deviceMemory: DeviceMemory = DeviceMemory { DefaultBrain.FLAGSHIP_RAM_BYTES },
+    ): OnboardingViewModel = OnboardingViewModel(
         appStateSettings = settingsRepository,
         localModelRepository = localModelRepository,
         downloadManager = downloadManager,
@@ -114,7 +118,18 @@ class OnboardingViewModelTest {
         setUpScenarioUseCase = setUpScenarioUseCase,
         transientMessageRelay = transientMessageRelay,
         usageTelemetry = usageTelemetry,
+        deviceMemory = deviceMemory,
     )
+
+    @Test
+    fun `given a mid-range phone when a scenario is picked then E2B is pre-selected`() = runTest {
+        val viewModel = newViewModel(DeviceMemory { 12L * DefaultBrain.BYTES_PER_GIB })
+
+        viewModel.pickScenario(OnboardingScenario.VirtualCompanion)
+        advanceUntilIdle()
+
+        assertEquals(OnboardingLiteRtModel.Gemma4E2B, viewModel.state.value.liteRtModel)
+    }
 
     @Test
     fun `finishOnboarding sets hasCompletedOnboarding without touching firstLaunch`() = runTest {

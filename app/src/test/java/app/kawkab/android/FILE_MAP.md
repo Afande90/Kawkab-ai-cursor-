@@ -332,10 +332,12 @@ Only Kotlin files appear inside the generated blocks.
     - `ModelAuthorshipTest.kt` - `ModelAuthorship`: which text a run carries forward was written by a model.
     - `NodeContextBuilderTest.kt` - Exhaustive test for `NodeContextBuilder` — the single source of truth for how pipeline context blocks are concatenated into a node's executor input.
     - `NodeInputComposerTest.kt` - Unit coverage for `NodeInputComposer`.
+    - `NpuTrialPolicyTest.kt` - Pins the rule that keeps NPU off until a phone self-test beats CPU.
     - `PeakHeapSamplerTest.kt` - Unit tests for `PeakHeapSampler`.
     - `PipelineSecurityContourTest.kt` - Cross-cutting security-contour test: drives the security guards of the file-workspace and outbound-HTTP tool surfaces through a **real** `GraphExecutionEngine` (only the LLM token stream is stubbed), proving they hold when wired into an executing pipeline rather than only in their isolated executor unit tests.
     - `QueueCursorTest.kt` - Unit coverage for `QueueCursor`.
     - `RecordingNodeInferenceTest.kt` - `RecordingNodeInference`: every on-device call of a visit runs on the run's sampler and a seed derived from the run seed, and is kept — with what the engine ran on — until the engine drains it into the trace.
+    - `ReplyBudgetTest.kt` - Pins which prompt tails count as a tool or JSON turn.
     - `retry/` - Tests for the retry observability seam.
       - `CollectingCloudRetryListenerTest.kt` - Unit tests for `CollectingCloudRetryListener` — the buffer that lets the cloud node executor drain retries into console lines after the call completes.
     - `RunConsoleTest.kt` - Unit coverage for `RunConsole`.
@@ -364,6 +366,7 @@ Only Kotlin files appear inside the generated blocks.
     - `AppErrorTest.kt` - Tests for AppError.
     - `CloudProviderTest.kt` - Unit tests for `CloudProvider` — the canonical typed identifier for cloud LLM providers.
     - `CustomModelLinkTest.kt` - Unit tests for `CustomModelLink.parse` — the one check a pasted model link passes before anything downloads, and the one place its file name comes from.
+    - `DefaultBrainTest.kt` - Pins the RAM line that separates a flagship phone from a smaller one.
     - `DownloadedModelCheckTest.kt` - The rule that decides whether a downloaded model file may be installed, and the comparison that later tells a checked model from an unchecked one.
     - `ExternalAutomationOutcomeMapperTest.kt` - Verifies `externalAutomationStatusForTerminal` — the deliberately coarse mapping from the app's four terminal statuses onto the two settled statuses the third-party contract publishes.
     - `LocalBackendTest.kt` - Unit tests for `LocalBackend` — the typed identifier for the on-device LiteRT backend.
