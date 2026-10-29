@@ -95,12 +95,15 @@ class AssistantPanelTest {
     }
 
     @Test
-    fun `tool-call scores are not measured and Gemma stays the default`() {
-        ToolCallReport.Brain.entries.forEach { brain ->
-            assertEquals(ToolCallReport.NOT_MEASURED, ToolCallReport.score(brain, ToolCallReport.EVAL_V1))
-            assertEquals(ToolCallReport.NOT_MEASURED, ToolCallReport.score(brain, ToolCallReport.EVAL_V2))
-        }
-        assertEquals(ToolCallReport.Brain.GEMMA_4_E2B, ToolCallReport.toolDefault())
+    fun `tool-call scores are the reference runtime and E4B is the default`() {
+        val label = ToolCallReport.REFERENCE_RUNTIME
+        assertEquals("87/100, $label", ToolCallReport.score(ToolCallReport.Brain.GEMMA_4_E2B, ToolCallReport.EVAL_V1))
+        assertEquals("55/78, $label", ToolCallReport.score(ToolCallReport.Brain.GEMMA_4_E2B, ToolCallReport.EVAL_V2))
+        assertEquals("91/100, $label", ToolCallReport.score(ToolCallReport.Brain.GEMMA_4_E4B, ToolCallReport.EVAL_V1))
+        assertEquals("66/78, $label", ToolCallReport.score(ToolCallReport.Brain.GEMMA_4_E4B, ToolCallReport.EVAL_V2))
+        assertEquals("61/100, $label", ToolCallReport.score(ToolCallReport.Brain.QWEN3_1_7B, ToolCallReport.EVAL_V1))
+        assertEquals("41/78, $label", ToolCallReport.score(ToolCallReport.Brain.QWEN3_1_7B, ToolCallReport.EVAL_V2))
+        assertEquals(ToolCallReport.Brain.GEMMA_4_E4B, ToolCallReport.toolDefault())
         assertTrue(ToolCallReport.keepsGemmaForImages())
     }
 
