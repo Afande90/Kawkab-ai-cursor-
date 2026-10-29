@@ -430,8 +430,8 @@ The image loader (`io.coil-kt.coil3:coil-compose:3.6.3`) is a direct dependency 
 | 30u30 and CC BY-NC-ND material | non-commercial | never copied | spec section 0.3 | no |
 | PhoneCLI (github.com/HKUDS/PhoneCLI) | MIT | credited; no code copied | https://github.com/HKUDS/PhoneCLI | no |
 | Local Assistant (github.com/sergarsilla/local-assistant) | Apache-2.0 | credited; no code copied | https://github.com/sergarsilla/local-assistant | no |
-| Llamatik (github.com/ferranpons/Llamatik) | MIT | candidate llama.cpp runtime; not a Gradle dependency; no code copied | https://github.com/ferranpons/Llamatik | no |
-| Qwen3 1.7B | Apache-2.0 | tool-call candidate; weights not downloaded | task 20b; Apache-2.0 model card | no |
+| Llamatik (github.com/ferranpons/Llamatik, com.llamatik:core 2.0.0) | MIT | llama.cpp runtime; Gradle dependency; native libraries in the APK; no weights bundled | https://github.com/ferranpons/Llamatik | yes |
+| Qwen3 1.7B | Apache-2.0 | selectable tool-call brain; Q4_K_M GGUF is an owner download; not in the APK | https://huggingface.co/Qwen/Qwen3-1.7B | no |
 | OnDevice LLM (github.com/sebytzr16/on-device-llm) | MIT | credited; no code copied | https://github.com/sebytzr16/on-device-llm | no |
 | FunctionGemma 270M (google/functiongemma-270m-it) | Gemma Terms of Use | gated; tier-2 intent candidate; not downloaded; not fine-tuned here | https://huggingface.co/google/functiongemma-270m-it | no |
 | Parakeet TDT 0.6B v3 (nvidia/parakeet-tdt-0.6b-v3) | CC-BY-4.0 | M4 speech candidate; 25 European languages on the card; Arabic not listed; not downloaded | https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3 | no |

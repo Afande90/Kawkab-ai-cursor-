@@ -64,6 +64,7 @@ Only Kotlin files appear inside the generated blocks.
     - `KoogStructuredInferenceClientFactory.kt` - Data-layer impl of `domain/engine/structured/CloudStructuredInferenceClientFactory`; builds a retry-wrapped Koog client and exposes a `StructuredInferenceClient` that collapses the streamed response for the gate; no JSON mode is switched on.
     - `KoogTransportFactory.kt` - The transport every Koog model client the app builds runs on: Koog's own Ktor client, extended to check every hop (first request and each redirect) against `ModelHopRule` and to record the `Retry-After` of each error answer for the retry policy.
     - `LiteRTLlmEngine.kt` - LiteRT LLM engine implementation.
+    - `LlamaGgufRuntime.kt` - llama.cpp on the phone, through Llamatik, for a GGUF brain.
     - `MediaPipeTextEmbeddingEngine.kt` - MediaPipe text embedding engine.
     - `ModelHopRule.kt` - Where one request of a model client may go: the rule `KoogTransportFactory` applies to every hop — the request the client sends and each redirect a server answers with.
     - `ModelNetworkGate.kt` - The one place that decides whether a model request may leave the device right now.

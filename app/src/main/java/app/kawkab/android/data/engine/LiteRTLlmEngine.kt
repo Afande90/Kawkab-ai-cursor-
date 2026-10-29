@@ -69,6 +69,9 @@ class LiteRTLlmEngine @Inject constructor(
     private var engine: Engine? = null
     private var conversation: Conversation? = null
     private var _currentModelPath: String? = null
+
+    /** True while the loaded file is a GGUF brain on llama.cpp, not LiteRT. */
+    private var ggufReady: Boolean = false
     private var _isVisionEnabled: Boolean = false
     private var _isAudioEnabled: Boolean = false
 
@@ -289,6 +292,9 @@ class LiteRTLlmEngine @Inject constructor(
         // Close existing engine if present to release previous resources. Uses
         // the non-locking teardown because the mutex is already held here.
         unloadInternal()
+        if (LlamaGgufRuntime.isGguf(modelPath)) {
+            return openGguf(modelPath, enableVision, enableAudio)
+        }
 
         val maxTokens = generationSettings.maxContextLength.first()
         val configuredKey = generationSettings.localModelBackend.first()
@@ -416,7 +422,35 @@ class LiteRTLlmEngine @Inject constructor(
      *   user's sampler and a fresh seed (see [userConversationConfig]).
      * @return A [Flow] of strings representing the generated tokens as they are produced.
      */
-    override fun generateResponseStream(prompt: String, imagePath: String?, sampling: LocalSampling?): Flow<String> =
+    /**
+     * Loads a GGUF with llama.cpp. Vision and audio stay on Gemma, so a request for either does not load this file.
+     */
+    private fun openGguf(modelPath: String, enableVision: Boolean, enableAudio: Boolean): Result<Unit, AppError> {
+        if (enableVision || enableAudio) {
+            return Result.Error(error = LlmSystemError, message = "Images and audio stay on Gemma.")
+        }
+        ggufReady = LlamaGgufRuntime.load(modelPath)
+        if (!ggufReady) {
+            _currentModelPath = null
+            return Result.Error(error = LlmSystemError, message = "The GGUF brain did not load.")
+        }
+        _currentModelPath = modelPath
+        _isVisionEnabled = false
+        _isAudioEnabled = false
+        _activeBackend = LocalBackend.CPU
+        return Result.Success(Unit)
+    }
+
+    override fun generateResponseStream(prompt: String, imagePath: String?, sampling: LocalSampling?): Flow<String> {
+        if (ggufReady) {
+            // Images stay on Gemma. A GGUF brain never sees a picture.
+            if (imagePath != null) return flow { emit("") }
+            return flow { emit(LlamaGgufRuntime.complete(prompt)) }
+        }
+        return streamResponse(prompt, imagePath, sampling)
+    }
+
+    private fun streamResponse(prompt: String, imagePath: String?, sampling: LocalSampling?): Flow<String> =
         // With an image, the message is a multimodal [Contents] (image then text);
         // without, the plain-string overload keeps the text path byte-identical.
         streamConversation(sampling, prompt) { conversation, callback ->
@@ -640,8 +674,10 @@ class LiteRTLlmEngine @Inject constructor(
         } catch (e: Exception) {
             Timber.e(e, "Error unloading LiteRT-LM engine")
         } finally {
+            if (ggufReady) LlamaGgufRuntime.unload()
             conversation = null
             engine = null
+            ggufReady = false
             _currentModelPath = null
             _isVisionEnabled = false
             _isAudioEnabled = false

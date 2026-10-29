@@ -58,7 +58,8 @@ object ToolCallReport {
     /**
      * Whether images stay on Gemma.
      *
-     * @return `true` while the tool-call default is a Gemma brain.
+     * A GGUF tool-call brain does not take images. Gemma stays the image model
+     * even when [toolDefault] is Qwen.
      */
-    fun keepsGemmaForImages(): Boolean = toolDefault() != Brain.QWEN3_1_7B
+    fun keepsGemmaForImages(): Boolean = true
 }

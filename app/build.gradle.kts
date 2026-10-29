@@ -2207,6 +2207,7 @@ dependencies {
 
     // LiteRT LLM Inference
     implementation(libs.litertlm)
+    implementation(libs.llamatik)
 
     // MediaPipe Tasks Text.
     //

@@ -47,8 +47,8 @@ Fine-tunes inherit those terms. EmbeddingGemma has no verified model card in thi
 - Pocket LLM (github.com/dineshsoudagar/local-llms-on-android, MIT): named as a Gemma 4 GPU and NPU idea. No code was copied.
 - PhoneCLI (github.com/HKUDS/PhoneCLI, MIT): the idea of stored app maps and macros replayed with no model call. No code was copied.
 - Local Assistant (github.com/sergarsilla/local-assistant, Apache-2.0): the idea of registering as the digital assistant and of trying Qwen3 1.7B for tool calls. No code was copied. Their published tool-choice counts are theirs, not a Kawkab measurement.
-- Llamatik (github.com/ferranpons/Llamatik, MIT): a Kotlin library over llama.cpp, recorded as the candidate runtime for the judge GGUF. Not a Gradle dependency. Not downloaded. No code was copied.
-- Qwen3 1.7B (Apache-2.0): a tool-calling brain candidate. Weights are not downloaded and are not in the APK.
+- Llamatik (github.com/ferranpons/Llamatik, MIT, com.llamatik:core 2.0.0): the llama.cpp runtime. The library is a Gradle dependency, so its native code is in the APK. No weights are bundled.
+- Qwen3 1.7B (Apache-2.0): a selectable tool-call brain. The Models screen can download the Q4_K_M GGUF. The weights are not in the APK.
 - OnDevice LLM (github.com/sebytzr16/on-device-llm, MIT): the idea of Parakeet and Kokoro for on-device speech. No code was copied.
 - FunctionGemma 270M (google/functiongemma-270m-it, Gemma Terms of Use, gated): a tier-2 intent candidate. Not downloaded. Not fine-tuned here.
 - Parakeet TDT 0.6B v3 (nvidia/parakeet-tdt-0.6b-v3, CC-BY-4.0): an M4 speech-to-text candidate. The card lists 25 European languages and does not list Arabic. Not downloaded.
