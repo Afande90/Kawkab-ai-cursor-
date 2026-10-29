@@ -35,7 +35,12 @@ This repository is dedicated to Kawkab. Work on `main`.
 - **Zero cost.** No paid API, service or hosting. Everything runs on the phone. No telemetry.
 - **Images, audio and screenshots never leave the phone.**
 - **Outbound actions always need a tap.** Anything that sends, calls, posts, shares, pays, submits or deletes needs a tap on a confirmation card that no setting can switch off (spec §0.4).
-- **Licences.** Keep upstream licence headers. Credit every donor in `NOTICE` and `THIRD_PARTY.md`. Never copy AGPL or non-commercial code.
+- **Licences.** Kawkab is the owner's personal app and is not sold. Owner decision, 29 Oct 2026; this overrides spec §0.3's ban on AGPL and non-commercial code.
+  - Any open-source code or model may be reused, including AGPL and non-commercial licences, as long as its licence allows personal use.
+  - Keep upstream licence headers.
+  - Credit every donor in `NOTICE` and `THIRD_PARTY.md`.
+  - Mark AGPL and non-commercial items `personal-use only` in `THIRD_PARTY.md`, so they can be swapped out if the app is ever sold.
+  - Still never copy anything that calls Anthropic or Claude, or any cloud login.
 
 ## Environment setup (put this in the Jules environment setup script)
 
@@ -134,6 +139,17 @@ Donors:
     - Qwen3-ASR-0.6B, as an extra M4 speech candidate.
 
     Do not ship any of them without a passing licence check.
+20b. **System assistant and a better tool-calling brain.** Donor: **Local Assistant** (github.com/sergarsilla/local-assistant, Apache-2.0).
+    - **Default digital assistant.**
+      - Register Kawkab as Android's default digital assistant (`VoiceInteractionService` and the assistant role), so a long-press of the power button or the assistant gesture opens a Kawkab panel over the current app.
+      - Read the current screen through the assistant API, only when the owner allows "use text from screen" and only on request.
+      - Release the model a few seconds after the panel closes.
+      - Add the steps for making Kawkab the default assistant to the phone-access setup.
+    - **Tool-calling brain.** Its author measured Qwen3 1.7B choosing the right tool 10 of 10 times, against 2 of 10 for Gemma 4 E2B.
+      - Add Qwen3 1.7B (Apache-2.0) as a tool-calling brain candidate.
+      - Score Gemma 4 E2B, Gemma 4 E4B and Qwen3 1.7B on the frozen command sets (v1 and v2) through the tier-3 path, and record the scores.
+      - Make the best measured scorer the default for tool calls.
+      - Keep Gemma for images.
 21. **Phone-access setup.** The `m1` APK never asked for any permission. Add an onboarding step and a "Phone access" screen in Settings, in English and Arabic, with a status line for each item:
     - **Runtime permissions:** ask for contacts, phone, calendar, notifications and microphone, each with a one-line reason.
     - **Accessibility service:**
