@@ -150,6 +150,25 @@ Donors:
       - Score Gemma 4 E2B, Gemma 4 E4B and Qwen3 1.7B on the frozen command sets (v1 and v2) through the tier-3 path, and record the scores.
       - Make the best measured scorer the default for tool calls.
       - Keep Gemma for images.
+20c. **Small-model harness rules** (tier 3 and skills).
+
+    **From Genie** (github.com/Akeem1955/Genie: Gemma 4 on LiteRT-LM, offline phone agent):
+    - Turn off automatic tool calling. Every tool call is checked by app code before it runs.
+    - One tool call per turn. The planner returns a typed decision (`Act`, `Reply` or `Finish`), and plain text during planning is invalid.
+    - Keep a sliding history: the goal plus the last 9 steps, with transient errors pruned after a success.
+    - Classify errors into 4 tiers, each with its own recovery.
+    - Add two circuit breakers: 5 failures in a row, or the same unknown tool requested 3 times.
+    - Keep a **skill cache**: store each successful plan and replay it next time with no LLM call, ranked by how often it succeeded. This feeds the M5 growth loop and is shown on the Growth screen, where it can be deleted.
+    - Inject stated user facts into every prompt.
+    - Assess risk from at least two independent signals before asking for biometric confirmation. This is on top of the `OUTBOUND` tap rule, never instead of it.
+
+    **From PocketClaw** (github.com/ManojRakshu/pocketclaw, MIT). It ran Gemma 4 E2B on the owner's exact chip (Snapdragon 7s Gen 3) with a 1–3 s first token for chat and about 5 s for images.
+    - Put the owner's name and identity at the top of the system prompt.
+    - Store old images in chat memory as their text description (about 100 tokens), not image bytes (about 30K tokens).
+    - Consider Gecko 110M as a smaller embedding model than EmbeddingGemma, and measure it.
+    - Exclude unused native libraries from the APK.
+
+    Never port a donor's cloud logins or subscription sign-ins (Claude, ChatGPT and so on).
 21. **Phone-access setup.** The `m1` APK never asked for any permission. Add an onboarding step and a "Phone access" screen in Settings, in English and Arabic, with a status line for each item:
     - **Runtime permissions:** ask for contacts, phone, calendar, notifications and microphone, each with a one-line reason.
     - **Accessibility service:**
