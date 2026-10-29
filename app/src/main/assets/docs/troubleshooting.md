@@ -95,7 +95,7 @@ Two common causes:
 
 If the server row says `ok` and the tool still never appears, the server
 is probably not publishing it to this app. Some tools only work with
-clients that support extra features Knotwork does not have yet, and a
+clients that support extra features Kawkab does not have yet, and a
 well-behaved server leaves those out of the list rather than offering
 something that would fail. See [What the tool count on a server row
 means](user-guide.md#what-the-tool-count-on-a-server-row-means) — it is a real
@@ -276,7 +276,7 @@ the decision to wipe is always yours.
 
 ## Installing over a copy from Google Play fails
 
-Installing a release APK from GitHub, or Knotwork from F-Droid, on a device
+Installing a release APK from GitHub, or Kawkab from F-Droid, on a device
 that already has it from Google Play stops with an error such as *App not
 installed* or *package conflicts with an existing package*; the wording depends
 on the Android version and on the app doing the install. It fails the other way
