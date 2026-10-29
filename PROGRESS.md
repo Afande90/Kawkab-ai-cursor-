@@ -31,7 +31,7 @@ Dates are calendar dates in Asia/Dubai. The owner asked for commits on `main` an
 |---|---|---|---|
 | 14. User-visible Kawkab name, planet mark, companion card | done | 29 Oct 2026 | `1881edde` |
 | 15. Performance defaults | done | 29 Oct 2026 | `a6fba56c` |
-| 16. Kawkab assistant pipeline as the default chat | not started | | |
+| 16. Kawkab assistant pipeline as the default chat | done | 29 Oct 2026 | `095468cb` |
 | 17. Three-tier routing and the fast path in chat | not started | | |
 | 18. Harder command set, frozen then scored | not started | | |
 | 19. App maps and macros | not started | | |
@@ -41,7 +41,9 @@ Dates are calendar dates in Asia/Dubai. The owner asked for commits on `main` an
 | 21. Phone-access setup | not started | | |
 | 22. Close out M1.5 and tag `m1.5` | not started | | |
 
-Next task: 16.
+Next task: 17.
+
+Task 16, 29 Oct 2026: the first launch seeds the Kawkab assistant and marks it the default. A new chat starts on that default. The featured onboarding card materialises the same preset. The mood-router companion stays in the assets, marked internal, so the first-run gallery does not list it and it can still be loaded by id. An existing default whose prompts say "You are Mila" is pointed at a new assistant on the next launch. The old pipeline stays in the library. Checks: `:app:ktlintFormat`, `:app:ktlintCheck`, `:catalog:ktlintCheck`, `:app:detekt`, `:app:generateBrowserEditorConstants`, `:app:verifyBrowserEditorConstants`, `:app:verifyFileMap`, `:app:verifyDocLinks`, and `:app:testFossDebugUnitTest` for `InitializeAppUseCaseTest`, `PipelinePresetCatalogValidationTest`, `OnboardingScenarioCatalogTest`, `GoldenTraceCatalogueTest`, and `GoldenTraceTest` passed (`/tmp/gradle-t16-check.log`, BUILD SUCCESSFUL in 1m 11s). The assistant golden trace was recorded with `-PrecordGoldenTraces` and then matched without that flag. No gate is BLOCKED. GitHub Actions was not run. The emulator was not run.
 
 Task 15, 29 Oct 2026: a first install stays on CPU and logs the backend that started. Phones under 16 GiB of RAM pre-select Gemma 4 E2B. The context default is 1,500 tokens, history compression starts at 1,000, and a file read is budgeted at 700. The model unloads after 2 idle minutes and stays loaded between messages. Thinking is off. A tool or JSON tail caps output at 300 tokens. Replies were already streamed. Multi-token prediction stays off because LiteRT-LM 0.17.1 has no switch. NPU stays withdrawn: no phone self-test has shown it starting and beating CPU. Time to first token and tokens per second are not measured. The Settings test-backend row stores both when the owner runs it. Checks: `:app:ktlintFormat`, `:app:ktlintCheck`, `:app:detekt`, `:app:generateFileMap`, `:app:verifyFileMap`, `:app:verifyDocLinks`, and `:app:testFossDebugUnitTest` for `SettingsDefaultsTest`, `AgentIdleManagerTest`, `PrepareInferenceBackendUseCaseTest`, `ReplyBudgetTest`, `NpuTrialPolicyTest`, `DefaultBrainTest`, `OnboardingViewModelTest`, and `LiteRTLlmEngineTest` passed (`/tmp/gradle-t15-test.log`, BUILD SUCCESSFUL in 1m 17s). No gate is BLOCKED. GitHub Actions was not run. The emulator was not run.
 
