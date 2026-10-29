@@ -92,7 +92,7 @@
     <string name="external_automation_call_keys_label">Extras</string>
     <string name="external_automation_call_copy">Copy</string>
     <string name="external_automation_call_expand_cd">Show how another app calls this</string>
-    <string name="external_automation_call_clip_label">Knotwork external automation</string>
+    <string name="external_automation_call_clip_label">Kawkab external automation</string>
 
     <!-- Meaning of each wire key, in the order the contract declares them. -->
     <string name="external_automation_key_pipeline_id">Id of the pipeline to run. Use this or the name, never both.</string>
@@ -105,7 +105,7 @@
 
     <!-- Consent dialog. -->
     <string name="external_automation_consent_title">Let other apps run a pipeline?</string>
-    <string name="external_automation_consent_intro">Automation apps like Tasker or MacroDroid — and shell scripts over adb — will be able to ask Knotwork to run one pipeline for them.</string>
+    <string name="external_automation_consent_intro">Automation apps like Tasker or MacroDroid — and shell scripts over adb — will be able to ask Kawkab to run one pipeline for them.</string>
     <string name="external_automation_consent_any_app">Any app on this device that can send a broadcast may ask. There is no per-app list: the pipeline you pick is the whole permission.</string>
     <string name="external_automation_consent_one_pipeline">Only that one pipeline can be run. A request naming anything else is refused, never redirected to the one you picked.</string>
     <string name="external_automation_consent_approvals">Your approval settings still apply: a tool call stops and asks you first exactly as in the app’s own background runs, and a destructive one always does.</string>

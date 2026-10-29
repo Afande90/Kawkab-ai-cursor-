@@ -27,7 +27,7 @@ Paths below are relative to `src/main/java/app/kawkab/design/`.
   - `RespectReducedMotionTransitions.kt` - `respectReducedMotionTransitions` helper that swaps caller-supplied enter/exit transitions for an 80 ms alpha-only crossfade when reduced motion is on.
 - `components/` - atomic components.
   - `brand/` - brand-mark composables.
-    - `KnotworkLogo.kt` - renders the canonical two-node brand glyph at configurable sizes plus the plated app-icon tile variant.
+    - `KnotworkLogo.kt` - renders the planet mark at configurable sizes plus the plated app-icon tile variant.
   - `buttons/` - `KnotworkPrimaryButton` / `KnotworkSecondaryButton` / `KnotworkTextButton` / `KnotworkIconButton` + previews.
     - `KnotworkButtonDefaults.kt` - `KnotworkButtonSize` tier enum (`Sm` / `Md` / `Lg`) and the height / padding / text-style lookup behind it: the single source of truth every button composable in `:catalog` resolves its geometry through.
     - `KnotworkButtonsPreview.kt` - Harness rendering every button variant in one column, shared by the Android Studio preview pane and the Roborazzi baseline, so a regression in any state surfaces in the same diff.

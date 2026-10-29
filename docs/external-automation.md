@@ -1,10 +1,10 @@
 # External automation contract
 
-Knotwork can be asked to run one of your pipelines by another app on the same
+Kawkab can be asked to run one of your pipelines by another app on the same
 device — a Tasker or MacroDroid profile, a shell script over `adb`, anything that
 can send a broadcast. The intent is to **complement** an automation app rather
 than replace it: the other app decides *when* something should happen, using its
-own permissions and its own condition model, and Knotwork does the language-model
+own permissions and its own condition model, and Kawkab does the language-model
 part of *what* happens.
 
 > **Status: the contract is live and switchable.** Requests are received, judged

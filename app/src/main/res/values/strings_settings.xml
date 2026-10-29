@@ -231,7 +231,7 @@
          headless-process registration by AgentWorker does not rename the user-visible channel. -->
     <string name="notifications_agent_foreground_channel_name">Agent Service</string>
     <string name="notifications_agent_foreground_channel_description">Shows a status while the agent is actively working; dismissed automatically when it finishes.</string>
-    <string name="notifications_agent_foreground_title">Knotwork agent</string>
+    <string name="notifications_agent_foreground_title">Kawkab agent</string>
     <string name="notifications_scheduled_running_title">Scheduled task</string>
     <string name="notifications_scheduled_running_body">Agent is working in the background…</string>
     <string name="notifications_model_download_channel_name">Model downloads</string>
@@ -339,8 +339,8 @@
     <!-- Duration as mm:ss (minutes are not capped at 60, so a long download reads as e.g. 84:07). -->
     <string name="settings_usage_duration">%1$d:%2$02d</string>
     <string name="settings_usage_duration_none">—</string>
-    <string name="settings_usage_export_filename">knotwork-usage.json</string>
-    <string name="settings_usage_share_title">Knotwork usage statistics</string>
+    <string name="settings_usage_export_filename">kawkab-usage.json</string>
+    <string name="settings_usage_share_title">Kawkab usage statistics</string>
     <string name="settings_usage_reset_title">Reset usage statistics?</string>
     <string name="settings_usage_reset_body">This permanently clears every on-device usage count. It does not change the recording setting.</string>
     <string name="settings_usage_reset_confirm">Reset</string>

@@ -598,8 +598,8 @@
     <string name="knotwork_onboarding_scenario_translate_value">ترجم الرسائل مع الحفاظ على نبرتها ومستواها ولهجتها — لا الكلمات وحدها.</string>
     <string name="knotwork_onboarding_scenario_capture_title">معالج المشاركة</string>
     <string name="knotwork_onboarding_scenario_capture_value">شارك أي شيء مع الوكيل فيصبح ملاحظة نظيفة منظّمة في صندوق الوارد.</string>
-    <string name="knotwork_onboarding_scenario_companion_title">رفيق افتراضي</string>
-    <string name="knotwork_onboarding_scenario_companion_value">رفيق يستشعر مزاجك ويغيّر طريقة حديثه معك.</string>
+    <string name="knotwork_onboarding_scenario_companion_title">كوكب</string>
+    <string name="knotwork_onboarding_scenario_companion_value">مساعد على الجهاز يجيب بلغتك ويستطيع استخدام الهاتف.</string>
     <string name="knotwork_onboarding_scenario_scratch_title">البدء من الصفر</string>
     <string name="knotwork_onboarding_scenario_scratch_body">تفضّل أن تبنيه بنفسك؟ ستصل إلى مسار فارغ توصله عقدةً عقدة.</string>
 

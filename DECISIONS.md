@@ -221,3 +221,9 @@ On the frozen test split of 100 commands the fast path matched every line: call 
 
 `./gradlew check :buildSrc:test --offline` passed in 9m 59s: foss 6070 tests, full 6074, catalog 1037, buildSrc 501, 0 failures. Detekt reported 0 findings. No gate is BLOCKED. GitHub Actions was not run from this machine. The emulator was not run. The instrumented fast-path test is compiled for CI and was not executed here.
 
+## 2026-10-29 — user-visible name is Kawkab
+
+Resource ids stay `knotwork_*`. They are not drawn on screen, and renaming them would touch every call site without changing what the owner reads. The About screen still lists Knotwork under acknowledgments, and `NOTICE` still carries the upstream copyright. Fastlane changelogs stay the historical release notes. The density launcher bitmaps are the old mark; minSdk 34 installs the adaptive planet icon, so those bitmaps are not the icon the phone shows. The status-bar icon is now the same planet, drawn white.
+
+The mood-router preset keeps its id and stays importable. Its display name is Kawkab, matching the onboarding card. Screenshot goldens for the screens whose copy changed are re-recorded in the same change. The comparison threshold is not changed.
+

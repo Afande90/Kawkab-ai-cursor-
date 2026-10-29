@@ -68,7 +68,7 @@ data class ExternalAutomationConsentStrings(
     val title: String = "Let other apps run a pipeline?",
     val intro: String =
         "Automation apps like Tasker or MacroDroid — and shell scripts over adb — will be able to ask " +
-            "Knotwork to run one pipeline for them.",
+            "Kawkab to run one pipeline for them.",
     val bulletAnyApp: String =
         "Any app on this device that can send a broadcast may ask. There is no per-app list: the " +
             "pipeline you pick is the whole permission.",

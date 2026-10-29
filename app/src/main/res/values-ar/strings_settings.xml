@@ -239,7 +239,7 @@
          headless-process registration by AgentWorker does not rename the user-visible channel. -->
     <string name="notifications_agent_foreground_channel_name">خدمة الوكيل</string>
     <string name="notifications_agent_foreground_channel_description">تعرض الحالة بينما يعمل الوكيل، وتُغلق تلقائيًا عند انتهائه.</string>
-    <string name="notifications_agent_foreground_title">وكيل Knotwork</string>
+    <string name="notifications_agent_foreground_title">وكيل Kawkab</string>
     <string name="notifications_scheduled_running_title">مهمة مجدولة</string>
     <string name="notifications_scheduled_running_body">الوكيل يعمل في الخلفية…</string>
     <string name="notifications_model_download_channel_name">تنزيلات النماذج</string>
@@ -351,8 +351,8 @@
     <!-- Duration as mm:ss (minutes are not capped at 60, so a long download reads as e.g. 84:07). -->
     <string name="settings_usage_duration">%1$d:%2$02d</string>
     <string name="settings_usage_duration_none">—</string>
-    <string name="settings_usage_export_filename">knotwork-usage.json</string>
-    <string name="settings_usage_share_title">إحصاءات استخدام Knotwork</string>
+    <string name="settings_usage_export_filename">kawkab-usage.json</string>
+    <string name="settings_usage_share_title">إحصاءات استخدام Kawkab</string>
     <string name="settings_usage_reset_title">إعادة ضبط إحصاءات الاستخدام؟</string>
     <string name="settings_usage_reset_body">يمسح هذا نهائيًا كل أعداد الاستخدام المخزّنة على الجهاز. لا يغيّر إعداد التسجيل.</string>
     <string name="settings_usage_reset_confirm">إعادة ضبط</string>

@@ -1,6 +1,6 @@
 # Security Policy
 
-This document describes the security posture of **Knotwork**, an on-device AI
+This document describes the security posture of **Kawkab**, an on-device AI
 agent for Android: what data the app handles, how it is protected, what is sent
 off-device when the user opts in to crash reporting, and how to report a
 vulnerability you discover.
@@ -587,7 +587,7 @@ their handling is constrained more tightly than text — and the constraints are
 - **A shared image is read only from another app's content.** The share target
   accepts an image from any app, and the app reads it with its own identity. It
   therefore opens only a `content://` URI that another app's provider serves: a
-  `file://` path, or a URI of Knotwork's own file provider, is refused without
+  `file://` path, or a URI of Kawkab's own file provider, is refused without
   being read, so a share cannot pull the app's private files into a chat.
 - **Image retention and cleanup.** A stored image is deleted together with its
   owning message and session. Independently, a daily
@@ -779,7 +779,7 @@ show there.
 
 [PCAPdroid](https://github.com/emanuele-f/PCAPdroid) shows which app connects
 where. It needs no root: it runs as a VPN on the phone itself. Start it before
-you open Knotwork, then use the app as usual. With crash reports off, the
+you open Kawkab, then use the app as usual. With crash reports off, the
 maintainer's own capture showed connections to Wikipedia when a pipeline looked
 something up and to Hugging Face when a model was downloaded, and nothing else.
 Browsing models on the **Discover** screen also reaches Hugging Face. A cloud

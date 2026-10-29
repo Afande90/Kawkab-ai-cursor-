@@ -1,14 +1,14 @@
-# Privacy Policy — Knotwork
+# Privacy Policy — Kawkab
 
 **Effective date:** 16 October 2026
-**Applies to:** the Knotwork Android application (package `app.kawkab.android`),
+**Applies to:** the Kawkab Android application (package `app.kawkab.android`),
 both published distributions — `full` and `foss` — from version `0.7.1` onward.
 
 ---
 
 ## Summary
 
-Knotwork is an on-device AI agent. There is **no account, no sign-in, and no
+Kawkab is an on-device AI agent, derived from Knotwork (Apache-2.0). There is **no account, no sign-in, and no
 server operated by the developer**. Nothing is uploaded for the app to work,
 and there is no back end that could hold your data.
 
@@ -33,7 +33,7 @@ live in [SECURITY.md](SECURITY.md); per-feature behaviour is described in the
 
 ## 1. Who is responsible
 
-Knotwork is an independent open-source project maintained by a single
+Kawkab is an independent open-source project maintained by a single
 developer. There is no company, no data-processing infrastructure, and no
 analytics back end behind it.
 
@@ -246,17 +246,17 @@ setting.
 ### 3.6 External automation (another app on this device)
 
 Another app on the same device — a Tasker or MacroDroid profile, a shell script
-over `adb` — can ask Knotwork to run one of your pipelines. This is **off by
+over `adb` — can ask Kawkab to run one of your pipelines. This is **off by
 default**; it does nothing until you switch it on in
 *Settings → Background & triggers → External automation* and bind exactly one
 pipeline that outside callers may reach.
 
 While it is on, data moves in two directions and neither leaves the device:
 
-- **Inbound.** The caller's broadcast carries the prompt text into Knotwork.
+- **Inbound.** The caller's broadcast carries the prompt text into Kawkab.
   That text is another app's to send, so what it contains is governed by that
   app, not by this one; here it is treated like any other input.
-- **Outbound (optional).** If the request asked to be answered, Knotwork sends
+- **Outbound (optional).** If the request asked to be answered, Kawkab sends
   one broadcast addressed to **the package that request named** — delivered to
   that package only, never a general broadcast — carrying the request id, the
   admission status and, when refused, the reason. It never carries the prompt, the model's reply, or
@@ -405,7 +405,7 @@ tool call from a notification asks you to unlock the phone first.
 
 ## 6. Children
 
-Knotwork is not directed to children. The intended audience is adults
+Kawkab is not directed to children. The intended audience is adults
 (18 and over). The app does not knowingly process data from children, and it
 collects no age information because it collects no personal profile at all.
 

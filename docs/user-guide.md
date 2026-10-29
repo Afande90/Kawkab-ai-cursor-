@@ -1,6 +1,6 @@
 # User Guide
 
-This guide is for people who installed **Knotwork**, an on-device AI
+This guide is for people who installed **Kawkab**, an on-device AI
 agent for Android, and want to learn how to use it. It walks through every
 screen the app provides and the user-facing flows that connect them.
 
@@ -212,7 +212,7 @@ be bound to its own pipeline.
 ### The chat home screen
 
 The chat home is the first surface that opens after onboarding. It is
-now built on the Knotwork design system and shows, top to bottom:
+now built on the Kawkab design system and shows, top to bottom:
 
 - A **top app bar** with the current thread title, the active model
   name beneath it (e.g. *Gemma 2 · 2B*), a menu icon on the left that
@@ -822,7 +822,7 @@ not a defect, but the effect is the same for you: background work does
 not finish.
 
 To let it finish, exclude the app from battery optimisation. On stock
-Android that is **system Settings → Apps → Knotwork → Battery →
+Android that is **system Settings → Apps → Kawkab → Battery →
 Unrestricted**; the exact path differs by manufacturer, and phones with
 an extra vendor layer (Samsung, Xiaomi, OnePlus and others) usually need
 the app taken out of a separate "sleeping apps" list as well. The app
@@ -922,9 +922,9 @@ bind a tile pipeline in Settings, Android offers to add the tile for you.
 
 ### External automation (Tasker, MacroDroid, adb)
 
-Another app on the device can ask Knotwork to run a pipeline for it — a
+Another app on the device can ask Kawkab to run a pipeline for it — a
 Tasker or MacroDroid profile, or a shell script over `adb`. The other app
-decides *when*; Knotwork does the language-model part of *what*.
+decides *when*; Kawkab does the language-model part of *what*.
 
 This one is different from the three above: a request needs no screen, so it
 can arrive from an app in the background and run with nothing shown. So it is
@@ -2855,7 +2855,7 @@ it resumes after a pause. There are four numbers and one statement:
   same drag anywhere along it.
 - **Tokens per background run** — lower by default, because nobody is watching a
   background run finish.
-- **Spending limit — *Not measured*.** Knotwork runs on your own API key, so it
+- **Spending limit — *Not measured*.** Kawkab runs on your own API key, so it
   never sees your bill and cannot measure or cap what a run costs. Rather than
   show you a figure it would have to guess, it says so. The token limit above is
   the closest control.
@@ -3085,7 +3085,7 @@ came from. Search settings for *backup*, *export*, *transfer* or *new phone* to
 find the screen.
 
 1. **Password, twice.** At least 12 characters; a few unrelated words make a
-   strong one. Knotwork never stores it (a password manager may offer to): forget
+   strong one. Kawkab never stores it (a password manager may offer to): forget
    it and nobody can open the backup, the developer included.
 2. **Include API keys and sign-ins** — off unless you tick it. Ticked, the file
    also carries your cloud API keys, the Hugging Face token and MCP sign-ins,
@@ -3096,11 +3096,11 @@ find the screen.
    the name `knotwork-backup-<date>.knotwork`. Any place it offers will do — a
    folder on the phone, a memory card, a cloud drive. Picking an existing file
    replaces it — if the new backup then does not finish, the old file is gone
-   too. Knotwork itself uploads nothing; a cloud drive you pick uploads the file
+   too. Kawkab itself uploads nothing; a cloud drive you pick uploads the file
    as it would any other.
 4. **Backing up.** The steps are named as they run: securing the password
    (about a second on a recent phone), chats, memory and settings, then files
-   and images, with the bytes written so far. Keep Knotwork open until it
+   and images, with the bytes written so far. Keep Kawkab open until it
    finishes. **Cancel** — or Back — stops it and deletes the unfinished file.
 5. **Backup saved** shows the file, its size, how many chats, memories,
    pipelines and files are in it, and whether the keys are. **Done** forgets
@@ -3129,7 +3129,7 @@ does not list is kept but not used.
 1. **Pick the file** in the system's *Open document* screen. Any file can be
    picked; the backup's own header decides. A file that is not a backup is
    named and refused, and so is one written in a newer format, or with a newer
-   database, than this phone's Knotwork reads — update the app first.
+   database, than this phone's Kawkab reads — update the app first.
 2. **Enter its password** and tap **Check**, or *Done* on the keyboard. A wrong
    password is said in place; nothing counts the tries.
 3. **Checking the backup** reads every part of the file into a copy the app

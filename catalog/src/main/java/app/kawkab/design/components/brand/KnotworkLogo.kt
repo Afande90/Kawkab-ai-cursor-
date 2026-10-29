@@ -44,8 +44,8 @@ private const val TILE_CORNER_FRACTION = 0.25f
 private const val TILE_MARK_FRACTION = 0.6f
 
 /**
- * Knotwork brand **logo** — the bare canonical mark ([AppIcons.Mark]: two nodes
- * joined by one edge), no plate, tinted [tint] (defaults to `primary`).
+ * Kawkab brand **logo** — the bare planet mark ([AppIcons.Mark]), no plate,
+ * tinted [tint] (defaults to `primary`).
  *
  * This is the single brand glyph — splash, onboarding, empty
  * states and headers all render it via this composable, so there is exactly one
@@ -71,7 +71,7 @@ fun KnotworkLogo(
 }
 
 /**
- * Knotwork **app-icon** presentation — the white [AppIcons.Mark] on a rounded
+ * Kawkab **app-icon** presentation — the white [AppIcons.Mark] on a rounded
  * `primary` tile, mirroring the launcher adaptive icon 1:1.
  * Used in the About hero / row and share cards.
  *

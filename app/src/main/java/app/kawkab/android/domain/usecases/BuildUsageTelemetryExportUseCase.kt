@@ -76,7 +76,7 @@ class BuildUsageTelemetryExportUseCase @Inject constructor() {
         pipelineNames: Map<String, String>,
         generatedAtLabel: String,
     ): String = buildString {
-        appendLine("Knotwork — local usage statistics")
+        appendLine("Kawkab — local usage statistics")
         appendLine("Generated $generatedAtLabel")
         appendLine("These statistics are stored only on this device; nothing was transmitted.")
         appendLine()

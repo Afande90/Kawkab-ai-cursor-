@@ -11,7 +11,7 @@
     <!-- Backup & restore screen -->
     <string name="knotwork_backup_home_title">Backup &amp; restore</string>
     <string name="knotwork_backup_home_intro">One file, locked with a password you choose: chats, memory, pipelines, run history, triggers, settings and files. Not the model files.</string>
-    <string name="knotwork_backup_home_no_server">Knotwork uploads nothing. The file goes only where you save it.</string>
+    <string name="knotwork_backup_home_no_server">Kawkab uploads nothing. The file goes only where you save it.</string>
     <string name="knotwork_backup_action_backup">Back up…</string>
     <string name="knotwork_backup_action_backup_sub">Choose a password and where to save the file</string>
     <string name="knotwork_backup_action_restore">Restore from file…</string>
@@ -36,7 +36,7 @@
     <string name="knotwork_backup_step_db">Chats, memory and settings</string>
     <string name="knotwork_backup_step_files">Files and images</string>
     <string name="knotwork_backup_bytes">%1$s of %2$s</string>
-    <string name="knotwork_backup_keep_open">Keep Knotwork open until this finishes.</string>
+    <string name="knotwork_backup_keep_open">Keep Kawkab open until this finishes.</string>
     <string name="knotwork_backup_cancel">Cancel</string>
 
     <!-- Back up · result -->
@@ -56,7 +56,7 @@
     <!-- The app's own: the copy has lines for the chosen place only, not for the phone itself. -->
     <string name="knotwork_backup_failed_phone_full">This phone doesn’t have enough free space to prepare the backup.</string>
     <!-- The app's own. -->
-    <string name="knotwork_backup_failed_read">Some of Knotwork’s data couldn’t be read.</string>
+    <string name="knotwork_backup_failed_read">Some of Kawkab’s data couldn’t be read.</string>
     <string name="knotwork_backup_failed_deleted">The unfinished file was deleted.</string>
     <!-- The app's own: the copy names a file left behind in the cancel snackbar only. -->
     <string name="knotwork_backup_failed_left">Delete the unfinished file %1$s yourself.</string>
@@ -65,14 +65,14 @@
 
     <!-- Restore · open -->
     <string name="knotwork_backup_restore_title">Restore</string>
-    <string name="knotwork_backup_not_backup_title">Not a Knotwork backup</string>
-    <string name="knotwork_backup_not_backup_body">%1$s isn’t a backup made by Knotwork.</string>
+    <string name="knotwork_backup_not_backup_title">Not a Kawkab backup</string>
+    <string name="knotwork_backup_not_backup_body">%1$s isn’t a backup made by Kawkab.</string>
     <string name="knotwork_backup_choose_another">Choose another file</string>
     <!-- The app's own: stands in for a file name its provider does not give. -->
     <string name="knotwork_backup_this_file">This file</string>
-    <string name="knotwork_backup_newer_title">Update Knotwork first</string>
-    <string name="knotwork_backup_newer_body">This backup was made with Knotwork %1$s. This phone has %2$s, which can’t read it.</string>
-    <string name="knotwork_backup_made_with">Made with Knotwork %1$s on %2$s</string>
+    <string name="knotwork_backup_newer_title">Update Kawkab first</string>
+    <string name="knotwork_backup_newer_body">This backup was made with Kawkab %1$s. This phone has %2$s, which can’t read it.</string>
+    <string name="knotwork_backup_made_with">Made with Kawkab %1$s on %2$s</string>
     <string name="knotwork_backup_restore_lead">Enter the password this backup was made with.</string>
     <string name="knotwork_backup_check">Check</string>
 
@@ -98,8 +98,8 @@
     <string name="knotwork_backup_phone_key_title">Can’t restore on this phone</string>
     <!-- The app's own: the checked backup could not be set to apply. -->
     <string name="knotwork_backup_not_started_title">Restore not started</string>
-    <string name="knotwork_backup_not_started_body">Knotwork couldn’t set the backup to apply. Try again from the start.</string>
-    <string name="knotwork_backup_phone_key_body">Knotwork can’t read this phone’s own database key, so it can’t set the backup up here.</string>
+    <string name="knotwork_backup_not_started_body">Kawkab couldn’t set the backup to apply. Try again from the start.</string>
+    <string name="knotwork_backup_phone_key_body">Kawkab can’t read this phone’s own database key, so it can’t set the backup up here.</string>
 
     <!-- Restore · summary, confirm -->
     <string name="knotwork_backup_summary_title">Ready to restore</string>
@@ -125,7 +125,7 @@
 
     <!-- Restoring, after restore -->
     <string name="knotwork_backup_restoring">Restoring…</string>
-    <string name="knotwork_backup_restoring_sub">Knotwork will restart in a few seconds.</string>
+    <string name="knotwork_backup_restoring_sub">Kawkab will restart in a few seconds.</string>
     <string name="knotwork_backup_after_title">Restored</string>
     <string name="knotwork_backup_after_sub">From the backup made on %1$s</string>
     <string name="knotwork_backup_after_models">Models to download again</string>

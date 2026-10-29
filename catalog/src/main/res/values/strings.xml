@@ -725,7 +725,7 @@
     <!-- ============ Onboarding pager ============ -->
 
     <!-- Brand title rendered in the onboarding top app bar next to the logo glyph. -->
-    <string name="knotwork_onboarding_brand_title">Knotwork</string>
+    <string name="knotwork_onboarding_brand_title">Kawkab</string>
     <!-- Skip button — visible on every step except the final one. -->
     <string name="knotwork_onboarding_skip">Skip</string>
     <!-- Primary CTA on steps 1-3. -->
@@ -773,9 +773,9 @@
     <!-- Share Handler value line. -->
     <string name="knotwork_onboarding_scenario_capture_value">Share anything to the agent and it becomes a clean, structured note in your inbox.</string>
     <!-- Virtual Companion card title. -->
-    <string name="knotwork_onboarding_scenario_companion_title">Virtual Companion</string>
+    <string name="knotwork_onboarding_scenario_companion_title">Kawkab</string>
     <!-- Virtual Companion value line. -->
-    <string name="knotwork_onboarding_scenario_companion_value">A companion that senses your mood and shifts how it talks with you.</string>
+    <string name="knotwork_onboarding_scenario_companion_value">An on-device assistant that answers in your language and can use the phone.</string>
     <!-- Escape ("build my own") card title. -->
     <string name="knotwork_onboarding_scenario_scratch_title">Start from scratch</string>
     <!-- Escape card body copy. -->
