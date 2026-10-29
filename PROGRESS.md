@@ -36,12 +36,14 @@ Dates are calendar dates in Asia/Dubai. The owner asked for commits on `main` an
 | 18. Harder command set, frozen then scored | not started | | |
 | 19. App maps and macros | not started | | |
 | 20. Model candidates, not shipped | not started | | |
-| 20b. System assistant, Qwen3 1.7B, and the Llamatik runtime | not started | | |
+| 20b. System assistant, Qwen3 1.7B, and the Llamatik runtime | done | 29 Oct 2026 | `cbbcf491` |
 | 20c. Small-model harness rules | not started | | |
 | 21. Phone-access setup | not started | | |
 | 22. Close out M1.5 and tag `m1.5` | not started | | |
 
-Next task: 20b. The owner moved it ahead of 18. Llamatik, from task 20, is part of that step. Then 18, 19, 20c, 21, and 22.
+Next task: 18. Freeze the harder command set, score the parser, and only then change it. Then 19, the remaining candidates from 20 (Llamatik is already recorded), 20c, 21, and 22.
+
+Task 20b, 29 Oct 2026: Kawkab can register as the phone's digital assistant. A matched command on the panel goes through the tap gate. Screen text stays off until the owner allows it and asks. The model unloads five seconds after the panel hides, unless a chat is open. Qwen3 1.7B and Llamatik are recorded and not shipped. Scores for Gemma 4 E2B, Gemma 4 E4B and Qwen3 1.7B on v1 and v2 are not measured, so Gemma stays the tool-call default and the image model. Checks: `:app:ktlintCheck`, `:app:detekt`, `:app:verifyFileMap`, `:app:verifyDocLinks`, and `:app:testFossDebugUnitTest` for `AssistantPanelTest`, `PreferenceStorageSnapshotTest`, `PreferenceBackupPolicyTest`, and `SettingsDefaultsTest` passed (`/tmp/gradle-t20b-tests5.log`, BUILD SUCCESSFUL in 52s, 10 assistant tests, 0 failures). `:app:lintFossDebug` passed after the panel colors moved to `toColorInt` (`/tmp/gradle-t20b-lint2.log`, BUILD SUCCESSFUL in 2m 26s). The emulator was not run. No gate is BLOCKED. GitHub Actions was not run.
 
 Task 17, 29 Oct 2026: a line the grammar knows runs before any model load and still goes through the tap gate. Reply, read-last-messages, and screenshot-reminder are fixed skills: the model writes only the words, and a send still asks. An unchanged `read_screen` is a third stuck signal. Native tool calling is off. Checks: `:app:ktlintFormat`, `:app:ktlintCheck`, `:app:detekt`, `:app:generateFileMap`, `:app:verifyFileMap`, and `:app:testFossDebugUnitTest` for `ChatTierRouterTest`, `GraphStuckDetectorTest`, and `ChatHomeViewModelTest` passed (`/tmp/gradle-t17-tests3.log`, BUILD SUCCESSFUL in 22s). `:app:compileFossDebugAndroidTestKotlin` passed, so `TierOneAlarmChatTest` compiles. The emulator was not run. No gate is BLOCKED. GitHub Actions was not run.
 
