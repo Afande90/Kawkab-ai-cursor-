@@ -82,7 +82,7 @@ class BackupContentSemanticsTest {
         }
 
         assertEquals(
-            listOf("Restoring… Knotwork will restart in a few seconds."),
+            listOf("Restoring… Kawkab will restart in a few seconds."),
             liveRegionTexts(),
         )
     }

@@ -585,6 +585,7 @@ Only Kotlin files appear inside the generated blocks.
   - `BrowserEditorContextConfigGuardTest.kt` - Drift guard for the browser pipeline editor's hand-maintained `defaultContextConfig(typeId)` JS function in `pipeline-editor.html`.
 - `i18n/` - Arabic string-key coverage for the app and catalog resources.
   - `ArabicStringKeysTest.kt` - Fails when a default `strings.xml` key has no Arabic resource (spec §0.6).
+  - `BrandNameTest.kt` - Fails when a user-visible string or a preset pipeline name says Knotwork.
 - `integration/` - Background-run integration tests wiring real components end to end — the trigger path, the external-automation path and the autonomy cycle.
   - `BackgroundAutonomyCycleIntegrationTest.kt` - End-to-end JVM integration test of the background-autonomy cycle:
   - `ExternalAutomationBackgroundRunIntegrationTest.kt` - End-to-end JVM integration test of the **external request → background run → callback** arc: the entry point another app on the device broadcasts to.
