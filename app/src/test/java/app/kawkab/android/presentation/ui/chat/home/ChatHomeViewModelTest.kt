@@ -3,6 +3,9 @@ package app.kawkab.android.presentation.ui.chat.home
 import app.kawkab.android.domain.constants.DefaultPrompts
 import app.kawkab.android.domain.constants.SettingsDefaults
 import app.kawkab.android.domain.engine.LlmInferenceEngine
+import app.kawkab.android.domain.fastpath.ChatTierRouter
+import app.kawkab.android.domain.fastpath.PassthroughChatTierRouter
+import app.kawkab.android.domain.fastpath.PlannedCommand
 import app.kawkab.android.domain.models.AgentOrchestratorState
 import app.kawkab.android.domain.models.AppError
 import app.kawkab.android.domain.models.ApprovalRequestContext
@@ -285,46 +288,48 @@ class ChatHomeViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel(): ChatHomeViewModel = ChatHomeViewModel(
-        agentOrchestratorUseCase,
-        chatRepository,
-        pipelineRepository,
-        appStateSettings = settingsRepository,
-        generationSettings = settingsRepository,
-        entryPointSettings = settingsRepository,
-        runSettings = settingsRepository,
-        getContextWindowUseCase,
-        llmInferenceEngine,
-        clarificationRepository,
-        localModelRepository,
-        loadModelUseCase,
-        mockk(relaxed = true),
-        mockk(relaxed = true),
-        saveMessageToMemoryUseCase,
-        pipelineRunRepository,
-        runTraceRepository,
-        resumePipelineRunUseCase,
-        pendingInteractionRepository,
-        submitApprovalDecisionUseCase,
-        submitClarificationAnswerUseCase,
-        submitCeilingDecisionUseCase,
-        attachmentStore,
-        imageCaptureStore,
-        CheckImageAttachmentUseCase(resolveEntryInferenceUseCase, localModelRepository),
-        audioRecorder,
-        audioCaptureStore,
-        transcribeAudioUseCase,
-        activeSessionTracker,
-        archiveChatUseCase,
-        exportChatUseCase,
-        unarchiveChatUseCase,
-        runUseCases,
-        resolveApprovalRequestContext,
-    ).also { vm ->
-        // Keep the replay projection on the test scheduler so
-        // advanceUntilIdle() deterministically covers it.
-        vm.traceProjectionDispatcher = testDispatcher
-    }
+    private fun createViewModel(chatTierRouter: ChatTierRouter = PassthroughChatTierRouter()): ChatHomeViewModel =
+        ChatHomeViewModel(
+            agentOrchestratorUseCase,
+            chatRepository,
+            pipelineRepository,
+            appStateSettings = settingsRepository,
+            generationSettings = settingsRepository,
+            entryPointSettings = settingsRepository,
+            runSettings = settingsRepository,
+            getContextWindowUseCase,
+            llmInferenceEngine,
+            clarificationRepository,
+            localModelRepository,
+            loadModelUseCase,
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            saveMessageToMemoryUseCase,
+            pipelineRunRepository,
+            runTraceRepository,
+            resumePipelineRunUseCase,
+            pendingInteractionRepository,
+            submitApprovalDecisionUseCase,
+            submitClarificationAnswerUseCase,
+            submitCeilingDecisionUseCase,
+            attachmentStore,
+            imageCaptureStore,
+            CheckImageAttachmentUseCase(resolveEntryInferenceUseCase, localModelRepository),
+            audioRecorder,
+            audioCaptureStore,
+            transcribeAudioUseCase,
+            activeSessionTracker,
+            archiveChatUseCase,
+            exportChatUseCase,
+            unarchiveChatUseCase,
+            runUseCases,
+            resolveApprovalRequestContext,
+            chatTierRouter,
+        ).also { vm ->
+            // Keep the replay projection on the test scheduler so
+            // advanceUntilIdle() deterministically covers it.
+            vm.traceProjectionDispatcher = testDispatcher
+        }
 
     @Test
     fun `init generates session id when none persisted`() = runTest(testDispatcher) {
@@ -443,6 +448,31 @@ class ChatHomeViewModelTest {
         advanceUntilIdle()
         viewModel.hitl.onTypedConfirmChange("yes")
         assertEquals("yes", viewModel.state.value.composer.typedConfirm)
+    }
+
+    @Test
+    fun `sendMessage runs a hands command without the model or the pipeline`() = runTest(testDispatcher) {
+        val router = mockk<ChatTierRouter>()
+        val command = PlannedCommand("set_alarm", mapOf("hour" to "6", "minute" to "0"))
+        every { router.command("set an alarm for 6") } returns command
+        every { router.recipe(any(), any()) } returns null
+        coEvery { router.runCommand(any(), any(), any(), any()) } coAnswers {
+            val onState = arg<(AgentOrchestratorState) -> Unit>(3)
+            onState(AgentOrchestratorState.Completed("Alarm set for 6:0."))
+        }
+        every { llmInferenceEngine.isInitialized } returns false
+        viewModel = createViewModel(router)
+        advanceUntilIdle()
+
+        viewModel.onComposerValueChange("set an alarm for 6")
+        viewModel.sendMessage()
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) { loadModelUseCase(any()) }
+        coVerify(exactly = 0) { agentOrchestratorUseCase(any(), any(), any()) }
+        coVerify(exactly = 0) { llmInferenceEngine.generateResponseStream(any(), any(), any()) }
+        coVerify(exactly = 1) { router.runCommand(any(), "set an alarm for 6", command, any()) }
+        assertEquals(ChatHomeUiState.Empty, viewModel.state.value.visual)
     }
 
     @Test

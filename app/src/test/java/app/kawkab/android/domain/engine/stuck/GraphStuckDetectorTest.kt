@@ -41,6 +41,22 @@ class GraphStuckDetectorTest {
      */
     private fun passThrough(node: String, text: String) = step(node, text, text)
 
+    /**
+     * A step that read one screen.
+     *
+     * @param node Node identity.
+     * @param input Input text.
+     * @param output Output text.
+     * @param shown The screen text that was read.
+     * @return The observation.
+     */
+    private fun screen(node: String, input: String, output: String, shown: String) = RunStepObservation(
+        nodeId = node,
+        inputFingerprint = GraphStuckDetector.fingerprint(input),
+        outputFingerprint = GraphStuckDetector.fingerprint(output),
+        screenFingerprint = GraphStuckDetector.fingerprint(shown),
+    )
+
     // ─── Fingerprinting ──────────────────────────────────────────────────────
 
     @Test
@@ -441,6 +457,30 @@ class GraphStuckDetectorTest {
         // gap: a user who has asked to be stopped after five steps has asked
         // for the cheaper guard, and an assertion pretending otherwise would
         // only be true by arithmetic that means nothing.
+    }
+
+    @Test
+    fun `given the same screen three times since progress then the run is nudged`() {
+        val detector = GraphStuckDetector()
+        assertEquals(
+            StuckVerdict.Healthy,
+            detector.observe(screen("look", "ask-1", "Home", "Home")),
+        )
+        assertEquals(StuckVerdict.Healthy, detector.observe(screen("look", "ask-2", "Home", "Home")))
+        assertEquals(StuckVerdict.Healthy, detector.observe(screen("look", "ask-3", "Home", "Home")))
+        assertEquals(
+            StuckVerdict.Nudge(StuckSignal.UNCHANGED_SCREEN),
+            detector.observe(screen("look", "ask-4", "Home", "Home")),
+        )
+    }
+
+    @Test
+    fun `given no screen fingerprint then a repeated output is not an unchanged screen`() {
+        val detector = GraphStuckDetector()
+        assertEquals(StuckVerdict.Healthy, detector.observe(step("look", "ask-1", "Home")))
+        assertEquals(StuckVerdict.Healthy, detector.observe(step("look", "ask-2", "Home")))
+        assertEquals(StuckVerdict.Healthy, detector.observe(step("look", "ask-3", "Home")))
+        assertEquals(StuckVerdict.Healthy, detector.observe(step("look", "ask-4", "Home")))
     }
 
     @Test
