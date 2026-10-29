@@ -287,3 +287,5 @@ The steps for making Kawkab the default assistant are string resources, in Engli
 
 This commit does not change the parser. The score is a later commit. v1 is unchanged.
 
+The parser, unchanged, matches 25 of 150 lines. On the test split that is 10 of 78: call 3/13, sms 1/13, alarm 0/13, timer 2/13, open 2/13, calendar 2/13. On the calibration split it is 15 of 72. The v1 gate is 90 percent per type on the v1 test split. That gate was not applied to v2 and was not loosened. The grammar was not retuned to these lines.
+

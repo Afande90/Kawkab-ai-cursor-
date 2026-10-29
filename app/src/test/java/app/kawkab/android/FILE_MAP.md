@@ -362,6 +362,7 @@ Only Kotlin files appear inside the generated blocks.
   - `fastpath/` - Scores the frozen command set against the deterministic grammar, including the constant-parser check.
     - `ChatTierRouterTest.kt` - The router plans a hands command with no model, and a skill with one text call.
     - `CommandFastPathTest.kt` - Scores the frozen command set.
+    - `CommandFastPathV2Test.kt` - Scores the frozen v2 command set.
   - `memoryio/` - Tests for the long-term-memory export/import gateway.
     - `MemoryJsonSerializerTest.kt` - Unit tests for `MemoryJsonSerializer` — the serialize → parse round-trip, the provenance / tag fidelity, and the never-throwing failure paths.
     - `MemorySourceJsonTest.kt` - Unit tests for `MemorySourceJson` — the shared `MemorySource` ↔ JSON codec used by both the Room column converter and the memory export file.
