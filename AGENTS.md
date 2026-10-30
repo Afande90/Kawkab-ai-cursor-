@@ -189,6 +189,27 @@ Donors:
     - Make sure the CI APK artifact exists.
     - Tag `m1.5`.
 
+### M1.6: Owner-phone polish (30 Oct 2026)
+
+These come from the owner's first install of `m1.5`.
+
+23. **Phone access must be easy to find and read.**
+    - Put "Phone access" as the first row in Settings (BASIC), not as a small link at the bottom of Privacy.
+    - While anything is off, show a banner at the top of the chat, "Kawkab needs N permissions", that opens the page.
+    - Redesign the page with design-system cards. Each card shows:
+      - a title (Contacts, Phone, Calendar, Notifications, Microphone, Screen control, Run in background, Default assistant);
+      - an icon;
+      - the one-line reason;
+      - a clear On/Off status chip, green or amber;
+      - one full-width button.
+    - Put a progress line at the top ("5 of 8 on").
+    - Refresh the status when the owner returns from Android settings.
+    - Write all of it in Arabic and English.
+    - Add screenshot goldens and a test that the Settings row and the banner exist.
+24. **Leftover upstream logo.** The onboarding header still shows the old knot icon next to "Kawkab". Replace every user-visible upstream logo and icon with the planet mark. Extend the branding test to the onboarding header drawable.
+25. **Onboarding model sizes.** The scenario cards say "3.66 GB model" even on phones that will get E2B. Show the size of the model this phone will actually download.
+26. **Close out:** green GitHub Check, `docs/owner-checks/M1.6.md`, tag `m1.6`.
+
 ### Later milestones
 - **M2 to M8:** split each milestone in spec §13 into tasks of the same size as above.
 - Write the new tasks into this list in a pull request before starting them.
