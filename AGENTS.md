@@ -206,6 +206,11 @@ These come from the owner's first install of `m1.5`.
     - Refresh the status when the owner returns from Android settings.
     - Write all of it in Arabic and English.
     - Add screenshot goldens and a test that the Settings row and the banner exist.
+23b. **Floating Kawkab button.** The owner turned on Android's accessibility shortcut. The floating planet button appears, but tapping it does nothing, because the service never handles it.
+    - Add `flagRequestAccessibilityButton` to `accessibility_service_config.xml`.
+    - Register an `AccessibilityButtonController` callback. A tap opens the Kawkab assistant panel over the current app, the same panel as a long-press of power, with the current screen available as context once the owner allows it.
+    - A long-press, if Android exposes one, may open the full app.
+    - Add a unit test that the callback opens the panel.
 24. **Leftover upstream logo.** The onboarding header still shows the old knot icon next to "Kawkab". Replace every user-visible upstream logo and icon with the planet mark. Extend the branding test to the onboarding header drawable.
 25. **Onboarding model sizes.** The scenario cards say "3.66 GB model" even on phones that will get E2B. Show the size of the model this phone will actually download.
 25b. **Install updates over the old version.** Today every CI build is signed with a new temporary debug key. So the owner must uninstall the app, which deletes the 3.6 GB model and his data, before each update.
