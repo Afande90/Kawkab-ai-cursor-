@@ -208,6 +208,17 @@ These come from the owner's first install of `m1.5`.
     - Add screenshot goldens and a test that the Settings row and the banner exist.
 24. **Leftover upstream logo.** The onboarding header still shows the old knot icon next to "Kawkab". Replace every user-visible upstream logo and icon with the planet mark. Extend the branding test to the onboarding header drawable.
 25. **Onboarding model sizes.** The scenario cards say "3.66 GB model" even on phones that will get E2B. Show the size of the model this phone will actually download.
+25b. **Install updates over the old version.** Today every CI build is signed with a new temporary debug key. So the owner must uninstall the app, which deletes the 3.6 GB model and his data, before each update.
+    - Make one fixed signing key: generate a keystore once and store it as a GitHub Actions secret (base64, plus its passwords).
+    - Sign every CI APK with that key, so a new build installs over the old one and keeps the models and data.
+    - Never commit the keystore to the repository. The repo is public.
+    - Record the decision in `DECISIONS.md`.
+    - **Fallback** if the agent cannot create repository secrets: write the exact steps the owner needs into `docs/owner-checks/M1.6.md`, and mark the task BLOCKED.
+25c. **One-tap APK download.**
+    - On every green push to `main`, publish the signed APK as a GitHub Release asset (a pre-release, tagged with the build date and short commit).
+    - The repo is public, so the owner can download the `.apk` directly without logging in or unzipping.
+    - Keep only the 5 newest pre-releases.
+    - Add an owner-started "Check for updates" button on the About screen. It reads the latest release, offers the download, and never checks automatically (spec §0.2).
 26. **Close out:** green GitHub Check, `docs/owner-checks/M1.6.md`, tag `m1.6`.
 
 ### Later milestones
