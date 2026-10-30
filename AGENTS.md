@@ -211,7 +211,12 @@ These come from the owner's first install of `m1.5`.
     - Register an `AccessibilityButtonController` callback. A tap opens the Kawkab assistant panel over the current app, the same panel as a long-press of power, with the current screen available as context once the owner allows it.
     - A long-press, if Android exposes one, may open the full app.
     - Add a unit test that the callback opens the panel.
-24. **Leftover upstream logo.** The onboarding header still shows the old knot icon next to "Kawkab". Replace every user-visible upstream logo and icon with the planet mark. Extend the branding test to the onboarding header drawable.
+23c. **The microphone works now, before M4.** The owner tapped the mic and got "This model can't transcribe audio", because the active brain is a text-only GGUF.
+    - Until the M4 voice stack lands, the mic button uses Android's `SpeechRecognizer` with `EXTRA_PREFER_OFFLINE = true`, in Arabic (`ar-SD`, then `ar`) and English, the way PokeClaw v0.7.0 does.
+    - The transcript goes into the input box, so the owner can correct it before sending.
+    - Never send audio to a cloud recogniser. If offline recognition is unavailable for a language, say so and offer the language download in Android settings.
+    - If no recogniser exists, hide the error card and show a one-line hint instead.
+24. **Leftover upstream logo.** Also replace the knot icon on the empty-chat header. The onboarding header still shows the old knot icon next to "Kawkab". Replace every user-visible upstream logo and icon with the planet mark. Extend the branding test to the onboarding header drawable.
 25. **Onboarding model sizes.** The scenario cards say "3.66 GB model" even on phones that will get E2B. Show the size of the model this phone will actually download.
 25b. **Install updates over the old version.** Today every CI build is signed with a new temporary debug key. So the owner must uninstall the app, which deletes the 3.6 GB model and his data, before each update.
     - Make one fixed signing key: generate a keystore once and store it as a GitHub Actions secret (base64, plus its passwords).
