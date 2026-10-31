@@ -11,6 +11,8 @@ import app.kawkab.android.domain.models.NodeOutput
 import app.kawkab.android.domain.models.Role
 import app.kawkab.android.domain.prompt.ChatTranscript
 import app.kawkab.android.domain.repositories.ChatRepository
+import app.kawkab.android.hands.ContactAnswer
+import app.kawkab.android.hands.ContactChoice
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
@@ -114,12 +116,33 @@ class HandsChatTierRouter @Inject constructor(
     private val chatRepository: ChatRepository,
     private val engine: LlmInferenceEngine,
     private val skills: SkillCache = SkillCache(),
+    private val choice: ContactChoice = ContactChoice(),
 ) : ChatTierRouter {
+    private val picks: MutableSet<String> = java.util.Collections.synchronizedSet(mutableSetOf())
+
     override fun command(text: String): PlannedCommand? {
-        CommandFastPath.parse(text)?.let { return it }
+        // A call or text waiting for a contact pick takes the line first, so "the mubadala" or a
+        // chip tap completes it instead of going to free chat (task 23j). A new command replaces it.
+        CommandFastPath.parse(text)?.let { parsed ->
+            choice.clear()
+            return parsed
+        }
+        pendingAnswer(text)?.let { return it }
         val saved = skills.replay(text.trim()) ?: return null
         return PlannedCommand(saved.tool, saved.args)
     }
+
+    /** The command a line completes while a contact choice is pending, or null when none is. */
+    private fun pendingAnswer(text: String): PlannedCommand? =
+        when (val answer = choice.answer(text, System.currentTimeMillis())) {
+            is ContactAnswer.Picked -> {
+                picks += text
+                PlannedCommand(answer.tool, answer.args)
+            }
+            ContactAnswer.Cancelled -> PlannedCommand(REPLY, mapOf(REPLY_TEXT to CANCELLED))
+            ContactAnswer.Unclear -> PlannedCommand(REPLY, mapOf(REPLY_TEXT to PICK_AGAIN))
+            ContactAnswer.NotPending -> null
+        }
 
     override fun recipe(text: String, hasImage: Boolean): TierTwoRecipe? = TierTwoRecipes.match(text, hasImage)
 
@@ -130,9 +153,17 @@ class HandsChatTierRouter @Inject constructor(
         onState: (AgentOrchestratorState) -> Unit,
     ) {
         save(sessionId, Role.USER, text, relayed = false, attachment = null)
+        if (command.tool == REPLY) {
+            val reply = command.args[REPLY_TEXT].orEmpty()
+            save(sessionId, Role.AGENT, reply, relayed = true, attachment = null)
+            onState(AgentOrchestratorState.Completed(reply))
+            return
+        }
         val outcome = dispatch(sessionId, command.tool, json(command.args), onState, FAST_PATH)
         finish(sessionId, outcome, onState, relayed = true)
-        if (outcome != null && outcome.error == null) {
+        // A contact pick ("the second one") is not a command to replay later.
+        val wasPick = picks.remove(text)
+        if (outcome != null && outcome.error == null && !wasPick) {
             skills.remember(text, command.tool, command.args)
         }
     }
@@ -309,6 +340,12 @@ class HandsChatTierRouter @Inject constructor(
 
     private companion object {
         const val FAST_PATH: String = "FAST_PATH"
+
+        /** A reply with no tool, for answers to a pending contact choice. */
+        const val REPLY: String = "kawkab_reply"
+        const val REPLY_TEXT: String = "text"
+        const val CANCELLED: String = "Cancelled."
+        const val PICK_AGAIN: String = "Tap one of the names below, or say cancel."
         const val SKILL: String = "SKILL"
         const val SEND_SMS: String = "send_sms"
         const val ADD_EVENT: String = "add_calendar_event"

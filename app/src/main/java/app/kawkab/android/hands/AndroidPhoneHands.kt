@@ -28,8 +28,12 @@ class AndroidPhoneHands @Inject constructor(
 ) : PhoneHands {
 
     override fun placeCall(number: String): String {
-        MissingPermission.card("call_phone", grantedNow(), number)?.let { return it.sentence() }
         val uri = "tel:${Uri.encode(number)}"
+        // Without CALL_PHONE the dialer opens with the number filled in, which needs no
+        // permission; the owner presses call. A call never fails with only an error (task 23j).
+        if (CallFallback.usesDialer(MissingPermission.CALL_PHONE in grantedNow())) {
+            return start(Intent(Intent.ACTION_DIAL, uri.toUri()), CallFallback.DIALER_OPENED)
+        }
         return start(Intent(Intent.ACTION_CALL, uri.toUri()), "Called $number.")
     }
 

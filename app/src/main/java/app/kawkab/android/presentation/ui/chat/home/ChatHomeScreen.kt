@@ -41,6 +41,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -64,6 +65,7 @@ import app.kawkab.android.R
 import app.kawkab.android.domain.report.ContentReport
 import app.kawkab.android.domain.report.ContentReportComposer
 import app.kawkab.android.domain.report.ContentReportReason
+import app.kawkab.android.hands.ContactChip
 import app.kawkab.android.presentation.ui.chat.CHAT_EXPORT_MIME_JSON
 import app.kawkab.android.presentation.ui.chat.toShareChooser
 import app.kawkab.android.presentation.ui.common.JournalExportCopy
@@ -640,6 +642,25 @@ fun ChatHomeScreen(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(start = 16.dp, end = 16.dp, bottom = 112.dp),
+                onGranted = viewModel::retryLastUserTurn,
+            )
+        }
+        val pendingContact by viewModel.pendingContact.collectAsState()
+        pendingContact?.let { pending ->
+            ContactChoicePrompt(
+                choices = pending.choices,
+                onPick = { match ->
+                    // The chip text goes out as the owner's line; the router reads it as the pick.
+                    viewModel.onComposerValueChange(ContactChip.text(match))
+                    viewModel.sendMessage()
+                },
+                onCancel = {
+                    viewModel.onComposerValueChange(CANCEL_WORD)
+                    viewModel.sendMessage()
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(start = 16.dp, end = 16.dp, bottom = 112.dp),
             )
         }
         ChatHomeDebugStatePicker(
@@ -1096,3 +1117,6 @@ internal fun visibleConsoleLogs(
 
 /** MIME filter for the voice-input audio file picker (OpenDocument). */
 private const val AUDIO_MIME_FILTER: String = "audio/*"
+
+/** Sent when the owner cancels a contact choice; the router reads it as a cancel (task 23j). */
+private const val CANCEL_WORD = "cancel"

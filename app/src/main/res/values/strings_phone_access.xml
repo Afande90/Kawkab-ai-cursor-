@@ -23,4 +23,5 @@
     <string name="phone_access_assistant_title">Default assistant</string>
     <string name="phone_access_assistant_open">Make Kawkab the assistant</string>
     <string name="phone_access_assistant_held">Kawkab is already the assistant.</string>
+    <string name="phone_access_app_info_hint">Android will not ask again. In App info, open Permissions and turn this on, then come back.</string>
 </resources>

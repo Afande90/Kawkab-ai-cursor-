@@ -664,6 +664,7 @@ Only Kotlin files appear inside the generated blocks.
     - `WorkspaceTextPreview.kt` - Bounded read-only preview of a workspace text file (`text`, `totalBytes`, `truncated`); unlike `readText` it always returns a leading slice so any text file can be shown, flagging truncation when the file exceeds the preview budget.
     - `WorkspaceUsage.kt` - Storage-budget snapshot (`usedBytes`, `limitBytes`, derived `fraction`) for the Files screen quota indicator; read-side view of the total-size ceiling the workspace enforces on writes.
   - `phoneaccess/` - Status lines for each phone-access item, and the card a command shows when a grant is missing.
+    - `GrantRoute.kt` - What the Grant button does next (task 23j).
     - `PhoneAccessStatus.kt` - Status lines for the phone-access screen.
   - `pipelineio/` - JSON serialisation gateway for pipeline import/export.
     - `ImportedPipelineClaims.kt` - Checks what an imported pipeline says about itself against what its graph does, before the import use cases store it.
@@ -929,6 +930,9 @@ Only Kotlin files appear inside the generated blocks.
   - `AndroidPhoneHands.kt` - Intent and accessibility implementation of `PhoneHands`.
   - `AppMapReplay.kt` - Replays a stored macro and checks the screen after every step.
   - `BundledAppMaps.kt` - Stored maps for Phone, Messages, Clock, Calendar, WhatsApp and Gmail.
+  - `ContactChip.kt` - How a contact choice reads on a chip: the name, the last four digits and the phone label, never the whole number (task 23j).
+  - `ContactChoice.kt` - Holds the pending choice and the last contact a command resolved to.
+  - `ContactMatcher.kt` - Matches a spoken name against the phone book (task 23j).
   - `DurationParser.kt` - Parses a short duration phrase into seconds.
   - `HabitRoutineEngine.kt` - Groups recent actions into half-hour sessions and suggests a sequence that comes back at least `detect`'s minimum number of times in the same part of the day.
   - `HandsDispatch.kt` - Runs one recorded step on `PhoneHands`.
@@ -1007,9 +1011,12 @@ Only Kotlin files appear inside the generated blocks.
         - `ChatHomeViewModel.kt` - Hilt ViewModel acting as a thin **coordinator** over nine domain delegates (variant-B delegation, `docs/architecture.md` §1.2). Exposes one consolidated `state: StateFlow<ChatHomeScreenState>` (every mutation via `update { it.copy(...) }`) plus the public delegates (`console` / `run` / `voice` / `attachments` / `transfer` / `pipelineBinding` / `threads` / `hitl` / `reattach`). Keeps only the agent-execution core: the send cycle, the live run collector (`attachToLiveRun` + `handleOrchestratorState`, driven by the HITL/reattach delegates via seams), the `selectThread` hub, session init / message stream / token meter, and the resting-state machine.
         - `ChatHomeVoiceDelegate.kt` - Voice-input delegate: record / pick → transcribe into the composer (`composer.voice` / `voiceNotice` / `audioChooser`); owns `voiceJob` and `voiceErrorEvents`. No coupling to the send pipeline or the `visual` axis.
         - `ConsoleCopyPayloads.kt` - Pure clipboard-payload formatting for the console: one log line, all filtered lines, one Vars row (whole value, never abbreviated), one Traces span, and the `Copy all` payload for the tab actually on screen. Stateless, so it sits beside the delegate rather than on it; the clipboard write itself stays in the Composable that owns `LocalClipboardManager`.
+        - `ContactChoicePrompt.kt` - Tappable contact chips for a call or text waiting on a pick (task 23j).
         - `ContentReportIssueUrl.kt` - Builds the URL that opens the public issue tracker with a report prefilled.
         - `ReportResponseDialog.kt` - Stateless dialog collecting a flag against a model-authored message (category chips + note), plus `contentReportIssueUrl` — the prefilled `issues/new` URL, truncated to a browser-safe length after percent-encoding. No delivery of its own: the screen offers clipboard or issue tracker.
         - `RunDisplay.kt` - How the run strip writes a run: numbers grouped and rounded for reading — seeds and windows in groups, temperatures as recorded, durations as a person estimates them — with, beside it in this file, the projection of a run's description onto the strip and the rule for when a check asks first.
+        - `TurnWatchdog.kt` - Ends a chat turn that has shown no progress for `timeoutMs` (tasks 23h and 23j).
+        - `TurnWatchdogConfig.kt` - How long a chat turn may show no progress before it ends with an error (tasks 23h and 23j).
         - `VerificationProgress.kt` - Folds the check's events into what its sheet shows: rows fill in place as calls are repeated, nothing reorders, and an interrupted check leaves the visits it never reached as "not checked".
     - `common/` - Cross-screen presentation helpers.
       - `ClipboardText.kt` - Shared system-clipboard plain-text helpers: `readPlainClipboardText(context)` backing the HuggingFace-token "Paste" actions on the Models and Discover screens, and `writePlainClipboardText(context, label, text)` backing the external-automation "how another app calls this" copy action. The writer posts no confirmation of its own — every supported Android version shows one.

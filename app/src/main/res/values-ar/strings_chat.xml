@@ -185,4 +185,6 @@
         <item quantity="many">أُرشفت قبل %1$d سنةً</item>
         <item quantity="other">أُرشفت قبل %1$d سنة</item>
     </plurals>
+    <string name="contact_choice_title">أي جهة اتصال؟</string>
+    <string name="contact_choice_cancel">إلغاء</string>
 </resources>

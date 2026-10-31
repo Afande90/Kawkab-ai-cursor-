@@ -232,4 +232,6 @@
         <item quantity="one">Archived %1$d y ago</item>
         <item quantity="other">Archived %1$d y ago</item>
     </plurals>
+    <string name="contact_choice_title">Which contact?</string>
+    <string name="contact_choice_cancel">Cancel</string>
 </resources>

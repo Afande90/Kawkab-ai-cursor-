@@ -1,7 +1,12 @@
 package app.kawkab.android.presentation.ui.phoneaccess
 
+import android.app.Activity
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -28,10 +33,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.currentStateAsState
 import app.kawkab.android.R
 import app.kawkab.android.assistant.AssistantRoleRequest
+import app.kawkab.android.domain.phoneaccess.GrantRoute
 import app.kawkab.android.domain.phoneaccess.MissingPermission
 import app.kawkab.android.domain.phoneaccess.PhoneAccessItem
 import app.kawkab.android.domain.phoneaccess.PhoneAccessStatus
@@ -119,11 +128,51 @@ fun PhoneAccessScreen(onDone: () -> Unit, requestPermission: String? = null) {
 }
 
 /**
- * The card under a command that stopped for a missing grant. Grant asks Android. The list opens Phone access.
+ * The card under a command that stopped for a missing grant. Grant asks Android; when Android
+ * will no longer show its dialog, Grant opens App info → Permissions with a one-line instruction.
+ * Coming back with the permission on resumes the action (task 23j).
+ *
+ * @param permission The Android permission that is off.
+ * @param onOpenList Opens the Phone access screen.
+ * @param onGranted Resumes the action that needed the permission.
  */
 @Composable
-fun MissingPermissionPrompt(permission: String, onOpenList: () -> Unit, modifier: Modifier = Modifier) {
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+fun MissingPermissionPrompt(
+    permission: String,
+    onOpenList: () -> Unit,
+    modifier: Modifier = Modifier,
+    onGranted: () -> Unit = {},
+) {
+    val context = LocalContext.current
+    var deniedBefore by remember(permission) { mutableStateOf(false) }
+    var sentToSettings by remember(permission) { mutableStateOf(false) }
+    fun granted() = ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+    val settingsLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        if (granted()) onGranted()
+    }
+    fun openAppSettings() {
+        sentToSettings = true
+        val intent =
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
+        settingsLauncher.launch(intent)
+    }
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+        val activity = context.findActivity()
+        val canShow = activity != null && ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)
+        when (GrantRoute.next(granted = ok, canShowDialog = canShow, deniedBefore = true)) {
+            GrantRoute.RESUME -> onGranted()
+            GrantRoute.OPEN_APP_SETTINGS -> openAppSettings()
+            GrantRoute.ASK -> deniedBefore = true
+        }
+    }
+    // Back from Android settings with the permission on: resume without another tap.
+    val lifecycleState by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
+    LaunchedEffect(lifecycleState) {
+        if (sentToSettings && lifecycleState.isAtLeast(Lifecycle.State.RESUMED) && granted()) {
+            sentToSettings = false
+            onGranted()
+        }
+    }
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -131,11 +180,29 @@ fun MissingPermissionPrompt(permission: String, onOpenList: () -> Unit, modifier
             .padding(all = 12.dp),
     ) {
         Text(stringResource(R.string.phone_access_card))
-        TextButton(onClick = { launcher.launch(permission) }) {
+        if (sentToSettings || deniedBefore) Text(stringResource(R.string.phone_access_app_info_hint))
+        TextButton(
+            onClick = {
+                val activity = context.findActivity()
+                val canShow =
+                    activity != null && ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)
+                when (GrantRoute.next(granted = granted(), canShowDialog = canShow, deniedBefore = deniedBefore)) {
+                    GrantRoute.RESUME -> onGranted()
+                    GrantRoute.OPEN_APP_SETTINGS -> openAppSettings()
+                    GrantRoute.ASK -> launcher.launch(permission)
+                }
+            },
+        ) {
             Text(stringResource(R.string.phone_access_grant))
         }
         TextButton(onClick = onOpenList) { Text(stringResource(R.string.phone_access_open)) }
     }
+}
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
 }
 
 /**

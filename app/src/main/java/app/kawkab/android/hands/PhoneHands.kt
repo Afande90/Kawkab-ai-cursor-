@@ -37,12 +37,29 @@ interface PhoneHands {
 }
 
 /**
+ * What a call does when CALL_PHONE is not granted (task 23j).
+ */
+object CallFallback {
+    /** The reply when the dialer opened with the number instead of a call. */
+    const val DIALER_OPENED: String = "Opened the dialer with the number. Press call to ring."
+
+    /**
+     * Whether the call goes through the dialer.
+     *
+     * @param callPhoneGranted Whether CALL_PHONE is granted.
+     * @return `true` when the dialer is used.
+     */
+    fun usesDialer(callPhoneGranted: Boolean): Boolean = !callPhoneGranted
+}
+
+/**
  * A contact the phone book returned.
  *
  * @property name Display name.
  * @property phone Number to dial or text.
+ * @property label Phone type label, such as "Mobile", or empty.
  */
-data class ContactMatch(val name: String, val phone: String)
+data class ContactMatch(val name: String, val phone: String, val label: String = "")
 
 /**
  * Looks up a spoken name. A number is returned as itself by [ContactLookup].
@@ -65,9 +82,27 @@ object ContactLookup {
 
     /**
      * A phone number, or null when [spoken] is ambiguous or missing.
-     * [failure] receives the sentence to show the owner.
+     *
+     * [failure] receives the sentence to show the owner. Several matches are handed to
+     * [onChoices] for the chips, and the sentence names no number (task 23j). A pronoun means
+     * [lastResolved].
+     *
+     * @param spoken What the owner said for the contact.
+     * @param book The phone book.
+     * @param lastResolved The contact the last command resolved to, for "him" and "her".
+     * @param onChoices Receives the choices when there are several.
+     * @param onResolved Receives the contact when there is exactly one.
+     * @param failure Receives the sentence when there is no number.
+     * @return The number, or null.
      */
-    fun numberOrNull(spoken: String, book: ContactBook, failure: (String) -> Unit): String? {
+    fun numberOrNull(
+        spoken: String,
+        book: ContactBook,
+        lastResolved: ContactMatch? = null,
+        onChoices: (List<ContactMatch>) -> Unit = {},
+        onResolved: (ContactMatch) -> Unit = {},
+        failure: (String) -> Unit,
+    ): String? {
         val trimmed = spoken.trim()
         val digits = trimmed.filter { it.isDigit() }
         val direct = digits.length >= MIN_DIGITS && trimmed.all { it.isDigit() || it == '+' || it == ' ' || it == '-' }
@@ -77,25 +112,35 @@ object ContactLookup {
                 null
             }
             direct -> trimmed.filter { it.isDigit() || it == '+' }
+            ContactMatcher.isPronoun(trimmed) -> lastResolved?.phone ?: run {
+                failure("Who do you mean? Say the name.")
+                null
+            }
             !book.canRead() -> {
                 failure(MissingPermissionCard(MissingPermission.READ_CONTACTS, "contacts").sentence())
                 null
             }
-            else -> match(trimmed, book, failure)
+            else -> match(trimmed, book, onChoices, onResolved, failure)
         }
     }
 
-    private fun match(trimmed: String, book: ContactBook, failure: (String) -> Unit): String? {
+    private fun match(
+        trimmed: String,
+        book: ContactBook,
+        onChoices: (List<ContactMatch>) -> Unit,
+        onResolved: (ContactMatch) -> Unit,
+        failure: (String) -> Unit,
+    ): String? {
         val matches = book.resolve(trimmed)
         return when (matches.size) {
-            1 -> matches.first().phone
+            1 -> matches.first().also(onResolved).phone
             0 -> {
                 failure("Contact '$trimmed' was not found.")
                 null
             }
             else -> {
-                val choices = matches.joinToString { "${it.name} (${it.phone})" }
-                failure("Which '$trimmed'? $choices")
+                onChoices(matches.take(ContactMatcher.MAX_CHOICES))
+                failure(ContactChoice.question(trimmed, matches.size))
                 null
             }
         }

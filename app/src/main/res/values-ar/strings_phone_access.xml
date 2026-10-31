@@ -23,4 +23,5 @@
     <string name="phone_access_assistant_title">المساعد الافتراضي</string>
     <string name="phone_access_assistant_open">اجعل كوكب المساعد</string>
     <string name="phone_access_assistant_held">كوكب هو المساعد بالفعل.</string>
+    <string name="phone_access_app_info_hint">لن يسأل أندرويد مرة أخرى. في معلومات التطبيق افتح الأذونات وفعّل هذا، ثم ارجع.</string>
 </resources>

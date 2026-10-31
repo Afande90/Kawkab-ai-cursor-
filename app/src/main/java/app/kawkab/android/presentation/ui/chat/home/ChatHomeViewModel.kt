@@ -46,6 +46,8 @@ import app.kawkab.android.domain.usecases.SubmitCeilingDecisionUseCase
 import app.kawkab.android.domain.usecases.SubmitClarificationAnswerUseCase
 import app.kawkab.android.domain.usecases.TranscribeAudioUseCase
 import app.kawkab.android.domain.usecases.UnarchiveChatUseCase
+import app.kawkab.android.hands.ContactChoice
+import app.kawkab.android.hands.PendingContact
 import app.kawkab.android.presentation.state.ActiveSessionTracker
 import app.kawkab.design.components.chat.ChatContent
 import app.kawkab.design.components.chat.ChatMessageStatus
@@ -63,6 +65,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -165,7 +168,16 @@ constructor(
     private val runUseCases: ChatHomeRunUseCases,
     private val resolveApprovalRequestContext: ResolveApprovalRequestContextUseCase,
     private val chatTierRouter: ChatTierRouter = PassthroughChatTierRouter(),
+    private val contactChoice: ContactChoice = ContactChoice(),
+    private val turnWatchdog: TurnWatchdogConfig = TurnWatchdogConfig.Disabled,
 ) : ViewModel() {
+
+    /** The call or text waiting for a contact pick; the screen shows its chips (task 23j). */
+    val pendingContact: StateFlow<PendingContact?> = contactChoice.state
+
+    /** When the current turn last showed progress, for the [turnWatchdog]. */
+    @Volatile
+    private var lastProgressMs: Long = System.currentTimeMillis()
 
     private val _state: MutableStateFlow<ChatHomeScreenState> = MutableStateFlow(ChatHomeScreenState())
 
@@ -437,6 +449,17 @@ constructor(
         console.startObservers()
         observeInstalledModels()
         initializeSession()
+        // Every turn ends within a minute in a reply, a card, or an error (tasks 23h and 23j).
+        TurnWatchdog(
+            scope = viewModelScope,
+            timeoutMs = turnWatchdog.timeoutMs,
+            activeTurn = _state.map { it.visual is ChatHomeUiState.Generating && it.pending == ChatHomePendingState() },
+            lastProgressMs = { lastProgressMs },
+            onStuck = {
+                stopGeneration()
+                _state.update { it.copy(visual = ChatHomeUiState.Error(NO_REPLY_MESSAGE)) }
+            },
+        ).start()
     }
 
     /** Updates the composer input value. Hoisted to the VM so screen recompositions never own the text. */
@@ -888,8 +911,11 @@ constructor(
      * When there is no user turn to repeat (an empty or agent-only thread), the
      * error is simply cleared — there is nothing to run, and leaving the tile up
      * would strand the screen.
+     *
+     * Also called after the owner grants a permission a command was missing, so the
+     * pending action resumes without retyping (task 23j).
      */
-    private fun retryLastUserTurn() {
+    fun retryLastUserTurn() {
         val sessionId = _state.value.thread.currentSessionId
         if (sessionId.isBlank()) {
             _state.update { it.copy(visual = it.restingVisual()) }
@@ -1204,6 +1230,7 @@ constructor(
 
     /** Branches on the orchestrator emission. Terminal states settle UI; intermediate states keep `Generating`. */
     private fun handleOrchestratorState(state: AgentOrchestratorState) {
+        lastProgressMs = System.currentTimeMillis()
         // Every emission decides whether the run is still waiting behind another one.
         _state.update { it.withWaitingInQueue(state is AgentOrchestratorState.Queued) }
         when (state) {
@@ -1366,6 +1393,9 @@ constructor(
          */
         const val NO_ACTIVE_MODEL_MESSAGE: String =
             "No active model. Open Settings → Models to install or activate one."
+
+        /** Shown when a turn showed no progress for a minute (tasks 23h and 23j). Retry runs it again. */
+        const val NO_REPLY_MESSAGE: String = "No reply for 60 seconds, so Kawkab stopped. Tap Retry to try again."
 
         /** Rough chars-per-token divisor used for the v0.1 token counter (`text.length / 4`). */
         const val TOKEN_CHARS_PER_TOKEN: Int = 4
