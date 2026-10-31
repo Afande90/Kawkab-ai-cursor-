@@ -15,7 +15,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import app.kawkab.android.R
+import app.kawkab.android.data.engine.AndroidDeviceMemory
 import app.kawkab.android.data.network.AndroidModelDownloadManager.DownloadError
+import app.kawkab.android.domain.models.DefaultBrain
 import app.kawkab.android.domain.models.LocalModel
 import app.kawkab.android.domain.models.ModelDownloadFailure
 import app.kawkab.android.domain.usecases.BenchmarkRunPhase
@@ -103,8 +105,11 @@ fun ModelsScreen(
         }
     }
 
-    val viewState = remember(uiState, verificationLabels) {
-        uiState.toViewState(strings.subtitleFormat, verificationLabels)
+    // E4B is opt-in below flagship RAM, and says so on its row (task 23d).
+    val e4bWarning = stringResource(R.string.models_e4b_warning)
+    val flagship = remember { DefaultBrain.isFlagship(AndroidDeviceMemory(context.applicationContext).totalRamBytes()) }
+    val viewState = remember(uiState, verificationLabels, flagship) {
+        uiState.toViewState(strings.subtitleFormat, verificationLabels, e4bWarning.takeUnless { flagship })
     }
 
     ModelsContent(
@@ -175,10 +180,12 @@ private fun shareBenchmarkText(context: Context, text: String, subject: String) 
  * @param subtitleFormat localised `"%1$d active · %2$d on disk · %3$s"` template.
  * @param verificationLabels localised words for whether a model's file was checked
  *   against the hash its source published.
+ * @param e4bWarning shown after the E4B preset name below flagship RAM, or `null`.
  */
 internal fun ModelsUiState.toViewState(
     subtitleFormat: String,
     verificationLabels: VerificationLabels,
+    e4bWarning: String? = null,
 ): ModelsViewState {
     // Sum of `LocalModel.size` is unreliable because the download manager
     // doesn't currently report content-length back to the local store,
@@ -237,7 +244,13 @@ internal fun ModelsUiState.toViewState(
         val fileName = preset.url.substringAfterLast(delimiter = "/")
         PresetRow(
             id = preset.url.toPresetId(),
-            name = preset.name,
+            name = if (e4bWarning != null &&
+                preset.name.contains(E4B_MARK)
+            ) {
+                "${preset.name} · $e4bWarning"
+            } else {
+                preset.name
+            },
             source = preset.url.toShortSource(),
             status = statusFor(fileName = fileName),
         )
@@ -333,6 +346,8 @@ internal fun runtimeLabel(path: String, backendLabel: String): String =
     if (path.endsWith(GGUF_SUFFIX)) "CPU · llama.cpp" else "$backendLabel · LiteRT"
 
 private const val GGUF_SUFFIX = ".gguf"
+
+private const val E4B_MARK = "E4B"
 
 /**
  * Localised words for whether a model's file was checked against the SHA-256

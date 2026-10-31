@@ -36,4 +36,5 @@
     <!-- Performance card / benchmark. -->
     <string name="models_benchmark_failed">Couldn\'t run the benchmark</string>
     <string name="models_benchmark_share_subject">Model benchmark</string>
+    <string name="models_e4b_warning">needs 16 GB RAM; may freeze this phone</string>
 </resources>

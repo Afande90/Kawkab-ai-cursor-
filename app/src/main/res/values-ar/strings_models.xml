@@ -34,4 +34,5 @@
 
     <string name="models_benchmark_failed">تعذّر تشغيل قياس الأداء</string>
     <string name="models_benchmark_share_subject">قياس أداء النموذج</string>
+    <string name="models_e4b_warning">يحتاج ذاكرة ١٦ غيغابايت؛ قد يجمّد هذا الهاتف</string>
 </resources>

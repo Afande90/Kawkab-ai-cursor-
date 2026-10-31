@@ -1,0 +1,12 @@
+# Baseline Profile for Kawkab (task 23d).
+#
+# Hand-written, not recorded: the classes that start the app and switch between
+# the Chat, Pipelines, Tools and More tabs are compiled ahead of time on install,
+# so the first frames of each tab do not run in the interpreter. Compose and the
+# other AndroidX libraries ship their own profiles, which AGP merges with this one.
+# ProfileInstaller (a Compose dependency) installs the result.
+HSPLapp/kawkab/android/App;->**(**)**
+HSPLapp/kawkab/android/presentation/**;->**(**)**
+HSPLapp/kawkab/design/**;->**(**)**
+Lapp/kawkab/android/presentation/**;
+Lapp/kawkab/design/**;

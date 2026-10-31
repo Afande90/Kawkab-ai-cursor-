@@ -56,9 +56,75 @@ data class ScreenSnapshot(
  */
 @Singleton
 class ScreenWatch @Inject constructor() {
-    /** The screen the accessibility service last published. */
+    /**
+     * The screen the accessibility service last published. Per event it holds only the package,
+     * `FLAG_SECURE` and the password state; the text is filled by the throttled background check.
+     */
     @Volatile
     var latest: ScreenSnapshot = ScreenSnapshot.idle()
+
+    /**
+     * Builds the full snapshot, text included, on demand. Set while the accessibility service runs.
+     * Walking the node tree is the expensive part, so it happens only here (task 23d).
+     */
+    @Volatile
+    var fullReader: (() -> ScreenSnapshot)? = null
+
+    /**
+     * The screen to check immediately before an action: the full snapshot when the service can
+     * build one, otherwise [latest].
+     *
+     * @return The snapshot, also stored as [latest].
+     */
+    fun forAction(): ScreenSnapshot {
+        val full = fullReader?.invoke() ?: return latest
+        latest = full
+        return full
+    }
+}
+
+/**
+ * When the accessibility service may read the screen text again (task 23d).
+ *
+ * Text inspection walks the whole node tree, so it runs off the main thread and at most once
+ * every [intervalMs]. Events that arrive meanwhile are folded into the one pending check.
+ *
+ * @property intervalMs The shortest gap between two text checks.
+ */
+class TextInspectionSchedule(private val intervalMs: Long = DEFAULT_INTERVAL_MS) {
+    private var lastRunMs: Long = Long.MIN_VALUE
+    private var pending: Boolean = false
+
+    /**
+     * Called for each event.
+     *
+     * @param nowMs The event time.
+     * @return The delay before the check should run, or `null` when one is already pending.
+     */
+    @Synchronized
+    fun onEvent(nowMs: Long): Long? {
+        if (pending) return null
+        pending = true
+        if (lastRunMs == Long.MIN_VALUE) return 0L
+        return (lastRunMs + intervalMs - nowMs).coerceAtLeast(0L)
+    }
+
+    /**
+     * Called when the check runs.
+     *
+     * @param nowMs The time it ran.
+     */
+    @Synchronized
+    fun onRun(nowMs: Long) {
+        pending = false
+        lastRunMs = nowMs
+    }
+
+    /** The default gap. */
+    companion object {
+        /** At most two text checks a second. */
+        const val DEFAULT_INTERVAL_MS: Long = 500L
+    }
 }
 
 /**

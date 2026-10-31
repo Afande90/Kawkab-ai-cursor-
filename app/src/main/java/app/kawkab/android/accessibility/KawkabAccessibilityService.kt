@@ -1,23 +1,31 @@
 package app.kawkab.android.accessibility
 
 import android.accessibilityservice.AccessibilityService
+import android.os.Handler
+import android.os.HandlerThread
+import android.os.SystemClock
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import app.kawkab.android.domain.safety.ActionDenylist
 import app.kawkab.android.domain.safety.ActivityLog
 import app.kawkab.android.domain.safety.ActivityLogEntry
+import app.kawkab.android.domain.safety.BlockReason
 import app.kawkab.android.domain.safety.GuardedTap
 import app.kawkab.android.domain.safety.OutboundTapGuard
 import app.kawkab.android.domain.safety.ScreenSnapshot
 import app.kawkab.android.domain.safety.ScreenWatch
 import app.kawkab.android.domain.safety.TapDecision
 import app.kawkab.android.domain.safety.TapTarget
+import app.kawkab.android.domain.safety.TextInspectionSchedule
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
 /**
  * Accessibility service that reads the screen and taps only through [GuardedTap].
- * Every event is checked against the denylist. A blocked screen receives no taps.
+ *
+ * Per event it keeps only the package, `FLAG_SECURE` and the password state, which are cheap.
+ * The screen text is read off the main thread at most every 500 ms, and in full immediately
+ * before every action (task 23d). A blocked screen receives no taps.
  */
 @AndroidEntryPoint
 class KawkabAccessibilityService : AccessibilityService() {
@@ -30,22 +38,62 @@ class KawkabAccessibilityService : AccessibilityService() {
     @Inject lateinit var activityLog: ActivityLog
 
     private val traversal = AccessibilityNodeTraversal()
+    private val schedule = TextInspectionSchedule()
+    private var worker: HandlerThread? = null
+    private var workerHandler: Handler? = null
+
+    @Volatile
     private var suspended = false
+
+    @Volatile
+    private var lastSecure = false
 
     override fun onServiceConnected() {
         instance = this
+        val thread = HandlerThread("kawkab-screen-text").apply { start() }
+        worker = thread
+        workerHandler = Handler(thread.looper)
+        screenWatch.fullReader = ::fullSnapshot
     }
 
     override fun onDestroy() {
         if (instance === this) instance = null
+        if (screenWatch.fullReader != null) screenWatch.fullReader = null
+        worker?.quitSafely()
+        worker = null
+        workerHandler = null
         super.onDestroy()
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
-        val snapshot = snapshot(event)
-        screenWatch.latest = snapshot
-        val blocked = denylist.inspectScreen(snapshot)
+        val packageName = event.packageName?.toString().orEmpty()
+        lastSecure = event.isAccessibilityDataSensitive
+        val previous = screenWatch.latest
+        val cheap = ScreenSnapshot(
+            packageName = packageName,
+            secure = lastSecure,
+            passwordField = event.source?.isPassword == true,
+            // Text from the last background check stays only while the same app is in front.
+            visibleText = if (previous.packageName == packageName) previous.visibleText else "",
+        )
+        screenWatch.latest = cheap
+        update(denylist.inspectScreen(cheap.copy(visibleText = "")))
+        val delay = schedule.onEvent(SystemClock.uptimeMillis()) ?: return
+        workerHandler?.postDelayed(::inspectText, delay)
+    }
+
+    override fun onInterrupt() = Unit
+
+    /** Reads the screen text on the worker thread and runs the full denylist check on it. */
+    private fun inspectText() {
+        schedule.onRun(SystemClock.uptimeMillis())
+        val full = fullSnapshot()
+        screenWatch.latest = full
+        update(denylist.inspectScreen(full))
+    }
+
+    private fun update(blocked: BlockReason?) {
         val nowSuspended = blocked != null
         if (nowSuspended && !suspended && blocked != null) {
             activityLog.record(
@@ -62,13 +110,11 @@ class KawkabAccessibilityService : AccessibilityService() {
         suspended = nowSuspended
     }
 
-    override fun onInterrupt() = Unit
-
     /**
      * Clicks [text] when the tap guard and the denylist allow it.
      */
     fun findAndClick(text: String, confirmed: Boolean): Boolean {
-        if (suspended) return false
+        if (blockedNow()) return false
         val root = rootInActiveWindow ?: return false
         return traversal.findAndClick(root, text) { allow(it, confirmed) }
     }
@@ -77,7 +123,7 @@ class KawkabAccessibilityService : AccessibilityService() {
      * Clicks [viewId] when the tap guard and the denylist allow it.
      */
     fun findAndClickById(viewId: String, confirmed: Boolean): Boolean {
-        if (suspended) return false
+        if (blockedNow()) return false
         val root = rootInActiveWindow ?: return false
         return traversal.findAndClickById(root, viewId) { allow(it, confirmed) }
     }
@@ -87,16 +133,24 @@ class KawkabAccessibilityService : AccessibilityService() {
      */
     fun currentScreenText(): String = traversal.screenText(rootInActiveWindow)
 
+    /** The full denylist check, immediately before an action (§0.4.4). */
+    private fun blockedNow(): Boolean {
+        val blocked = denylist.inspectScreen(fullSnapshot())
+        update(blocked)
+        return blocked != null
+    }
+
     private fun allow(target: TapTarget, confirmed: Boolean): Boolean =
         GuardedTap.decision(guard, target, confirmed) == TapDecision.ALLOW
 
-    private fun snapshot(event: AccessibilityEvent): ScreenSnapshot {
-        val described = traversal.describe(rootInActiveWindow)
-        val password = event.source?.isPassword == true || described.second
+    /** The whole screen, text included. Walks the node tree, so it is never called per event. */
+    private fun fullSnapshot(): ScreenSnapshot {
+        val root = rootInActiveWindow
+        val described = traversal.describe(root)
         return ScreenSnapshot(
-            packageName = event.packageName?.toString().orEmpty(),
-            secure = event.isAccessibilityDataSensitive,
-            passwordField = password,
+            packageName = root?.packageName?.toString() ?: screenWatch.latest.packageName,
+            secure = lastSecure,
+            passwordField = described.second,
             visibleText = described.first,
         )
     }
@@ -146,6 +200,7 @@ class KawkabAccessibilityService : AccessibilityService() {
          */
         fun typeIntoFocused(content: String): Boolean {
             val service = instance ?: return false
+            if (service.blockedNow()) return false
             val root = service.rootInActiveWindow ?: return false
             val focused = root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT) ?: return false
             val args = android.os.Bundle()

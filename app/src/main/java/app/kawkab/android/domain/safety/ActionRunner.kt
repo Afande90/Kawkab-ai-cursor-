@@ -31,7 +31,8 @@ class ActionRunner(
         deviceConfirmed: Boolean = true,
         perform: () -> String,
     ): String {
-        val blocked = denylist.inspectScreen(screen.latest)
+        // The full check, text included, runs immediately before every action (§0.4.4).
+        val blocked = denylist.inspectScreen(screen.forAction())
             ?: denylist.inspectIntent(intentPackage, intentUri)
         if (blocked != null) {
             logRefusal(asked, ran, entryPoint, blocked)
