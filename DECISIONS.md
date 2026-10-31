@@ -385,3 +385,13 @@ A reply from a chat-facing LITE_RT node is read for a tool call before it is sho
 Skill nodes are left alone: a skill parses its own output against its tool allowlist, and reading it here would bypass that list (the golden traces caught this).
 
 Every turn ends within 60 seconds in a reply, a card or an error with Retry: the turn watchdog from task 23j.
+
+## 2026-10-31 — local actions, readable cards, times (task 23i)
+
+`set_alarm`, `set_timer`, `open_app` and `add_calendar_event` are a new `LOCAL` risk tier. Under the default policy and under "Never prompt" they run without a card; only "All calls" asks first. `OUTBOUND` (call, SMS, WhatsApp, share, delete, web request, tap) still asks under every policy. `safety/tool_classification.csv` and the classification test follow.
+
+After a local action from chat, the reply ends with "Stays on the phone, so I didn't ask." and an Undo chip shows for 10 seconds. Undo dismisses the alarm by its time, stops the timer, or goes back to the home screen. A calendar event is only added after the owner taps Save in the calendar app, so Undo says to close that screen. Each undo is an activity-log entry (`asked = undo`).
+
+Confirmation cards for a call, a message, a delete, a web request and a tap read as a sentence in the owner's language, with Cancel, Change and Send (or Call). The tool id and raw arguments are behind Details. Change declines the call and puts an editable command back in the composer. Other tools keep the existing card. The plain mode is off by default in the design system, so every existing card screenshot is unchanged.
+
+Times use `h:mm a` with the phone's locale and digits: "6:00 AM", and "٦:٠٠ ص" in Arabic.

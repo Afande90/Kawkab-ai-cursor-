@@ -11,6 +11,7 @@ import app.kawkab.android.domain.models.Role
 import app.kawkab.android.domain.repositories.ChatRepository
 import app.kawkab.android.hands.ContactChoice
 import app.kawkab.android.hands.ContactMatch
+import app.kawkab.android.hands.LocalUndo
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -169,6 +170,20 @@ class ChatTierRouterTest {
 
         assertTrue((states.last() as AgentOrchestratorState.Completed).finalResponse.contains("Tap one of the names"))
         coVerify(exactly = 0) { gate.dispatch(any(), any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a local action says it did not ask and offers Undo`() = runTest {
+        val undo = LocalUndo(mockk(relaxed = true), mockk(relaxed = true))
+        val withUndo = HandsChatTierRouter(gate, chatRepository, engine, SkillCache(), ContactChoice(), undo)
+        stubGate("Alarm set for 6:00 AM.")
+        val states = mutableListOf<AgentOrchestratorState>()
+
+        withUndo.runCommand("session", "set an alarm for 6", withUndo.command("set an alarm for 6")!!, states::add)
+
+        val reply = (states.last() as AgentOrchestratorState.Completed).finalResponse
+        assertEquals("Alarm set for 6:00 AM. ${LocalUndo.NO_ASK_NOTE}", reply)
+        assertEquals("set_alarm", undo.state.value?.tool)
     }
 
     private fun stubGate(output: String) {

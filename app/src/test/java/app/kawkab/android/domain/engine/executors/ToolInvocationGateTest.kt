@@ -245,7 +245,9 @@ class ToolInvocationGateTest {
                         val expectedAsks = alwaysConfirm ||
                             when (policy) {
                                 ToolApprovalPolicy.AllCalls -> true
-                                ToolApprovalPolicy.SensitiveOrDestructive -> risk != ToolRisk.READ_ONLY
+                                // LOCAL stays on the phone and does not ask by default (task 23i).
+                                ToolApprovalPolicy.SensitiveOrDestructive ->
+                                    risk != ToolRisk.READ_ONLY && risk != ToolRisk.LOCAL
                                 ToolApprovalPolicy.NeverPrompt ->
                                     risk == ToolRisk.DESTRUCTIVE || risk == ToolRisk.OUTBOUND
                             }
