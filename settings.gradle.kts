@@ -26,5 +26,6 @@ rootProject.name = "android-ai-agent"
 include(":app")
 include(":catalog")
 include(":tools-probe")
+include(":benchmark")
 include(":stubmessenger")
 project(":stubmessenger").projectDir = file("testapps/stubmessenger")

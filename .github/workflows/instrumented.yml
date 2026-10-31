@@ -323,3 +323,70 @@ jobs:
           fi
           echo "::error title=Instrumented gate::classifier=$CLASSIFIER, matrix=$MATRIX — at least one instrumented leg did not pass. The per-leg jobs carry the diagnosis and the artifacts."
           exit 1
+
+  # Task 23d: frame timing for switching Chat → Pipelines → Tools → More → Chat,
+  # with no model loaded. The gate is a median frame time under 16 ms. The target
+  # is the foss debug build because the release build ships arm64 only and this
+  # emulator is x86_64; a debuggable build is slower than release, so a pass here
+  # is a conservative pass.
+  tab-switch-benchmark:
+    name: Tab-switch benchmark · API 36
+    needs: classifier
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
+        with:
+          packages: 'platform-tools'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          cache-read-only: true
+
+      - name: Enable KVM
+        run: |
+          set -euo pipefail
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run the benchmark
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          cores: 4
+          ram-size: 4096M
+          disk-size: 10G
+          disable-animations: false
+          emulator-boot-timeout: 900
+          force-avd-creation: true
+          script: >-
+            ./gradlew :benchmark:connectedDebugAndroidTest --no-daemon
+            -Pandroid.testInstrumentationRunnerArguments.androidx.benchmark.suppressErrors=EMULATOR,DEBUGGABLE,LOW-BATTERY,UNLOCKED
+
+      - name: Check the 16 ms median
+        if: always()
+        run: python3 .github/scripts/check-frame-timing.py benchmark/build/outputs/connected_android_test_additional_output
+
+      - name: Upload the benchmark output
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: tab-switch-benchmark
+          path: benchmark/build/outputs/
+          if-no-files-found: warn
