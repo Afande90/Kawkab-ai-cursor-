@@ -35,3 +35,12 @@ dependencies {
     implementation(libs.androidx.benchmark.macro.junit4)
     implementation(libs.androidx.uiautomator)
 }
+
+
+// The benchmark installs the app's APK, which already contains its dependencies.
+// Resolving them again here would pick their JVM variants, which the app never
+// ships and the verification metadata does not cover, so the tested-APK
+// configuration takes only the app project itself.
+configurations.matching { it.name.endsWith("TestedApks") }.configureEach {
+    isTransitive = false
+}
