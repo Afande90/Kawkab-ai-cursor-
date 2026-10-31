@@ -395,3 +395,13 @@ After a local action from chat, the reply ends with "Stays on the phone, so I di
 Confirmation cards for a call, a message, a delete, a web request and a tap read as a sentence in the owner's language, with Cancel, Change and Send (or Call). The tool id and raw arguments are behind Details. Change declines the call and puts an editable command back in the composer. Other tools keep the existing card. The plain mode is off by default in the design system, so every existing card screenshot is unchanged.
 
 Times use `h:mm a` with the phone's locale and digits: "6:00 AM", and "٦:٠٠ ص" in Arabic.
+
+## 2026-10-31 — reply speed and reply language (task 23g)
+
+Language: the Kawkab prompt and the default prompt prefix say "Reply once, in the same language and dialect the user wrote in. Never label the language. Never translate unless asked.", with one Sudanese example. A chat reply that still comes as labelled translations is cut to the one part in the user's script, with the label removed. Sudanese is told apart from Modern Standard Arabic by a list of Sudanese words (زول، شنو، هسي، عايز، داير، وين …).
+
+The reply-language set `evals/reply-language/v1/prompts.jsonl` (20 prompts: 8 Sudanese, 6 MSA, 6 English) was frozen in its own commit, SHA-256 `82660d85c96bbd21680d7b1fd8977f3d400aacf26cd4e3b54b88209d5a8848af`. The detector labels all 20 correctly. **BLOCKED gate: scoring real model replies on this set.** Measured: no model runs on this machine or on the CI emulator (see task 23f). Cause: hardware. Fallback: the set and the detector are ready; scoring replies needs Gemma on the owner's phone or a llama.cpp reference run.
+
+Speed: tier 1 sends no prompt at all (it never calls the model). The assistant prompt no longer expands `$TOOLS` (every tool's name and description) and lists only its six phone tools with their arguments, so the prefill is shorter. Native tool schemas are not sent (native tool calling stays off since task 17).
+
+**BLOCKED gate: reuse the fixed system prompt's KV state between turns, and first token under 3 s.** LiteRT-LM 0.17.1 exposes no KV save and restore and no prefix cache, and the orchestrator sends the whole history each turn, so the conversation is reopened every turn (closing it any other way crashed the native session, see `LiteRTLlmEngine.streamConversation`). The first-token time for "hello" and for a command was not measured: no model runs here. Fallback: the shorter prompt; the owner's phone shows first-token time on the Models screen's performance card.

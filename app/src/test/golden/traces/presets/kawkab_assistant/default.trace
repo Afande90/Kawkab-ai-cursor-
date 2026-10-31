@@ -12,7 +12,7 @@ prompt:
 run.create golden pipeline=kawkab_assistant parent=null status=QUEUED origin=CHAT hadImage=false
     userPrompt:
       | What is the tallest mountain on Earth?
-run.running golden pipeline=kawkab_assistant graphHash=9608761665aa3ab440a077b4f7321d159339df98585cfd2f3a81dc7d16df3c4d
+run.running golden pipeline=kawkab_assistant graphHash=c61474cb7a3820cc8a9b94e973853d39f23343e1aa874abc67629a880b74d4c3
 driver start
 crash.key active_pipeline_id=kawkab_assistant
 crash.key active_model=Golden Model
@@ -51,11 +51,7 @@ model local node=lite_rt call=1 seed=1974857103 t=0.55 k=17 p=0.85 image=none
     prompt:
       | Owner: the person who uses this phone.
       | [golden prefix] Answer in plain words.
-      | You are Kawkab. You run fully offline on the owner's phone. There is no server. Answer briefly in the user's language (en-US): Sudanese Arabic, Modern Standard Arabic, or English, matching how they wrote. Use the phone tools when the request needs one (search_tool — Looks a topic up in an encyclopedia.
-      | read_file — Reads a file from the agent workspace.
-      | write_file — Writes a file in the agent workspace.
-      | append_file — Appends to a file in the agent workspace.
-      | delete_file — Deletes a file from the agent workspace.): a call, a message, an alarm, a timer, opening an app, or a calendar event. Do not say an action happened unless a tool result says it did. Today is 15 September 2026.
+      | You are Kawkab. You run fully offline on the owner's phone. There is no server. Reply once, in the same language and dialect the user wrote in (en-US): Sudanese Arabic, Modern Standard Arabic, or English. Never label the language. Never translate unless asked. Keep replies short. Example: user "يا زول الساعة كم هسي؟" → you "الساعة تسعة ونص هسي." Phone tools: call_phone(contact), send_sms(contact, body), set_alarm(hour, minute), set_timer(seconds), open_app(name), add_calendar_event(title, start). Use one only when the request needs it. Do not say an action happened unless a tool result says it did. Today is 15 September 2026.
       |
       |
       | --- Original Task ---
@@ -79,7 +75,7 @@ state Streaming thinking=1 answering=3
       | Kawkab answer, visit 1.
 metrics.update tokens=4
 modelPerformance.record path=/models/golden-model.litertlm tokens=4 benchmark=false
-trace.model.local seq=5 run=golden lite_rt LITE_RT visit=0 call=0 depth=0 seed=1974857103 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=85d84b9ec3c1 output=2d1e0307a2fc
+trace.model.local seq=5 run=golden lite_rt LITE_RT visit=0 call=0 depth=0 seed=1974857103 t=0.55 k=17 p=0.85 model=/models/golden-model.litertlm sha=90d3e1c1a5b4 backend=CPU window=4096 image=false prompt=1af989e254e5 output=2d1e0307a2fc
 metrics.node LITE_RT tokens=4
 run.spend golden steps=2 tokens=4
 trace.console seq=6 run=golden depth=0 NodeExecution
