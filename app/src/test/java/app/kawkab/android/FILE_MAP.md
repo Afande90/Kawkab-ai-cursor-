@@ -308,6 +308,7 @@ Only Kotlin files appear inside the generated blocks.
       - `ToolCallParserTest.kt` - Unit tests for `ToolCallParser`, the non-repair tool-call parser used by `SkillNodeExecutor`.
       - `ToolInvocationGateTest.kt` - Unit tests for `ToolInvocationGate`: a decision recorded on a parked request is the one the resumed run applies, whatever the policy, risk or `alwaysConfirm` say on resume; the record is consumed before any early exit.
       - `ToolNodeExecutorTest.kt` - Tests for ToolNodeExecutor.
+      - `ToolReplyReaderTest.kt` - Task 23h: a tool name or JSON printed as text is read as a call, never shown.
     - `golden/` - Golden-trace harness: runs every bundled preset, published recipe and test fixture through the real `GraphExecutionEngine` and all node executors under a scripted model, and compares the normal-form trace with the files under `app/src/test/golden/traces/` (`docs/testing.md` § Golden run traces).
       - `GoldenEvent.kt` - One entry of a golden run trace: a single header line plus named multi-line text blocks.
       - `GoldenModel.kt` - The scripted model of the golden harness, behind every seam a node can reach a model through: the on-device `LlmInferenceEngine`, the cloud client a `CLOUD` node streams from, and the cloud structured-inference client a router or tool node may use.
@@ -364,6 +365,7 @@ Only Kotlin files appear inside the generated blocks.
     - `ChatTierRouterTest.kt` - The router plans a hands command with no model, and a skill with one text call.
     - `CommandFastPathTest.kt` - Scores the frozen command set.
     - `CommandFastPathV2Test.kt` - Scores the frozen v2 command set.
+    - `CommandTextTest.kt` - Task 23h: quotes, trailing punctuation and emoji no longer hide a command from the fast path.
   - `harness/` - Tests for typed decisions, the skill cache, image notes, and the extra biometric check.
     - `HarnessRulesTest.kt` - Planner decisions, history, breakers, the skill cache, and the extra biometric check.
   - `memoryio/` - Tests for the long-term-memory export/import gateway.

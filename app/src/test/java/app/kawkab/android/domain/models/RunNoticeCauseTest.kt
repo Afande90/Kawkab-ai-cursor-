@@ -56,7 +56,10 @@ class RunNoticeCauseTest {
         val everyCause: List<RunNoticeCause> = listOf(
             RunNoticeCause.ApproachingCeiling(RunCeilingAxis.STEPS, 12, 15),
             RunNoticeCause.LooksStuck(StuckSignal.NO_NEW_OUTPUT),
-            RunNoticeCause.ModelSwitched(failedModel = "gemma-4-e4b-it.litertlm", usedModel = "gemma-4-e2b-it.litertlm"),
+            RunNoticeCause.ModelSwitched(
+                failedModel = "gemma-4-e4b-it.litertlm",
+                usedModel = "gemma-4-e2b-it.litertlm",
+            ),
         )
         assertEquals(
             "add the new cause to everyCause, or nothing here covers it",

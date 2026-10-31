@@ -52,7 +52,13 @@ class TierOneAlarmChatTest {
     val composeTestRule = createComposeRule()
 
     @Test
-    fun typingSetAnAlarmFiresTheAlarmIntentAndSkipsTheModel() {
+    fun typingSetAnAlarmFiresTheAlarmIntentAndSkipsTheModel() = alarmFiresFor("set an alarm for 6")
+
+    /** Task 23h: the owner's pasted text had a stray closing quote. */
+    @Test
+    fun aStrayQuoteStillFiresTheAlarmIntentAndSkipsTheModel() = alarmFiresFor("Set an alarm for 6\"")
+
+    private fun alarmFiresFor(typed: String) {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val engine = mockk<LlmInferenceEngine>(relaxed = true)
         every { engine.isInitialized } returns false
@@ -66,7 +72,7 @@ class TierOneAlarmChatTest {
             composeTestRule.waitUntil(SESSION_WAIT_MS) {
                 viewModel.state.value.thread.currentSessionId.isNotBlank()
             }
-            composeTestRule.onNode(hasSetTextAction()).performTextInput("set an alarm for 6")
+            composeTestRule.onNode(hasSetTextAction()).performTextInput(typed)
             val sendCd = instrumentation.targetContext.getString(KnotworkR.string.knotwork_composer_send)
             composeTestRule.onNodeWithContentDescription(sendCd).performClick()
             composeTestRule.waitUntil(SESSION_WAIT_MS) { monitor.hits >= 1 }

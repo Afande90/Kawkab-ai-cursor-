@@ -7,6 +7,7 @@ import app.kawkab.android.domain.models.AppError
 import app.kawkab.android.domain.models.ExecutionScope
 import app.kawkab.android.domain.models.LocalModel
 import app.kawkab.android.domain.models.ModelPerformanceSample
+import app.kawkab.android.domain.models.NodeExecutionResult
 import app.kawkab.android.domain.models.NodeModel
 import app.kawkab.android.domain.models.NodeOutput
 import app.kawkab.android.domain.models.NodeType
@@ -25,6 +26,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
@@ -349,6 +351,53 @@ class LiteRtNodeExecutorTest {
         assertTrue(error.contains("ran out of working memory"))
         assertFalse(error.contains(".cc:"))
         coVerify(exactly = 0) { llmEngine.reopenWithWindow(any()) }
+    }
+
+    @Test
+    fun `a reply that only names a tool is re-asked once and then becomes a plain sentence`() = runTest {
+        val node = NodeModel("1", NodeType.LITE_RT, 0f, 0f, systemPrompt = "Sys")
+        every { settingsRepository.systemPromptPrefix } returns flowOf("")
+        coEvery { loadModelUseCase(any()) } returns Result.Success(Unit)
+        every { llmEngine.generateResponseStream(any()) } returnsMany listOf(flowOf("set_alarm"), flowOf("set_alarm"))
+
+        val outputs = executor.execute(node, "Set an alarm for 6", "session-1", "Set an alarm for 6").toList()
+
+        val text = outputs.filterIsInstance<NodeOutput.Result>().single().result.outputText
+        assertEquals("I couldn't do that, try: set an alarm for 6", text)
+        verify(exactly = 2) { llmEngine.generateResponseStream(any()) }
+    }
+
+    @Test
+    fun `a JSON tool call runs through the tool gate and its result is the reply`() = runTest {
+        val gate = mockk<ToolInvocationGate>()
+        val withGate = LiteRtNodeExecutor(
+            llmEngine,
+            settingsRepository,
+            metricsRepository,
+            modelPerformanceRepository,
+            nativeMemorySampler,
+            loadModelUseCase,
+            toolGate = gate,
+        )
+        coEvery { gate.dispatch(any(), any(), any(), any(), any(), "set_alarm", any(), false) } coAnswers {
+            firstArg<FlowCollector<NodeOutput>>().emit(
+                NodeOutput.Result(
+                    NodeExecutionResult(outputText = "Alarm set for 6:00 AM.", resolvedToolName = "set_alarm"),
+                ),
+            )
+        }
+        val node = NodeModel("1", NodeType.LITE_RT, 0f, 0f, systemPrompt = "Sys")
+        every { settingsRepository.systemPromptPrefix } returns flowOf("")
+        coEvery { loadModelUseCase(any()) } returns Result.Success(Unit)
+        every { llmEngine.generateResponseStream(any()) } returns
+            flowOf("{\"tool\": \"set_alarm\", \"arguments\": {\"hour\": 6}}")
+
+        val outputs = withGate.execute(node, "wake me at 6", "session-1", "wake me at 6").toList()
+
+        assertEquals("Alarm set for 6:00 AM.", outputs.filterIsInstance<NodeOutput.Result>().single().result.outputText)
+        coVerify(exactly = 1) {
+            gate.dispatch(any(), any(), any(), "session-1", any(), "set_alarm", "{\"hour\":6}", false)
+        }
     }
 
     private object TestError : AppError.System
