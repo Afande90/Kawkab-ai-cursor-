@@ -21,6 +21,7 @@ import app.kawkab.android.domain.repositories.GenerationSettings
 import app.kawkab.android.domain.repositories.MetricsRepository
 import app.kawkab.android.domain.repositories.ModelPerformanceRepository
 import app.kawkab.android.domain.services.NativeMemorySampler
+import app.kawkab.android.domain.text.ReplyLanguage
 import app.kawkab.android.domain.usecases.LoadModelUseCase
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
@@ -212,7 +213,7 @@ class LiteRtNodeExecutor @Inject constructor(
 
         // Only a chat-facing LITE_RT node: a skill parses its own output against its allowlist.
         val answer = if (node.type == NodeType.LITE_RT && node.skillId.isNullOrBlank()) {
-            finalAnswer(fullResponseText, Turn(fullPrompt, node, sessionId, runId, imagePath, scope))
+            finalAnswer(fullResponseText, Turn(fullPrompt, node, sessionId, runId, imagePath, scope, originalPrompt))
         } else {
             fullResponseText
         }
@@ -226,7 +227,8 @@ class LiteRtNodeExecutor @Inject constructor(
      */
     private suspend fun FlowCollector<NodeOutput>.finalAnswer(text: String, turn: Turn): String =
         when (val reply = ToolReplyReader.read(text, knownTools)) {
-            ToolReply.Text -> text
+            // One reply in the user's language, never "English: …" plus a translation (task 23g).
+            ToolReply.Text -> ReplyLanguage.keepOne(text, turn.userText)
             is ToolReply.Call -> runToolCall(reply, turn.node, turn.sessionId, turn.runId)
             is ToolReply.NamedOnly -> {
                 val again = reAsk(turn.fullPrompt, reply.tool, turn.imagePath, turn.scope)
@@ -245,6 +247,7 @@ class LiteRtNodeExecutor @Inject constructor(
         val runId: String?,
         val imagePath: String?,
         val scope: ExecutionScope,
+        val userText: String,
     )
 
     /** Runs [call] through the tool gate, which shows the tap card for an outbound tool. */

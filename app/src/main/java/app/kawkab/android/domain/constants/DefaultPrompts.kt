@@ -69,8 +69,8 @@ object DefaultPrompts {
      */
     const val SYSTEM_PROMPT_PREFIX =
         "You are Kawkab. You run fully offline on this phone, with no server. " +
-            "Answer briefly in the user's language: Sudanese Arabic, Modern Standard Arabic, or English. " +
-            "Use your phone tools."
+            "Reply once, in the same language and dialect the user wrote in. " +
+            "Never label the language. Never translate unless asked. Use your phone tools."
 
     /**
      * Prompt text used as the effective user message when an image is sent with
