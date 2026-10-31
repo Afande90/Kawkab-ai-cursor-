@@ -58,7 +58,6 @@ import app.kawkab.design.screens.chat.ChatHomeMessageRow
 fun PhoneAccessScreen(onDone: () -> Unit, requestPermission: String? = null) {
     val context = LocalContext.current
     var tick by remember { mutableIntStateOf(0) }
-    var assistantHeld by remember { mutableStateOf(false) }
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
         tick += 1
     }
@@ -107,15 +106,20 @@ fun PhoneAccessScreen(onDone: () -> Unit, requestPermission: String? = null) {
             }
         }
         Text(stringResource(R.string.phone_access_assistant_title))
+        // Whether Kawkab really holds the role, read again whenever the owner comes back (task 23k).
+        val roleHeld = remember(tick, lifecycleState) { AssistantRoleRequest.isHeld(context) }
+        Text(
+            stringResource(
+                if (roleHeld) R.string.phone_access_assistant_role_on else R.string.phone_access_assistant_role_off,
+            ),
+        )
         AssistantRoleRequest.steps(context).forEach { step -> Text(step) }
-        if (assistantHeld) {
-            Text(stringResource(R.string.phone_access_assistant_held))
-        } else {
+        if (!roleHeld) {
             TextButton(
                 onClick = {
                     val intent = AssistantRoleRequest.create(context)
                     if (intent == null) {
-                        assistantHeld = true
+                        openSafely(context, AssistantRoleRequest.settingsFallback(context))
                     } else {
                         roleLauncher.launch(intent)
                     }
@@ -124,6 +128,8 @@ fun PhoneAccessScreen(onDone: () -> Unit, requestPermission: String? = null) {
                 Text(stringResource(R.string.phone_access_assistant_open))
             }
         }
+        Text(stringResource(R.string.phone_access_power_button))
+        Text(stringResource(R.string.phone_access_assistant_fallback))
     }
 }
 

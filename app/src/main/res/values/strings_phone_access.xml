@@ -22,6 +22,9 @@
     <string name="phone_access_nothing">On Nothing OS, also allow unrestricted background use in the app\'s battery settings, or the phone may stop Kawkab.</string>
     <string name="phone_access_assistant_title">Default assistant</string>
     <string name="phone_access_assistant_open">Make Kawkab the assistant</string>
-    <string name="phone_access_assistant_held">Kawkab is already the assistant.</string>
     <string name="phone_access_app_info_hint">Android will not ask again. In App info, open Permissions and turn this on, then come back.</string>
+    <string name="phone_access_assistant_role_on">Kawkab is the digital assistant.</string>
+    <string name="phone_access_assistant_role_off">Kawkab is not the digital assistant yet.</string>
+    <string name="phone_access_power_button">Also set the power button: Settings → System → Gestures (or Buttons) → Press and hold power button → Digital assistant. Nothing OS may set it to the power menu.</string>
+    <string name="phone_access_assistant_fallback">Or use the “Ask Kawkab” Quick Settings tile or home-screen shortcut.</string>
 </resources>

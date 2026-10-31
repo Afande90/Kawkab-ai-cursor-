@@ -7,6 +7,20 @@
     at runtime by AppShortcutPublisher.
 -->
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- "Ask Kawkab": a way in that always works, even when the power button opens the power menu. -->
+    <shortcut
+        android:shortcutId="ask_kawkab"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_new_chat"
+        android:shortcutShortLabel="@string/ask_kawkab"
+        android:shortcutLongLabel="@string/ask_kawkab">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="knotwork://new-chat"
+            android:targetClass="app.kawkab.android.presentation.ui.MainActivity"
+            android:targetPackage="app.kawkab.android" />
+    </shortcut>
+
     <shortcut
         android:shortcutId="new_chat"
         android:enabled="true"

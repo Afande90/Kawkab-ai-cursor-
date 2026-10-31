@@ -3,6 +3,7 @@ package app.kawkab.android.assistant
 import android.app.role.RoleManager
 import android.content.Context
 import android.content.Intent
+import android.provider.Settings
 import app.kawkab.android.R
 import app.kawkab.android.domain.assistant.DefaultAssistantGuide
 
@@ -18,6 +19,28 @@ object AssistantRoleRequest {
         if (!roles.isRoleAvailable(RoleManager.ROLE_ASSISTANT)) return null
         if (roles.isRoleHeld(RoleManager.ROLE_ASSISTANT)) return null
         return roles.createRequestRoleIntent(RoleManager.ROLE_ASSISTANT)
+    }
+
+    /**
+     * Whether Kawkab really holds the assistant role (task 23k).
+     *
+     * @param context Any context.
+     * @return `true` when `RoleManager.isRoleHeld(ROLE_ASSISTANT)`.
+     */
+    fun isHeld(context: Context): Boolean =
+        context.getSystemService(RoleManager::class.java)?.isRoleHeld(RoleManager.ROLE_ASSISTANT) == true
+
+    /**
+     * The screen that lets the owner pick the assistant when the role request is not offered:
+     * the voice-input settings, else the default-apps screen.
+     *
+     * @param context Any context.
+     * @return An intent that resolves on this phone.
+     */
+    fun settingsFallback(context: Context): Intent {
+        val voice = Intent(Settings.ACTION_VOICE_INPUT_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        if (voice.resolveActivity(context.packageManager) != null) return voice
+        return Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
 
     /**

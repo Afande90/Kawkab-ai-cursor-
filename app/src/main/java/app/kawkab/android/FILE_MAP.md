@@ -16,6 +16,8 @@ Only Kotlin files appear inside the generated blocks.
   - `KawkabAccessibilityService.kt` - Accessibility service that reads the screen and taps only through `GuardedTap`.
 - `App.kt` - Main Android Application class.
 - `assistant/` - The digital-assistant panel: a power-button long-press opens Kawkab over the current app, and a tap still gates every hands command.
+  - `AskKawkabTileService.kt` - The "Ask Kawkab" Quick Settings tile (task 23k): a fallback that works even when the power button is set to the power menu.
+  - `AssistantEntry.kt` - One way in to Kawkab that always works (task 23k): the assistant panel over the current app when Kawkab holds the assistant role, otherwise a new chat in the app.
   - `AssistantRoleRequest.kt` - Builds the system intent that asks the owner to make Kawkab the digital assistant.
   - `AssistScreenNodes.kt` - Reads an assistant-API screen into the plain screen tree.
   - `KawkabAssistantSession.kt` - The panel a long-press of the power button opens over the current app.

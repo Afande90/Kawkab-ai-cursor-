@@ -61,4 +61,5 @@
     <string name="assistant_step_settings">Open Settings, then Apps, then Default apps, then Digital assistant app.</string>
     <string name="assistant_step_choose">Choose Kawkab.</string>
     <string name="assistant_step_confirm">Confirm when Android asks. A long-press of the power button then opens Kawkab over the current app.</string>
+    <string name="ask_kawkab">Ask Kawkab</string>
 </resources>

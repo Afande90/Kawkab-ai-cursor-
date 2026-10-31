@@ -150,6 +150,18 @@
                 android:resource="@xml/voice_interaction_service" />
         </service>
 
+        <!-- "Ask Kawkab" tile: opens the assistant panel, or a new chat (task 23k). -->
+        <service
+            android:name=".assistant.AskKawkabTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_shortcut_new_chat"
+            android:label="@string/ask_kawkab"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
         <service
             android:name=".assistant.KawkabAssistantSessionService"
             android:exported="true"
