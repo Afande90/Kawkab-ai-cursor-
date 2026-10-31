@@ -66,6 +66,8 @@ Only Kotlin files appear inside the generated blocks.
   - `UsageTelemetryNoNetworkKonsistTest.kt` - Konsist guard enforcing the core privacy promise of the local usage-telemetry feature: **nothing on the telemetry path may make a network call.**
   - `VerificationToolIsolationKonsistTest.kt` - The check of a past run cannot run a tool.
   - `WorkspaceToolsDocumentedTest.kt` - Pins the three places that enumerate the tools able to read and write the agent's workspace to the tools that actually can.
+- `assistant/` - Tests for the assistant entry points: the voice interaction declaration, the tile and the shortcut.
+  - `AssistantEntryTest.kt` - Task 23k: the assistant is declared correctly, and two fallbacks always reach Kawkab.
 - `data/` - Tests for the data layer.
   - `audio/` - Tests for voice-input capture and the WAV header builder.
     - `WavHeaderTest.kt` - Unit tests for `WavHeader`, the pure 44-byte canonical PCM WAV header builder.

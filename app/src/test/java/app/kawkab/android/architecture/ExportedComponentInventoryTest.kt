@@ -148,6 +148,11 @@ class ExportedComponentInventoryTest {
                     ".presentation.tile.DutyPipelineTileService",
                     permission = "android.permission.BIND_QUICK_SETTINGS_TILE",
                 ),
+                // "Ask Kawkab" tile: opens the assistant panel or a new chat (task 23k).
+                Export(
+                    ".assistant.AskKawkabTileService",
+                    permission = "android.permission.BIND_QUICK_SETTINGS_TILE",
+                ),
                 // External contract: its callers cannot hold a permission of ours.
                 Export(EXTERNAL_AUTOMATION_RECEIVER, permission = null),
                 // Published AppFunctions: generated from the entry point, bound only by the system.

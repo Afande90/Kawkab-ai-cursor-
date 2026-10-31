@@ -413,3 +413,11 @@ Tapping a model in Models now loads it before marking it active. A model whose f
 Downloads already check the SHA-256 the source publishes (the "checked" label on the Models screen); nothing changed there.
 
 The emulator test downloads SmolLM2 135M Instruct Q4_K_M (Apache-2.0, 105,454,432 bytes, SHA-256 `2e8040ceae7815abe0dcb3540b9995eaa1fa0d2ca9e797d0a635ae4433c68c2d`) from Hugging Face, activates it through the same use case, and expects a reply to "hello". It is the smallest GGUF llama.cpp answers with, and the Llamatik library ships an x86_64 build, so this one runs on the CI emulator. The file is a test fixture only; it is not in the APK and not offered in the app.
+
+## 2026-10-31 — power button and assistant fallbacks (task 23k)
+
+Phone access now reads `RoleManager.isRoleHeld(ROLE_ASSISTANT)` each time the owner comes back and says plainly whether Kawkab is the digital assistant. When Android does not offer the role request, the button opens the voice-input settings, or the default-apps screen if that is missing. The screen also says to set Settings → System → Gestures (or Buttons) → Press and hold power button → Digital assistant, because Nothing OS can leave it on the power menu. This was not checked on a Nothing OS 4 phone here; the owner's check is in `docs/owner-checks/M1.6.md`.
+
+The voice interaction service, its session service and `supportsAssist` were already declared correctly. The service now records itself while Android runs it, so other entry points can open the same panel.
+
+Two fallbacks always reach Kawkab: an "Ask Kawkab" Quick Settings tile and an "Ask Kawkab" launcher shortcut. With the assistant role they open the panel over the current app; without it they open a new chat. The shortcut is a static launcher shortcut, which can only start an activity, so it always opens a new chat.
