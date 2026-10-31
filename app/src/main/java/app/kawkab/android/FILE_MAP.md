@@ -472,6 +472,7 @@ Only Kotlin files appear inside the generated blocks.
       - `ToolCallParser.kt` - Non-repair parser that recovers a `{tool, arguments}` tool call from free-form LLM output via the shared `JsonPayloadExtractor` + `kotlinx.serialization` (`ToolCall` DTO); used by `SkillNodeExecutor` (whose inference output is already produced, so re-inference is impossible). Also hosts `JsonElement.asArgumentString()` (unwraps a string primitive, compact-JSON otherwise) shared with `ToolNodeExecutor`.
       - `ToolInvocationGate.kt` - Shared `@Singleton` Human-in-the-Loop tool-dispatch gate (risk lookup → destructive-block → approval/park → execute → observation) used by both `ToolNodeExecutor` and `SkillNodeExecutor`; mints each request's `requestId`, owns the per-session approval-deferred map, settles a live request only when the answer names it, and exposes the `pendingApprovalFor` reattach surface.
       - `ToolNodeExecutor.kt` - Executor for `TOOL` nodes; resolves which tool to run (explicit or LLM auto-select) through the `StructuredOutputGate` (validates the `{tool, arguments}` envelope for auto-select, the arguments object for a fixed tool, repairing malformed JSON), then hands the call to the shared `ToolInvocationGate`.
+      - `ToolReplyReader.kt` - Reads a tool call out of a model reply, so a tool name or JSON never reaches the owner as text.
     - `GraphExecutionEngine.kt` - Entry point that runs a PipelineGraph as a root run or a sub-pipeline: validates it, builds or inherits the run tree, opens the per-invocation collaborators and hands the walk to `RunWalk`.
     - `GraphRouting.kt` - Decides where a run goes next, from the graph's edges and the verdict of the node that has just run.
     - `HardwareAccelerationProbe.kt` - Port answering whether the GPU compute path is plausibly usable on this device (LiteRT-LM exposes no availability API). A `true` answer means "worth trying with a fallback ready", never "will work".
@@ -520,6 +521,7 @@ Only Kotlin files appear inside the generated blocks.
   - `fastpath/` - Deterministic Arabic and English grammar for the five core commands. It plans a tool call and does not run it.
     - `ChatTierRouter.kt` - Decides whether a typed line skips the pipeline.
     - `CommandFastPath.kt` - Deterministic Arabic and English grammar for the five core commands.
+    - `CommandText.kt` - Cleans a typed command before the grammar reads it (task 23h).
     - `TierTwoRecipes.kt` - Matches the three skill phrases.
   - `harness/` - Typed planner decisions, a short history, error tiers, breakers, and the skill cache.
     - `BiometricRisk.kt` - Whether a biometric check is required on top of the outbound tap.

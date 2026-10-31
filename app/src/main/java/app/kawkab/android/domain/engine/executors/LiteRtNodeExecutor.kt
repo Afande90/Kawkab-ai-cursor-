@@ -13,6 +13,8 @@ import app.kawkab.android.domain.models.ExecutionScope
 import app.kawkab.android.domain.models.NodeExecutionResult
 import app.kawkab.android.domain.models.NodeModel
 import app.kawkab.android.domain.models.NodeOutput
+import app.kawkab.android.domain.models.NodeType
+import app.kawkab.android.domain.models.RegisteredTools
 import app.kawkab.android.domain.models.Result
 import app.kawkab.android.domain.models.RunNoticeCause
 import app.kawkab.android.domain.repositories.GenerationSettings
@@ -22,8 +24,10 @@ import app.kawkab.android.domain.services.NativeMemorySampler
 import app.kawkab.android.domain.usecases.LoadModelUseCase
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.toList
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -47,6 +51,7 @@ class LiteRtNodeExecutor @Inject constructor(
     private val nativeMemorySampler: NativeMemorySampler,
     private val loadModelUseCase: LoadModelUseCase,
     private val facts: HarnessFacts = HarnessFacts(),
+    private val toolGate: ToolInvocationGate? = null,
 ) : NodeExecutor {
 
     override fun execute(
@@ -205,8 +210,87 @@ class LiteRtNodeExecutor @Inject constructor(
             cloudLabel = null
         }
 
-        emit(NodeOutput.Result(NodeExecutionResult(outputText = fullResponseText, tokenCount = meter.tokenCount)))
+        // Only a chat-facing LITE_RT node: a skill parses its own output against its allowlist.
+        val answer = if (node.type == NodeType.LITE_RT && node.skillId.isNullOrBlank()) {
+            finalAnswer(fullResponseText, Turn(fullPrompt, node, sessionId, runId, imagePath, scope))
+        } else {
+            fullResponseText
+        }
+
+        emit(NodeOutput.Result(NodeExecutionResult(outputText = answer, tokenCount = meter.tokenCount)))
     }
+
+    /**
+     * A tool name or JSON printed as text never reaches the owner (task 23h): a call is run
+     * through the tool gate, a bare tool name gets one re-ask, anything else is a plain sentence.
+     */
+    private suspend fun FlowCollector<NodeOutput>.finalAnswer(text: String, turn: Turn): String =
+        when (val reply = ToolReplyReader.read(text, knownTools)) {
+            ToolReply.Text -> text
+            is ToolReply.Call -> runToolCall(reply, turn.node, turn.sessionId, turn.runId)
+            is ToolReply.NamedOnly -> {
+                val again = reAsk(turn.fullPrompt, reply.tool, turn.imagePath, turn.scope)
+                when (val second = ToolReplyReader.read(again, knownTools)) {
+                    is ToolReply.Call -> runToolCall(second, turn.node, turn.sessionId, turn.runId)
+                    else -> couldNot(reply.tool)
+                }
+            }
+        }
+
+    /** What [finalAnswer] needs from the turn. */
+    private class Turn(
+        val fullPrompt: String,
+        val node: NodeModel,
+        val sessionId: String,
+        val runId: String?,
+        val imagePath: String?,
+        val scope: ExecutionScope,
+    )
+
+    /** Runs [call] through the tool gate, which shows the tap card for an outbound tool. */
+    private suspend fun FlowCollector<NodeOutput>.runToolCall(
+        call: ToolReply.Call,
+        node: NodeModel,
+        sessionId: String,
+        runId: String?,
+    ): String {
+        val gate = toolGate ?: return couldNot(call.tool)
+        var result: NodeExecutionResult? = null
+        flow {
+            gate.dispatch(
+                collector = this,
+                nodeType = node.type.name,
+                nodeId = node.id,
+                sessionId = sessionId,
+                runId = runId,
+                resolvedToolName = call.tool,
+                resolvedToolArgs = call.argumentsJson,
+                alwaysConfirm = false,
+            )
+        }.collect { output ->
+            when (output) {
+                is NodeOutput.State, is NodeOutput.Console -> emit(output)
+                is NodeOutput.Result -> result = output.result
+            }
+        }
+        val done = result ?: return couldNot(call.tool)
+        return done.error?.let { couldNot(call.tool) } ?: done.outputText?.takeIf { it.isNotBlank() } ?: "Done."
+    }
+
+    /** The one re-ask, collected whole. */
+    private suspend fun reAsk(fullPrompt: String, tool: String, imagePath: String?, scope: ExecutionScope): String =
+        try {
+            scope.inference.local(llmEngine, fullPrompt + ToolReplyReader.reAsk(tool), imagePath = imagePath)
+                .toList()
+                .joinToString(separator = "")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Timber.w(e, "The re-ask for %s failed", tool)
+            ""
+        }
+
+    private fun couldNot(tool: String): String = "I couldn't do that, try: ${ToolReplyReader.example(tool)}"
 
     /**
      * One recovery from an allocation failure.
@@ -240,6 +324,8 @@ class LiteRtNodeExecutor @Inject constructor(
     }
 
     private companion object {
+        /** Tools a reply may name. */
+        val knownTools: Set<String> = RegisteredTools.all.map { it.name }.toSet()
         const val RECOVERY_STEPS = 2
         const val OUT_OF_MEMORY_MESSAGE =
             "The model ran out of working memory on this phone, even with a smaller window, and no other " +

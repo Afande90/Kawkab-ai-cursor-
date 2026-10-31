@@ -208,7 +208,7 @@ object CommandFastPath {
 
     private fun normalize(raw: String): String {
         val mapped = buildString(raw.length) {
-            raw.trim().forEach { character -> append(indicDigits[character] ?: character) }
+            CommandText.stripDecoration(raw).forEach { character -> append(indicDigits[character] ?: character) }
         }
         return whitespace.replace(mapped, " ").trim()
     }
