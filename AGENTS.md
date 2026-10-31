@@ -232,6 +232,12 @@ These come from the owner's first install of `m1.5`.
     - Make sure no model load or inference runs on the main thread.
 
     Gate: median frame time under 16 ms on the CI emulator. Report the before and after numbers.
+    - **Owner measurement, 31 Oct 22:30.** With Kawkab's accessibility service off and the CPU backend, tab switching improved only a little. So the accessibility work is one cause, not the main one. Switching to GPU then froze the phone and killed the app.
+    - Next suspect: memory pressure. Up to three models may be resident at once (E4B 3.4 GB, the Qwen GGUF 1.0 GB, embeddings), on 12 GB RAM with Nothing OS. Measure resident memory and GC/jank with Perfetto or Macrobenchmark, with no model loaded and with each model loaded.
+    - Keep at most one LLM resident.
+    - Default to E2B on 12 GB phones for chat and tools. A reference build on the same Snapdragon 7s Gen 3 (PocketClaw) gets a 1–3 s first token with E2B.
+    - E4B is opt-in only, with a warning.
+    - Tab switching must not depend on model state.
 23e. **Owner phone, 31 Oct: "No active model" while the header shows `Qwen3-1.7B-Q4_K_M.gguf (active)`.**
     - Selecting a GGUF brain that is not downloaded, or not loaded by `LlamaGgufRuntime`, leaves chat with no model at all.
     - Fix the GGUF activation path end to end: download with SHA-256, load, generate.
