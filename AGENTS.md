@@ -305,6 +305,12 @@ These come from the owner's first install of `m1.5`.
     - It must also tell the owner that the power button itself must be set to "Digital assistant" (Settings → System → Gestures or Buttons → Press and hold power button). Nothing OS may default it to the power menu.
     - Confirm `VoiceInteractionService` / `VoiceInteractionSessionService` are declared correctly, and that the session shows the panel.
     - Add a Quick Settings tile and a home-screen shortcut, "Ask Kawkab", as fallbacks that always work.
+23l. **Talk to Kawkab now, before the full M4 voice stack.** The owner wants to speak to the app.
+    - On top of 23c (mic to text), add a **conversation mode** button. Tap once: listen with offline `SpeechRecognizer`, end of speech, send automatically, speak the reply with Android `TextToSpeech` (offline voices, Arabic and English, matching the reply language), then listen again. Tap to stop.
+    - Tapping the screen or speaking over the reply stops speech (barge-in).
+    - Outbound actions still need a tap on the card. Voice never confirms them (spec §0.4.3).
+    - When Kawkab is the assistant role, a long-press of power starts conversation mode directly.
+    - Wake word "Kawkab" stays in M4 (sherpa-onnx keyword spotting). Schedule M4 right after M1.6.
 24. **Leftover upstream logo.** Also replace the knot icon on the empty-chat header. The onboarding header still shows the old knot icon next to "Kawkab". Replace every user-visible upstream logo and icon with the planet mark. Extend the branding test to the onboarding header drawable.
 25. **Onboarding model sizes.** The scenario cards say "3.66 GB model" even on phones that will get E2B. Show the size of the model this phone will actually download.
 25b. **Install updates over the old version.** Today every CI build is signed with a new temporary debug key. So the owner must uninstall the app, which deletes the 3.6 GB model and his data, before each update.
