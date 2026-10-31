@@ -267,6 +267,13 @@ These come from the owner's first install of `m1.5`.
       - Rewrite the system prompt to "Reply once, in the same language and dialect the user wrote in. Never label the language. Never translate unless asked."
       - Add a few-shot Sudanese example.
       - Add a unit test on the prompt text and a v2-style eval of reply language on 20 frozen prompts (Sudanese, MSA, English).
+23h. **Owner phone, 31 Oct: "Set an alarm for 6" set no alarm.** The owner's text had a trailing `"` (pasted).
+    - **Tier 1.** `CommandFastPath.normalize` keeps quotes and punctuation, so the fast path missed it. Strip surrounding quotes (`" ' “ ” « »`), trailing punctuation (`. ! ? ، ؟`) and emoji before matching. Add v2-style test lines with these.
+    - **Tier 3.** The model then replied with the plain text `set_alarm`, and nothing ran. A tool name or JSON printed as text must never reach the user.
+      - Parse Gemma 4 tool calls from both the native tool-call channel and fenced or plain JSON.
+      - If the output names a known tool without valid arguments, re-ask once with a grammar-constrained prompt. Otherwise answer "I couldn't do that, try: set an alarm for 6".
+    - **Hang.** The same message sent again got no reply at all, and no error was shown. Every run must end in a reply, a card or a visible error within 60 s.
+    - **Test.** An instrumented test types `Set an alarm for 6"` (with the stray quote) and asserts the alarm intent, with no LLM call.
 24. **Leftover upstream logo.** Also replace the knot icon on the empty-chat header. The onboarding header still shows the old knot icon next to "Kawkab". Replace every user-visible upstream logo and icon with the planet mark. Extend the branding test to the onboarding header drawable.
 25. **Onboarding model sizes.** The scenario cards say "3.66 GB model" even on phones that will get E2B. Show the size of the model this phone will actually download.
 25b. **Install updates over the old version.** Today every CI build is signed with a new temporary debug key. So the owner must uninstall the app, which deletes the 3.6 GB model and his data, before each update.
