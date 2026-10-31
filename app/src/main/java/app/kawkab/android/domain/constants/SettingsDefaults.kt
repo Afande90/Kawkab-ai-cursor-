@@ -22,10 +22,23 @@ import app.kawkab.android.domain.services.EmbeddingProvider
  */
 object SettingsDefaults {
     /**
-     * Maximum number of tokens to keep in the LLM context window by default.
-     * About 1,500, so a mid-range phone is not asked to hold a 4,096-token window.
+     * The engine window, in tokens: LiteRT-LM's `EngineConfig.maxNumTokens`, the whole KV budget.
+     * It must hold the system prompt, the tool list, the injected context and the reply. Task 15
+     * cut it to 1,500 and every model then failed with "Failed to allocate tensors" (task 23f).
      */
-    const val MAX_CONTEXT_LENGTH_DEFAULT: Int = 1_500
+    const val MAX_CONTEXT_LENGTH_DEFAULT: Int = 4_096
+
+    /**
+     * The value task 15 wrote as the engine window. A stored 1,500 is read as
+     * [MAX_CONTEXT_LENGTH_DEFAULT]; the Settings slider cannot produce it.
+     */
+    const val LEGACY_TASK15_CONTEXT_LENGTH: Int = 1_500
+
+    /**
+     * Budget, in tokens, for context injected into a prompt: chat history, documents, memory and
+     * screen text. This is the "about 1,500 tokens" of task 15. It is not the engine window.
+     */
+    const val INJECTED_CONTEXT_TOKEN_BUDGET: Int = 1_500
 
     /** Default sampling temperature for local LLM generation. */
     const val TEMPERATURE_DEFAULT: Float = 0.7f
@@ -92,7 +105,7 @@ object SettingsDefaults {
      * return in a single call. The tool converts this to a byte ceiling (≈ 4
      * bytes per token) and truncates the served window to it, so a single read
      * of a large file can never blow the local model's context window. Set under
-     * half of [MAX_CONTEXT_LENGTH_DEFAULT] so one read leaves room for the
+     * half of [INJECTED_CONTEXT_TOKEN_BUDGET] so one read leaves room for the
      * prompt, chat history and other context blocks.
      */
     const val WORKSPACE_READ_TOKEN_BUDGET_DEFAULT: Int = 700
@@ -266,7 +279,7 @@ object SettingsDefaults {
 
     /**
      * Default approximate-token budget above which chat history is compressed.
-     * Set below [MAX_CONTEXT_LENGTH_DEFAULT] so the summarised history leaves
+     * Set below [INJECTED_CONTEXT_TOKEN_BUDGET] so the summarised history leaves
      * room for the long-term-memory, tool-result, and output blocks within the
      * on-device context window.
      */

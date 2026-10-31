@@ -318,8 +318,21 @@ private fun LocalModel.toMetaLine(backendLabel: String, verificationLabel: Strin
     // don't render a misleading "0 GB" — the size is enriched from the
     // file system by `LocalModelRepositoryImpl.getAllModels()`.
     val prefix = if (size > 0L) "${size.toGigabytesLabel()} · " else ""
-    return "$prefix$backendLabel · LiteRT · $verificationLabel"
+    return "$prefix${runtimeLabel(path, backendLabel)} · $verificationLabel"
 }
+
+/**
+ * The compute unit and the runtime that really runs [path] (task 23f). A GGUF brain runs on
+ * llama.cpp on the CPU, whatever the LiteRT backend setting says.
+ *
+ * @param path The model file.
+ * @param backendLabel The LiteRT backend label, used for a LiteRT model.
+ * @return For example "CPU · llama.cpp" or "GPU · LiteRT".
+ */
+internal fun runtimeLabel(path: String, backendLabel: String): String =
+    if (path.endsWith(GGUF_SUFFIX)) "CPU · llama.cpp" else "$backendLabel · LiteRT"
+
+private const val GGUF_SUFFIX = ".gguf"
 
 /**
  * Localised words for whether a model's file was checked against the SHA-256

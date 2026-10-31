@@ -12,6 +12,7 @@ import app.kawkab.android.data.local.crypto.SecretStore
 import app.kawkab.android.data.local.crypto.SecureValueUnreadableException
 import app.kawkab.android.domain.constants.DefaultPrompts
 import app.kawkab.android.domain.constants.SettingsDefaults
+import app.kawkab.android.domain.engine.EngineWindow
 import app.kawkab.android.domain.models.LocalBackend
 import app.kawkab.android.domain.models.TestProbeResult
 import app.kawkab.android.domain.repositories.GenerationSettings
@@ -228,7 +229,8 @@ class GenerationSettingsStore @Inject constructor(
 
     override val maxContextLength: Flow<Int> = dataStore.preferencesOrEmpty()
         .map { preferences ->
-            preferences[Keys.MAX_CONTEXT_LENGTH] ?: SettingsDefaults.MAX_CONTEXT_LENGTH_DEFAULT
+            // A stored 1,500 is task 15's engine window, which broke every model (task 23f).
+            EngineWindow.migrated(preferences[Keys.MAX_CONTEXT_LENGTH])
         }
 
     override suspend fun setMaxContextLength(length: Int) {

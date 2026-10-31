@@ -1,5 +1,6 @@
 package app.kawkab.android.domain.usecases
 
+import app.kawkab.android.domain.constants.SettingsDefaults
 import app.kawkab.android.domain.models.ChatMessage
 import app.kawkab.android.domain.models.Role
 import app.kawkab.android.domain.repositories.ChatRepository
@@ -11,7 +12,8 @@ import javax.inject.Inject
  * Use case responsible for generating a prompt string from the recent chat history,
  * ensuring that the history kept fits within the configured context window.
  *
- * The window — [GenerationSettings.maxContextLength] — is expressed in **tokens**,
+ * The budget is [SettingsDefaults.INJECTED_CONTEXT_TOKEN_BUDGET], or
+ * [GenerationSettings.maxContextLength] when that is smaller. Both are in **tokens**,
  * while messages are measured in **characters**, so the budget is converted with the
  * [CHARS_PER_TOKEN] heuristic before truncation. The resulting string powers the chat
  * token-usage indicator (`ChatHomeViewModel`), which divides the character length back
@@ -39,7 +41,12 @@ class GetContextWindowUseCase @Inject constructor(
         // (≈ CHARS_PER_TOKEN characters per token) before comparing — otherwise
         // a token count is compared against character lengths and the history
         // is truncated to roughly 1/CHARS_PER_TOKEN of the intended window.
-        val maxTokens = generationSettings.maxContextLength.first()
+        // The history is injected context, so it gets the injected budget, not the engine window
+        // (task 23f). A window set smaller than the budget still bounds it.
+        val maxTokens = minOf(
+            generationSettings.maxContextLength.first(),
+            SettingsDefaults.INJECTED_CONTEXT_TOKEN_BUDGET,
+        )
         val maxChars = maxTokens * CHARS_PER_TOKEN
 
         val formattedMessages = mutableListOf<String>()

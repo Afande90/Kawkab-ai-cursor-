@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.res.Configuration
 import app.kawkab.android.di.ApplicationScope
 import app.kawkab.android.di.IoDispatcher
+import app.kawkab.android.domain.engine.EngineWindow
 import app.kawkab.android.domain.engine.LlmInferenceEngine
 import app.kawkab.android.domain.engine.ReplyBudget
 import app.kawkab.android.domain.models.AppError
@@ -256,6 +257,7 @@ class LiteRTLlmEngine @Inject constructor(
         modelPath: String,
         enableVision: Boolean,
         enableAudio: Boolean,
+        windowOverride: Int? = null,
     ): Result<Unit, AppError> {
         val file = File(modelPath)
         if (!file.exists()) {
@@ -295,8 +297,13 @@ class LiteRTLlmEngine @Inject constructor(
         if (LlamaGgufRuntime.isGguf(modelPath)) {
             return openGguf(modelPath, enableVision, enableAudio)
         }
+        // At most one model is resident: a GGUF brain still holding memory must not
+        // share the phone with a LiteRT model that is about to allocate (task 23f).
+        LlamaGgufRuntime.unloadIfLoaded()
 
-        val maxTokens = generationSettings.maxContextLength.first()
+        // The engine window is the whole KV budget. It is never opened below the
+        // floor that holds the prompt, the tools, the injected context and the reply.
+        val maxTokens = windowOverride ?: EngineWindow.engineTokens(generationSettings.maxContextLength.first())
         val configuredKey = generationSettings.localModelBackend.first()
         val configured = LocalBackend.runnableFromKey(configuredKey)
 
@@ -371,19 +378,33 @@ class LiteRTLlmEngine @Inject constructor(
         // default and this build cannot turn it on for GPU either.
         // NPU is not constructed here. NpuTrialPolicy would allow it only after
         // a phone self-test that starts and beats CPU. No such measurement exists.
-        val config = EngineConfig(
+        fun configWith(tokens: Int) = EngineConfig(
             modelPath = modelPath,
             backend = backend,
             visionBackend = visionBackend,
             audioBackend = audioBackend,
-            maxNumTokens = maxTokens,
+            maxNumTokens = tokens,
             maxNumImages = if (enableVision) MAX_NUM_IMAGES else null,
             cacheDir = context.cacheDir.absolutePath,
         )
 
-        // Create Engine from config and initialize
-        engine = Engine(config).apply {
-            initialize()
+        // Create Engine from config and initialize. When the tensors cannot be
+        // allocated, retry once with the reduced window (task 23f).
+        var openedTokens = maxTokens
+        engine = try {
+            Engine(configWith(maxTokens)).apply { initialize() }
+        } catch (e: Exception) {
+            if (!EngineWindow.isAllocationFailure(e.message, e) || maxTokens <= EngineWindow.REDUCED_RETRY_TOKENS) {
+                throw e
+            }
+            Timber.w(
+                e,
+                "LiteRT-LM could not allocate %d tokens — retrying once with %d",
+                maxTokens,
+                EngineWindow.REDUCED_RETRY_TOKENS,
+            )
+            openedTokens = EngineWindow.REDUCED_RETRY_TOKENS
+            Engine(configWith(openedTokens)).apply { initialize() }
         }
         _currentModelPath = modelPath
         _isVisionEnabled = enableVision
@@ -394,7 +415,7 @@ class LiteRTLlmEngine @Inject constructor(
         generationSettings.setLastInitBackendAttempt(null)
         generationSettings.setLocalBackendFailureStreak(0)
         _activeBackend = resolved
-        _activeContextLength = maxTokens
+        _activeContextLength = openedTokens
         Timber.i(
             "LiteRT-LM Engine started on %s (configured %s, vision=%s, audio=%s, model=%s)",
             resolved.key,
@@ -657,6 +678,29 @@ class LiteRTLlmEngine @Inject constructor(
      * is mid-stream — the call waits for any in-flight generation to finish or
      * cancel before tearing down.
      */
+    override suspend fun reopenWithWindow(maxTokens: Int): Result<Unit, AppError> = withContext(ioDispatcher) {
+        try {
+            generationMutex.withLock {
+                val path = _currentModelPath
+                    ?: return@withLock Result.Error(error = LlmSystemError, message = "No model is loaded.")
+                if (LlamaGgufRuntime.isGguf(path)) {
+                    return@withLock Result.Error(error = LlmSystemError, message = "A GGUF brain has a fixed window.")
+                }
+                val vision = _isVisionEnabled
+                val audio = _isAudioEnabled
+                initializeInternal(path, vision, audio, windowOverride = maxTokens).also { outcome ->
+                    if (outcome is Result.Success) loadGeneration += 1
+                }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            Timber.e(e, "Failed to reopen LiteRT-LM with a %d-token window", maxTokens)
+            _currentModelPath = null
+            Result.Error(error = LlmSystemError, message = e.localizedMessage ?: "Reopen failed", throwable = e)
+        }
+    }
+
     override suspend fun unload() = generationMutex.withLock { unloadInternal() }
 
     /**

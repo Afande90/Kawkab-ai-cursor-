@@ -94,6 +94,8 @@
     <string name="run_notice_soft_steps" tools:ignore="PluralsCandidate">قرب حد الخطوات: استُخدم %1$,d من %2$,d خطوة.</string>
     <string name="run_notice_soft_tokens" tools:ignore="PluralsCandidate">قرب حد الرموز: استُخدم %1$,d من %2$,d رمز.</string>
     <string name="run_notice_looks_stuck">يبدو هذا التشغيل عالقًا — الخطوة نفسها تتكرر. سيتوقف إن لم يتغيّر شيء.</string>
+    <string name="run_notice_model_switched">لم يعمل %1$s على هذا الهاتف: نفدت ذاكرة العمل. استُخدم %2$s لهذا الرد. اختيارك في النماذج لم يتغيّر.</string>
+    <string name="run_notice_model_switched_unnamed">لم يعمل النموذج المختار على هذا الهاتف: نفدت ذاكرة العمل. استُخدم %1$s لهذا الرد. اختيارك في النماذج لم يتغيّر.</string>
 
     <string name="run_termination_notification_body_step_ceiling" tools:ignore="PluralsCandidate">توقّف «%1$s» عند حد خطواته، بعد %2$,d خطوة.</string>
     <string name="run_termination_notification_body_token_ceiling" tools:ignore="PluralsCandidate">توقّف «%1$s» عند حد رموزه، بعد %2$,d رمز.</string>

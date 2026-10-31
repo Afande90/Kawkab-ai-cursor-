@@ -1,6 +1,7 @@
 package app.kawkab.android.domain.engine.executors
 
 import app.kawkab.android.domain.constants.DefaultPrompts
+import app.kawkab.android.domain.engine.EngineWindow
 import app.kawkab.android.domain.engine.LlmInferenceEngine
 import app.kawkab.android.domain.engine.StreamInferenceMeter
 import app.kawkab.android.domain.engine.structured.ReasoningBlockSplitter
@@ -13,6 +14,7 @@ import app.kawkab.android.domain.models.NodeExecutionResult
 import app.kawkab.android.domain.models.NodeModel
 import app.kawkab.android.domain.models.NodeOutput
 import app.kawkab.android.domain.models.Result
+import app.kawkab.android.domain.models.RunNoticeCause
 import app.kawkab.android.domain.repositories.GenerationSettings
 import app.kawkab.android.domain.repositories.MetricsRepository
 import app.kawkab.android.domain.repositories.ModelPerformanceRepository
@@ -78,12 +80,27 @@ class LiteRtNodeExecutor @Inject constructor(
         val imagePath = scope.imagePath
         val loadResult = loadModelUseCase(node.modelPath, requireVision = imagePath != null)
         if (loadResult is Result.Error) {
-            emit(NodeOutput.State(AgentOrchestratorState.Error("Error loading local model")))
-            emit(NodeOutput.Result(NodeExecutionResult(error = "Error loading local model")))
-            return@flow
+            // Even the reduced window did not fit: run this reply on another Gemma and say so.
+            val outOfMemory = EngineWindow.isAllocationFailure(loadResult.message, loadResult.throwable)
+            val fallback = if (imagePath == null && outOfMemory) {
+                loadModelUseCase.loadFallbackBrain(failedPath = node.modelPath?.takeIf { it.isNotBlank() })
+            } else {
+                null
+            }
+            if (fallback == null) {
+                val message = if (outOfMemory) OUT_OF_MEMORY_MESSAGE else "Error loading local model"
+                emit(NodeOutput.State(AgentOrchestratorState.Error(message)))
+                emit(NodeOutput.Result(NodeExecutionResult(error = message)))
+                return@flow
+            }
+            emit(
+                NodeOutput.State(
+                    AgentOrchestratorState.RunNotice(
+                        RunNoticeCause.ModelSwitched(failedModel = null, usedModel = fallback.name),
+                    ),
+                ),
+            )
         }
-
-        val responseStream = scope.inference.local(llmEngine, fullPrompt, imagePath = imagePath)
 
         val accumulatedResponse = StringBuilder()
         var emittedThinking = false
@@ -94,29 +111,52 @@ class LiteRtNodeExecutor @Inject constructor(
         // is the single source shared with the benchmark.
         val meter = StreamInferenceMeter(nativeMemorySampler)
 
-        try {
-            responseStream.collect { token ->
-                meter.onToken(System.currentTimeMillis())
+        // "Failed to allocate tensors" gets two recoveries before it is an error:
+        // the same model with a smaller window, then another installed Gemma for
+        // this reply only (task 23f). Any other failure ends the node at once.
+        var recoveryStep = 0
+        while (true) {
+            try {
+                scope.inference.local(llmEngine, fullPrompt, imagePath = imagePath).collect { token ->
+                    meter.onToken(System.currentTimeMillis())
 
-                accumulatedResponse.append(token)
-                if (!emittedThinking) {
-                    emit(NodeOutput.State(AgentOrchestratorState.Thinking(accumulatedResponse.toString())))
-                    emittedThinking = true
-                } else {
-                    emit(NodeOutput.State(AgentOrchestratorState.Answering(accumulatedResponse.toString())))
+                    accumulatedResponse.append(token)
+                    if (!emittedThinking) {
+                        emit(NodeOutput.State(AgentOrchestratorState.Thinking(accumulatedResponse.toString())))
+                        emittedThinking = true
+                    } else {
+                        emit(NodeOutput.State(AgentOrchestratorState.Answering(accumulatedResponse.toString())))
+                    }
+                }
+                break
+            } catch (e: CancellationException) {
+                // Preserve structured-concurrency cancellation: a broad `catch (Exception)`
+                // would silently swallow cancellation and leave the parent coroutine running.
+                throw e
+            } catch (e: Exception) {
+                Timber.tag(
+                    "PipelineDebug",
+                ).e(e, "[NODE_ERR] type=%s id=%s error in LiteRtNodeExecutor generation", node.type.name, node.id)
+                val allocation = EngineWindow.isAllocationFailure(e.message, e) && accumulatedResponse.isEmpty()
+                if (!allocation) {
+                    val message = e.message ?: "Unknown error during LLM generation"
+                    emit(NodeOutput.State(AgentOrchestratorState.Error(message)))
+                    emit(NodeOutput.Result(NodeExecutionResult(error = e.message)))
+                    return@flow
+                }
+                var recovered = false
+                while (!recovered && recoveryStep < RECOVERY_STEPS) {
+                    recovered = recover(recoveryStep, imagePath) { notice ->
+                        emit(NodeOutput.State(AgentOrchestratorState.RunNotice(notice)))
+                    }
+                    recoveryStep += 1
+                }
+                if (!recovered) {
+                    emit(NodeOutput.State(AgentOrchestratorState.Error(OUT_OF_MEMORY_MESSAGE)))
+                    emit(NodeOutput.Result(NodeExecutionResult(error = OUT_OF_MEMORY_MESSAGE)))
+                    return@flow
                 }
             }
-        } catch (e: CancellationException) {
-            // Preserve structured-concurrency cancellation: a broad `catch (Exception)`
-            // would silently swallow cancellation and leave the parent coroutine running.
-            throw e
-        } catch (e: Exception) {
-            Timber.tag(
-                "PipelineDebug",
-            ).e(e, "[NODE_ERR] type=%s id=%s error in LiteRtNodeExecutor generation", node.type.name, node.id)
-            emit(NodeOutput.State(AgentOrchestratorState.Error(e.message ?: "Unknown error during LLM generation")))
-            emit(NodeOutput.Result(NodeExecutionResult(error = e.message)))
-            return@flow
         }
 
         val endTime = System.currentTimeMillis()
@@ -166,5 +206,43 @@ class LiteRtNodeExecutor @Inject constructor(
         }
 
         emit(NodeOutput.Result(NodeExecutionResult(outputText = fullResponseText, tokenCount = meter.tokenCount)))
+    }
+
+    /**
+     * One recovery from an allocation failure.
+     *
+     * @param step 0 reopens the same model with [EngineWindow.REDUCED_RETRY_TOKENS]; 1 loads another
+     *   installed Gemma for this reply and reports it through [notice].
+     * @param imagePath An image run cannot move to a text-only fallback.
+     * @return `true` when the generation may be tried again.
+     */
+    private suspend fun recover(step: Int, imagePath: String?, notice: suspend (RunNoticeCause) -> Unit): Boolean {
+        val failedPath = llmEngine.currentModelPath
+        return when (step) {
+            0 -> {
+                val window = llmEngine.activeContextLength
+                (window == null || window > EngineWindow.REDUCED_RETRY_TOKENS) &&
+                    llmEngine.reopenWithWindow(EngineWindow.REDUCED_RETRY_TOKENS) is Result.Success
+            }
+            1 -> {
+                if (imagePath != null) return false
+                val fallback = loadModelUseCase.loadFallbackBrain(failedPath) ?: return false
+                notice(
+                    RunNoticeCause.ModelSwitched(
+                        failedModel = failedPath?.substringAfterLast('/'),
+                        usedModel = fallback.name,
+                    ),
+                )
+                true
+            }
+            else -> false
+        }
+    }
+
+    private companion object {
+        const val RECOVERY_STEPS = 2
+        const val OUT_OF_MEMORY_MESSAGE =
+            "The model ran out of working memory on this phone, even with a smaller window, and no other " +
+                "model could take over. Open Models and pick Gemma 4 E2B, or try the GPU backend."
     }
 }

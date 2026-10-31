@@ -229,6 +229,12 @@ object RunTerminationCopyMapper {
             tone = RunTerminationTone.STUCK,
             text = UiText.Resource(R.string.run_notice_looks_stuck),
         )
+        is RunNoticeCause.ModelSwitched -> RunNoticeCopy(
+            tone = RunTerminationTone.INFO,
+            text = cause.failedModel?.let { failed ->
+                UiText.Resource(R.string.run_notice_model_switched, listOf(failed, cause.usedModel))
+            } ?: UiText.Resource(R.string.run_notice_model_switched_unnamed, listOf(cause.usedModel)),
+        )
     }
 
     /**

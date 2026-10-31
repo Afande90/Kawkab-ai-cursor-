@@ -80,8 +80,7 @@ class LocalModelRepositoryImpl @Inject constructor(
     }
 
     override suspend fun setActiveModel(id: Long): Unit = withContext(Dispatchers.IO) {
-        localModelDao.deactivateAllModels()
-        localModelDao.activateModelById(id)
+        localModelDao.activateOnly(id)
     }
 
     override suspend fun setVisionSupport(id: Long, enabled: Boolean): Unit = withContext(Dispatchers.IO) {

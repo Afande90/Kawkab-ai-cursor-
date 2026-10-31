@@ -159,4 +159,19 @@ interface LlmInferenceEngine {
      * generation to finish (or be cancelled) before releasing.
      */
     suspend fun unload()
+
+    /**
+     * Reopens the loaded model with an engine window of [maxTokens] tokens.
+     *
+     * Used once after LiteRT-LM fails to allocate its tensors (task 23f). An engine that cannot
+     * change its window keeps the default, which reports that it could not.
+     *
+     * @param maxTokens The new engine window.
+     * @return [Result.Success] when the model is loaded again with that window.
+     */
+    suspend fun reopenWithWindow(maxTokens: Int): Result<Unit, AppError> =
+        Result.Error(error = WindowNotAdjustable, message = "This engine cannot change its window.")
 }
+
+/** The engine cannot reopen its model with another window. */
+object WindowNotAdjustable : AppError.System

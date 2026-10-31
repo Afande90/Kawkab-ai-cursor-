@@ -62,6 +62,15 @@ sealed interface RunNoticeCause {
      *   one sentence for the whole cause.
      */
     data class LooksStuck(val signal: StuckSignal) : RunNoticeCause
+
+    /**
+     * The selected model could not run on this phone, so this reply used another one.
+     * The owner's choice is not changed (task 23f).
+     *
+     * @property failedModel The name of the selected model, or `null` when the load failed before it was known.
+     * @property usedModel The name of the model that answered.
+     */
+    data class ModelSwitched(val failedModel: String?, val usedModel: String) : RunNoticeCause
 }
 
 /**
@@ -78,4 +87,5 @@ fun RunNoticeCause.diagnostic(): String = when (this) {
     is RunNoticeCause.ApproachingCeiling ->
         "soft-ceiling: $spent/$hardLimit ${axis.name.lowercase()}"
     is RunNoticeCause.LooksStuck -> "looks-stuck: ${signal.diagnostic}"
+    is RunNoticeCause.ModelSwitched -> "model-switched: $failedModel -> $usedModel"
 }

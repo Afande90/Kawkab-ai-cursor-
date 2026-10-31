@@ -2,10 +2,12 @@ package app.kawkab.android.domain.usecases
 
 import app.kawkab.android.domain.engine.LlmInferenceEngine
 import app.kawkab.android.domain.models.AppError
+import app.kawkab.android.domain.models.LocalModel
 import app.kawkab.android.domain.models.Result
 import app.kawkab.android.domain.repositories.LocalModelRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
@@ -115,4 +117,47 @@ class LoadModelUseCase @Inject constructor(
             )
         }
     }
+
+    /**
+     * Loads a working Gemma after the selected model failed, without changing the owner's choice.
+     *
+     * Prefers Gemma 4 E2B, then any other installed LiteRT model. A GGUF brain is never the
+     * fallback: it is the model most likely to have failed (tasks 23e and 23f).
+     *
+     * @param failedPath The model that failed, or `null` when it is not known.
+     * @return The model now loaded, or `null` when no other model loaded.
+     */
+    suspend fun loadFallbackBrain(failedPath: String?): LocalModel? = withContext(Dispatchers.IO) {
+        val installed = localModelRepository.getAllModels().first()
+        val candidates = FallbackBrain.order(installed, failedPath)
+        for (candidate in candidates) {
+            if (!File(candidate.path).isFile) continue
+            val loaded = try {
+                llmInferenceEngine.initialize(candidate.path, enableVision = false, enableAudio = false)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Result.Error(error = LlmSystemError, message = e.message, throwable = e)
+            }
+            if (loaded is Result.Success) return@withContext candidate
+        }
+        null
+    }
+}
+
+/**
+ * The order of models to try after the selected one failed.
+ */
+object FallbackBrain {
+    private const val E2B_MARK = "e2b"
+    private const val LITERT_SUFFIX = ".litertlm"
+
+    /**
+     * @param installed Every installed model.
+     * @param failedPath The model that failed.
+     * @return LiteRT models other than [failedPath], Gemma 4 E2B first.
+     */
+    fun order(installed: List<LocalModel>, failedPath: String?): List<LocalModel> = installed
+        .filter { it.path != failedPath && it.path.endsWith(LITERT_SUFFIX) }
+        .sortedBy { if (it.name.lowercase().contains(E2B_MARK)) 0 else 1 }
 }

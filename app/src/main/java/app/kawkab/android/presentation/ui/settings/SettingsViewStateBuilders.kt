@@ -7,6 +7,7 @@ import androidx.compose.ui.res.stringResource
 import app.kawkab.android.BuildConfig
 import app.kawkab.android.R
 import app.kawkab.android.domain.constants.SettingsDefaults
+import app.kawkab.android.domain.engine.EngineWindow
 import app.kawkab.android.domain.models.ActiveModelMeta
 import app.kawkab.android.domain.models.LocalBackend
 import app.kawkab.android.domain.models.ToolApprovalPolicy
@@ -115,7 +116,7 @@ internal fun buildGenerationViewState(uiState: SettingsUiState, context: Context
                 title = stringResource(R.string.settings_row_max_context_title),
                 valueLabel = "${uiState.maxContextLength} tok",
                 value = uiState.maxContextLength.toFloat(),
-                valueRange = 512f..8192f,
+                valueRange = EngineWindow.MIN_ENGINE_TOKENS.toFloat()..8192f,
                 steps = MAX_CONTEXT_STEPS,
             ),
             SettingSliderRow(
@@ -684,6 +685,8 @@ private const val MS_PER_SECOND_F = 1_000f
 private const val MAX_PERCENT = 100
 
 private const val TOP_K_STEPS = 99
-private const val MAX_CONTEXT_STEPS = 14
+
+// 3,584 to 8,192 in steps of 512.
+private const val MAX_CONTEXT_STEPS = 8
 private const val HOURS_MIN = 1f
 private const val HOURS_MAX = 168f

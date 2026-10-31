@@ -343,6 +343,7 @@ Only Kotlin files appear inside the generated blocks.
     - `WorkManagerTriggerScheduler.kt` - `TriggerScheduler` port impl: maps each active `Trigger` onto a unique periodic work request (`UPDATE` policy) that wakes `TriggerWatchWorker` — interval → clamped to the 15-min floor with a half-interval flex; daily → 24h + initial delay (via `DailyTriggerTime`); event (charging/network) → an **unconstrained** 15-min poll (battery-not-low only) so the worker can observe both edges. **Charging additionally** registers a single shared **charging-constrained one-shot** (`setRequiresCharging(true)`, unique `CHARGING_WATCH_NAME`, `KEEP`) running `ChargingTriggerSweepWorker` so a plug-in fires within seconds even when the app is closed (a manifest `ACTION_POWER_CONNECTED` receiver is impossible — that broadcast isn't on the implicit-broadcast exception list). `syncAll` re-registers the active set and drops the charging watch when no charging trigger remains; stale watches are reclaimed by the self-cancelling worker or an explicit `cancel`.
   - `testing/` - Production-graph entry points used solely by instrumented tests.
     - `AppFunctionsE2ETestEntryPoint.kt` - Hilt `EntryPoint` exposing `ToolRepository`, `SettingsRepository`, and `ChatRepository` to `AppFunctionsEndToEndTest` so the test can reach the production singletons without a Hilt test component.
+    - `ModelSwitchTestEntryPoint.kt` - Hands the real inference engine to the device-only model switch test (task 23f).
   - `tools/` - Tool and action implementations.
     - `local/` - Local tools implementations.
       - `AppFunctionDataCodec.kt` - Bidirectional codec between LLM-emitted JSON argument strings and the typed `AppFunctionData` consumed by `AppFunctionManager.executeAppFunction`, plus a flat-JSON projection of `ExecuteAppFunctionResponse` for the agent's observation log.
@@ -453,6 +454,7 @@ Only Kotlin files appear inside the generated blocks.
     - `CloudStreamEnd.kt` - Whether a cloud answer that streamed to its end was whole, or was cut off.
     - `DefaultPipelineFactory.kt` - Factory for default pipelines.
     - `DeviceMemory.kt` - Total RAM of the phone, as the platform reports it.
+    - `EngineWindow.kt` - Sizes the LiteRT-LM engine window and recognises the error a too-small or too-large window gives.
     - `executors/` - Per-`NodeType` `NodeExecutor` strategies dispatched by `NodeExecutorFactory`.
       - `ClarificationNodeExecutor.kt` - Executor for `NodeType.CLARIFICATION` that asks the local LLM to generate a question/options JSON, suspends on `ClarificationRepository.requestAnswer`, and forwards the user's reply downstream.
       - `CloudLlmNodeExecutor.kt` - Executor for `CLOUD` nodes; dispatches to a cloud LLM provider with streaming support.

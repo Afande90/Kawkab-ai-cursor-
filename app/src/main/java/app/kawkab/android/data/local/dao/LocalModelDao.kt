@@ -89,6 +89,15 @@ interface LocalModelDao {
     suspend fun activateModelById(id: Long)
 
     /**
+     * Makes [id] the only active model in one statement, so no reader ever sees two active models
+     * or none, and `LIMIT 1` cannot pick a model the owner did not choose (task 23f).
+     *
+     * @param id The ID of the model to activate.
+     */
+    @Query("UPDATE local_models SET isActive = CASE WHEN id = :id THEN 1 ELSE 0 END")
+    suspend fun activateOnly(id: Long)
+
+    /**
      * Sets the [LocalModelEntity.supportsVision] flag for a specific model.
      * Backs the manual "this model can read images" toggle on the model screen;
      * a targeted column update avoids a read-modify-write of the whole row.

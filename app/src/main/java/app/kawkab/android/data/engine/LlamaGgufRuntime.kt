@@ -45,7 +45,20 @@ object LlamaGgufRuntime {
             batchSize = BATCH,
             gpuLayers = GPU_LAYERS,
         )
-        return LlamaBridge.initGenerateModel(path)
+        loaded = LlamaBridge.initGenerateModel(path)
+        return loaded
+    }
+
+    /** Whether a GGUF is loaded right now. */
+    @Volatile
+    var loaded: Boolean = false
+        private set
+
+    /**
+     * Drops the loaded GGUF, if there is one, so a LiteRT model does not share memory with it.
+     */
+    fun unloadIfLoaded() {
+        if (loaded) unload()
     }
 
     /**
@@ -58,5 +71,6 @@ object LlamaGgufRuntime {
      */
     fun unload() {
         LlamaBridge.shutdown()
+        loaded = false
     }
 }
