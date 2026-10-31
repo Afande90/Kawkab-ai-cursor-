@@ -601,6 +601,7 @@ Only Kotlin files appear inside the generated blocks.
 - `hands/` - Tests for stored app maps: replay without a model, check the screen, and stop for an outbound tap.
   - `AppMapReplayTest.kt` - Stored app maps replay without a model, check the screen, and still stop for an outbound tap.
   - `CallFlowTest.kt` - Task 23j: contact matching, the pending choice, the grant route and the dialer fallback.
+  - `LocalActionsTest.kt` - Task 23i: local actions do not ask, can be undone for 10 seconds, and read times properly.
 - `i18n/` - Arabic string-key coverage for the app and catalog resources.
   - `ArabicStringKeysTest.kt` - Fails when a default `strings.xml` key has no Arabic resource (spec §0.6).
   - `BrandNameTest.kt` - Fails when a user-visible string or a preset pipeline name says Knotwork.
@@ -640,6 +641,7 @@ Only Kotlin files appear inside the generated blocks.
         - `ArchivedAtLabelTest.kt` - Unit tests for the archived-at bucket ladder.
         - `ChatArchiveViewModelTest.kt` - Unit tests for `ChatArchiveViewModel` and the state → view-state projection.
       - `home/` - Tests for the chat home screen and its console pane.
+        - `ActionSentenceTest.kt` - Task 23i: a confirmation card reads as a sentence, with the raw arguments behind Details.
         - `ApprovalPolicyDocumentsTest.kt` - Pins the sentences that describe the approval gate's mechanics to the code that implements them.
         - `ChatHomeConsoleDelegateTest.kt` - Isolated unit tests for `ChatHomeConsoleDelegate` — the console-pane responsibility extracted from `ChatHomeViewModel`.
         - `ChatHomeConsoleMappingTest.kt` - Unit coverage for the pure-Kotlin mappers in `ChatHomeConsoleMapping`.
