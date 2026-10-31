@@ -71,13 +71,14 @@ class LocalModelRepositoryImplTest {
     }
 
     @Test
-    fun `setActiveModel deactivates all then activates specific model`() = runTest {
+    fun `setActiveModel activates only the chosen model in one statement`() = runTest {
         val targetId = 3L
 
         repository.setActiveModel(targetId)
 
-        coVerify(exactly = 1) { localModelDao.deactivateAllModels() }
-        coVerify(exactly = 1) { localModelDao.activateModelById(targetId) }
+        coVerify(exactly = 1) { localModelDao.activateOnly(targetId) }
+        coVerify(exactly = 0) { localModelDao.deactivateAllModels() }
+        coVerify(exactly = 0) { localModelDao.activateModelById(any()) }
     }
 
     @Test

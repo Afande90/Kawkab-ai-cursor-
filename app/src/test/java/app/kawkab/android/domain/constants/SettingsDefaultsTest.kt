@@ -15,7 +15,10 @@ class SettingsDefaultsTest {
 
     @Test
     fun `given LLM defaults when read then match documented values`() {
-        assertEquals(1_500, SettingsDefaults.MAX_CONTEXT_LENGTH_DEFAULT)
+        // The engine window is 4,096 again; 1,500 broke every model (task 23f).
+        assertEquals(4_096, SettingsDefaults.MAX_CONTEXT_LENGTH_DEFAULT)
+        assertEquals(1_500, SettingsDefaults.INJECTED_CONTEXT_TOKEN_BUDGET)
+        assertEquals(1_500, SettingsDefaults.LEGACY_TASK15_CONTEXT_LENGTH)
         assertEquals(0.7f, SettingsDefaults.TEMPERATURE_DEFAULT)
         assertEquals(40, SettingsDefaults.TOP_K_DEFAULT)
         assertEquals(0.9f, SettingsDefaults.TOP_P_DEFAULT)

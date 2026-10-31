@@ -132,10 +132,11 @@ class InstrumentedTestExclusionGuardTest {
         const val WORKFLOW_PATH = ".github/workflows/instrumented.yml"
 
         /**
-         * The exclusion list itself. One entry today: the AppFunctions
-         * end-to-end suite, whose permission gate no stock emulator image can
-         * open for a third-party caller.
+         * The exclusion list itself. The AppFunctions end-to-end suite, whose
+         * permission gate no stock emulator image can open for a third-party
+         * caller, and the real-model switch test, which needs model files and
+         * RAM the emulator does not have (task 23f).
          */
-        val EXPECTED_EXCLUSIONS = listOf("AppFunctionsEndToEndTest")
+        val EXPECTED_EXCLUSIONS = listOf("AppFunctionsEndToEndTest", "ModelSwitchReplyTest")
     }
 }

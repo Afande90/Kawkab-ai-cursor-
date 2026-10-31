@@ -1,12 +1,17 @@
 package app.kawkab.android.domain.engine.executors
 
+import app.kawkab.android.domain.engine.EngineWindow
 import app.kawkab.android.domain.engine.LlmInferenceEngine
+import app.kawkab.android.domain.models.AgentOrchestratorState
+import app.kawkab.android.domain.models.AppError
 import app.kawkab.android.domain.models.ExecutionScope
+import app.kawkab.android.domain.models.LocalModel
 import app.kawkab.android.domain.models.ModelPerformanceSample
 import app.kawkab.android.domain.models.NodeModel
 import app.kawkab.android.domain.models.NodeOutput
 import app.kawkab.android.domain.models.NodeType
 import app.kawkab.android.domain.models.Result
+import app.kawkab.android.domain.models.RunNoticeCause
 import app.kawkab.android.domain.repositories.ChatRepository
 import app.kawkab.android.domain.repositories.MetricsRepository
 import app.kawkab.android.domain.repositories.ModelPerformanceRepository
@@ -20,6 +25,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
@@ -275,4 +281,75 @@ class LiteRtNodeExecutorTest {
         assertTrue(outputs.last() is NodeOutput.Result)
         assertTrue(outputs.any { it is NodeOutput.State })
     }
+
+    @Test
+    fun `an allocation failure reopens the model with the reduced window and answers`() = runTest {
+        val node = NodeModel("1", NodeType.LITE_RT, 0f, 0f, systemPrompt = "Sys")
+        every { settingsRepository.systemPromptPrefix } returns flowOf("")
+        coEvery { loadModelUseCase(any()) } returns Result.Success(Unit)
+        every { llmEngine.activeContextLength } returns 4_096
+        coEvery { llmEngine.reopenWithWindow(EngineWindow.REDUCED_RETRY_TOKENS) } returns Result.Success(Unit)
+        every { llmEngine.generateResponseStream(any()) } returnsMany listOf(
+            flow { throw IllegalStateException("Status Code 13 Failed to allocate tensors") },
+            flowOf("hello"),
+        )
+
+        val outputs = executor.execute(node, "hello", "session-1", "hello").toList()
+
+        val result = outputs.filterIsInstance<NodeOutput.Result>().single().result
+        assertEquals("hello", result.outputText)
+        coVerify(exactly = 1) { llmEngine.reopenWithWindow(EngineWindow.REDUCED_RETRY_TOKENS) }
+        coVerify(exactly = 0) { loadModelUseCase.loadFallbackBrain(any()) }
+    }
+
+    @Test
+    fun `when the reduced window fails too, another Gemma answers and a notice says why`() = runTest {
+        val node = NodeModel("1", NodeType.LITE_RT, 0f, 0f, systemPrompt = "Sys")
+        every { settingsRepository.systemPromptPrefix } returns flowOf("")
+        coEvery { loadModelUseCase(any()) } returns Result.Success(Unit)
+        every { llmEngine.currentModelPath } returns "/models/gemma-4-E4B-it.litertlm"
+        every { llmEngine.activeContextLength } returns 4_096
+        coEvery { llmEngine.reopenWithWindow(any()) } returns Result.Error(error = TestError, message = "no")
+        val e2b = LocalModel(id = 2, name = "gemma-4-E2B-it.litertlm", path = "/models/e2b", size = 1, isActive = false)
+        coEvery { loadModelUseCase.loadFallbackBrain("/models/gemma-4-E4B-it.litertlm") } returns e2b
+        every { llmEngine.generateResponseStream(any()) } returnsMany listOf(
+            flow { throw IllegalStateException("Failed to allocate tensors") },
+            flowOf("hi"),
+        )
+
+        val outputs = executor.execute(node, "hello", "session-1", "hello").toList()
+
+        val notice = outputs.filterIsInstance<NodeOutput.State>()
+            .map { it.state }
+            .filterIsInstance<AgentOrchestratorState.RunNotice>()
+            .single()
+        assertEquals(
+            RunNoticeCause.ModelSwitched(
+                failedModel = "gemma-4-E4B-it.litertlm",
+                usedModel = "gemma-4-E2B-it.litertlm",
+            ),
+            notice.cause,
+        )
+        assertEquals("hi", outputs.filterIsInstance<NodeOutput.Result>().single().result.outputText)
+    }
+
+    @Test
+    fun `with no recovery left the error is in plain words, not a stack line`() = runTest {
+        val node = NodeModel("1", NodeType.LITE_RT, 0f, 0f, systemPrompt = "Sys")
+        every { settingsRepository.systemPromptPrefix } returns flowOf("")
+        coEvery { loadModelUseCase(any()) } returns Result.Success(Unit)
+        every { llmEngine.activeContextLength } returns EngineWindow.REDUCED_RETRY_TOKENS
+        coEvery { loadModelUseCase.loadFallbackBrain(any()) } returns null
+        every { llmEngine.generateResponseStream(any()) } returns
+            flow { throw IllegalStateException("llm_litert_compiled_model_executor.cc:743 Failed to allocate tensors") }
+
+        val outputs = executor.execute(node, "hello", "session-1", "hello").toList()
+
+        val error = outputs.filterIsInstance<NodeOutput.Result>().single().result.error!!
+        assertTrue(error.contains("ran out of working memory"))
+        assertFalse(error.contains(".cc:"))
+        coVerify(exactly = 0) { llmEngine.reopenWithWindow(any()) }
+    }
+
+    private object TestError : AppError.System
 }

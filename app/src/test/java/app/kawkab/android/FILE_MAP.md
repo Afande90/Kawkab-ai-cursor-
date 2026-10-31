@@ -292,6 +292,7 @@ Only Kotlin files appear inside the generated blocks.
     - `CloudErrorSanitizerTest.kt` - Unit tests for `CloudErrorSanitizer`.
     - `CloudStreamEndTest.kt` - `CloudStreamEnd`: which providers' missing finish reason means a cut answer — by measurement, per provider and, on OpenAI, per endpoint — and that a finish reason always means a whole one.
     - `DefaultPipelineFactoryTest.kt` - Unit tests for `DefaultPipelineFactory`.
+    - `EngineWindowTest.kt` - Task 23f: the engine window must hold the Kawkab prompt, the phone tools, the injected context and the reply.
     - `executors/` - Tests for the per-`NodeType` `NodeExecutor` strategies.
       - `ClarificationNodeExecutorTest.kt` - Unit tests for `ClarificationNodeExecutor`.
       - `CloudLlmNodeExecutorTest.kt` - Unit tests for `CloudLlmNodeExecutor`.
@@ -667,6 +668,7 @@ Only Kotlin files appear inside the generated blocks.
       - `MemoryScreenMappingTest.kt` - Unit tests for `toViewState` — the pure projection from `MemoryUiState` to the catalog `MemoryViewState` (filtering, grouping, breakdown, detail labels).
       - `MemoryViewModelTest.kt` - Tests for MemoryViewModel.
     - `models/` - Tests for the local-models surface and its performance formatting.
+      - `ModelRuntimeLabelTest.kt` - Task 23f: each model is labelled with the runtime that really runs it.
       - `ModelsStateMappingTest.kt` - Verifies `ModelsUiState.toViewState(...)` — the mapper bridging the data layer projection onto the catalog `ModelsViewState`.
       - `ModelsViewModelTest.kt` - Tests for ModelsViewModel.
       - `PerformanceFormattingTest.kt` - Unit tests for the performance-figure formatting helpers.

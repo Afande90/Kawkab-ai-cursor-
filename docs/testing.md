@@ -455,6 +455,7 @@ deliberate edit that a reviewer reads.
 | Test | Why an emulator cannot reach a verdict |
 |---|---|
 | `AppFunctionsEndToEndTest` | Android 16 declares `EXECUTE_APP_FUNCTIONS` at `internal\|privileged` — granted to privileged system apps only. No stock emulator image grants it to a developer-installed caller, so cross-package discovery never returns the probe and all five scenarios degrade to skips — while still paying the discovery poll (78 s of a 453 s suite). The round-trip is exercised in the manual pass on the reference device, where the permission gate can apply. |
+| `ModelSwitchReplyTest` | Needs Gemma 4 E2B (about 2.6 GB) and a GGUF brain on the device, and the RAM to run E2B on the CPU. The CI emulator has 4 GB of RAM, no model files and an x86_64 CPU. It runs on the owner's phone after `adb push` of the models to `/data/local/tmp/kawkab-models` (task 23f). |
 
 An excluded test is not dead code: it still has to compile under
 `./gradlew check`, and it is still run by hand on a device.
