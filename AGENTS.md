@@ -245,6 +245,11 @@ These come from the owner's first install of `m1.5`.
     - On any GGUF load failure, fall back to the last working LiteRT model (Gemma) and show why.
     - Add an instrumented test: activate a GGUF model, send "hello" and get a reply, using the smallest available GGUF.
 23f. **Owner phone, 31 Oct: chat does not work with any model.**
+    - **Root cause found in code review (regression from task 15).** Commit `a6fba56c` changed `SettingsDefaults.MAX_CONTEXT_LENGTH_DEFAULT` from 4096 to 1500. That value is passed to LiteRT-LM as `EngineConfig.maxNumTokens`, the whole KV budget. The Kawkab assistant prompt plus tool schemas exceeds 1500 tokens, so every model fails with "Failed to allocate tensors". It reproduced with E2B alone after a force-stop, so this is not memory pressure.
+      - Restore an engine `maxNumTokens` of 4096.
+      - Task 15's "about 1,500 tokens" was meant as the budget for *injected* context (documents, memory, screen text), never the engine window. Implement it there.
+      - Add a unit test that the engine window is at least the system prompt, the tool schemas and the reply cap together.
+      - Migrate stored settings already set to 1500 back to 4096.
     - **Gemma 4 E4B active on the CPU backend:** "hello" fails with `Status Code 13 … llm_litert_compiled_model_executor.cc:743 Failed to invoke the compiled model / Failed to allocate tensors`. The same E4B file answered on 29 Oct when the backend was GPU.
       - Find the cause. Suspects: a GGUF (Qwen) runtime still holding memory when the LiteRT model loads, or a CPU cache and context configuration that E4B cannot allocate.
       - Unload any other engine before loading.
