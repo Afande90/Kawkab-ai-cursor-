@@ -34,7 +34,7 @@ Only Kotlin files appear inside the generated blocks.
   - `usecases/` - Instrumented use-case coverage wired to real repositories.
     - `MemoryExtractionIntegrationTest.kt` - End-to-end integration coverage for `MemoryExtractionUseCase` wired to the real `MemoryRepositoryImpl` + `Converters` over an in-memory Room database.
     - `MemoryLifecycleIntegrationTest.kt` - End-to-end integration coverage for the **whole long-term memory lifecycle**, wiring the real domain components over an in-memory Room database: auto-extraction → embedding/storage → cross-session retrieval → injection into a node's `--- Long-Term Memory ---` context block → survival across a background compaction pass.
-- `engine/` - **No description** — replace this line by hand.
+- `engine/` - Real-model engine tests that run only on a device with the model files pushed.
   - `ModelSwitchReplyTest.kt` - Task 23f on a real phone: Gemma 4 E2B on CPU answers "hello", the smallest GGUF brain loads and answers, and E2B answers again after the switch back.
 - `ExampleInstrumentedTest.kt` - Example instrumentation test.
 - `presentation/` - Instrumented tests for the presentation layer.
