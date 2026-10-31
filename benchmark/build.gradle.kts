@@ -19,6 +19,8 @@ android {
         targetSdk = 37
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         missingDimensionStrategy("distribution", "foss")
+        // The CI emulator and the debuggable foss build are both known compromises; see the header.
+        testInstrumentationRunnerArguments["androidx.benchmark.suppressErrors"] = "EMULATOR,DEBUGGABLE,LOW-BATTERY,UNLOCKED"
     }
 
     targetProjectPath = ":app"

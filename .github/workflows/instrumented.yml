@@ -375,9 +375,7 @@ jobs:
           disable-animations: false
           emulator-boot-timeout: 900
           force-avd-creation: true
-          script: >-
-            ./gradlew :benchmark:connectedDebugAndroidTest --no-daemon
-            -Pandroid.testInstrumentationRunnerArguments.androidx.benchmark.suppressErrors=EMULATOR,DEBUGGABLE,LOW-BATTERY,UNLOCKED
+          script: ./gradlew :benchmark:connectedDebugAndroidTest --no-daemon
 
       - name: Check the 16 ms median
         if: always()
