@@ -238,6 +238,14 @@ These come from the owner's first install of `m1.5`.
     - Never mark a model active unless its file exists and it loaded once.
     - On any GGUF load failure, fall back to the last working LiteRT model (Gemma) and show why.
     - Add an instrumented test: activate a GGUF model, send "hello" and get a reply, using the smallest available GGUF.
+23f. **Owner phone, 31 Oct: chat does not work with any model.**
+    - **Gemma 4 E4B active on the CPU backend:** "hello" fails with `Status Code 13 … llm_litert_compiled_model_executor.cc:743 Failed to invoke the compiled model / Failed to allocate tensors`. The same E4B file answered on 29 Oct when the backend was GPU.
+      - Find the cause. Suspects: a GGUF (Qwen) runtime still holding memory when the LiteRT model loads, or a CPU cache and context configuration that E4B cannot allocate.
+      - Unload any other engine before loading.
+      - On "allocate tensors" errors, retry once with a smaller context. Then fall back to E2B or GPU, and tell the owner exactly what happened in plain words, not a raw stack line.
+    - **After the failure, the active model silently flipped back to Qwen3 1.7B.** A model the owner activated must stay active unless he changes it, or the app shows a clear notice saying why it switched.
+    - **The Qwen3 1.7B preset is labelled "LiteRT"** but is a GGUF on llama.cpp. Label each model with its real runtime.
+    - **Instrumented test on the CI emulator:** activate E2B on CPU, send "hello" and get a reply. Then switch to the GGUF model and back to E2B, and get a reply again.
 24. **Leftover upstream logo.** Also replace the knot icon on the empty-chat header. The onboarding header still shows the old knot icon next to "Kawkab". Replace every user-visible upstream logo and icon with the planet mark. Extend the branding test to the onboarding header drawable.
 25. **Onboarding model sizes.** The scenario cards say "3.66 GB model" even on phones that will get E2B. Show the size of the model this phone will actually download.
 25b. **Install updates over the old version.** Today every CI build is signed with a new temporary debug key. So the owner must uninstall the app, which deletes the 3.6 GB model and his data, before each update.
