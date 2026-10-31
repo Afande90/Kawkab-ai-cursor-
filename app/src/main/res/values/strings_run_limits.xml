@@ -199,6 +199,7 @@
          advisory. -->
     <string name="run_notice_looks_stuck">This run looks stuck — the same step keeps repeating. It will stop if nothing changes.</string>
     <string name="run_notice_model_switched">%1$s could not run on this phone: it ran out of working memory. This reply used %2$s. Your choice in Models is unchanged.</string>
+    <string name="run_notice_model_not_loaded">%1$s did not load on this phone. This reply used %2$s. Your choice in Models is unchanged.</string>
     <string name="run_notice_model_switched_unnamed">The selected model could not run on this phone: it ran out of working memory. This reply used %1$s. Your choice in Models is unchanged.</string>
 
     <!-- ─── Background-run notification ───────────────────────────────── -->

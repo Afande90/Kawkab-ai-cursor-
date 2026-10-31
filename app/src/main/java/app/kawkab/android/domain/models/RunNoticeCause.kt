@@ -69,8 +69,13 @@ sealed interface RunNoticeCause {
      *
      * @property failedModel The name of the selected model, or `null` when the load failed before it was known.
      * @property usedModel The name of the model that answered.
+     * @property reason Why the selected model could not answer.
      */
-    data class ModelSwitched(val failedModel: String?, val usedModel: String) : RunNoticeCause
+    data class ModelSwitched(
+        val failedModel: String?,
+        val usedModel: String,
+        val reason: SwitchReason = SwitchReason.OUT_OF_MEMORY,
+    ) : RunNoticeCause
 }
 
 /**
@@ -87,5 +92,14 @@ fun RunNoticeCause.diagnostic(): String = when (this) {
     is RunNoticeCause.ApproachingCeiling ->
         "soft-ceiling: $spent/$hardLimit ${axis.name.lowercase()}"
     is RunNoticeCause.LooksStuck -> "looks-stuck: ${signal.diagnostic}"
-    is RunNoticeCause.ModelSwitched -> "model-switched: $failedModel -> $usedModel"
+    is RunNoticeCause.ModelSwitched -> "model-switched (${reason.name.lowercase()}): $failedModel -> $usedModel"
+}
+
+/** Why a reply used another model than the selected one. */
+enum class SwitchReason {
+    /** LiteRT-LM could not allocate its tensors (task 23f). */
+    OUT_OF_MEMORY,
+
+    /** The selected model, such as a GGUF brain, did not load (task 23e). */
+    DID_NOT_LOAD,
 }

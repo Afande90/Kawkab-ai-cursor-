@@ -17,6 +17,7 @@ import app.kawkab.android.domain.models.NodeType
 import app.kawkab.android.domain.models.RegisteredTools
 import app.kawkab.android.domain.models.Result
 import app.kawkab.android.domain.models.RunNoticeCause
+import app.kawkab.android.domain.models.SwitchReason
 import app.kawkab.android.domain.repositories.GenerationSettings
 import app.kawkab.android.domain.repositories.MetricsRepository
 import app.kawkab.android.domain.repositories.ModelPerformanceRepository
@@ -86,26 +87,13 @@ class LiteRtNodeExecutor @Inject constructor(
         val imagePath = scope.imagePath
         val loadResult = loadModelUseCase(node.modelPath, requireVision = imagePath != null)
         if (loadResult is Result.Error) {
-            // Even the reduced window did not fit: run this reply on another Gemma and say so.
-            val outOfMemory = EngineWindow.isAllocationFailure(loadResult.message, loadResult.throwable)
-            val fallback = if (imagePath == null && outOfMemory) {
-                loadModelUseCase.loadFallbackBrain(failedPath = node.modelPath?.takeIf { it.isNotBlank() })
-            } else {
-                null
-            }
-            if (fallback == null) {
-                val message = if (outOfMemory) OUT_OF_MEMORY_MESSAGE else "Error loading local model"
+            val (fallback, cause, message) = loadFailure(loadResult, node, imagePath)
+            if (fallback == null || cause == null) {
                 emit(NodeOutput.State(AgentOrchestratorState.Error(message)))
                 emit(NodeOutput.Result(NodeExecutionResult(error = message)))
                 return@flow
             }
-            emit(
-                NodeOutput.State(
-                    AgentOrchestratorState.RunNotice(
-                        RunNoticeCause.ModelSwitched(failedModel = null, usedModel = fallback.name),
-                    ),
-                ),
-            )
+            emit(NodeOutput.State(AgentOrchestratorState.RunNotice(cause)))
         }
 
         val accumulatedResponse = StringBuilder()
@@ -296,6 +284,31 @@ class LiteRtNodeExecutor @Inject constructor(
     private fun couldNot(tool: String): String = "I couldn't do that, try: ${ToolReplyReader.example(tool)}"
 
     /**
+     * After a failed load: another installed Gemma and the notice saying why, when the failure was
+     * an allocation failure (task 23f) or a GGUF brain that did not load (task 23e).
+     *
+     * @return The fallback model and notice, or nulls and the error sentence to show.
+     */
+    private suspend fun loadFailure(
+        loadResult: Result.Error<Unit, *>,
+        node: NodeModel,
+        imagePath: String?,
+    ): Triple<app.kawkab.android.domain.models.LocalModel?, RunNoticeCause?, String> {
+        val outOfMemory = EngineWindow.isAllocationFailure(loadResult.message, loadResult.throwable)
+        val failedPath = node.modelPath?.takeIf { it.isNotBlank() } ?: loadModelUseCase.activePath()
+        val ggufFailed = failedPath?.endsWith(GGUF_SUFFIX) == true
+        val message = if (outOfMemory) OUT_OF_MEMORY_MESSAGE else "Error loading local model"
+        if (imagePath != null || !(outOfMemory || ggufFailed)) return Triple(null, null, message)
+        val fallback = loadModelUseCase.loadFallbackBrain(failedPath = failedPath) ?: return Triple(null, null, message)
+        val cause = RunNoticeCause.ModelSwitched(
+            failedModel = failedPath?.substringAfterLast('/'),
+            usedModel = fallback.name,
+            reason = if (outOfMemory) SwitchReason.OUT_OF_MEMORY else SwitchReason.DID_NOT_LOAD,
+        )
+        return Triple(fallback, cause, message)
+    }
+
+    /**
      * One recovery from an allocation failure.
      *
      * @param step 0 reopens the same model with [EngineWindow.REDUCED_RETRY_TOKENS]; 1 loads another
@@ -330,6 +343,7 @@ class LiteRtNodeExecutor @Inject constructor(
         /** Tools a reply may name. */
         val knownTools: Set<String> = RegisteredTools.all.map { it.name }.toSet()
         const val RECOVERY_STEPS = 2
+        const val GGUF_SUFFIX = ".gguf"
         const val OUT_OF_MEMORY_MESSAGE =
             "The model ran out of working memory on this phone, even with a smaller window, and no other " +
                 "model could take over. Open Models and pick Gemma 4 E2B, or try the GPU backend."

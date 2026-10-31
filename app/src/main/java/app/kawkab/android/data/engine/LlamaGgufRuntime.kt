@@ -1,5 +1,6 @@
 package app.kawkab.android.data.engine
 
+import app.kawkab.android.domain.constants.SettingsDefaults
 import com.llamatik.core.platform.LlamaBridge
 
 /**
@@ -16,7 +17,10 @@ object LlamaGgufRuntime {
     private const val TOP_P = 1f
     private const val TOP_K = 1
     private const val REPEAT_PENALTY = 1f
-    private const val CONTEXT_TOKENS = 1024
+
+    // The Kawkab prompt and the phone tools alone pass 1,024 tokens, so the old window left
+    // the GGUF brain unable to answer (task 23e). Same window as the LiteRT default.
+    private const val CONTEXT_TOKENS = SettingsDefaults.MAX_CONTEXT_LENGTH_DEFAULT
     private const val CPU_THREADS = 4
     private const val BATCH = 64
     private const val GPU_LAYERS = 0

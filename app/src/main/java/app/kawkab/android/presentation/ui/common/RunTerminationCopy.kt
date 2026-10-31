@@ -7,6 +7,7 @@ import app.kawkab.android.domain.models.RunCeilingAxis
 import app.kawkab.android.domain.models.RunNoticeCause
 import app.kawkab.android.domain.models.RunTerminationKind
 import app.kawkab.android.domain.models.RunTerminationReason
+import app.kawkab.android.domain.models.SwitchReason
 
 /**
  * How loudly a stopped run should speak, and with which glyph.
@@ -231,9 +232,16 @@ object RunTerminationCopyMapper {
         )
         is RunNoticeCause.ModelSwitched -> RunNoticeCopy(
             tone = RunTerminationTone.INFO,
-            text = cause.failedModel?.let { failed ->
-                UiText.Resource(R.string.run_notice_model_switched, listOf(failed, cause.usedModel))
-            } ?: UiText.Resource(R.string.run_notice_model_switched_unnamed, listOf(cause.usedModel)),
+            text = when {
+                cause.reason == SwitchReason.DID_NOT_LOAD ->
+                    UiText.Resource(
+                        R.string.run_notice_model_not_loaded,
+                        listOf(cause.failedModel ?: "", cause.usedModel),
+                    )
+                cause.failedModel != null ->
+                    UiText.Resource(R.string.run_notice_model_switched, listOf(cause.failedModel, cause.usedModel))
+                else -> UiText.Resource(R.string.run_notice_model_switched_unnamed, listOf(cause.usedModel))
+            },
         )
     }
 

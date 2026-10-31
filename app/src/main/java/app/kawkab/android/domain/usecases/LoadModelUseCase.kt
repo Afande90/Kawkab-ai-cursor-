@@ -119,6 +119,13 @@ class LoadModelUseCase @Inject constructor(
     }
 
     /**
+     * The active model's path, or `null` when none is active.
+     *
+     * @return The path.
+     */
+    suspend fun activePath(): String? = withContext(Dispatchers.IO) { localModelRepository.getActiveModel()?.path }
+
+    /**
      * Loads a working Gemma after the selected model failed, without changing the owner's choice.
      *
      * Prefers Gemma 4 E2B, then any other installed LiteRT model. A GGUF brain is never the

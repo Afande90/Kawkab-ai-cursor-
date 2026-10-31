@@ -13,6 +13,7 @@ import app.kawkab.android.domain.repositories.GenerationSettings
 import app.kawkab.android.domain.repositories.InterruptedDownload
 import app.kawkab.android.domain.repositories.LocalModelRepository
 import app.kawkab.android.domain.repositories.ModelDownloadManager
+import app.kawkab.android.domain.usecases.ActivateModelUseCase
 import app.kawkab.android.domain.usecases.BenchmarkOutcome
 import app.kawkab.android.domain.usecases.BenchmarkRunPhase
 import app.kawkab.android.domain.usecases.GetModelPerformanceUseCase
@@ -62,6 +63,7 @@ class ModelsViewModel @Inject constructor(
     private val getModelPerformanceUseCase: GetModelPerformanceUseCase,
     private val runBenchmarkUseCase: RunBenchmarkUseCase,
     private val taskQueueManager: TaskQueueManager,
+    private val activateModel: ActivateModelUseCase? = null,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ModelsUiState())
@@ -70,6 +72,11 @@ class ModelsViewModel @Inject constructor(
      * The current UI state of the Models screen.
      */
     val uiState: StateFlow<ModelsUiState> = _uiState.asStateFlow()
+
+    private val _activationErrors = MutableSharedFlow<String>(extraBufferCapacity = 1)
+
+    /** Why a tapped model was not activated (task 23e); shown once as a snackbar. */
+    val activationErrors: SharedFlow<String> = _activationErrors.asSharedFlow()
 
     private val _benchmarkShareEvents = MutableSharedFlow<String>(extraBufferCapacity = 1)
 
@@ -383,7 +390,16 @@ class ModelsViewModel @Inject constructor(
      */
     fun setActiveModel(modelId: Long) {
         viewModelScope.launch {
-            localModelRepository.setActiveModel(modelId)
+            // A model becomes active only once its file exists and it loaded (task 23e).
+            val activate = activateModel
+            if (activate == null) {
+                localModelRepository.setActiveModel(modelId)
+                return@launch
+            }
+            val outcome = activate(modelId)
+            if (outcome is app.kawkab.android.domain.models.Result.Error) {
+                outcome.message?.let { _activationErrors.tryEmit(it) }
+            }
         }
     }
 

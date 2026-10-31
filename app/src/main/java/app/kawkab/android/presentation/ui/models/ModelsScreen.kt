@@ -74,6 +74,10 @@ fun ModelsScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.activationErrors.collect { message -> snackbarHostState.showSnackbar(message) }
+    }
+
     val interruptedFormat = stringResource(R.string.model_download_interrupted_format)
     val continueLabel = stringResource(R.string.models_interrupted_continue)
     LaunchedEffect(uiState.interruptionToShow) {
