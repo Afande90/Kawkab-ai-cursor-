@@ -216,6 +216,28 @@ These come from the owner's first install of `m1.5`.
     - The transcript goes into the input box, so the owner can correct it before sending.
     - Never send audio to a cloud recogniser. If offline recognition is unavailable for a language, say so and offer the language download in Android settings.
     - If no recogniser exists, hide the error card and show a one-line hint instead.
+23d. **Owner phone, 31 Oct: the whole phone and the app are sluggish. Fix the accessibility service's work per event.**
+
+    The cause, from code review: `KawkabAccessibilityService.onAccessibilityEvent` listens to `typeAllMask` and, on every event from every app, walks the whole node tree (`traversal.describe(rootInActiveWindow)`) and runs the denylist regexes, on the main thread. Fix:
+    - Listen only to `typeWindowStateChanged` and `typeWindowContentChanged`.
+    - Set `android:notificationTimeout` to 300 ms or more.
+    - Keep only package name, `FLAG_SECURE` and password state per event; these are cheap.
+    - Build the full text snapshot lazily, only when an action is about to run or the owner asks to read the screen.
+    - Throttle denylist text inspection to at most once every 500 ms, off the main thread.
+    - The safety rule still holds: the full denylist check runs immediately before every action (§0.4.4).
+
+    Also profile tab switching in the release build:
+    - Add a Macrobenchmark for "switch Chat → Pipelines → Tools → More" with frame timing.
+    - Add a Baseline Profile.
+    - Make sure no model load or inference runs on the main thread.
+
+    Gate: median frame time under 16 ms on the CI emulator. Report the before and after numbers.
+23e. **Owner phone, 31 Oct: "No active model" while the header shows `Qwen3-1.7B-Q4_K_M.gguf (active)`.**
+    - Selecting a GGUF brain that is not downloaded, or not loaded by `LlamaGgufRuntime`, leaves chat with no model at all.
+    - Fix the GGUF activation path end to end: download with SHA-256, load, generate.
+    - Never mark a model active unless its file exists and it loaded once.
+    - On any GGUF load failure, fall back to the last working LiteRT model (Gemma) and show why.
+    - Add an instrumented test: activate a GGUF model, send "hello" and get a reply, using the smallest available GGUF.
 24. **Leftover upstream logo.** Also replace the knot icon on the empty-chat header. The onboarding header still shows the old knot icon next to "Kawkab". Replace every user-visible upstream logo and icon with the planet mark. Extend the branding test to the onboarding header drawable.
 25. **Onboarding model sizes.** The scenario cards say "3.66 GB model" even on phones that will get E2B. Show the size of the model this phone will actually download.
 25b. **Install updates over the old version.** Today every CI build is signed with a new temporary debug key. So the owner must uninstall the app, which deletes the 3.6 GB model and his data, before each update.
