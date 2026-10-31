@@ -238,6 +238,7 @@ These come from the owner's first install of `m1.5`.
     - Default to E2B on 12 GB phones for chat and tools. A reference build on the same Snapdragon 7s Gen 3 (PocketClaw) gets a 1–3 s first token with E2B.
     - E4B is opt-in only, with a warning.
     - Tab switching must not depend on model state.
+    - **Owner re-test, 31 Oct 23:41.** With CPU, E2B and the 4096 context, turning Kawkab's accessibility service back on made the app sluggish again. So the per-event accessibility work is a main cause after all, alongside the context bug. The fixes above (event types, timeout, lazy snapshot, background throttling) are priority one. Measure with the service on.
 23e. **Owner phone, 31 Oct: "No active model" while the header shows `Qwen3-1.7B-Q4_K_M.gguf (active)`.**
     - Selecting a GGUF brain that is not downloaded, or not loaded by `LlamaGgufRuntime`, leaves chat with no model at all.
     - Fix the GGUF activation path end to end: download with SHA-256, load, generate.
@@ -274,6 +275,15 @@ These come from the owner's first install of `m1.5`.
       - If the output names a known tool without valid arguments, re-ask once with a grammar-constrained prompt. Otherwise answer "I couldn't do that, try: set an alarm for 6".
     - **Hang.** The same message sent again got no reply at all, and no error was shown. Every run must end in a reply, a card or a visible error within 60 s.
     - **Test.** An instrumented test types `Set an alarm for 6"` (with the stray quote) and asserts the alarm intent, with no LLM call.
+23i. **Owner phone, 31 Oct: alarm works, but asks needlessly and reads like a developer tool.**
+    - "Set an alarm for 6" worked after the owner tapped "Allow once" (06:00 tomorrow).
+    - **Don't ask for local actions.** Alarm, timer, open app and calendar-add stay on the phone. Per spec §0.4, only `OUTBOUND` must stop for a tap, as the owner's mockup said: "Done. Stays on the phone, so I didn't ask."
+      - Classify `set_alarm`, `set_timer`, `open_app` and `add_calendar_event` as a new `LOCAL` tier that never asks under the default policy.
+      - Show an "Undo" chip for 10 s after each one, and record it in the activity log.
+      - Keep `OUTBOUND` (call, SMS, WhatsApp, share, pay, delete) always asking.
+      - Update `safety/tool_classification.csv` and its test.
+    - **Human-readable cards.** The confirmation card shows `set_alarm` and raw JSON (`{"hour": "6",…}`). Show a plain sentence in the owner's language instead ("Call Ahmad?", "Send to Omar: I'm late"), with the raw arguments behind a "Details" toggle. Use the owner's mockup card layout: Send, Change, Cancel.
+    - **Time formatting.** The reply said "Alarm set for 6:0." Format times properly, with the locale and AM/PM ("6:00 AM", "٦:٠٠ ص").
 24. **Leftover upstream logo.** Also replace the knot icon on the empty-chat header. The onboarding header still shows the old knot icon next to "Kawkab". Replace every user-visible upstream logo and icon with the planet mark. Extend the branding test to the onboarding header drawable.
 25. **Onboarding model sizes.** The scenario cards say "3.66 GB model" even on phones that will get E2B. Show the size of the model this phone will actually download.
 25b. **Install updates over the old version.** Today every CI build is signed with a new temporary debug key. So the owner must uninstall the app, which deletes the 3.6 GB model and his data, before each update.
