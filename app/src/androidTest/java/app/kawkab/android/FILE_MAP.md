@@ -35,6 +35,7 @@ Only Kotlin files appear inside the generated blocks.
     - `MemoryExtractionIntegrationTest.kt` - End-to-end integration coverage for `MemoryExtractionUseCase` wired to the real `MemoryRepositoryImpl` + `Converters` over an in-memory Room database.
     - `MemoryLifecycleIntegrationTest.kt` - End-to-end integration coverage for the **whole long-term memory lifecycle**, wiring the real domain components over an in-memory Room database: auto-extraction → embedding/storage → cross-session retrieval → injection into a node's `--- Long-Term Memory ---` context block → survival across a background compaction pass.
 - `engine/` - Real-model engine tests that run only on a device with the model files pushed.
+  - `GgufActivationInstrumentedTest.kt` - Task 23e on the emulator: a GGUF brain is downloaded and checked against its SHA-256, activated only after it loads, and answers "hello".
   - `ModelSwitchReplyTest.kt` - Task 23f on a real phone: Gemma 4 E2B on CPU answers "hello", the smallest GGUF brain loads and answers, and E2B answers again after the switch back.
 - `ExampleInstrumentedTest.kt` - Example instrumentation test.
 - `hands/` - Emulator tests for the phone hands: contact matching, the pending contact choice and the call fallback.

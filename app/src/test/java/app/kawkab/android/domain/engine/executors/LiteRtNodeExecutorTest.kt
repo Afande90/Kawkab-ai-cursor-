@@ -13,6 +13,7 @@ import app.kawkab.android.domain.models.NodeOutput
 import app.kawkab.android.domain.models.NodeType
 import app.kawkab.android.domain.models.Result
 import app.kawkab.android.domain.models.RunNoticeCause
+import app.kawkab.android.domain.models.SwitchReason
 import app.kawkab.android.domain.repositories.ChatRepository
 import app.kawkab.android.domain.repositories.MetricsRepository
 import app.kawkab.android.domain.repositories.ModelPerformanceRepository
@@ -398,6 +399,26 @@ class LiteRtNodeExecutorTest {
         coVerify(exactly = 1) {
             gate.dispatch(any(), any(), any(), "session-1", any(), "set_alarm", "{\"hour\":6}", false)
         }
+    }
+
+    @Test
+    fun `an active GGUF that does not load falls back to Gemma with a did-not-load notice`() = runTest {
+        val node = NodeModel("1", NodeType.LITE_RT, 0f, 0f, systemPrompt = "Sys")
+        every { settingsRepository.systemPromptPrefix } returns flowOf("")
+        coEvery { loadModelUseCase(any(), any()) } returns
+            Result.Error(error = TestError, message = "The GGUF brain did not load.")
+        coEvery { loadModelUseCase.activePath() } returns "/models/Qwen3-1.7B-Q4_K_M.gguf"
+        val e2b = LocalModel(id = 2, name = "gemma-4-E2B-it.litertlm", path = "/models/e2b", size = 1, isActive = false)
+        coEvery { loadModelUseCase.loadFallbackBrain("/models/Qwen3-1.7B-Q4_K_M.gguf") } returns e2b
+        every { llmEngine.generateResponseStream(any()) } returns flowOf("hi")
+
+        val outputs = executor.execute(node, "hello", "session-1", "hello").toList()
+
+        val notice = outputs.filterIsInstance<NodeOutput.State>().map { it.state }
+            .filterIsInstance<AgentOrchestratorState.RunNotice>().single().cause as RunNoticeCause.ModelSwitched
+        assertEquals(SwitchReason.DID_NOT_LOAD, notice.reason)
+        assertEquals("Qwen3-1.7B-Q4_K_M.gguf", notice.failedModel)
+        assertEquals("hi", outputs.filterIsInstance<NodeOutput.Result>().single().result.outputText)
     }
 
     private object TestError : AppError.System

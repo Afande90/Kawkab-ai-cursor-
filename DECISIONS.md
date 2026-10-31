@@ -405,3 +405,11 @@ The reply-language set `evals/reply-language/v1/prompts.jsonl` (20 prompts: 8 Su
 Speed: tier 1 sends no prompt at all (it never calls the model). The assistant prompt no longer expands `$TOOLS` (every tool's name and description) and lists only its six phone tools with their arguments, so the prefill is shorter. Native tool schemas are not sent (native tool calling stays off since task 17).
 
 **BLOCKED gate: reuse the fixed system prompt's KV state between turns, and first token under 3 s.** LiteRT-LM 0.17.1 exposes no KV save and restore and no prefix cache, and the orchestrator sends the whole history each turn, so the conversation is reopened every turn (closing it any other way crashed the native session, see `LiteRTLlmEngine.streamConversation`). The first-token time for "hello" and for a command was not measured: no model runs here. Fallback: the shorter prompt; the owner's phone shows first-token time on the Models screen's performance card.
+
+## 2026-10-31 — GGUF activation (task 23e)
+
+Tapping a model in Models now loads it before marking it active. A model whose file is missing, or that llama.cpp cannot open, is never active: the previous model stays and a snackbar says why. At chat time, an active GGUF that fails to load falls back to an installed LiteRT Gemma (E2B first) for that reply, with a notice that names both models; the owner's choice is not changed. The GGUF context window was 1,024 tokens, smaller than the Kawkab prompt and its tools, so a Qwen brain could never answer; it is now 4,096 like LiteRT.
+
+Downloads already check the SHA-256 the source publishes (the "checked" label on the Models screen); nothing changed there.
+
+The emulator test downloads SmolLM2 135M Instruct Q4_K_M (Apache-2.0, 105,454,432 bytes, SHA-256 `2e8040ceae7815abe0dcb3540b9995eaa1fa0d2ca9e797d0a635ae4433c68c2d`) from Hugging Face, activates it through the same use case, and expects a reply to "hello". It is the smallest GGUF llama.cpp answers with, and the Llamatik library ships an x86_64 build, so this one runs on the CI emulator. The file is a test fixture only; it is not in the APK and not offered in the app.

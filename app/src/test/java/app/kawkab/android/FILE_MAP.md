@@ -471,6 +471,7 @@ Only Kotlin files appear inside the generated blocks.
   - `triggerio/` - Tests for the trigger export/import gateway.
     - `TriggerConditionCodecTest.kt` - Unit tests for `TriggerConditionCodec` — the single source of truth for the `TriggerCondition` ↔ JSON wire shape persisted in `triggers.conditionJson`.
   - `usecases/` - Tests for the use cases.
+    - `ActivateModelUseCaseTest.kt` - Task 23e: a model is never marked active unless its file exists and it loaded once.
     - `AgentOrchestratorUseCaseTest.kt` - Tests for AgentOrchestratorUseCase.
     - `AppInitializationUseCaseTest.kt` - Unit tests for `AppInitializationUseCase`.
     - `ApprovalRequestAddressingTest.kt` - The decision channel end to end, from the surface that shows a request to the gate that waits on one: a real `SubmitApprovalDecisionUseCase` in front of a real `ToolInvocationGate`.
