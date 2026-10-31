@@ -22,7 +22,8 @@ import kotlinx.coroutines.delay
 @Composable
 fun LocalUndoChip(undo: LocalUndo, onUndone: (String) -> Unit, modifier: Modifier = Modifier) {
     // Safe cast: a screen test's relaxed view model hands back a stand-in object.
-    val current = undo.state.collectAsState().value as? UndoOffer ?: return
+    val raw: Any? = undo.state.collectAsState().value
+    val current = raw as? UndoOffer ?: return
     LaunchedEffect(current) {
         delay(LocalUndo.WINDOW_MS)
         undo.expire(current)

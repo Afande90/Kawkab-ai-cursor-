@@ -658,7 +658,8 @@ fun ChatHomeScreen(
             )
         }
         // Read with a safe cast: a screen test's relaxed view model hands back a stand-in object.
-        val pendingContact = viewModel.pendingContact.collectAsState().value as? PendingContact
+        val pendingRaw: Any? = viewModel.pendingContact.collectAsState().value
+        val pendingContact = pendingRaw as? PendingContact
         pendingContact?.let { pending ->
             ContactChoicePrompt(
                 choices = pending.choices,
