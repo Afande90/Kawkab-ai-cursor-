@@ -331,3 +331,19 @@ Each item has a status line. A missing answer is off, never hidden. Contacts, ph
 
 A call, a text to a name, or a calendar event that is missing a permission returns a sentence naming that permission. The chat and the assistant panel show a card whose Grant button asks for that permission. It does not start the action, and it does not fail with an empty error. The tap rule is unchanged. The biometric check still does not replace the tap.
 
+
+## 2026-10-31 — engine window and allocation failures (task 23f)
+
+Task 15 set `SettingsDefaults.MAX_CONTEXT_LENGTH_DEFAULT` to 1,500, and that value is LiteRT-LM's `EngineConfig.maxNumTokens`, the whole KV budget. The Kawkab prompt and the phone tool schemas alone exceed it, so every model failed with "Failed to allocate tensors". The default is 4,096 again. The engine is never opened below 3,584, the smallest Settings step that holds the prompt, the 12 phone tool schemas, the injected budget and a 512-token reply reserve by a conservative 3-characters-per-token estimate (3,120 tokens measured by `EngineWindowTest`). The Settings slider now starts at 3,584.
+
+Task 15's "about 1,500 tokens" is now `INJECTED_CONTEXT_TOKEN_BUDGET`, the budget for chat history fed into the prompt. The read-file and history-compression budgets already sat under it.
+
+A stored 1,500 reads as 4,096. The Settings slider moves in steps of 512, so the owner could not have chosen 1,500 himself, and no new preference key is needed for the migration.
+
+A GGUF brain is unloaded before a LiteRT model loads, so at most one LLM is resident. On "Failed to allocate tensors" or "Failed to invoke the compiled model", the engine retries once with 3,584 tokens. If that fails, the reply is generated with another installed LiteRT model, Gemma 4 E2B first, and a notice says which model failed and which answered. The owner's active model is not changed. GPU is not tried automatically: the owner's GPU switch froze the phone on 31 Oct, so it stays the owner's choice. With nothing left, the chat shows a plain sentence, not the native error line.
+
+The silent flip to Qwen3 1.7B was not reproduced in code review. No path in the app changes the active model after a failure. Activation was two SQL statements, which left a moment with no active model or two; it is now one statement, so `LIMIT 1` can only return the model the owner picked.
+
+A GGUF model is labelled `CPU · llama.cpp`, and a LiteRT model is labelled with its backend and `LiteRT`.
+
+**BLOCKED gate: the emulator test "activate E2B on CPU, send hello, switch to the GGUF and back".** Measured: the CI emulator has 4,096 MB of RAM, an x86_64 CPU and no model files, and E2B alone is about 2.6 GB. Cause: the hardware, not the code. Fallback: `ModelSwitchReplyTest` is written, compiles in the Check, and is on the device-only exclusion list. It runs on the owner's phone after `adb push` of the models to `/data/local/tmp/kawkab-models`. The allocation recovery itself is covered by unit tests.
