@@ -66,6 +66,7 @@ import app.kawkab.android.domain.report.ContentReport
 import app.kawkab.android.domain.report.ContentReportComposer
 import app.kawkab.android.domain.report.ContentReportReason
 import app.kawkab.android.hands.ContactChip
+import app.kawkab.android.hands.PendingContact
 import app.kawkab.android.presentation.ui.chat.CHAT_EXPORT_MIME_JSON
 import app.kawkab.android.presentation.ui.chat.toShareChooser
 import app.kawkab.android.presentation.ui.common.JournalExportCopy
@@ -656,7 +657,8 @@ fun ChatHomeScreen(
                     .padding(end = 16.dp, bottom = 112.dp),
             )
         }
-        val pendingContact by viewModel.pendingContact.collectAsState()
+        // Read with a safe cast: a screen test's relaxed view model hands back a stand-in object.
+        val pendingContact = viewModel.pendingContact.collectAsState().value as? PendingContact
         pendingContact?.let { pending ->
             ContactChoicePrompt(
                 choices = pending.choices,

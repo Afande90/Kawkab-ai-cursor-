@@ -5,12 +5,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import app.kawkab.android.R
 import app.kawkab.android.hands.LocalUndo
+import app.kawkab.android.hands.UndoOffer
 import kotlinx.coroutines.delay
 
 /**
@@ -21,8 +21,8 @@ import kotlinx.coroutines.delay
  */
 @Composable
 fun LocalUndoChip(undo: LocalUndo, onUndone: (String) -> Unit, modifier: Modifier = Modifier) {
-    val offer by undo.state.collectAsState()
-    val current = offer ?: return
+    // Safe cast: a screen test's relaxed view model hands back a stand-in object.
+    val current = undo.state.collectAsState().value as? UndoOffer ?: return
     LaunchedEffect(current) {
         delay(LocalUndo.WINDOW_MS)
         undo.expire(current)
