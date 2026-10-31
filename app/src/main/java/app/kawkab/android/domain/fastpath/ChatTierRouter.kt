@@ -8,11 +8,14 @@ import app.kawkab.android.domain.models.ChatMessage
 import app.kawkab.android.domain.models.MessageAttachment
 import app.kawkab.android.domain.models.NodeExecutionResult
 import app.kawkab.android.domain.models.NodeOutput
+import app.kawkab.android.domain.models.RegisteredTools
 import app.kawkab.android.domain.models.Role
+import app.kawkab.android.domain.models.ToolRisk
 import app.kawkab.android.domain.prompt.ChatTranscript
 import app.kawkab.android.domain.repositories.ChatRepository
 import app.kawkab.android.hands.ContactAnswer
 import app.kawkab.android.hands.ContactChoice
+import app.kawkab.android.hands.LocalUndo
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
@@ -117,6 +120,7 @@ class HandsChatTierRouter @Inject constructor(
     private val engine: LlmInferenceEngine,
     private val skills: SkillCache = SkillCache(),
     private val choice: ContactChoice = ContactChoice(),
+    private val localUndo: LocalUndo? = null,
 ) : ChatTierRouter {
     private val picks: MutableSet<String> = java.util.Collections.synchronizedSet(mutableSetOf())
 
@@ -160,7 +164,12 @@ class HandsChatTierRouter @Inject constructor(
             return
         }
         val outcome = dispatch(sessionId, command.tool, json(command.args), onState, FAST_PATH)
-        finish(sessionId, outcome, onState, relayed = true)
+        // A local action ran without a card; say so and offer Undo for 10 seconds (task 23i).
+        val local = RegisteredTools.all.any { it.name == command.tool && it.risk == ToolRisk.LOCAL }
+        finish(sessionId, outcome, onState, relayed = true, note = LocalUndo.NO_ASK_NOTE.takeIf { local })
+        if (local && outcome != null && outcome.error == null) {
+            localUndo?.offer(command.tool, command.args, System.currentTimeMillis())
+        }
         // A contact pick ("the second one") is not a command to replay later.
         val wasPick = picks.remove(text)
         if (outcome != null && outcome.error == null && !wasPick) {
@@ -283,13 +292,15 @@ class HandsChatTierRouter @Inject constructor(
         outcome: NodeExecutionResult?,
         onState: (AgentOrchestratorState) -> Unit,
         relayed: Boolean,
+        note: String? = null,
     ) {
         val failure = outcome?.error
         if (outcome == null || failure != null) {
             onState(AgentOrchestratorState.Error(failure ?: "The action did not finish."))
             return
         }
-        val text = outcome.outputText?.takeIf { it.isNotBlank() } ?: "Done."
+        val done = outcome.outputText?.takeIf { it.isNotBlank() } ?: "Done."
+        val text = if (note == null) done else "$done $note"
         save(sessionId, Role.AGENT, text, relayed, attachment = null)
         onState(AgentOrchestratorState.Completed(text))
     }

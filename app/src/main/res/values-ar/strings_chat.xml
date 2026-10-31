@@ -187,4 +187,12 @@
     </plurals>
     <string name="contact_choice_title">أي جهة اتصال؟</string>
     <string name="contact_choice_cancel">إلغاء</string>
+    <string name="local_undo">تراجع</string>
+    <string name="action_card_call">أتصل بـ%1$s؟</string>
+    <string name="action_card_send">أرسل إلى %1$s: %2$s</string>
+    <string name="action_card_delete">أحذف %1$s؟</string>
+    <string name="action_card_http">أرسل طلباً إلى %1$s؟</string>
+    <string name="action_card_tap">أنقر «%1$s»؟</string>
+    <string name="action_card_primary_call">اتصال</string>
+    <string name="action_card_primary_send">إرسال</string>
 </resources>

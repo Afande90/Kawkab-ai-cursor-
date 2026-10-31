@@ -421,7 +421,9 @@ fun ChatHomeScreen(
     // `strings_chat.xml`.
     val fixtures = rememberChatHomeFixtures()
 
-    val viewState = screenState.toViewState(fixtures = fixtures) { context.resolve(it) }
+    val viewState = screenState.toViewState(fixtures = fixtures, onHitlChange = viewModel.hitl::changeTool) {
+        context.resolve(it)
+    }
 
     val callbacks = ChatHomeCallbacks(
         onComposerValueChange = viewModel::onComposerValueChange,
@@ -643,6 +645,15 @@ fun ChatHomeScreen(
                     .align(Alignment.BottomCenter)
                     .padding(start = 16.dp, end = 16.dp, bottom = 112.dp),
                 onGranted = viewModel::retryLastUserTurn,
+            )
+        }
+        viewModel.localUndo?.let { undo ->
+            LocalUndoChip(
+                undo = undo,
+                onUndone = { message -> coroutineScope.launch { snackbarHostState.showSnackbar(message) } },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 16.dp, bottom = 112.dp),
             )
         }
         val pendingContact by viewModel.pendingContact.collectAsState()

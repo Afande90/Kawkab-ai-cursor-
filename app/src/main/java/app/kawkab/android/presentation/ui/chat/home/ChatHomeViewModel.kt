@@ -47,6 +47,7 @@ import app.kawkab.android.domain.usecases.SubmitClarificationAnswerUseCase
 import app.kawkab.android.domain.usecases.TranscribeAudioUseCase
 import app.kawkab.android.domain.usecases.UnarchiveChatUseCase
 import app.kawkab.android.hands.ContactChoice
+import app.kawkab.android.hands.LocalUndo
 import app.kawkab.android.hands.PendingContact
 import app.kawkab.android.presentation.state.ActiveSessionTracker
 import app.kawkab.design.components.chat.ChatContent
@@ -170,6 +171,8 @@ constructor(
     private val chatTierRouter: ChatTierRouter = PassthroughChatTierRouter(),
     private val contactChoice: ContactChoice = ContactChoice(),
     private val turnWatchdog: TurnWatchdogConfig = TurnWatchdogConfig.Disabled,
+    /** Undo for the local action that just ran; the screen shows its chip (task 23i). */
+    val localUndo: LocalUndo? = null,
 ) : ViewModel() {
 
     /** The call or text waiting for a contact pick; the screen shows its chips (task 23j). */

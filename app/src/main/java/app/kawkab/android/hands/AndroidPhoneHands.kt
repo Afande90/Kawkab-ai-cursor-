@@ -11,7 +11,9 @@ import androidx.core.net.toUri
 import app.kawkab.android.accessibility.KawkabAccessibilityService
 import app.kawkab.android.domain.phoneaccess.MissingPermission
 import app.kawkab.android.domain.safety.ActionDenylist
+import app.kawkab.android.domain.text.ClockText
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.Locale
 import java.util.TimeZone
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -64,7 +66,7 @@ class AndroidPhoneHands @Inject constructor(
             putExtra(AlarmClock.EXTRA_MESSAGE, label)
             putExtra(AlarmClock.EXTRA_SKIP_UI, true)
         }
-        return start(intent, "Alarm set for $hour:$minute.")
+        return start(intent, "Alarm set for ${ClockText.format(hour, minute, Locale.getDefault())}.")
     }
 
     override fun setTimer(seconds: Int): String {
@@ -90,6 +92,25 @@ class AndroidPhoneHands @Inject constructor(
             putExtra(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().id)
         }
         return start(intent, "Calendar event '$title' is ready to save.")
+    }
+
+    override fun undo(tool: String, args: Map<String, String>): String = when (tool) {
+        // Dismisses the alarm just set, found by its time (task 23i).
+        "set_alarm" -> start(
+            Intent(AlarmClock.ACTION_DISMISS_ALARM).apply {
+                putExtra(AlarmClock.EXTRA_ALARM_SEARCH_MODE, AlarmClock.ALARM_SEARCH_MODE_TIME)
+                args["hour"]?.toIntOrNull()?.let { putExtra(AlarmClock.EXTRA_HOUR, it) }
+                args["minute"]?.toIntOrNull()?.let { putExtra(AlarmClock.EXTRA_MINUTES, it) }
+            },
+            "Removed the alarm.",
+        )
+        "set_timer" -> start(Intent(AlarmClock.ACTION_DISMISS_TIMER), "Stopped the timer.")
+        "open_app" -> start(
+            Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME),
+            "Went back to the home screen.",
+        )
+        "add_calendar_event" -> "The event is not saved until you tap Save; close the calendar screen to undo."
+        else -> "Nothing to undo."
     }
 
     override fun readScreen(): String = KawkabAccessibilityService.screenText()

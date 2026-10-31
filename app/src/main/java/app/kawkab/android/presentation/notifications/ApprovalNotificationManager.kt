@@ -126,16 +126,19 @@ class ApprovalNotificationManager @Inject constructor(
 
         val channelId = when (risk) {
             ToolRisk.DESTRUCTIVE -> NotificationChannels.AGENT_APPROVAL_DESTRUCTIVE
-            ToolRisk.OUTBOUND, ToolRisk.SENSITIVE, ToolRisk.READ_ONLY -> NotificationChannels.AGENT_APPROVAL
+            ToolRisk.OUTBOUND, ToolRisk.SENSITIVE, ToolRisk.READ_ONLY, ToolRisk.LOCAL ->
+                NotificationChannels.AGENT_APPROVAL
         }
         val smallIcon = when (risk) {
             ToolRisk.DESTRUCTIVE -> R.drawable.ic_notif_decision
-            ToolRisk.OUTBOUND, ToolRisk.SENSITIVE, ToolRisk.READ_ONLY -> R.drawable.ic_notif_decision
+            ToolRisk.OUTBOUND, ToolRisk.SENSITIVE, ToolRisk.READ_ONLY, ToolRisk.LOCAL -> R.drawable.ic_notif_decision
         }
         val title = when (risk) {
             ToolRisk.DESTRUCTIVE -> context.getString(R.string.approval_notification_title_destructive)
             ToolRisk.OUTBOUND -> context.getString(R.string.approval_notification_title_outbound)
-            ToolRisk.SENSITIVE, ToolRisk.READ_ONLY -> context.getString(R.string.approval_notification_title_sensitive)
+            ToolRisk.SENSITIVE, ToolRisk.READ_ONLY, ToolRisk.LOCAL -> context.getString(
+                R.string.approval_notification_title_sensitive,
+            )
         }
         val contentText = context.getString(R.string.approval_notification_text, toolName)
         val shade = shadeText(toolName, arguments, requestContext)
@@ -198,16 +201,19 @@ class ApprovalNotificationManager @Inject constructor(
 
         val channelId = when (risk) {
             ToolRisk.DESTRUCTIVE -> NotificationChannels.AGENT_APPROVAL_DESTRUCTIVE
-            ToolRisk.OUTBOUND, ToolRisk.SENSITIVE, ToolRisk.READ_ONLY -> NotificationChannels.AGENT_APPROVAL
+            ToolRisk.OUTBOUND, ToolRisk.SENSITIVE, ToolRisk.READ_ONLY, ToolRisk.LOCAL ->
+                NotificationChannels.AGENT_APPROVAL
         }
         val smallIcon = when (risk) {
             ToolRisk.DESTRUCTIVE -> R.drawable.ic_notif_decision
-            ToolRisk.OUTBOUND, ToolRisk.SENSITIVE, ToolRisk.READ_ONLY -> R.drawable.ic_notif_decision
+            ToolRisk.OUTBOUND, ToolRisk.SENSITIVE, ToolRisk.READ_ONLY, ToolRisk.LOCAL -> R.drawable.ic_notif_decision
         }
         val title = when (risk) {
             ToolRisk.DESTRUCTIVE -> context.getString(R.string.approval_notification_title_destructive)
             ToolRisk.OUTBOUND -> context.getString(R.string.approval_notification_title_outbound)
-            ToolRisk.SENSITIVE, ToolRisk.READ_ONLY -> context.getString(R.string.approval_notification_title_sensitive)
+            ToolRisk.SENSITIVE, ToolRisk.READ_ONLY, ToolRisk.LOCAL -> context.getString(
+                R.string.approval_notification_title_sensitive,
+            )
         }
         val contentText = context.getString(R.string.approval_notification_waiting_text, toolName)
         val shade = shadeText(toolName, arguments, requestContext)

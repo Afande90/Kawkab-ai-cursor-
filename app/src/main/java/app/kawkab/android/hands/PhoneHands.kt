@@ -29,6 +29,15 @@ interface PhoneHands {
     /** Inserts a calendar event. */
     fun addCalendarEvent(title: String, startEpochMs: Long): String
 
+    /**
+     * Undoes a local action that just ran (task 23i).
+     *
+     * @param tool The local tool, such as `set_alarm`.
+     * @param args The arguments it ran with.
+     * @return What happened.
+     */
+    fun undo(tool: String, args: Map<String, String>): String = "Nothing to undo."
+
     /** Reads the text of the current screen. */
     fun readScreen(): String
 

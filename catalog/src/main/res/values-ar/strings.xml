@@ -26,6 +26,10 @@
     <!-- ============ HitlConfirmationCard ============ -->
 
     <string name="knotwork_hitl_action_reject">رفض</string>
+    <string name="knotwork_hitl_action_cancel">إلغاء</string>
+    <string name="knotwork_hitl_action_change">تعديل</string>
+    <string name="knotwork_hitl_details_show">التفاصيل</string>
+    <string name="knotwork_hitl_details_hide">إخفاء التفاصيل</string>
     <string name="knotwork_hitl_action_allow_once">سماح مرة واحدة</string>
     <string name="knotwork_hitl_action_always_allow">سماح دائم</string>
 

@@ -234,4 +234,12 @@
     </plurals>
     <string name="contact_choice_title">Which contact?</string>
     <string name="contact_choice_cancel">Cancel</string>
+    <string name="local_undo">Undo</string>
+    <string name="action_card_call">Call %1$s?</string>
+    <string name="action_card_send">Send to %1$s: %2$s</string>
+    <string name="action_card_delete">Delete %1$s?</string>
+    <string name="action_card_http">Send a request to %1$s?</string>
+    <string name="action_card_tap">Tap “%1$s”?</string>
+    <string name="action_card_primary_call">Call</string>
+    <string name="action_card_primary_send">Send</string>
 </resources>

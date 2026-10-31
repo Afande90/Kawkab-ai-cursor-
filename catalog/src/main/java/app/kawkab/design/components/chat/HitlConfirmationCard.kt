@@ -171,6 +171,20 @@ fun HitlConfirmationCard(
         ) {
             RiskPillRow(model = model)
             val request = model.request
+            val plain = model.plainSentence
+            if (plain != null) {
+                PlainBody(model = model, sentence = plain, risk = model.risk)
+                if (HitlConfirmationState.showTypedConfirmRow(model.risk)) {
+                    TypedConfirmRow(value = pendingTypedConfirm, onChange = onTypedConfirmChange)
+                }
+                PlainButtonRow(
+                    model = model,
+                    allowOnceEnabled = allowOnceEnabled,
+                    onAllowOnce = onAllowOnce,
+                    onReject = onReject,
+                )
+                return@Column
+            }
             if (request == null) {
                 ToolNameRow(toolName = model.toolName, described = false)
             } else {
@@ -207,6 +221,63 @@ fun HitlConfirmationCard(
                 onReject = onReject,
             )
         }
+    }
+}
+
+/**
+ * Plain mode body: the request (if any), the action as a sentence, and a Details toggle
+ * that reveals the tool id and the raw arguments.
+ */
+@Composable
+private fun PlainBody(model: HitlConfirmationModel, sentence: String, risk: Risk) {
+    var details by remember { mutableStateOf(false) }
+    model.request?.let { request ->
+        RequestBlock(request = request, risk = risk)
+        HorizontalDivider(color = KnotworkTheme.extended.divider)
+    }
+    Text(
+        text = sentence,
+        style = KnotworkTextStyles.BodyBase,
+        color = MaterialTheme.colorScheme.onSurface,
+    )
+    KnotworkTextButton(
+        text = stringResource(
+            if (details) R.string.knotwork_hitl_details_hide else R.string.knotwork_hitl_details_show,
+        ),
+        onClick = { details = !details },
+    )
+    if (details) {
+        ToolNameRow(toolName = model.toolName, described = false)
+        JsonArgsBlock(arguments = model.arguments)
+    }
+}
+
+/** Plain mode buttons: Cancel, Change (when offered) and the primary action. */
+@Composable
+private fun PlainButtonRow(
+    model: HitlConfirmationModel,
+    allowOnceEnabled: Boolean,
+    onAllowOnce: () -> Unit,
+    onReject: () -> Unit,
+) {
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(space = KnotworkTheme.spacing.sp2, alignment = Alignment.End),
+        verticalArrangement = Arrangement.spacedBy(KnotworkTheme.spacing.sp1),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        KnotworkSecondaryButton(
+            text = stringResource(R.string.knotwork_hitl_action_cancel),
+            onClick = onReject,
+            destructive = true,
+        )
+        model.onChange?.let { change ->
+            KnotworkTextButton(text = stringResource(R.string.knotwork_hitl_action_change), onClick = change)
+        }
+        KnotworkPrimaryButton(
+            text = model.primaryLabel ?: stringResource(R.string.knotwork_hitl_action_allow_once),
+            onClick = onAllowOnce,
+            enabled = allowOnceEnabled,
+        )
     }
 }
 

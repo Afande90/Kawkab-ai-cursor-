@@ -788,6 +788,7 @@ Only Kotlin files appear inside the generated blocks.
     - `SkillJsonSerializer.kt` - Two-way `Skill` ↔ schema-versioned JSON (org.json). Omits `toolAllowlist` when null so "all tools" round-trips back to null; never throws (maps errors to `SkillImportOutcome.Failure`).
   - `text/` - Pure-Kotlin text helpers.
     - `ApprovalRequestText.kt` - Ceilings for the request an approval shows next to the tool call: the text a run was asked to do, and the name of the trigger that asked it.
+    - `ClockText.kt` - A time of day the way the owner reads it (task 23i): "6:00 AM" in English, "٦:٠٠ ص" in Arabic, never "6:0".
     - `ImportedText.kt` - Ceilings for text the app quotes back from a file the user picked — an import error, a dialog line.
     - `JsonNesting.kt` - Bounds how deeply an imported JSON document may nest before it reaches the parser.
     - `TitleText.kt` - `String.collapseWhitespace()` + `String.toSingleLineTitle(maxLength, ellipsis)`, shared by chat auto-rename and share-session naming so their single-line-title logic cannot drift.
@@ -938,6 +939,7 @@ Only Kotlin files appear inside the generated blocks.
   - `DurationParser.kt` - Parses a short duration phrase into seconds.
   - `HabitRoutineEngine.kt` - Groups recent actions into half-hour sessions and suggests a sequence that comes back at least `detect`'s minimum number of times in the same part of the day.
   - `HandsDispatch.kt` - Runs one recorded step on `PhoneHands`.
+  - `LocalUndo.kt` - The Undo chip after a local action (task 23i): an alarm, a timer, an opened app or a calendar event ran without asking, so the owner can take it back for `WINDOW_MS`.
   - `MacroRecording.kt` - Turns a fully successful history into macro steps.
   - `MacroStore.kt` - In-memory macros.
   - `PhoneHands.kt` - What the phone can do for the five core commands, plus a screen read and a guarded tap.
@@ -994,6 +996,7 @@ Only Kotlin files appear inside the generated blocks.
         - `ChatArchiveViewModel.kt` - Hilt ViewModel over `getArchivedSessionsFlow()`. Owns restore / delete-forever (behind a confirmation) / export, and derives the "run finished after archiving" marker from `updatedAt > archivedAt`.
       - `ChatExportShare.kt` - The single `ACTION_SEND` chooser builder for an exported chat (+ the `application/json` MIME constant), shared by the chat top bar and the archive row so both hand the document over identically.
       - `home/` - Redesigned Knotwork chat home. Wired to `CHAT_TAB` via `AppNavGraph`.
+        - `ActionSentence.kt` - The confirmation card in the owner's words (task 23i): "Call Ahmad?", "Send to Omar: I'm late", instead of `call_phone` and raw JSON.
         - `ChatHomeAttachmentDelegate.kt` - Image-attachment delegate: source chooser, ingest/preview, full-screen viewer (`composer.attachment` / `sourceChooserVisible` / `imageViewer`), `attachmentErrorEvents`, camera captures through `ImageCaptureStore` (`newCaptureUri` / `onCaptureResult`), and the multimodal `preflightBlockReason()` the send path consults (decided by `CheckImageAttachmentUseCase`).
         - `ChatHomeConsoleDelegate.kt` - Console-pane delegate. Owns the live `ConsoleLog` / `PipelineTrace` / `NodeIO` aggregation, persisted-trace replay (`replayTrace`), per-run caches (`consoleClearBaseline`, replay baseline, root/nested event buckets), the console intent surface (open / snap / search / filter / tab / clear) and `consoleSnackbarEvents`. Writes only the `console` slice. Hosts the `withConsoleProjectionsCleared` pure transformer composed into the VM's atomic new-run reset.
         - `ChatHomeConsoleMapping.kt` - Pure-Kotlin mappers from the domain orchestrator output to the catalog console-pane row models: `ConsoleEvent → ConsoleLine`, `TraceStep → ConsoleTraceSpan`, `NodeIO → List<ConsoleVarRow>`; replay re-hydrators from persisted `RunTraceRecord`s and the seq-keyed replay/live merge (`mergeConsoleEventsBySeq`).
@@ -1015,6 +1018,7 @@ Only Kotlin files appear inside the generated blocks.
         - `ConsoleCopyPayloads.kt` - Pure clipboard-payload formatting for the console: one log line, all filtered lines, one Vars row (whole value, never abbreviated), one Traces span, and the `Copy all` payload for the tab actually on screen. Stateless, so it sits beside the delegate rather than on it; the clipboard write itself stays in the Composable that owns `LocalClipboardManager`.
         - `ContactChoicePrompt.kt` - Tappable contact chips for a call or text waiting on a pick (task 23j).
         - `ContentReportIssueUrl.kt` - Builds the URL that opens the public issue tracker with a report prefilled.
+        - `LocalUndoChip.kt` - The Undo chip shown for 10 seconds after a local action (task 23i).
         - `ReportResponseDialog.kt` - Stateless dialog collecting a flag against a model-authored message (category chips + note), plus `contentReportIssueUrl` — the prefilled `issues/new` URL, truncated to a browser-safe length after percent-encoding. No delivery of its own: the screen offers clipboard or issue tracker.
         - `RunDisplay.kt` - How the run strip writes a run: numbers grouped and rounded for reading — seeds and windows in groups, temperatures as recorded, durations as a person estimates them — with, beside it in this file, the projection of a run's description onto the strip and the rule for when a check asks first.
         - `TurnWatchdog.kt` - Ends a chat turn that has shown no progress for `timeoutMs` (tasks 23h and 23j).

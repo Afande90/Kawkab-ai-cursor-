@@ -57,6 +57,7 @@ enum class ToolApprovalPolicy(
      */
     fun requiresApproval(risk: ToolRisk): Boolean = when (this) {
         AllCalls -> true
+        // LOCAL stays on the phone and can be undone, so it does not ask (task 23i).
         SensitiveOrDestructive ->
             risk == ToolRisk.SENSITIVE || risk == ToolRisk.DESTRUCTIVE || risk == ToolRisk.OUTBOUND
         NeverPrompt -> risk == ToolRisk.DESTRUCTIVE || risk == ToolRisk.OUTBOUND

@@ -90,6 +90,19 @@ class ChatHomeHitlDelegate(
     }
 
     /**
+     * Change on a plain confirmation card: the call is declined and its command goes back into
+     * the composer, so the owner edits it and sends again (task 23i).
+     */
+    fun changeTool() {
+        val pending = state.value.pending.tool ?: return
+        val command = ActionSentence.editableCommand(pending.toolName, ActionSentence.arguments(pending.arguments))
+        rejectTool()
+        if (command.isNotEmpty()) {
+            state.update { it.copy(composer = it.composer.copy(value = command)) }
+        }
+    }
+
+    /**
      * Rejects the tool the orchestrator is paused on. Persists a SYSTEM chat row
      * recording the denial so the user can see in-thread what happened. No-op
      * when no tool is pending.
@@ -428,7 +441,7 @@ class ChatHomeHitlDelegate(
  * thin adapter at the presentation boundary is the cleanest cut.
  */
 internal fun ToolRisk.toCatalogRisk(): Risk = when (this) {
-    ToolRisk.READ_ONLY -> Risk.Readonly
+    ToolRisk.READ_ONLY, ToolRisk.LOCAL -> Risk.Readonly
     ToolRisk.SENSITIVE -> Risk.Sensitive
     ToolRisk.DESTRUCTIVE -> Risk.Destructive
     ToolRisk.OUTBOUND -> Risk.Outbound

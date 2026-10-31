@@ -52,6 +52,10 @@
 
     <!-- Reject CTA — destructive secondary button on every variant. -->
     <string name="knotwork_hitl_action_reject">Reject</string>
+    <string name="knotwork_hitl_action_cancel">Cancel</string>
+    <string name="knotwork_hitl_action_change">Change</string>
+    <string name="knotwork_hitl_details_show">Details</string>
+    <string name="knotwork_hitl_details_hide">Hide details</string>
     <!-- Allow-once primary CTA — labelled identically for all risk tiers. -->
     <string name="knotwork_hitl_action_allow_once">Allow once</string>
     <!-- Always-allow text button — Sensitive variant only. -->

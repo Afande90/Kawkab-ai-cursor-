@@ -91,6 +91,7 @@ private fun generatingLoaderLabel(visual: ChatHomeUiState.Generating, fixtures: 
 @Suppress("LongMethod")
 fun ChatHomeScreenState.toViewState(
     fixtures: ChatHomeFixtures = ChatHomeFixtures.forTesting(),
+    onHitlChange: (() -> Unit)? = null,
     resolveText: (UiText) -> String = ::stubResolveText,
 ): ChatHomeViewState {
     val threadTitle = thread.title
@@ -160,7 +161,10 @@ fun ChatHomeScreenState.toViewState(
             threadTitle = threadTitle,
             modelName = modelName,
             messages =
-            visibleMessages + (pending.tool?.let { liveHitlRow(modelName, it) } ?: hitlRow(modelName, visual.risk)),
+            visibleMessages + (
+                pending.tool?.let { liveHitlRow(modelName, it, resolveText, onHitlChange) }
+                    ?: hitlRow(modelName, visual.risk)
+                ),
             composerValue = composerValue,
             pendingTypedConfirm = composer.typedConfirm,
             pipelineName = resolvedPipelineName,
@@ -496,8 +500,16 @@ internal fun hitlRow(modelName: String, risk: Risk): ChatHomeMessageRow {
  * string as prose below — which reads as a rendering fault rather than as a
  * missing explanation. The card omits the line when the summary is blank.
  */
-internal fun liveHitlRow(modelName: String, pending: HitlPending): ChatHomeMessageRow {
+internal fun liveHitlRow(
+    modelName: String,
+    pending: HitlPending,
+    resolveText: ((UiText) -> String)? = null,
+    onChange: (() -> Unit)? = null,
+): ChatHomeMessageRow {
     val argumentsMap = parseHitlArguments(pending.arguments)
+    // The action in the owner's words, with the raw arguments behind Details (task 23i).
+    val plainArgs = ActionSentence.arguments(pending.arguments)
+    val sentence = resolveText?.let { resolve -> ActionSentence.of(pending.toolName, plainArgs)?.let(resolve) }
     val timestamp = SimpleDateFormat(HITL_TIMESTAMP_PATTERN, Locale.getDefault())
         .format(Date(System.currentTimeMillis()))
     return ChatHomeMessageRow(
@@ -513,6 +525,11 @@ internal fun liveHitlRow(modelName: String, pending: HitlPending): ChatHomeMessa
                 arguments = argumentsMap,
                 timestamp = timestamp,
                 request = pending.context?.toHitlRequestContext(),
+                plainSentence = sentence,
+                primaryLabel = sentence?.let {
+                    ActionSentence.primary(pending.toolName)?.let { label -> resolveText(label) }
+                },
+                onChange = onChange.takeIf { sentence != null },
             ),
         ),
         metadata = ChatMetadata(timestamp = timestamp, model = modelName),

@@ -28,6 +28,12 @@ import app.kawkab.design.components.chips.Risk
  * @property timestamp pre-formatted timestamp shown next to the risk pill.
  * @property request what the run was asked to do, shown above the call;
  * `null` draws the card without the block.
+ * @property plainSentence the action in the owner's words ("Call Ahmad?"). When set, the
+ * card shows this sentence instead of the tool id, keeps the tool id and the arguments behind
+ * a Details toggle, and labels its buttons Cancel, Change and [primaryLabel]. `null` keeps
+ * the developer card.
+ * @property primaryLabel the primary button in plain mode, such as "Send" or "Call".
+ * @property onChange called by Change in plain mode; `null` hides Change.
  */
 data class HitlConfirmationModel(
     val risk: Risk,
@@ -36,4 +42,7 @@ data class HitlConfirmationModel(
     val arguments: Map<String, String>,
     val timestamp: String,
     val request: HitlRequestContext? = null,
+    val plainSentence: String? = null,
+    val primaryLabel: String? = null,
+    val onChange: (() -> Unit)? = null,
 )

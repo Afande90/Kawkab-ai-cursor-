@@ -20,6 +20,14 @@ enum class ToolRisk {
     READ_ONLY,
 
     /**
+     * An action that stays on the phone and can be undone: an alarm, a timer, opening an app,
+     * or a calendar event (task 23i). It never asks under the default policy; an Undo chip shows
+     * for 10 seconds instead, and the action is in the activity log. Only
+     * [ToolApprovalPolicy.AllCalls] asks first.
+     */
+    LOCAL,
+
+    /**
      * Tool whose effects are reversible or limited in scope but still
      * user-observable (e.g. scheduling a background task, delegating to a cloud
      * model, writing to local app state). Prompts under the default policy;
@@ -78,17 +86,17 @@ object RegisteredTools {
         RegisteredTool("append_file", ToolRisk.SENSITIVE, outboundCapable = false),
         RegisteredTool("delete_file", ToolRisk.OUTBOUND, outboundCapable = true),
         RegisteredTool("http_request", ToolRisk.OUTBOUND, outboundCapable = true),
-        RegisteredTool("add_calendar_event", ToolRisk.SENSITIVE, outboundCapable = false),
+        RegisteredTool("add_calendar_event", ToolRisk.LOCAL, outboundCapable = false),
         RegisteredTool("call_phone", ToolRisk.OUTBOUND, outboundCapable = true),
         RegisteredTool("detect_habits", ToolRisk.READ_ONLY, outboundCapable = false),
         RegisteredTool("macro_send", ToolRisk.OUTBOUND, outboundCapable = true),
-        RegisteredTool("open_app", ToolRisk.SENSITIVE, outboundCapable = false),
+        RegisteredTool("open_app", ToolRisk.LOCAL, outboundCapable = false),
         RegisteredTool("read_screen", ToolRisk.READ_ONLY, outboundCapable = false),
         RegisteredTool("record_macro", ToolRisk.SENSITIVE, outboundCapable = false),
         RegisteredTool("send_message", ToolRisk.OUTBOUND, outboundCapable = true),
         RegisteredTool("send_sms", ToolRisk.OUTBOUND, outboundCapable = true),
-        RegisteredTool("set_alarm", ToolRisk.SENSITIVE, outboundCapable = false),
-        RegisteredTool("set_timer", ToolRisk.SENSITIVE, outboundCapable = false),
+        RegisteredTool("set_alarm", ToolRisk.LOCAL, outboundCapable = false),
+        RegisteredTool("set_timer", ToolRisk.LOCAL, outboundCapable = false),
         RegisteredTool("submit_tap", ToolRisk.OUTBOUND, outboundCapable = true),
     )
 

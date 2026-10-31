@@ -1,5 +1,5 @@
 tool_name,risk,outbound_capable
-add_calendar_event,SENSITIVE,false
+add_calendar_event,LOCAL,false
 append_file,SENSITIVE,false
 call_phone,OUTBOUND,true
 delegate_task,SENSITIVE,false
@@ -10,7 +10,7 @@ find_files,READ_ONLY,false
 http_request,OUTBOUND,true
 list_files,READ_ONLY,false
 macro_send,OUTBOUND,true
-open_app,SENSITIVE,false
+open_app,LOCAL,false
 read_file,READ_ONLY,false
 read_screen,READ_ONLY,false
 record_macro,SENSITIVE,false
@@ -18,7 +18,7 @@ schedule_task,SENSITIVE,false
 search_tool,READ_ONLY,false
 send_message,OUTBOUND,true
 send_sms,OUTBOUND,true
-set_alarm,SENSITIVE,false
-set_timer,SENSITIVE,false
+set_alarm,LOCAL,false
+set_timer,LOCAL,false
 submit_tap,OUTBOUND,true
 write_file,SENSITIVE,false

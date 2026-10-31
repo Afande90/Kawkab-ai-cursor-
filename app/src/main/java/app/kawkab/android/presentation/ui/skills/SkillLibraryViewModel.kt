@@ -360,7 +360,7 @@ private fun NodeContextConfig.toggle(key: String): NodeContextConfig = when (key
 
 /** Maps a domain [ToolRisk] to the catalog [Risk] tier rendered in the picker. */
 private fun ToolRisk.toCatalogRisk(): Risk = when (this) {
-    ToolRisk.READ_ONLY -> Risk.Readonly
+    ToolRisk.READ_ONLY, ToolRisk.LOCAL -> Risk.Readonly
     ToolRisk.SENSITIVE -> Risk.Sensitive
     ToolRisk.DESTRUCTIVE -> Risk.Destructive
     ToolRisk.OUTBOUND -> Risk.Outbound
