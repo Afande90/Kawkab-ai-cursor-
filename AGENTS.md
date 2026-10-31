@@ -326,6 +326,28 @@ These come from the owner's first install of `m1.5`.
     - Add an owner-started "Check for updates" button on the About screen. It reads the latest release, offers the download, and never checks automatically (spec §0.2).
 26. **Close out:** green GitHub Check, `docs/owner-checks/M1.6.md`, tag `m1.6`.
 
+### M1.7: Hands-free voice (owner's priority, 31 Oct 2026)
+
+The owner wants to talk to Kawkab smoothly, without pressing anything. This pulls the core of spec §7 and M4 forward. Do it right after `m1.6` is tagged.
+
+27. **Wake word "Kawkab".**
+    - sherpa-onnx keyword spotting with "Kawkab" / "كوكب" as the keyword, plus Silero VAD, inside a low-power foreground service with a visible notification. On/off lives in Settings, and it is on after the owner enables it once in setup.
+    - Audio never leaves the phone and is never stored.
+    - Hard negatives from spec §12.3: "Kawab", "Karkab", "Kawkaba", "كوكبة", "كباب".
+    - Report recall, false wakes per hour and battery use per hour on the self-test.
+28. **Continuous conversation.**
+    - After the wake word: an earcon, then listen. End of turn is detected automatically (smart-turn-v3 if licence-verified, otherwise a VAD silence timeout of about 700 ms). Offline speech-to-text, then Kawkab replies by voice, sentence by sentence, then listens again for a follow-up for about 8 s without the wake word. Silence ends the conversation.
+    - Barge-in: speaking over Kawkab stops its speech.
+    - Speech-to-text: sherpa-onnx Whisper (multilingual, size chosen by measurement), falling back to Android offline `SpeechRecognizer`.
+    - Text-to-speech: an offline Arabic and English voice through sherpa-onnx (licence-checked Piper or Kokoro), falling back to Android `TextToSpeech`.
+29. **Hands-free actions, within the safety rules.**
+    - Local actions (alarm, timer, open app, calendar) just happen by voice, with a spoken confirmation and an "undo" voice command for 10 s.
+    - Outbound actions (call, SMS, WhatsApp): Kawkab reads the action aloud ("Call Abdalla Mubadala?").
+      - The default is a tap on the card.
+      - The owner may enable "confirm by voice" in Settings, behind the warning (spec §0.4.3). It is accepted only with the screen on and unlocked; a "yes" with the phone locked never sends.
+    - Contact choices are read aloud as a short numbered list, and the owner can answer by voice ("the second one", "Mubadala").
+30. **Close out:** green Check, `docs/owner-checks/M1.7.md` (say "Kawkab, set an alarm for 6"; "Kawkab, call Abdalla Mubadala"), tag `m1.7`.
+
 ### Later milestones
 - **M2 to M8:** split each milestone in spec §13 into tasks of the same size as above.
 - Write the new tasks into this list in a pull request before starting them.
