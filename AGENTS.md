@@ -284,6 +284,27 @@ These come from the owner's first install of `m1.5`.
       - Update `safety/tool_classification.csv` and its test.
     - **Human-readable cards.** The confirmation card shows `set_alarm` and raw JSON (`{"hour": "6",…}`). Show a plain sentence in the owner's language instead ("Call Ahmad?", "Send to Omar: I'm late"), with the raw arguments behind a "Details" toggle. Use the owner's mockup card layout: Send, Change, Cancel.
     - **Time formatting.** The reply said "Alarm set for 6:0." Format times properly, with the locale and AM/PM ("6:00 AM", "٦:٠٠ ص").
+23j. **Owner phone, 31 Oct: the call flow failed.** Transcript, in order:
+    1. "call abdalla" showed an Outbound card. After Allow, the reply listed 6 contacts as plain text, with duplicates (the same number written twice in different formats).
+    2. The owner answered "the mubadala". The model echoed "the mubadala".
+    3. "abdalla mubadala" got "What would you like to do with him?", so the call intent was lost.
+    4. A follow-up containing "him" got "Which 'him'?" with 11 contacts whose names contain "him" (Ibrahim, Hashim), including the owner's own number.
+    5. "call abdalla mubadala" showed an Outbound card. After Allow: "Missing permission: This needs a permission that is still off. Grant / Phone access". Tapping Grant repeatedly did nothing.
+    6. Several turns sat on "Generating…".
+
+    Fix all of these:
+    - **Disambiguation.** Show contact matches as **tappable chips**: name, the last 4 digits and a label, at most 5, with duplicates merged by normalised E.164 number. Keep the pending intent (call or SMS) until the owner picks, cancels or 2 minutes pass. A follow-up like "the mubadala" or a chip tap completes the original command; it never goes to free chat.
+    - **Matching.** Match whole words and the start of tokens, never substrings inside other words ("him" must not match "Ibrahim"). Pronouns (him, her, هو, هي) refer to the last resolved contact, or ask. Never list the owner's own number. Never dump phone numbers in plain text.
+    - **Permission card.** If a runtime permission was denied permanently, `shouldShowRequestPermissionRationale` is false after a denial and the request returns instantly. Then Grant must open App info → Permissions for Kawkab (`ACTION_APPLICATION_DETAILS_SETTINGS`) with a one-line instruction. After returning, re-check and resume the pending action automatically.
+    - **Calls without the permission.** If `CALL_PHONE` is not granted, fall back to `ACTION_DIAL` with the number filled in. That needs no permission and the owner presses call. Never fail with only an error.
+    - **No silent hangs.** This reinforces 23h: every turn ends within 60 s in a reply, a card or an error with a Retry button.
+    - **Instrumented tests:** duplicate contacts collapse; "him" does not match "Ibrahim"; a follow-up chip completes the call; denied `CALL_PHONE` falls back to the dialer.
+23k. **Owner phone, 31 Oct: a long-press of the power button did not open Kawkab.**
+    - Check on a Nothing OS 4 (Android 16) setup.
+    - Phone access must show whether Kawkab really holds the assistant role (`RoleManager.isRoleHeld(ROLE_ASSISTANT)`) and, if not, open the right screen (`ACTION_VOICE_INPUT_SETTINGS` or the default-apps screen).
+    - It must also tell the owner that the power button itself must be set to "Digital assistant" (Settings → System → Gestures or Buttons → Press and hold power button). Nothing OS may default it to the power menu.
+    - Confirm `VoiceInteractionService` / `VoiceInteractionSessionService` are declared correctly, and that the session shows the panel.
+    - Add a Quick Settings tile and a home-screen shortcut, "Ask Kawkab", as fallbacks that always work.
 24. **Leftover upstream logo.** Also replace the knot icon on the empty-chat header. The onboarding header still shows the old knot icon next to "Kawkab". Replace every user-visible upstream logo and icon with the planet mark. Extend the branding test to the onboarding header drawable.
 25. **Onboarding model sizes.** The scenario cards say "3.66 GB model" even on phones that will get E2B. Show the size of the model this phone will actually download.
 25b. **Install updates over the old version.** Today every CI build is signed with a new temporary debug key. So the owner must uninstall the app, which deletes the 3.6 GB model and his data, before each update.
