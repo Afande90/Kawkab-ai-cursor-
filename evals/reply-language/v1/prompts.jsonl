@@ -1,0 +1,20 @@
+{"id": "lang-v1-001", "expect": "sd", "text": "السلام عليكم، إنت منو؟"}
+{"id": "lang-v1-002", "expect": "sd", "text": "يا زول شنو الجو الليلة؟"}
+{"id": "lang-v1-003", "expect": "sd", "text": "عايز أعرف الساعة كم هسي"}
+{"id": "lang-v1-004", "expect": "sd", "text": "داير أمشي السوق بكرة، ذكرني"}
+{"id": "lang-v1-005", "expect": "sd", "text": "ياخ الموبايل دا بطيء شديد"}
+{"id": "lang-v1-006", "expect": "sd", "text": "كدة أحسن ولا شنو رأيك؟"}
+{"id": "lang-v1-007", "expect": "sd", "text": "وين ألقى إعدادات الرسائل؟"}
+{"id": "lang-v1-008", "expect": "sd", "text": "قول لي حاجة تضحك ساي"}
+{"id": "lang-v1-009", "expect": "msa", "text": "مرحباً، كيف حالك اليوم؟"}
+{"id": "lang-v1-010", "expect": "msa", "text": "ما هي عاصمة السودان؟"}
+{"id": "lang-v1-011", "expect": "msa", "text": "أريد أن أعرف موعد الاجتماع غداً"}
+{"id": "lang-v1-012", "expect": "msa", "text": "هل يمكنك أن تشرح لي هذه الرسالة؟"}
+{"id": "lang-v1-013", "expect": "msa", "text": "ما الذي تستطيع فعله على هذا الهاتف؟"}
+{"id": "lang-v1-014", "expect": "msa", "text": "من فضلك لخص آخر رسالة"}
+{"id": "lang-v1-015", "expect": "en", "text": "hello, who are you?"}
+{"id": "lang-v1-016", "expect": "en", "text": "what can you do offline?"}
+{"id": "lang-v1-017", "expect": "en", "text": "remind me what I said about lunch"}
+{"id": "lang-v1-018", "expect": "en", "text": "is my phone running slow today?"}
+{"id": "lang-v1-019", "expect": "en", "text": "tell me something short and funny"}
+{"id": "lang-v1-020", "expect": "en", "text": "how do I turn on the accessibility service?"}
