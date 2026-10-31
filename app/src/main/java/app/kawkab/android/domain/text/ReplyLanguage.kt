@@ -39,7 +39,7 @@ enum class ReplyLanguage {
             val colon = line.indexOfFirst { it == ':' || it == '：' }
             if (colon < 0 || colon > LABEL_MAX) return null
             val name = line.substring(0, colon).replace("*", "").trim().lowercase()
-            return if (name in labels) line.substring(colon + 1).trim() else null
+            return if (name in labels) line.substring(colon + 1).trim().removePrefix("**").trim() else null
         }
 
         /**
@@ -50,8 +50,10 @@ enum class ReplyLanguage {
             val arabic = arabicLetter.findAll(text).count()
             val latin = latinLetter.findAll(text).count()
             if (arabic <= latin) return ENGLISH
-            val words = text.split(wordSplit).map { it.removePrefix("و") }
-            return if (words.any { it in sudaneseWords }) SUDANESE else MSA
+            // A word may carry the conjunction و ("and"), so it is checked with and without it.
+            val words = text.split(wordSplit)
+            val sudanese = words.any { it in sudaneseWords || it.removePrefix("و") in sudaneseWords }
+            return if (sudanese) SUDANESE else MSA
         }
 
         /**
