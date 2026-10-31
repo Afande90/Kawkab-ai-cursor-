@@ -375,3 +375,13 @@ Grant asks Android first. When Android will no longer show its dialog (a denial 
 Without CALL_PHONE, a call opens the dialer with the number (`ACTION_DIAL`, no permission needed), and the owner presses call.
 
 A turn that shows no progress for 60 seconds while nothing waits for the owner is stopped with "No reply for 60 seconds" and the Retry tile. A waiting tap card is not a hang. This also covers task 23h's "no silent hangs" rule.
+
+## 2026-10-31 — stray quotes and tool names printed as text (task 23h)
+
+The fast path strips emoji, surrounding quotes (`" ' “ ” « » ‘ ’ „` and backtick) and trailing punctuation (`. ! ? ، ؟ , ؛ ; …`) before matching. Stripping only removes characters around a command, so nothing that matched before stops matching. The frozen v1 and v2 sets were not edited, and their score tests still pass with the same numbers.
+
+A reply from a chat-facing LITE_RT node is read for a tool call before it is shown: Gemma 4's own markup (`call:name{key:<escape>value<escape>}`), a fenced or plain JSON object (`tool`/`name`/`function` with `arguments`/`args`/`parameters`), or `name(key=value)`. Only names in the registered tool table count. A call runs through `ToolInvocationGate`, so an outbound tool still shows its tap card; its result becomes the reply. A reply that is only a tool name, or names one without arguments, gets one re-ask for the JSON call; if the second reply is not a call, the owner reads "I couldn't do that, try: …" with a command for that tool. The re-ask is a strict prompt, not grammar-constrained decoding: LiteRT-LM 0.17.1 exposes no grammar option.
+
+Skill nodes are left alone: a skill parses its own output against its tool allowlist, and reading it here would bypass that list (the golden traces caught this).
+
+Every turn ends within 60 seconds in a reply, a card or an error with Retry: the turn watchdog from task 23j.
