@@ -430,6 +430,7 @@ Only Kotlin files appear inside the generated blocks.
     - `ApiKeyRepositoryTest.kt` - Unit tests for the definitions `ApiKeyRepository` carries beside its accessors: `requiredCredential` and `isConfigured`.
   - `safety/` - Unit tests for the tap guard, the denylist, the activity log, macro replay, and habit detection.
     - `HandsSafetyTest.kt` - Tap guard, denylist, activity log, macro replay, and habit detection.
+    - `LazyScreenCheckTest.kt` - Task 23d: the screen text is read lazily and throttled, and the full denylist check still runs immediately before every action.
     - `M1GateTest.kt` - Milestone gates for outbound confirmation, the three denylist layers, and the activity log.
   - `services/` - Tests for the domain service interfaces and their pure helpers.
     - `ChatHistoryCompressionCoordinatorTest.kt` - Unit tests for `ChatHistoryCompressionCoordinator`.
