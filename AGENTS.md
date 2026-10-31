@@ -28,6 +28,19 @@ This repository is dedicated to Kawkab. Work on `main`.
    - Freeze eval data before any tuning (spec §12.3).
 6. **Emulator tests run in GitHub Actions, not in your VM.** Your VM has no emulator, so write the emulator tests and the workflow, and let CI run them. If CI results aren't visible to you, say so in the pull request rather than claiming a pass.
 
+## When the builder runs on the owner's laptop
+
+This is a ThinkPad X280: 8 GB RAM, 4 cores, no GPU. Probably Windows.
+
+- **Gradle memory.** Do not commit memory settings. Set Gradle's memory in the user-level `~/.gradle/gradle.properties`: `org.gradle.jvmargs=-Xmx3g -XX:MaxMetaspaceSize=768m`, `org.gradle.workers.max=2`, `kotlin.daemon.jvmargs=-Xmx1536m`.
+- **Local checks.**
+  - Run only the targeted unit tests for the task (`:app:testFossDebugUnitTest --tests ...`), plus `ktlintCheck` and `detekt` on the changed module.
+  - Never run the emulator or the full `check` locally.
+  - Push, and let GitHub Actions run the full Check and the instrumented emulator tests. Read the result with `gh run list` and `gh run view --log-failed`.
+  - A task is done only when the GitHub Check is green.
+- **Android SDK.** If it is missing, install the command-line tools into `%LOCALAPPDATA%\Android\Sdk` and accept the licences. Write `local.properties` with `sdk.dir`, and never commit that file.
+- **Never create a `CLAUDE.md` or any file containing the builder's own name or vendor.** The compliance scan (spec §0.1.3) would fail the build. These instructions live only in AGENTS.md.
+
 ## Hard rules (spec §0)
 
 - **No removed hosted vendor, ever.** Kawkab must never contain or call that vendor in any form: no key, no SDK, no provider entry, no login. Remove Knotwork's copy of that provider in M0.
