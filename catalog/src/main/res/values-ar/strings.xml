@@ -248,6 +248,7 @@
     <string name="knotwork_tools_mcp_shadowed_by_server">لا تُعرض على الوكيل: %1$s، المذكور أعلاه، فيه أداة بهذا الاسم.</string>
     <string name="knotwork_tools_section_mcp">خوادم MCP</string>
     <string name="knotwork_tools_pill_readonly">للقراءة فقط</string>
+    <string name="knotwork_tools_pill_local">على الهاتف</string>
     <string name="knotwork_tools_pill_sensitive">حسّاس</string>
     <string name="knotwork_tools_pill_destructive">مدمّر</string>
     <string name="knotwork_tools_pill_outbound">صادر</string>

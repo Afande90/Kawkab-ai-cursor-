@@ -368,6 +368,7 @@
     <string name="knotwork_tools_section_mcp">MCP SERVERS</string>
     <!-- Outline pill label for a Read-only tool. -->
     <string name="knotwork_tools_pill_readonly">Read only</string>
+    <string name="knotwork_tools_pill_local">On the phone</string>
     <!-- Outline pill label for a Sensitive tool. -->
     <string name="knotwork_tools_pill_sensitive">Sensitive</string>
     <!-- Outline pill label for a Destructive tool. -->

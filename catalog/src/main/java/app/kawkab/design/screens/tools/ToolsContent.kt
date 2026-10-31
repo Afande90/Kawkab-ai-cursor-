@@ -532,6 +532,7 @@ internal fun riskLabelRes(risk: BuiltInToolRisk): Int = when (risk) {
     BuiltInToolRisk.Sensitive -> R.string.knotwork_tools_pill_sensitive
     BuiltInToolRisk.Destructive -> R.string.knotwork_tools_pill_destructive
     BuiltInToolRisk.Outbound -> R.string.knotwork_tools_pill_outbound
+    BuiltInToolRisk.Local -> R.string.knotwork_tools_pill_local
 }
 
 @Composable
@@ -567,6 +568,7 @@ private fun riskAccent(risk: BuiltInToolRisk): Color = when (risk) {
     BuiltInToolRisk.Sensitive -> KnotworkTheme.extended.riskSensitive
     BuiltInToolRisk.Destructive -> KnotworkTheme.extended.riskDestructive
     BuiltInToolRisk.Outbound -> KnotworkTheme.extended.riskSensitive
+    BuiltInToolRisk.Local -> KnotworkTheme.extended.riskReadonly
 }
 
 /**

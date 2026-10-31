@@ -74,7 +74,8 @@ internal object ToolRiskResolution {
 
     /** Maps a domain risk level onto the catalog's UI enum. */
     fun ToolRisk.toUi(): BuiltInToolRisk = when (this) {
-        ToolRisk.READ_ONLY, ToolRisk.LOCAL -> BuiltInToolRisk.ReadOnly
+        ToolRisk.READ_ONLY -> BuiltInToolRisk.ReadOnly
+        ToolRisk.LOCAL -> BuiltInToolRisk.Local
         ToolRisk.SENSITIVE -> BuiltInToolRisk.Sensitive
         ToolRisk.DESTRUCTIVE -> BuiltInToolRisk.Destructive
         ToolRisk.OUTBOUND -> BuiltInToolRisk.Outbound
@@ -86,5 +87,6 @@ internal object ToolRiskResolution {
         BuiltInToolRisk.Sensitive -> ToolRisk.SENSITIVE
         BuiltInToolRisk.Destructive -> ToolRisk.DESTRUCTIVE
         BuiltInToolRisk.Outbound -> ToolRisk.OUTBOUND
+        BuiltInToolRisk.Local -> ToolRisk.LOCAL
     }
 }
