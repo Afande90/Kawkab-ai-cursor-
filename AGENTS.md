@@ -257,6 +257,16 @@ These come from the owner's first install of `m1.5`.
     - **After the failure, the active model silently flipped back to Qwen3 1.7B.** A model the owner activated must stay active unless he changes it, or the app shows a clear notice saying why it switched.
     - **The Qwen3 1.7B preset is labelled "LiteRT"** but is a GGUF on llama.cpp. Label each model with its real runtime.
     - **Instrumented test on the CI emulator:** activate E2B on CPU, send "hello" and get a reply. Then switch to the GGUF model and back to E2B, and get a reply again.
+23g. **Owner phone, 31 Oct: replies are slow to start, and the language handling is wrong.**
+    - **Speed.** The benchmark gives a 1.1 s first token, but real Kawkab chats average 9.5 s over the last 3 runs (Gemma 4 E2B, CPU, 8.1 tok/s). The prefill of the system prompt and every tool schema dominates. Fix:
+      - Send only the tool schemas the routed intent needs; tier 1 needs none.
+      - Shorten the schemas.
+      - Prefill the fixed system prompt once and reuse its KV state between turns, using LiteRT-LM session or KV save and restore if available.
+      - Report the first-token time for "hello" and for a command. Target under 3 s on the owner's phone class.
+    - **Language.** Asked in Sudanese Arabic, the reply came in Modern Standard Arabic and in English, each prefixed with a label ("Modern Standard Arabic:", "English:").
+      - Rewrite the system prompt to "Reply once, in the same language and dialect the user wrote in. Never label the language. Never translate unless asked."
+      - Add a few-shot Sudanese example.
+      - Add a unit test on the prompt text and a v2-style eval of reply language on 20 frozen prompts (Sudanese, MSA, English).
 24. **Leftover upstream logo.** Also replace the knot icon on the empty-chat header. The onboarding header still shows the old knot icon next to "Kawkab". Replace every user-visible upstream logo and icon with the planet mark. Extend the branding test to the onboarding header drawable.
 25. **Onboarding model sizes.** The scenario cards say "3.66 GB model" even on phones that will get E2B. Show the size of the model this phone will actually download.
 25b. **Install updates over the old version.** Today every CI build is signed with a new temporary debug key. So the owner must uninstall the app, which deletes the 3.6 GB model and his data, before each update.
