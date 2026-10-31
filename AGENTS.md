@@ -39,7 +39,7 @@ This is a ThinkPad X280: 8 GB RAM, 4 cores, no GPU. Probably Windows.
   - Push, and let GitHub Actions run the full Check and the instrumented emulator tests. Read the result with `gh run list` and `gh run view --log-failed`.
   - A task is done only when the GitHub Check is green.
 - **Android SDK.** If it is missing, install the command-line tools into `%LOCALAPPDATA%\Android\Sdk` and accept the licences. Write `local.properties` with `sdk.dir`, and never commit that file.
-- **Never create a `CLAUDE.md` or any file containing the builder's own name or vendor.** The compliance scan (spec §0.1.3) would fail the build. These instructions live only in AGENTS.md.
+- **Never create an assistant-instructions file named after the coding tool (for example via an init command), and never write the coding tool's or its vendor's name into any file.** The compliance scan (spec §0.1.3) would fail the build. These instructions live only in AGENTS.md.
 
 ## Hard rules (spec §0)
 
