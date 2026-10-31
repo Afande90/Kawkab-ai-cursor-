@@ -598,6 +598,7 @@ Only Kotlin files appear inside the generated blocks.
   - `BrowserEditorContextConfigGuardTest.kt` - Drift guard for the browser pipeline editor's hand-maintained `defaultContextConfig(typeId)` JS function in `pipeline-editor.html`.
 - `hands/` - Tests for stored app maps: replay without a model, check the screen, and stop for an outbound tap.
   - `AppMapReplayTest.kt` - Stored app maps replay without a model, check the screen, and still stop for an outbound tap.
+  - `CallFlowTest.kt` - Task 23j: contact matching, the pending choice, the grant route and the dialer fallback.
 - `i18n/` - Arabic string-key coverage for the app and catalog resources.
   - `ArabicStringKeysTest.kt` - Fails when a default `strings.xml` key has no Arabic resource (spec §0.6).
   - `BrandNameTest.kt` - Fails when a user-visible string or a preset pipeline name says Knotwork.
@@ -648,6 +649,7 @@ Only Kotlin files appear inside the generated blocks.
         - `ConsoleCopyPayloadsTest.kt` - Unit tests for `ConsoleCopyPayloads`.
         - `ContentReportIssueUrlTest.kt` - Unit tests for `contentReportIssueUrl`.
         - `RunDisplayTest.kt` - The run strip's projection of a run: numbers written for reading, the line and fields per case, the promise's wording, the actions' reasons, and when a check asks first.
+        - `TurnWatchdogTest.kt` - Tasks 23h and 23j: a turn with no progress ends instead of hanging.
         - `VerificationProgressTest.kt` - `VerificationProgress`: the check's sheet frame by frame — the first repeated visit checking, calls advancing within a visit, a settled visit handing over to the next, the time left shrinking, and each ending leaving the visits it never reached as "not checked".
     - `common/` - Tests for the shared presentation helpers.
       - `ConnectionTestTest.kt` - Unit tests for `ConnectionTest`, the state of a Test connection row.

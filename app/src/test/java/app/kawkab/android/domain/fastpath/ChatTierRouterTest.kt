@@ -9,6 +9,8 @@ import app.kawkab.android.domain.models.NodeExecutionResult
 import app.kawkab.android.domain.models.NodeOutput
 import app.kawkab.android.domain.models.Role
 import app.kawkab.android.domain.repositories.ChatRepository
+import app.kawkab.android.hands.ContactChoice
+import app.kawkab.android.hands.ContactMatch
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -124,6 +126,49 @@ class ChatTierRouterTest {
         assertEquals("open_app", saved?.tool)
         assertEquals("Plants", saved?.args?.get("name"))
         coVerify(exactly = 0) { engine.generateResponseStream(any(), any(), any()) }
+    }
+
+    @Test
+    fun `a follow-up completes a pending call and never reaches the model`() = runTest {
+        val choice = ContactChoice()
+        val withChoice = HandsChatTierRouter(gate, chatRepository, engine, SkillCache(), choice)
+        choice.offer(
+            "call_phone",
+            emptyMap(),
+            listOf(ContactMatch("Abdalla Mubadala", "+249912345678"), ContactMatch("Abdalla Osman", "+249911000111")),
+            System.currentTimeMillis(),
+        )
+
+        val command = withChoice.command("the mubadala")
+
+        assertEquals("call_phone", command?.tool)
+        assertEquals("+249912345678", command?.args?.get("contact"))
+        stubGate("Called.")
+        val states = mutableListOf<AgentOrchestratorState>()
+        withChoice.runCommand("session", "the mubadala", command!!, states::add)
+        coVerify(exactly = 0) { engine.generateResponseStream(any(), any(), any()) }
+        assertTrue(states.last() is AgentOrchestratorState.Completed)
+        // A pick is not stored as a command to replay.
+        assertNull(withChoice.command("the mubadala"))
+    }
+
+    @Test
+    fun `an unclear line while a choice is pending asks again instead of chatting`() = runTest {
+        val choice = ContactChoice()
+        val withChoice = HandsChatTierRouter(gate, chatRepository, engine, SkillCache(), choice)
+        choice.offer(
+            "call_phone",
+            emptyMap(),
+            listOf(ContactMatch("A B", "1111"), ContactMatch("A C", "2222")),
+            System.currentTimeMillis(),
+        )
+
+        val command = withChoice.command("what time is it")!!
+        val states = mutableListOf<AgentOrchestratorState>()
+        withChoice.runCommand("session", "what time is it", command, states::add)
+
+        assertTrue((states.last() as AgentOrchestratorState.Completed).finalResponse.contains("Tap one of the names"))
+        coVerify(exactly = 0) { gate.dispatch(any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     private fun stubGate(output: String) {

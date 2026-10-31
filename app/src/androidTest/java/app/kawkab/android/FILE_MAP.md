@@ -37,6 +37,8 @@ Only Kotlin files appear inside the generated blocks.
 - `engine/` - Real-model engine tests that run only on a device with the model files pushed.
   - `ModelSwitchReplyTest.kt` - Task 23f on a real phone: Gemma 4 E2B on CPU answers "hello", the smallest GGUF brain loads and answers, and E2B answers again after the switch back.
 - `ExampleInstrumentedTest.kt` - Example instrumentation test.
+- `hands/` - Emulator tests for the phone hands: contact matching, the pending contact choice and the call fallback.
+  - `CallFlowInstrumentedTest.kt` - Task 23j on the emulator: duplicate contacts collapse, "him" does not match "Ibrahim", a follow-up chip completes the call, and a call without CALL_PHONE opens the dialer.
 - `presentation/` - Instrumented tests for the presentation layer.
   - `ui/` - Compose UI tests, one package per screen.
     - `chat/` - Compose tests for the chat surface.
