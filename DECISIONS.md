@@ -359,3 +359,19 @@ Tab switching: a `:benchmark` Macrobenchmark module measures frame timing for Ch
 A hand-written Baseline Profile (`app/src/main/baseline-prof.txt`) compiles the app's UI classes ahead of time on install. It is not a recorded profile; recording one needs a `baselineprofile` build type, which would add two more variants to every Check.
 
 New build dependencies for the benchmark only: `androidx.benchmark:benchmark-macro-junit4` 1.5.0 and `androidx.test.uiautomator` 2.4.0, verified by the androidx signing keys already trusted. Their transitive `com.squareup.wire`, `moshi` 1.13.0 and `okio` 2.10.0 are verified by the Block and Jesse Wilson keys; the latter key was added to the keyring.
+
+## 2026-10-31 — the call flow (task 23j)
+
+Contacts are matched in app code, not with SQL `LIKE '%name%'`. Every spoken word must be a whole name word or the start of one, after lower-casing, removing Arabic diacritics and tatweel, unifying أ إ آ to ا, ة to ه and ى to ي, and dropping a leading ال. So "him" no longer matches Ibrahim or Hashim, and "abdalla" still matches Abdallah. Every phone row is read, because a few hundred rows are cheap and Arabic spellings differ in SQL.
+
+Two spellings of one number are one choice: numbers are compared by their last 9 digits, which covers `+249`, `00249` and a leading `0` without a phone-number library. The owner's own numbers come from the profile card and are never offered. At most 5 choices are shown, as chips with the name, the last 4 digits and the phone label. The reply sentence never lists a number.
+
+The pending call or text lives in a singleton for 2 minutes. While it waits, the next line is read as a pick first: a name ("the mubadala"), an ordinal ("the second one", "التاني"), the last 4 digits (what a chip sends), or cancel. Anything else gets "Tap one of the names below, or say cancel" instead of going to free chat. A new command replaces the pending one. A pick is never stored in the replay cache. The picked call still goes through the outbound tap card.
+
+"him", "her", "هو", "هي" and similar mean the last contact a command resolved to; with none, Kawkab asks who.
+
+Grant asks Android first. When Android will no longer show its dialog (a denial with `shouldShowRequestPermissionRationale` false), Grant opens App info with a one-line instruction. Coming back with the permission on reruns the last turn.
+
+Without CALL_PHONE, a call opens the dialer with the number (`ACTION_DIAL`, no permission needed), and the owner presses call.
+
+A turn that shows no progress for 60 seconds while nothing waits for the owner is stopped with "No reply for 60 seconds" and the Retry tile. A waiting tap card is not a hang. This also covers task 23h's "no silent hangs" rule.
