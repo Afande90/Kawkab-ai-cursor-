@@ -395,7 +395,32 @@ jobs:
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
+      # Task 25b: one fixed signing key, so each CI APK installs over the last one
+      # and keeps the owner's models and data. The keystore lives only in the
+      # repository secrets (the repo is public) and is written to the runner's
+      # temp directory, never into the checkout. Without the secrets (a fork, a
+      # pull request) the build falls back to the runner's debug key as before.
+      - name: Materialise the CI signing keystore
+        id: signing
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${RELEASE_KEYSTORE_BASE64:-}" ]]; then
+            echo "::warning::RELEASE_KEYSTORE_BASE64 is not set; this APK is signed with a throwaway debug key and will not install over the previous build. See docs/owner-checks/M1.6.md."
+            echo "path=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+          chmod 600 "$RUNNER_TEMP/release.keystore"
+          echo "path=$RUNNER_TEMP/release.keystore" >> "$GITHUB_OUTPUT"
+
       - name: Build the foss release APK
+        env:
+          RELEASE_KEYSTORE_PATH: ${{ steps.signing.outputs.path }}
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
         run: ./gradlew :app:assembleFossRelease --stacktrace --no-daemon
 
       - name: Check APK size and arm64 ABI

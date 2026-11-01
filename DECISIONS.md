@@ -455,3 +455,9 @@ The onboarding header and the empty-chat brand tile drew the upstream hub glyph,
 ## 2026-11-01 — onboarding model sizes (task 25)
 
 The scenarios name E4B as their model, and the cards printed that size on every phone. Onboarding already downloads the phone's pick (E2B below 16 GB of RAM, task 15). The view state now carries that pick as `recommendedModel`; the scenario cards print its size, and the download step marks it "needs this". On a 12 GB phone the cards say 2.59 GB. Previews without a recommendation look as before, so the onboarding goldens did not change.
+
+## 2026-11-01 — one fixed signing key (task 25b)
+
+The release build already reads `RELEASE_KEYSTORE_PATH`, `RELEASE_KEYSTORE_PASSWORD`, `RELEASE_KEY_ALIAS` and `RELEASE_KEY_PASSWORD`, and `release.yml` already writes the keystore from the `RELEASE_KEYSTORE_BASE64` secret. The Check's APK job did neither, so each CI APK was signed with the runner's fresh debug key. It now writes the keystore from the same secrets into the runner's temp directory (never the checkout) and signs the foss APK with it; without the secrets it warns and falls back to the debug key, so forks and pull requests still build. The keystore is never committed.
+
+**BLOCKED: creating the keystore and the repository secrets.** This build machine has no way to write repository secrets (no GitHub secrets API in its tools). Fallback: the exact steps are in `docs/owner-checks/M1.6.md`; once the owner adds the four secrets and the fingerprint variable, every following CI APK installs over the previous one.
