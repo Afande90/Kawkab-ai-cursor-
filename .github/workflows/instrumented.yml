@@ -334,6 +334,11 @@ jobs:
     needs: classifier
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    # BLOCKED gate (DECISIONS.md, task 23d): on the CI emulator the runner only
+    # ever receives the first suppression, so the debuggable target stops the
+    # run before any frame is measured. The job still runs and uploads what it
+    # has, but it does not decide the workflow until that is solved.
+    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
