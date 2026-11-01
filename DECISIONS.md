@@ -421,3 +421,13 @@ Phone access now reads `RoleManager.isRoleHeld(ROLE_ASSISTANT)` each time the ow
 The voice interaction service, its session service and `supportsAssist` were already declared correctly. The service now records itself while Android runs it, so other entry points can open the same panel.
 
 Two fallbacks always reach Kawkab: an "Ask Kawkab" Quick Settings tile and an "Ask Kawkab" launcher shortcut. With the assistant role they open the panel over the current app; without it they open a new chat. The shortcut is a static launcher shortcut, which can only start an activity, so it always opens a new chat.
+
+## 2026-11-01 — conversation mode before M4 (task 23l)
+
+A Talk button in chat runs a loop: Android `SpeechRecognizer` listens with `EXTRA_PREFER_OFFLINE`, using the on-device recognizer when the phone has one; the transcript is sent as the owner's message; the reply is spoken with Android `TextToSpeech`, Arabic for an Arabic reply and English otherwise, preferring voices that need no network; then it listens again. A tap stops it. Speaking over the reply stops the speech: the recognizer keeps listening while Kawkab speaks. Two silent rounds in a row end the loop. A tap card (or a clarification) stops the loop: voice never confirms an outbound action (§0.4.3).
+
+The recognizer listens in Sudanese Arabic (`ar-SD`) on an Arabic phone and in English otherwise. Choosing the language per utterance needs the M4 stack.
+
+When Kawkab is the assistant, a long-press of power (the assist gesture) starts the same loop in the assistant panel. A tile or accessibility-button tap opens the panel without listening. The wake word stays in M4 (now M1.7, task 27).
+
+On-device speech was not run here: neither this machine nor the CI emulator has an offline recognizer or voice data. The loop's logic is unit-tested; the owner's check is in `docs/owner-checks/M1.6.md`.

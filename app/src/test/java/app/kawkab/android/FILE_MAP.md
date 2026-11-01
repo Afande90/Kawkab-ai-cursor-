@@ -600,6 +600,8 @@ Only Kotlin files appear inside the generated blocks.
     - `RunVerificationGoldenTest.kt` - The run check end to end, on a run the real engine made: the golden harness runs `showcase_full_agent` / `task-every-subpipeline` — a router, a decomposition, four sub-pipelines, two of them running a tool — and the check then plans and repeats it from the recorded trace alone.
     - `VerificationFixtures.kt` - Records for the verification tests: a finished run with a header, and model calls and node records shaped as the engine writes them.
     - `VerifyRunUseCaseTest.kt` - `VerifyRunUseCase`: each recorded call is sent again from its own prompt with its own sampler and seed, on the model it ran on, and its answer compared by SHA-256.
+  - `voice/` - Tests for conversation mode's loop.
+    - `ConversationLoopTest.kt` - Task 23l: listen, send, speak, listen again; tap stops; speaking over the reply stops it.
 - `editor/` - Guard over the browser pipeline editor: its context configuration must still mirror the domain sources.
   - `BrowserEditorContextConfigGuardTest.kt` - Drift guard for the browser pipeline editor's hand-maintained `defaultContextConfig(typeId)` JS function in `pipeline-editor.html`.
 - `hands/` - Tests for stored app maps: replay without a model, check the screen, and stop for an outbound tap.
