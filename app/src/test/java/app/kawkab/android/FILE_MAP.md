@@ -472,6 +472,7 @@ Only Kotlin files appear inside the generated blocks.
     - `ImportMessageSafetyTest.kt` - Every way an importer can refuse a file, fed a value written to take over the error message.
     - `JsonNestingTest.kt` - Unit tests for `JsonNesting` — the bracket count that runs before an import is parsed.
     - `ReplyLanguageTest.kt` - Task 23g: one reply, in the user's language and dialect, with no label and no translation.
+    - `SpokenSentencesTest.kt` - Task 28: replies are spoken sentence by sentence.
     - `TitleTextTest.kt` - Unit tests for the shared single-line-title helpers.
   - `triggerio/` - Tests for the trigger export/import gateway.
     - `TriggerConditionCodecTest.kt` - Unit tests for `TriggerConditionCodec` — the single source of truth for the `TriggerCondition` ↔ JSON wire shape persisted in `triggers.conditionJson`.
@@ -606,6 +607,7 @@ Only Kotlin files appear inside the generated blocks.
     - `VerificationFixtures.kt` - Records for the verification tests: a finished run with a header, and model calls and node records shaped as the engine writes them.
     - `VerifyRunUseCaseTest.kt` - `VerifyRunUseCase`: each recorded call is sent again from its own prompt with its own sampler and seed, on the model it ran on, and its answer compared by SHA-256.
   - `voice/` - Tests for conversation mode's loop.
+    - `ConversationFollowUpTest.kt` - Task 28: after a spoken reply Kawkab listens for a follow-up; silence then ends the talk.
     - `ConversationLoopTest.kt` - Task 23l: listen, send, speak, listen again; tap stops; speaking over the reply stops it.
     - `WakeWordTest.kt` - Task 27: the wake word's gate, speech window, counters and keyword file.
 - `editor/` - Guard over the browser pipeline editor: its context configuration must still mirror the domain sources.
