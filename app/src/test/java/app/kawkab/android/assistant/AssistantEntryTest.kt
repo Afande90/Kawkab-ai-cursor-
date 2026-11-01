@@ -39,7 +39,7 @@ class AssistantEntryTest {
         listOf("values", "values-ar").forEach { dir ->
             val strings = File("src/main/res/$dir/strings_phone_access.xml").readText()
             assertTrue(dir, strings.contains("name=\"phone_access_power_button\""))
-            assertTrue(dir, strings.contains("name=\"phone_access_assistant_role_off\""))
+            assertTrue(dir, strings.contains("name=\"phone_access_item_assistant\""))
         }
     }
 }

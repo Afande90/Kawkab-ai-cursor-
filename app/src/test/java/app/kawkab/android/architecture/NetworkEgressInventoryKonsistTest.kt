@@ -430,6 +430,8 @@ class NetworkEgressInventoryKonsistTest {
          * next to its neighbours and a reviewer can see the whole egress surface at once.
          */
         val INVENTORY: Map<String, Egress> = mapOf(
+            // --- Update check, started by the owner on About (PRIVACY 3.10, task 25c) ---
+            "$MAIN/data/update/UpdateChecker.kt" to Egress.Opens("3.10", Indicator.RecordsItself),
             // --- Cloud model providers (PRIVACY 3.1) -------------------------------
             "$MAIN/data/engine/KoogClientFactory.kt" to
                 Egress.Opens("3.1", Indicator.RecordedBy(CHAT_CALLERS, CHAT_FACTORY)),

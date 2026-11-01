@@ -475,6 +475,8 @@ Only Kotlin files appear inside the generated blocks.
     - `TitleTextTest.kt` - Unit tests for the shared single-line-title helpers.
   - `triggerio/` - Tests for the trigger export/import gateway.
     - `TriggerConditionCodecTest.kt` - Unit tests for `TriggerConditionCodec` — the single source of truth for the `TriggerCondition` ↔ JSON wire shape persisted in `triggers.conditionJson`.
+  - `update/` - Tests of the update check's release parsing (task 25c).
+    - `LatestBuildTest.kt` - Task 25c: GitHub's release list becomes the newest build with an APK.
   - `usecases/` - Tests for the use cases.
     - `ActivateModelUseCaseTest.kt` - Task 23e: a model is never marked active unless its file exists and it loaded once.
     - `AgentOrchestratorUseCaseTest.kt` - Tests for AgentOrchestratorUseCase.
@@ -661,6 +663,7 @@ Only Kotlin files appear inside the generated blocks.
         - `ChatHomeViewModelTest.kt` - Unit-tests for `ChatHomeViewModel`.
         - `ConsoleCopyPayloadsTest.kt` - Unit tests for `ConsoleCopyPayloads`.
         - `ContentReportIssueUrlTest.kt` - Unit tests for `contentReportIssueUrl`.
+        - `DictationOutcomeTest.kt` - Task 23c: the mic uses the offline recognizer and explains an empty result.
         - `RunDisplayTest.kt` - The run strip's projection of a run: numbers written for reading, the line and fields per case, the promise's wording, the actions' reasons, and when a check asks first.
         - `TurnWatchdogTest.kt` - Tasks 23h and 23j: a turn with no progress ends instead of hanging.
         - `VerificationProgressTest.kt` - `VerificationProgress`: the check's sheet frame by frame — the first repeated visit checking, calls advancing within a visit, a settled visit handing over to the next, the time left shrinking, and each ending leaving the visits it never reached as "not checked".
