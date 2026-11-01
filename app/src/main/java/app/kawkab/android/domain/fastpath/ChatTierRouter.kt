@@ -13,6 +13,7 @@ import app.kawkab.android.domain.models.Role
 import app.kawkab.android.domain.models.ToolRisk
 import app.kawkab.android.domain.prompt.ChatTranscript
 import app.kawkab.android.domain.repositories.ChatRepository
+import app.kawkab.android.domain.voice.VoiceAnswers
 import app.kawkab.android.hands.ContactAnswer
 import app.kawkab.android.hands.ContactChoice
 import app.kawkab.android.hands.LocalUndo
@@ -132,8 +133,20 @@ class HandsChatTierRouter @Inject constructor(
             return parsed
         }
         pendingAnswer(text)?.let { return it }
+        spokenUndo(text)?.let { return it }
         val saved = skills.replay(text.trim()) ?: return null
         return PlannedCommand(saved.tool, saved.args)
+    }
+
+    /**
+     * "Undo" said or typed within 10 seconds of a local action takes it back (task 29). Without an
+     * action to undo, the line goes on to the usual paths.
+     */
+    private fun spokenUndo(text: String): PlannedCommand? {
+        val undo = localUndo ?: return null
+        if (!VoiceAnswers.isUndo(text) || undo.state.value == null) return null
+        val result = undo.undo(System.currentTimeMillis(), confirmation = SAID_UNDO) ?: TOO_LATE
+        return PlannedCommand(REPLY, mapOf(REPLY_TEXT to result))
     }
 
     /** The command a line completes while a contact choice is pending, or null when none is. */
@@ -357,6 +370,8 @@ class HandsChatTierRouter @Inject constructor(
         const val REPLY_TEXT: String = "text"
         const val CANCELLED: String = "Cancelled."
         const val PICK_AGAIN: String = "Tap one of the names below, or say cancel."
+        const val SAID_UNDO: String = "said or typed undo"
+        const val TOO_LATE: String = "Too late to undo; it has been more than 10 seconds."
         const val SKILL: String = "SKILL"
         const val SEND_SMS: String = "send_sms"
         const val ADD_EVENT: String = "add_calendar_event"

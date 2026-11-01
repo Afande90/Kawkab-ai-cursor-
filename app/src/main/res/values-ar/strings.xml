@@ -54,6 +54,7 @@
     <string name="assistant_screen_empty">لا يوجد نص على هذه الشاشة.</string>
     <string name="assistant_approve">موافق</string>
     <string name="assistant_deny">ارفض</string>
+    <string name="assistant_voice_needs_tap">«نعم» بالصوت تعمل فقط حين يكون التأكيد بالصوت مفعّلاً والهاتف مفتوحاً. اضغط للتأكيد.</string>
     <string name="assistant_needs_you">هذا يحتاج نقرك.</string>
     <string name="assistant_done">تم.</string>
     <string name="assistant_step_settings">افتح الإعدادات، ثم التطبيقات، ثم التطبيقات التلقائية، ثم تطبيق المساعد الرقمي.</string>

@@ -42,6 +42,9 @@ class ConversationLoop(private val maxSilentRetries: Int = DEFAULT_SILENT_RETRIE
         /** Stop everything. */
         data object Stop : Step
 
+        /** The owner answered a card aloud with [text]; the driver applies [VoiceAnswers.decide]. */
+        data class Answer(val text: String) : Step
+
         /** Do nothing. */
         data object None : Step
     }
@@ -59,10 +62,22 @@ class ConversationLoop(private val maxSilentRetries: Int = DEFAULT_SILENT_RETRIE
     var followingUp: Boolean = false
         private set
 
+    /** A card is being read aloud or answered (task 29). */
+    private var card: CardMode? = null
+
+    private enum class CardMode {
+        /** Read it, then wait for the tap. */
+        TAP_ONLY,
+
+        /** Read it, then listen once for yes or no. */
+        VOICE_ANSWER,
+    }
+
     /** @return [Step.Listen], or [Step.Stop] when the loop was already running (the tap toggles). */
     fun tap(): Step = if (phase == Phase.IDLE) {
         silentRetries = 0
         followingUp = false
+        card = null
         phase = Phase.LISTENING
         Step.Listen
     } else {
@@ -77,6 +92,12 @@ class ConversationLoop(private val maxSilentRetries: Int = DEFAULT_SILENT_RETRIE
         if (trimmed.isEmpty()) return silence()
         silentRetries = 0
         followingUp = false
+        if (card != null) {
+            // The answer to a card: the card decides, then its result is spoken like a reply.
+            card = null
+            phase = Phase.WAITING
+            return Step.Answer(trimmed)
+        }
         phase = Phase.WAITING
         return Step.Send(trimmed)
     }
@@ -84,6 +105,12 @@ class ConversationLoop(private val maxSilentRetries: Int = DEFAULT_SILENT_RETRIE
     /** The recognizer ended with nothing (silence or no match). */
     fun silence(): Step {
         if (phase != Phase.LISTENING) return Step.None
+        if (card != null) {
+            // No spoken answer: the card stays for a tap, and its result is still spoken.
+            card = null
+            phase = Phase.WAITING
+            return Step.Stop
+        }
         if (followingUp) {
             // No follow-up within the window: the conversation is over (task 28).
             followingUp = false
@@ -112,6 +139,19 @@ class ConversationLoop(private val maxSilentRetries: Int = DEFAULT_SILENT_RETRIE
     /** The reply finished speaking. */
     fun spoken(): Step {
         if (phase != Phase.SPEAKING) return Step.None
+        when (card) {
+            CardMode.TAP_ONLY -> {
+                // Read aloud; now only a tap confirms. Wait for the result to speak it.
+                card = null
+                phase = Phase.WAITING
+                return Step.Stop
+            }
+            CardMode.VOICE_ANSWER -> {
+                phase = Phase.LISTENING
+                return Step.Listen
+            }
+            null -> Unit
+        }
         phase = Phase.LISTENING
         followingUp = true
         return Step.Listen
@@ -125,11 +165,25 @@ class ConversationLoop(private val maxSilentRetries: Int = DEFAULT_SILENT_RETRIE
         return Step.StopSpeakingAndListen
     }
 
-    /** A card waits for a tap: stop listening until the owner taps it. */
-    fun waitsForTap(): Step {
+    /**
+     * A card waits (task 29). With [sentence], Kawkab reads it aloud ("Call Abdalla Mubadala?"),
+     * then either waits for the tap or, when [voiceMayAnswer], listens once for yes or no. Without
+     * a sentence it stops listening until the tap, as before.
+     *
+     * @param sentence The card in plain words, or `null`.
+     * @param voiceMayAnswer Whether a spoken answer is listened for at all; the driver still
+     *   applies [VoiceAnswers.decide], so a yes with the phone locked never sends.
+     */
+    fun waitsForTap(sentence: String? = null, voiceMayAnswer: Boolean = false): Step {
         if (phase == Phase.IDLE) return Step.None
-        phase = Phase.IDLE
-        return Step.Stop
+        followingUp = false
+        if (sentence.isNullOrBlank()) {
+            phase = Phase.IDLE
+            return Step.Stop
+        }
+        card = if (voiceMayAnswer) CardMode.VOICE_ANSWER else CardMode.TAP_ONLY
+        phase = Phase.SPEAKING
+        return Step.Speak(sentence, ReplyLanguage.of(sentence))
     }
 
     /** Defaults. */

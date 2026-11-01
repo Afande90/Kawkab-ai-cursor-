@@ -126,14 +126,24 @@ class ContactChoice @Inject constructor() {
         private val digitGroup = Regex("\\d{4,}")
 
         /**
-         * The sentence shown with the chips. It never lists numbers.
+         * The sentence shown with the chips and read aloud in a conversation: the names as a short
+         * numbered list, so the owner can answer "the second one" or a name (task 29). It never lists
+         * phone numbers.
          *
          * @param spoken The name the owner said.
          * @param count How many contacts matched.
+         * @param names The names offered, in chip order.
          * @return The question.
          */
-        fun question(spoken: String, count: Int): String =
-            "$count contacts match '$spoken'. Which one? Tap a name below, or say cancel."
+        fun question(spoken: String, count: Int, names: List<String> = emptyList()): String {
+            val list = names.mapIndexed { index, name -> "${index + 1}, $name." }.joinToString(" ")
+            val head = "$count contacts match '$spoken'. Which one?"
+            return if (list.isEmpty()) {
+                "$head Tap a name below, or say cancel."
+            } else {
+                "$head $list Say the number or the name, tap one, or say cancel."
+            }
+        }
 
         private val cancelWords = setOf("cancel", "stop", "never", "nevermind", "الغاء", "الغي", "خلاص", "بلاش")
 

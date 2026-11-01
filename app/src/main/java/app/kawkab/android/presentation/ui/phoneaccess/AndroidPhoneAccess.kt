@@ -13,6 +13,7 @@ import app.kawkab.android.domain.phoneaccess.MissingPermission
 import app.kawkab.android.domain.phoneaccess.PhoneAccessItem
 import app.kawkab.android.domain.phoneaccess.PhoneAccessLine
 import app.kawkab.android.domain.phoneaccess.PhoneAccessStatus
+import app.kawkab.android.voice.VoiceConfirmSwitch
 import app.kawkab.android.voice.WakeWordSwitch
 
 /**
@@ -59,6 +60,7 @@ object AndroidPhoneAccess {
                     power?.isIgnoringBatteryOptimizations(context.packageName) == true
                 }
                 PhoneAccessItem.ASSISTANT -> AssistantRoleRequest.isHeld(context)
+                PhoneAccessItem.VOICE_CONFIRM -> VoiceConfirmSwitch.isEnabled(context)
                 PhoneAccessItem.WAKE_WORD ->
                     WakeWordSwitch.isEnabled(context) && granted(context, MissingPermission.RECORD_AUDIO)
                 else -> granted(context, PhoneAccessStatus.permission(item))

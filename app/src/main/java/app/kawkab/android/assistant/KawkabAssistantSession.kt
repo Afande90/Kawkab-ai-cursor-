@@ -25,13 +25,17 @@ import app.kawkab.android.domain.engine.LlmInferenceEngine
 import app.kawkab.android.domain.models.AgentOrchestratorState
 import app.kawkab.android.domain.phoneaccess.MissingPermission
 import app.kawkab.android.domain.repositories.PrivacySettings
+import app.kawkab.android.domain.voice.VoiceAnswers
 import app.kawkab.android.presentation.state.ActiveSessionTracker
 import app.kawkab.android.presentation.state.ChatEntryRequestRelay
 import app.kawkab.android.presentation.ui.MainActivity
+import app.kawkab.android.presentation.ui.chat.home.ActionSentence
+import app.kawkab.android.presentation.ui.common.resolve
 import app.kawkab.android.presentation.ui.phoneaccess.AndroidPhoneAccess
 import app.kawkab.android.voice.ConversationDriver
 import app.kawkab.android.voice.OfflineSpeech
 import app.kawkab.android.voice.OfflineVoice
+import app.kawkab.android.voice.VoiceConfirmSwitch
 import app.kawkab.android.voice.WakeWordService
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -95,6 +99,29 @@ class KawkabAssistantSession(
     }
 
     private var conversation: ConversationDriver? = null
+    private var pendingTool: String = ""
+
+    private fun cardSentence(state: AgentOrchestratorState.WaitingForApproval): String =
+        ActionSentence.of(state.toolName, ActionSentence.arguments(state.arguments))
+            ?.let { appContext.resolve(it) }
+            ?: appContext.getString(R.string.assistant_needs_you)
+
+    /** A spoken answer to the waiting card, judged by the safety rule of spec §0.4.3 (task 29). */
+    private fun answerCard(heard: String) {
+        val requestId = pendingRequestId ?: return
+        val decision = VoiceAnswers.decide(
+            answer = VoiceAnswers.answer(heard),
+            voiceConfirmOn = VoiceConfirmSwitch.isEnabled(appContext),
+            screenOn = VoiceConfirmSwitch.screenOn(appContext),
+            locked = VoiceConfirmSwitch.locked(appContext),
+        )
+        when (decision) {
+            VoiceAnswers.Decision.APPROVE, VoiceAnswers.Decision.DENY -> uiScope.launch {
+                runner.answerByVoice(requestId, decision == VoiceAnswers.Decision.APPROVE, heard, pendingTool)
+            }
+            VoiceAnswers.Decision.NEED_TAP -> status.text = appContext.getString(R.string.assistant_voice_needs_tap)
+        }
+    }
 
     private fun conversation(): ConversationDriver = conversation ?: ConversationDriver(
         speech = OfflineSpeech(appContext),
@@ -104,6 +131,7 @@ class KawkabAssistantSession(
             sendLine()
         },
         onPhase = { },
+        answer = ::answerCard,
     ).also { conversation = it }
 
     private fun hasMicrophone(): Boolean = androidx.core.content.ContextCompat.checkSelfPermission(
@@ -234,8 +262,13 @@ class KawkabAssistantSession(
     private fun render(state: AgentOrchestratorState) {
         when (state) {
             is AgentOrchestratorState.WaitingForApproval -> {
-                // Voice never confirms an outbound action: listening stops until the tap.
-                conversation?.waitsForTap()
+                // The card is read aloud (task 29). A spoken yes counts only when the owner turned
+                // on "Confirm by voice" and the phone is on and unlocked; otherwise it waits for a tap.
+                pendingTool = state.toolName
+                conversation?.waitsForTap(
+                    sentence = cardSentence(state),
+                    voiceMayAnswer = VoiceConfirmSwitch.isEnabled(appContext),
+                )
                 pendingRequestId = state.requestId
                 status.text = appContext.getString(R.string.assistant_needs_you)
                 approve.visibility = View.VISIBLE

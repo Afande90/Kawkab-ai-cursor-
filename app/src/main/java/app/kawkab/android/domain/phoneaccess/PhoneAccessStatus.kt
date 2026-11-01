@@ -4,6 +4,9 @@ package app.kawkab.android.domain.phoneaccess
  * Status lines for the phone-access screen. A missing answer is off, never hidden.
  */
 object PhoneAccessStatus {
+    /** Items the owner may leave off without the banner asking (tasks 27 and 29). */
+    val OPTIONAL: Set<PhoneAccessItem> = setOf(PhoneAccessItem.WAKE_WORD, PhoneAccessItem.VOICE_CONFIRM)
+
     /**
      * The accessibility service class. It is not renamed.
      */
@@ -25,6 +28,7 @@ object PhoneAccessStatus {
         PhoneAccessItem.NOTIFICATIONS -> MissingPermission.POST_NOTIFICATIONS
         PhoneAccessItem.MICROPHONE -> MissingPermission.RECORD_AUDIO
         PhoneAccessItem.ACCESSIBILITY, PhoneAccessItem.BATTERY, PhoneAccessItem.ASSISTANT, PhoneAccessItem.WAKE_WORD,
+        PhoneAccessItem.VOICE_CONFIRM,
         -> null
     }
 
@@ -37,12 +41,13 @@ object PhoneAccessStatus {
     fun summary(lines: List<PhoneAccessLine>): Pair<Int, Int> = lines.count { it.on } to lines.size
 
     /**
-     * How many items are still off, for the chat banner. The wake word is optional and not counted.
+     * How many items are still off, for the chat banner. The wake word and voice confirmation are
+     * optional and not counted.
      *
      * @param lines The current lines.
      * @return The count.
      */
-    fun offCount(lines: List<PhoneAccessLine>): Int = lines.count { !it.on && it.item != PhoneAccessItem.WAKE_WORD }
+    fun offCount(lines: List<PhoneAccessLine>): Int = lines.count { !it.on && it.item !in OPTIONAL }
 
     /**
      * True when [enabledServices] names [serviceClass].
@@ -81,6 +86,9 @@ enum class PhoneAccessItem {
 
     /** Listening for "Kawkab" in the background; optional, so it never counts as missing (task 27). */
     WAKE_WORD,
+
+    /** Answering a card by voice; off by default and optional, so never counted as missing (task 29). */
+    VOICE_CONFIRM,
 }
 
 /**

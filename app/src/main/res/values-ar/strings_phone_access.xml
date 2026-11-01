@@ -64,4 +64,12 @@
         <item quantity="many">استيقظ %1$d مرة في %2$s ساعة (%3$s في الساعة).</item>
         <item quantity="other">استيقظ %1$d مرة في %2$s ساعة (%3$s في الساعة).</item>
     </plurals>
+    <!-- Task 29: confirm by voice. -->
+    <string name="phone_access_item_voice_confirm">التأكيد بالصوت</string>
+    <string name="phone_access_reason_voice_confirm">قل «نعم» لبطاقة اتصال أو رسالة أثناء المحادثة بدل الضغط.</string>
+    <string name="voice_confirm_note">مطفأ افتراضياً. «نعم» بالصوت تُقبل فقط والشاشة تعمل والهاتف مفتوح؛ والهاتف مقفل لا تُرسل «نعم» شيئاً. «لا» تلغي دائماً.</string>
+    <string name="voice_confirm_warning_title">التأكيد بالصوت؟</string>
+    <string name="voice_confirm_warning_body">قد يقول تلفاز أو فيديو أو تسجيل قرب الهاتف «نعم» بدلاً منك فيُرسل رسالة أو يجري اتصالاً. شغّل هذا فقط إن قبلت ذلك. يعمل فقط والهاتف مفتوح.</string>
+    <string name="voice_confirm_warning_enable">تشغيل</string>
+    <string name="voice_confirm_warning_cancel">أبقِ الضغط</string>
 </resources>

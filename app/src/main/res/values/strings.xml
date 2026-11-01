@@ -56,6 +56,7 @@
     <string name="assistant_screen_empty">No text on this screen.</string>
     <string name="assistant_approve">Approve</string>
     <string name="assistant_deny">Deny</string>
+    <string name="assistant_voice_needs_tap">Say yes only works when Confirm by voice is on and the phone is unlocked. Tap to confirm.</string>
     <string name="assistant_needs_you">This needs your tap.</string>
     <string name="assistant_done">Done.</string>
     <string name="assistant_step_settings">Open Settings, then Apps, then Default apps, then Digital assistant app.</string>

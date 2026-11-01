@@ -56,4 +56,12 @@
         <item quantity="one">Woke %1$d time in %2$s h (%3$s per hour).</item>
         <item quantity="other">Woke %1$d times in %2$s h (%3$s per hour).</item>
     </plurals>
+    <!-- Task 29: confirm by voice. -->
+    <string name="phone_access_item_voice_confirm">Confirm by voice</string>
+    <string name="phone_access_reason_voice_confirm">Answer “yes” aloud to a call or message card in a conversation, instead of tapping.</string>
+    <string name="voice_confirm_note">Off by default. A spoken yes counts only with the screen on and the phone unlocked; with the phone locked, a yes never sends. “No” always cancels.</string>
+    <string name="voice_confirm_warning_title">Confirm by voice?</string>
+    <string name="voice_confirm_warning_body">A TV, a video or a recording near the phone could say “yes” for you and send a message or place a call. Turn this on only if you accept that. It works only while the phone is unlocked.</string>
+    <string name="voice_confirm_warning_enable">Turn on</string>
+    <string name="voice_confirm_warning_cancel">Keep tapping</string>
 </resources>

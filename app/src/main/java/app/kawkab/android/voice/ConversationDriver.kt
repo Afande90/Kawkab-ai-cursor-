@@ -12,12 +12,14 @@ import java.util.Locale
  * @property voice The text-to-speech voice.
  * @property send Sends a transcript as the owner's message.
  * @property onPhase Reports the loop's phase for the button.
+ * @property answer Applies a spoken answer to the waiting card (task 29).
  */
 class ConversationDriver(
     private val speech: OfflineSpeech,
     private val voice: OfflineVoice,
     private val send: (String) -> Unit,
     private val onPhase: (ConversationLoop.Phase) -> Unit,
+    private val answer: (String) -> Unit = {},
 ) {
     private val loop = ConversationLoop()
     private val main = Handler(Looper.getMainLooper())
@@ -31,8 +33,12 @@ class ConversationDriver(
     /** Kawkab's reply, to be spoken. */
     fun replied(text: String) = run(loop.replied(text))
 
-    /** A card waits for a tap; voice never confirms it. */
-    fun waitsForTap() = run(loop.waitsForTap())
+    /**
+     * A card waits. It is read aloud when [sentence] is given; a spoken answer is listened for
+     * only when [voiceMayAnswer] (task 29).
+     */
+    fun waitsForTap(sentence: String? = null, voiceMayAnswer: Boolean = false) =
+        run(loop.waitsForTap(sentence, voiceMayAnswer))
 
     /** Stops and releases everything. */
     fun release() {
@@ -45,6 +51,7 @@ class ConversationDriver(
         when (step) {
             ConversationLoop.Step.Listen -> listen()
             is ConversationLoop.Step.Send -> send(step.text)
+            is ConversationLoop.Step.Answer -> answer(step.text)
             is ConversationLoop.Step.Speak -> {
                 voice.speak(step.text, step.language) { main.post { run(loop.spoken()) } }
                 // Listening while speaking lets the owner talk over the reply (barge-in).

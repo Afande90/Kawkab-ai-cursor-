@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -41,6 +42,7 @@ import app.kawkab.android.domain.phoneaccess.MissingPermission
 import app.kawkab.android.domain.phoneaccess.PhoneAccessItem
 import app.kawkab.android.domain.phoneaccess.PhoneAccessLine
 import app.kawkab.android.domain.phoneaccess.PhoneAccessStatus
+import app.kawkab.android.voice.VoiceConfirmSwitch
 import app.kawkab.android.voice.WakeWordSwitch
 import app.kawkab.design.components.chat.ChatContent
 import app.kawkab.design.components.chat.ChatRole
@@ -62,6 +64,7 @@ import app.kawkab.design.screens.phoneaccess.PhoneAccessViewState
 fun PhoneAccessScreen(onDone: () -> Unit, requestPermission: String? = null) {
     val context = LocalContext.current
     var tick by remember { mutableIntStateOf(0) }
+    var voiceWarning by remember { mutableStateOf(false) }
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         tick += 1
         // Android will not ask again: send the owner to App info instead of doing nothing (task 23j).
@@ -94,6 +97,14 @@ fun PhoneAccessScreen(onDone: () -> Unit, requestPermission: String? = null) {
                 permission != null -> permissionLauncher.launch(permission)
                 item == PhoneAccessItem.ACCESSIBILITY -> openSafely(context, AndroidPhoneAccess.accessibilitySettings())
                 item == PhoneAccessItem.BATTERY -> openSafely(context, AndroidPhoneAccess.batterySettings(context))
+                item == PhoneAccessItem.VOICE_CONFIRM -> {
+                    if (on) {
+                        VoiceConfirmSwitch.set(context, false)
+                        tick += 1
+                    } else {
+                        voiceWarning = true
+                    }
+                }
                 item == PhoneAccessItem.WAKE_WORD -> {
                     if (micOn(lines)) {
                         WakeWordSwitch.set(context, !on)
@@ -108,6 +119,32 @@ fun PhoneAccessScreen(onDone: () -> Unit, requestPermission: String? = null) {
         },
         onDone = onDone,
         modifier = Modifier.safeDrawingPadding(),
+    )
+    if (voiceWarning) {
+        VoiceConfirmWarning(
+            onEnable = {
+                VoiceConfirmSwitch.set(context, true)
+                voiceWarning = false
+                tick += 1
+            },
+            onCancel = { voiceWarning = false },
+        )
+    }
+}
+
+/** The warning of spec §0.4.3, shown before "Confirm by voice" turns on (task 29). */
+@Composable
+private fun VoiceConfirmWarning(onEnable: () -> Unit, onCancel: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onCancel,
+        title = { Text(stringResource(R.string.voice_confirm_warning_title)) },
+        text = { Text(stringResource(R.string.voice_confirm_warning_body)) },
+        confirmButton = {
+            TextButton(onClick = onEnable) { Text(stringResource(R.string.voice_confirm_warning_enable)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onCancel) { Text(stringResource(R.string.voice_confirm_warning_cancel)) }
+        },
     )
 }
 
@@ -126,6 +163,7 @@ private fun card(line: PhoneAccessLine): PhoneAccessCard = PhoneAccessCard(
             stringResource(R.string.phone_access_power_button) + "\n" +
                 stringResource(R.string.phone_access_assistant_fallback)
         PhoneAccessItem.WAKE_WORD -> wakeNote(line.on)
+        PhoneAccessItem.VOICE_CONFIRM -> stringResource(R.string.voice_confirm_note)
         else -> null
     },
 )
@@ -173,6 +211,7 @@ private fun kindOf(item: PhoneAccessItem): PhoneAccessKind = when (item) {
     PhoneAccessItem.BATTERY -> PhoneAccessKind.Background
     PhoneAccessItem.ASSISTANT -> PhoneAccessKind.Assistant
     PhoneAccessItem.WAKE_WORD -> PhoneAccessKind.WakeWord
+    PhoneAccessItem.VOICE_CONFIRM -> PhoneAccessKind.VoiceConfirm
 }
 
 private fun itemOf(kind: PhoneAccessKind): PhoneAccessItem = PhoneAccessItem.entries.first { kindOf(it) == kind }
@@ -187,10 +226,12 @@ private fun titleOf(item: PhoneAccessItem): Int = when (item) {
     PhoneAccessItem.BATTERY -> R.string.phone_access_item_background
     PhoneAccessItem.ASSISTANT -> R.string.phone_access_item_assistant
     PhoneAccessItem.WAKE_WORD -> R.string.phone_access_item_wake
+    PhoneAccessItem.VOICE_CONFIRM -> R.string.phone_access_item_voice_confirm
 }
 
 private fun buttonOf(item: PhoneAccessItem, on: Boolean): Int = when {
-    item == PhoneAccessItem.WAKE_WORD -> if (on) R.string.wake_turn_off else R.string.wake_turn_on
+    item == PhoneAccessItem.WAKE_WORD || item == PhoneAccessItem.VOICE_CONFIRM ->
+        if (on) R.string.wake_turn_off else R.string.wake_turn_on
     on -> R.string.phone_access_button_review
     item == PhoneAccessItem.ACCESSIBILITY -> R.string.phone_access_accessibility_open
     item == PhoneAccessItem.BATTERY -> R.string.phone_access_battery_open
@@ -299,6 +340,7 @@ private fun reasonOf(item: PhoneAccessItem): Int = when (item) {
     PhoneAccessItem.BATTERY -> R.string.phone_access_reason_battery
     PhoneAccessItem.ASSISTANT -> R.string.phone_access_reason_assistant
     PhoneAccessItem.WAKE_WORD -> R.string.phone_access_reason_wake
+    PhoneAccessItem.VOICE_CONFIRM -> R.string.phone_access_reason_voice_confirm
 }
 
 private fun openSafely(context: Context, intent: Intent) {

@@ -5,6 +5,8 @@ import app.kawkab.android.domain.fastpath.PlannedCommand
 import app.kawkab.android.domain.models.AgentOrchestratorState
 import app.kawkab.android.domain.models.ChatSession
 import app.kawkab.android.domain.repositories.ChatRepository
+import app.kawkab.android.domain.safety.ActivityLog
+import app.kawkab.android.domain.safety.ActivityLogEntry
 import app.kawkab.android.domain.usecases.PendingSubmissionOutcome
 import app.kawkab.android.domain.usecases.SubmitApprovalDecisionUseCase
 import javax.inject.Inject
@@ -15,11 +17,13 @@ import javax.inject.Inject
  * @param router The tier router. A match goes through it, so the gate still asks.
  * @param chats Where the assistant chat row is stored, so the tap has a session.
  * @param approvals The only way a tap settles a waiting tool. The panel does not call the gate itself.
+ * @param log The activity log, which records a card answered by voice (task 29, spec §0.4.6).
  */
 class AssistantCommandRunner @Inject constructor(
     private val router: ChatTierRouter,
     private val chats: ChatRepository,
     private val approvals: SubmitApprovalDecisionUseCase,
+    private val log: ActivityLog,
 ) {
     /**
      * Runs [command] for [text] and forwards each orchestrator state.
@@ -50,6 +54,31 @@ class AssistantCommandRunner @Inject constructor(
      */
     suspend fun answer(requestId: String, approved: Boolean): Boolean =
         approvals(SESSION_ID, requestId, approved) == PendingSubmissionOutcome.LiveResumed
+
+    /**
+     * Settles the card from a spoken answer that `VoiceAnswers.decide` allowed, and records that
+     * the confirmation was spoken, not tapped (task 29).
+     *
+     * @param requestId The gate's request id.
+     * @param approved Whether the answer was yes.
+     * @param heard What the recognizer heard.
+     * @param tool The tool the card was for.
+     * @return Whether that request was still waiting.
+     */
+    suspend fun answerByVoice(requestId: String, approved: Boolean, heard: String, tool: String): Boolean {
+        val settled = answer(requestId, approved)
+        log.record(
+            ActivityLogEntry(
+                asked = heard,
+                ran = tool,
+                entryPoint = "voice",
+                result = if (approved) "approved" else "denied",
+                confirmation = if (approved) "voice, screen on and unlocked" else "voice no",
+                atEpochMs = System.currentTimeMillis(),
+            ),
+        )
+        return settled
+    }
 
     /**
      * Ids of the assistant chat.

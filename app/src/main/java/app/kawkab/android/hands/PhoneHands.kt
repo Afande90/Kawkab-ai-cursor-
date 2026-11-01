@@ -148,8 +148,9 @@ object ContactLookup {
                 null
             }
             else -> {
-                onChoices(matches.take(ContactMatcher.MAX_CHOICES))
-                failure(ContactChoice.question(trimmed, matches.size))
+                val offered = matches.take(ContactMatcher.MAX_CHOICES)
+                onChoices(offered)
+                failure(ContactChoice.question(trimmed, matches.size, offered.map { it.name }))
                 null
             }
         }

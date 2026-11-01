@@ -940,6 +940,7 @@ Only Kotlin files appear inside the generated blocks.
     - `VerifyRunUseCase.kt` - Checks a finished run by repeating its on-device model calls.
   - `voice/` - Conversation mode as a pure loop: listen, send, speak, listen again, with barge-in.
     - `ConversationLoop.kt` - Conversation mode (task 23l): listen, send what was said, speak the reply, listen again, until the owner taps stop.
+    - `VoiceAnswers.kt` - Short spoken answers in a hands-free conversation (task 29): "undo" after a local action, and "yes" or "no" to a confirmation card.
     - `WakeWord.kt` - The wake word "Kawkab" / "كوكب" (task 27).
 - `hands/` - Phone actions ported from OpenDroid: alias phrases, macro recording, habit detection, and the intent calls for the five core commands.
   - `AliasResolver.kt` - Maps a short phrase to one action hint.
@@ -1247,6 +1248,7 @@ Only Kotlin files appear inside the generated blocks.
   - `ConversationDriver.kt` - Runs `ConversationLoop` with Android's offline recognizer and voice (task 23l).
   - `OfflineSpeech.kt` - Android's speech recognizer, offline only (tasks 23c and 23l).
   - `OfflineVoice.kt` - Android text-to-speech with offline voices, in the reply's language (task 23l).
+  - `VoiceConfirmSwitch.kt` - The owner's "Confirm by voice" setting (task 29, spec §0.4.3).
   - `WakeSpotter.kt` - Silero VAD in front of the sherpa-onnx keyword spotter (task 27).
   - `WakeWordService.kt` - Listens for "Kawkab" in a foreground service with a visible notification (task 27, spec §7).
   - `WakeWordSwitch.kt` - The wake word's on/off setting and its counters (task 27).

@@ -57,9 +57,10 @@ class LocalUndo @Inject constructor(private val hands: PhoneHands, private val l
      * Undoes the offered action.
      *
      * @param nowMs The time of the tap.
+     * @param confirmation How the owner asked: "tap" on the chip, or "said or typed undo" (task 29).
      * @return What happened, or `null` when nothing can be undone any more.
      */
-    fun undo(nowMs: Long): String? {
+    fun undo(nowMs: Long, confirmation: String = "tap"): String? {
         val current = offer.value ?: return null
         offer.value = null
         if (nowMs - current.atMs > WINDOW_MS) return null
@@ -70,7 +71,7 @@ class LocalUndo @Inject constructor(private val hands: PhoneHands, private val l
                 ran = current.tool,
                 entryPoint = "undo",
                 result = result,
-                confirmation = "tap",
+                confirmation = confirmation,
                 atEpochMs = nowMs,
             ),
         )
@@ -83,6 +84,6 @@ class LocalUndo @Inject constructor(private val hands: PhoneHands, private val l
         const val WINDOW_MS: Long = 10_000L
 
         /** Appended to a local action's reply: it ran without a card because it stays on the phone. */
-        const val NO_ASK_NOTE: String = "Stays on the phone, so I didn't ask."
+        const val NO_ASK_NOTE: String = "Stays on the phone, so I didn't ask. Say undo or tap Undo within 10 seconds."
     }
 }
