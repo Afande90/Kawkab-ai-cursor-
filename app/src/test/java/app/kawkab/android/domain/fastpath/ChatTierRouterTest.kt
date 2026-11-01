@@ -186,6 +186,30 @@ class ChatTierRouterTest {
         assertEquals("set_alarm", undo.state.value?.tool)
     }
 
+    @Test
+    fun `saying undo within the window takes the local action back`() = runTest {
+        val hands = mockk<app.kawkab.android.hands.PhoneHands>(relaxed = true)
+        io.mockk.every { hands.undo(any(), any()) } returns "Alarm for 6:00 AM removed."
+        val undo = LocalUndo(hands, mockk(relaxed = true))
+        val withUndo = HandsChatTierRouter(gate, chatRepository, engine, SkillCache(), ContactChoice(), undo)
+        stubGate("Alarm set for 6:00 AM.")
+        withUndo.runCommand("session", "set an alarm for 6", withUndo.command("set an alarm for 6")!!) {}
+
+        val command = withUndo.command("Undo!")!!
+        val states = mutableListOf<AgentOrchestratorState>()
+        withUndo.runCommand("session", "Undo!", command, states::add)
+
+        assertEquals("Alarm for 6:00 AM removed.", (states.last() as AgentOrchestratorState.Completed).finalResponse)
+        io.mockk.verify(exactly = 1) { hands.undo("set_alarm", any()) }
+    }
+
+    @Test
+    fun `undo with nothing to undo is not taken as a command`() {
+        val undo = LocalUndo(mockk(relaxed = true), mockk(relaxed = true))
+        val withUndo = HandsChatTierRouter(gate, chatRepository, engine, SkillCache(), ContactChoice(), undo)
+        assertEquals(null, withUndo.command("undo"))
+    }
+
     private fun stubGate(output: String) {
         coEvery {
             gate.dispatch(any(), any(), any(), any(), any(), any(), any(), any())

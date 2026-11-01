@@ -607,14 +607,17 @@ Only Kotlin files appear inside the generated blocks.
     - `VerificationFixtures.kt` - Records for the verification tests: a finished run with a header, and model calls and node records shaped as the engine writes them.
     - `VerifyRunUseCaseTest.kt` - `VerifyRunUseCase`: each recorded call is sent again from its own prompt with its own sampler and seed, on the model it ran on, and its answer compared by SHA-256.
   - `voice/` - Tests for conversation mode's loop.
+    - `ConversationCardTest.kt` - Task 29: a card is read aloud, then waits for a tap or listens once for an answer.
     - `ConversationFollowUpTest.kt` - Task 28: after a spoken reply Kawkab listens for a follow-up; silence then ends the talk.
     - `ConversationLoopTest.kt` - Task 23l: listen, send, speak, listen again; tap stops; speaking over the reply stops it.
+    - `VoiceAnswersTest.kt` - Task 29 and spec §0.4.3: what a spoken answer may do.
     - `WakeWordTest.kt` - Task 27: the wake word's gate, speech window, counters and keyword file.
 - `editor/` - Guard over the browser pipeline editor: its context configuration must still mirror the domain sources.
   - `BrowserEditorContextConfigGuardTest.kt` - Drift guard for the browser pipeline editor's hand-maintained `defaultContextConfig(typeId)` JS function in `pipeline-editor.html`.
 - `hands/` - Tests for stored app maps: replay without a model, check the screen, and stop for an outbound tap.
   - `AppMapReplayTest.kt` - Stored app maps replay without a model, check the screen, and still stop for an outbound tap.
   - `CallFlowTest.kt` - Task 23j: contact matching, the pending choice, the grant route and the dialer fallback.
+  - `ContactQuestionTest.kt` - Task 29: contact choices are read aloud as a short numbered list of names.
   - `LocalActionsTest.kt` - Task 23i: local actions do not ask, can be undone for 10 seconds, and read times properly.
 - `i18n/` - Arabic string-key coverage for the app and catalog resources.
   - `ArabicStringKeysTest.kt` - Fails when a default `strings.xml` key has no Arabic resource (spec §0.6).

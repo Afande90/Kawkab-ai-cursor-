@@ -121,7 +121,7 @@ class AssistantPanelTest {
         val router = mockk<ChatTierRouter>()
         val chats = mockk<ChatRepository>(relaxed = true)
         val approvals = mockk<SubmitApprovalDecisionUseCase>()
-        val runner = AssistantCommandRunner(router, chats, approvals)
+        val runner = AssistantCommandRunner(router, chats, approvals, mockk(relaxed = true))
         coEvery { chats.getSessionById(AssistantCommandRunner.SESSION_ID) } returns null
         val command = PlannedCommand("set_alarm", mapOf("hour" to "6", "minute" to "0"))
         coEvery { router.runCommand(any(), any(), any(), any()) } coAnswers {
@@ -154,7 +154,7 @@ class AssistantPanelTest {
     fun `an existing assistant chat is not rewritten`() = runTest {
         val router = mockk<ChatTierRouter>()
         val chats = mockk<ChatRepository>(relaxed = true)
-        val runner = AssistantCommandRunner(router, chats, mockk())
+        val runner = AssistantCommandRunner(router, chats, mockk(), mockk(relaxed = true))
         coEvery { chats.getSessionById(any()) } returns ChatSession("kawkab-assistant", "Kawkab", 1L)
         coEvery { router.runCommand(any(), any(), any(), any()) } returns Unit
         runner.run("open Clock", PlannedCommand("open_app", mapOf("app" to "Clock")), {})

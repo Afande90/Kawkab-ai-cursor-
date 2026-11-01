@@ -5,11 +5,11 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 import java.io.File
 
-/** Tasks 23 and 27: nine items, a "5 of 9 on" summary, and a banner count without the optional wake word. */
+/** Tasks 23, 27 and 29: ten items, a "5 of 10 on" summary, and a banner count without the optional wake word and voice confirmation. */
 class PhoneAccessSummaryTest {
 
     @Test
-    fun `the nine items are in the owner's order`() {
+    fun `the ten items are in the owner's order`() {
         assertEquals(
             listOf(
                 "CONTACTS",
@@ -21,6 +21,7 @@ class PhoneAccessSummaryTest {
                 "BATTERY",
                 "ASSISTANT",
                 "WAKE_WORD",
+                "VOICE_CONFIRM",
             ),
             PhoneAccessItem.entries.map { it.name },
         )
@@ -32,8 +33,8 @@ class PhoneAccessSummaryTest {
     fun `summary and off count`() {
         val on = PhoneAccessItem.entries.take(5).associateWith { true }
         val lines = PhoneAccessStatus.lines(on)
-        assertEquals(5 to 9, PhoneAccessStatus.summary(lines))
-        // The wake word is optional: off, it does not count as missing.
+        assertEquals(5 to 10, PhoneAccessStatus.summary(lines))
+        // The wake word and voice confirmation are optional: off, they do not count as missing.
         assertEquals(3, PhoneAccessStatus.offCount(lines))
     }
 
