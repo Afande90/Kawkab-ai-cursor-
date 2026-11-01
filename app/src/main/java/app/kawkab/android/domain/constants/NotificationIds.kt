@@ -26,8 +26,15 @@ object NotificationIds {
     /** Ongoing notification of a model download. */
     const val MODEL_DOWNLOAD: Int = 4711
 
+    /** Ongoing notification of the wake-word service (task 27). */
+    const val WAKE_WORD_LISTENING: Int = 4_270
+
+    /** "Kawkab heard you — tap to talk", when Kawkab is not the assistant (task 27). */
+    const val WAKE_WORD_HEARD: Int = 4_271
+
     /** Every fixed id, for the disjointness check. */
-    val FIXED: List<Int> = listOf(AGENT_FOREGROUND, AGENT_WORKER_FOREGROUND, MODEL_DOWNLOAD)
+    val FIXED: List<Int> =
+        listOf(AGENT_FOREGROUND, AGENT_WORKER_FOREGROUND, MODEL_DOWNLOAD, WAKE_WORD_LISTENING, WAKE_WORD_HEARD)
 
     /**
      * Mask folding a key's hash into a family's range: `hashCode() and SLOT_MASK` is never

@@ -22,8 +22,10 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import app.kawkab.android.R
 import app.kawkab.android.assistant.KawkabVoiceInteractionService
+import app.kawkab.android.domain.constants.NotificationIds
 import app.kawkab.android.domain.voice.WakeGate
 import app.kawkab.android.domain.voice.WakeWord
+import app.kawkab.android.presentation.notifications.lockScreenVersion
 import app.kawkab.android.presentation.ui.MainActivity
 import timber.log.Timber
 import java.util.concurrent.atomic.AtomicBoolean
@@ -55,7 +57,11 @@ class WakeWordService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
-        startForeground(NOTIFICATION_ID, notification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
+        startForeground(
+            NotificationIds.WAKE_WORD_LISTENING,
+            notification(),
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE,
+        )
         if (running.compareAndSet(false, true)) {
             worker = Thread(::listen, "kawkab-wake").apply {
                 priority = Thread.NORM_PRIORITY - 1
@@ -167,6 +173,7 @@ class WakeWordService : Service() {
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setContentIntent(openApp())
             .addAction(0, getString(R.string.wake_notification_stop), stop)
+            .lockScreenVersion(this, CHANNEL, R.drawable.ic_stat_agent, getString(R.string.wake_notification_title))
             .build()
     }
 
@@ -177,6 +184,7 @@ class WakeWordService : Service() {
         .setAutoCancel(true)
         .setTimeoutAfter(HEARD_TIMEOUT_MS)
         .setContentIntent(openApp())
+        .lockScreenVersion(this, CHANNEL, R.drawable.ic_stat_agent, getString(R.string.wake_heard_title))
         .build()
 
     private fun openApp(): PendingIntent = PendingIntent.getActivity(
@@ -190,7 +198,7 @@ class WakeWordService : Service() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
             PackageManager.PERMISSION_GRANTED
         ) {
-            getSystemService(NotificationManager::class.java)?.notify(HEARD_ID, notification)
+            getSystemService(NotificationManager::class.java)?.notify(NotificationIds.WAKE_WORD_HEARD, notification)
         }
     }
 
@@ -207,8 +215,6 @@ class WakeWordService : Service() {
 
         private const val ACTION_STOP = "app.kawkab.android.WAKE_STOP"
         private const val CHANNEL = "wake_word"
-        private const val NOTIFICATION_ID = 4_270
-        private const val HEARD_ID = 4_271
         private const val PCM_SCALE = 32_768f
         private const val BUFFER_FRAMES = 8
         private const val PAUSE_POLL_MS = 200L
