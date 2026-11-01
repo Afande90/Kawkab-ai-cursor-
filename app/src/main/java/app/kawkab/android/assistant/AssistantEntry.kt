@@ -2,7 +2,7 @@ package app.kawkab.android.assistant
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
+import androidx.core.net.toUri
 import app.kawkab.android.presentation.ui.MainActivity
 
 /**
@@ -27,7 +27,7 @@ object AssistantEntry {
      * @param context Any context.
      * @return The intent that opens a new chat in the app.
      */
-    fun newChatIntent(context: Context): Intent = Intent(Intent.ACTION_VIEW, Uri.parse(NEW_CHAT_URI))
+    fun newChatIntent(context: Context): Intent = Intent(Intent.ACTION_VIEW, NEW_CHAT_URI.toUri())
         .setClass(context, MainActivity::class.java)
         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 }

@@ -14,17 +14,12 @@
     <string name="phone_access_reason_microphone">حتى تتكلم بدل أن تكتب.</string>
     <string name="phone_access_reason_accessibility">ينظر كوكب إلى الشاشة ويضغط فقط بعد أن تسمح بهذا. يبقى على هذا الهاتف.</string>
     <string name="phone_access_reason_battery">حتى يكتمل الطلب والشاشة مغلقة.</string>
-    <string name="phone_access_restricted_title">السماح بالإعدادات المقيّدة</string>
     <string name="phone_access_restricted_body">على أندرويد 13 وما بعده: افتح معلومات التطبيق، اضغط القائمة الظاهرة هنا، ثم اسمح بالإعدادات المقيّدة. بعدها شغّل خدمة إمكانية الوصول.</string>
-    <string name="phone_access_menu_cd">قائمة النقاط الثلاث في معلومات التطبيق</string>
     <string name="phone_access_accessibility_open">فتح إعدادات إمكانية الوصول</string>
     <string name="phone_access_battery_open">السماح للهاتف بإبقاء كوكب يعمل</string>
     <string name="phone_access_nothing">على نظام Nothing، اسمح أيضًا بالعمل في الخلفية دون تقييد من إعدادات البطارية، وإلا قد يوقف الهاتف كوكب.</string>
-    <string name="phone_access_assistant_title">المساعد الافتراضي</string>
     <string name="phone_access_assistant_open">اجعل كوكب المساعد</string>
     <string name="phone_access_app_info_hint">لن يسأل أندرويد مرة أخرى. في معلومات التطبيق افتح الأذونات وفعّل هذا، ثم ارجع.</string>
-    <string name="phone_access_assistant_role_on">كوكب هو المساعد الرقمي.</string>
-    <string name="phone_access_assistant_role_off">كوكب ليس المساعد الرقمي بعد.</string>
     <string name="phone_access_power_button">اضبط زر التشغيل أيضاً: الإعدادات ← النظام ← الإيماءات (أو الأزرار) ← الضغط المطوّل على زر التشغيل ← المساعد الرقمي. قد يضبطه Nothing OS على قائمة التشغيل.</string>
     <string name="phone_access_assistant_fallback">أو استخدم مربع «اسأل كوكب» في الإعدادات السريعة أو اختصار الشاشة الرئيسية.</string>
     <string name="phone_access_progress">%1$d من %2$d مفعّلة</string>

@@ -2,7 +2,6 @@ package app.kawkab.android.presentation.ui.chat.home
 
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.provider.Settings
 import android.speech.SpeechRecognizer
 import app.kawkab.android.R
@@ -62,11 +61,9 @@ class Dictation(
     /** Stops listening. */
     fun stop() = speech.stop()
 
-    /** Offers the offline language download: the on-device recognizer's own, else voice settings. */
+    /** Offers the offline language download: the on-device recognizer's own, else the voice settings. */
     private fun downloadLanguage(language: String) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            SpeechRecognizer.isOnDeviceRecognitionAvailable(context)
-        ) {
+        if (SpeechRecognizer.isOnDeviceRecognitionAvailable(context)) {
             val recognizer = SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
             recognizer.triggerModelDownload(OfflineSpeech.request(language))
             recognizer.destroy()

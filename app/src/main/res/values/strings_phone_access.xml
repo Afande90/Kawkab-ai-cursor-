@@ -14,17 +14,12 @@
     <string name="phone_access_reason_microphone">So you can speak instead of type.</string>
     <string name="phone_access_reason_accessibility">Kawkab looks at the screen and taps only after you allow this. It stays on this phone.</string>
     <string name="phone_access_reason_battery">So a request can finish while the screen is off.</string>
-    <string name="phone_access_restricted_title">Allow restricted settings</string>
     <string name="phone_access_restricted_body">On Android 13 and newer: open App info, tap the menu shown here, then Allow restricted settings. Then turn the accessibility service on.</string>
-    <string name="phone_access_menu_cd">The three-dot menu in App info</string>
     <string name="phone_access_accessibility_open">Open accessibility settings</string>
     <string name="phone_access_battery_open">Allow the phone to keep Kawkab running</string>
     <string name="phone_access_nothing">On Nothing OS, also allow unrestricted background use in the app\'s battery settings, or the phone may stop Kawkab.</string>
-    <string name="phone_access_assistant_title">Default assistant</string>
     <string name="phone_access_assistant_open">Make Kawkab the assistant</string>
     <string name="phone_access_app_info_hint">Android will not ask again. In App info, open Permissions and turn this on, then come back.</string>
-    <string name="phone_access_assistant_role_on">Kawkab is the digital assistant.</string>
-    <string name="phone_access_assistant_role_off">Kawkab is not the digital assistant yet.</string>
     <string name="phone_access_power_button">Also set the power button: Settings → System → Gestures (or Buttons) → Press and hold power button → Digital assistant. Nothing OS may set it to the power menu.</string>
     <string name="phone_access_assistant_fallback">Or use the “Ask Kawkab” Quick Settings tile or home-screen shortcut.</string>
     <string name="phone_access_progress">%1$d of %2$d on</string>
