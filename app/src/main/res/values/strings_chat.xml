@@ -246,4 +246,9 @@
     <string name="conversation_listening">Listening… tap to stop</string>
     <string name="conversation_thinking">Thinking… tap to stop</string>
     <string name="conversation_speaking">Speaking… tap to stop</string>
+    <string name="dictation_no_recognizer">This phone has no speech recognizer. Type your message instead.</string>
+    <string name="dictation_language_missing">Offline speech for this language is not on the phone yet.</string>
+    <string name="dictation_download">Download</string>
+    <string name="dictation_nothing">I didn\'t catch that. Tap the mic and try again.</string>
+    <string name="dictation_failed">Speech input stopped. Tap the mic to try again.</string>
 </resources>

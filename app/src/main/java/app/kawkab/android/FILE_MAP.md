@@ -1027,6 +1027,7 @@ Only Kotlin files appear inside the generated blocks.
         - `ContactChoicePrompt.kt` - Tappable contact chips for a call or text waiting on a pick (task 23j).
         - `ContentReportIssueUrl.kt` - Builds the URL that opens the public issue tracker with a report prefilled.
         - `ConversationButton.kt` - Conversation mode (task 23l): tap once to talk; Kawkab listens offline, sends what was said, speaks the reply with an offline voice, and listens again.
+        - `Dictation.kt` - The composer mic before the M4 voice stack (task 23c): Android's recognizer, offline only, and the transcript goes into the input box so the owner can correct it before sending.
         - `LocalUndoChip.kt` - The Undo chip shown for 10 seconds after a local action (task 23i).
         - `ReportResponseDialog.kt` - Stateless dialog collecting a flag against a model-authored message (category chips + note), plus `contentReportIssueUrl` — the prefilled `issues/new` URL, truncated to a browser-safe length after percent-encoding. No delivery of its own: the screen offers clipboard or issue tracker.
         - `RunDisplay.kt` - How the run strip writes a run: numbers grouped and rounded for reading — seeds and windows in groups, temperatures as recorded, durations as a person estimates them — with, beside it in this file, the projection of a run's description onto the strip and the rule for when a check asks first.

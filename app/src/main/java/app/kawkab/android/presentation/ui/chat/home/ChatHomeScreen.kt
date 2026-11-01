@@ -40,6 +40,7 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -403,6 +404,33 @@ fun ChatHomeScreen(
     ) { uri ->
         if (uri != null) viewModel.voice.onAudioFilePicked(uri.toString())
     }
+    // The mic dictates with Android's offline recognizer into the input box (task 23c).
+    val dictation = remember {
+        Dictation(
+            context = context,
+            insert = { text ->
+                val current = viewModel.state.value.composer.value
+                viewModel.onComposerValueChange(if (current.isBlank()) text else "$current $text")
+            },
+            hint = { message, actionLabel, action ->
+                coroutineScope.launch {
+                    val result = snackbarHostState.showSnackbar(message = message, actionLabel = actionLabel)
+                    if (result == SnackbarResult.ActionPerformed) action?.invoke()
+                }
+            },
+        )
+    }
+    DisposableEffect(dictation) { onDispose { dictation.stop() } }
+    val dictationPermission = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) dictation.start() else viewModel.voice.onMicPermissionDenied()
+    }
+    val onMicDictate: () -> Unit = {
+        val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
+            PackageManager.PERMISSION_GRANTED
+        if (granted) dictation.start() else dictationPermission.launch(Manifest.permission.RECORD_AUDIO)
+    }
     val requestRecordAudio: () -> Unit = {
         val granted = ContextCompat.checkSelfPermission(
             context,
@@ -433,7 +461,7 @@ fun ChatHomeScreen(
         onStop = viewModel::stopGeneration,
         onAttach = viewModel.attachments::onAttachClicked,
         onRemoveAttachment = viewModel.attachments::removeAttachment,
-        onMic = viewModel.voice::onMicClicked,
+        onMic = onMicDictate,
         onStopRecording = viewModel.voice::onStopRecording,
         onDiscardRecording = viewModel.voice::onDiscardRecording,
         onChangeModel = onOpenModels,

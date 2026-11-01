@@ -199,4 +199,9 @@
     <string name="conversation_listening">أستمع… انقر للإيقاف</string>
     <string name="conversation_thinking">أفكّر… انقر للإيقاف</string>
     <string name="conversation_speaking">أتحدّث… انقر للإيقاف</string>
+    <string name="dictation_no_recognizer">لا يوجد على هذا الهاتف تعرّف على الكلام. اكتب رسالتك بدلاً من ذلك.</string>
+    <string name="dictation_language_missing">الكلام دون اتصال لهذه اللغة غير موجود على الهاتف بعد.</string>
+    <string name="dictation_download">تنزيل</string>
+    <string name="dictation_nothing">لم أسمع جيداً. انقر الميكروفون وحاول مرة أخرى.</string>
+    <string name="dictation_failed">توقف إدخال الكلام. انقر الميكروفون للمحاولة مرة أخرى.</string>
 </resources>
