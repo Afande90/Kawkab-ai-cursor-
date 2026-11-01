@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import app.kawkab.android.domain.voice.ConversationLoop
 import java.util.Locale
 
 /**
@@ -96,6 +97,15 @@ class OfflineSpeech(private val context: Context) {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, languageTag)
             putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+            // End of turn after about 700 ms of silence (task 28). Recognizers may round it.
+            putExtra(
+                RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS,
+                ConversationLoop.END_OF_TURN_SILENCE_MS,
+            )
+            putExtra(
+                RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS,
+                ConversationLoop.END_OF_TURN_SILENCE_MS,
+            )
         }
     }
 }

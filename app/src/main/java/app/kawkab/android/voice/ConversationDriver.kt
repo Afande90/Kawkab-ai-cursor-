@@ -36,6 +36,7 @@ class ConversationDriver(
 
     /** Stops and releases everything. */
     fun release() {
+        main.removeCallbacks(followUpTimeout)
         speech.stop()
         voice.shutdown()
     }
@@ -60,17 +61,32 @@ class ConversationDriver(
         onPhase(loop.phase)
     }
 
+    private val followUpTimeout = Runnable {
+        // Nobody spoke within the follow-up window: end the conversation (task 28).
+        if (loop.phase == ConversationLoop.Phase.LISTENING && loop.followingUp) {
+            speech.stop()
+            run(loop.silence())
+        }
+    }
+
     private fun listen() {
+        main.removeCallbacks(followUpTimeout)
+        if (loop.followingUp) main.postDelayed(followUpTimeout, ConversationLoop.FOLLOW_UP_MS)
         speech.listen(
             OfflineSpeech.languageFor(Locale.getDefault()),
             object : OfflineSpeech.Listener {
                 override fun onSpeechStart() {
+                    main.removeCallbacks(followUpTimeout)
                     if (loop.phase == ConversationLoop.Phase.SPEAKING) run(loop.bargeIn())
                 }
 
-                override fun onText(text: String) = run(loop.heard(text))
+                override fun onText(text: String) {
+                    main.removeCallbacks(followUpTimeout)
+                    run(loop.heard(text))
+                }
 
                 override fun onNothing(code: Int) {
+                    main.removeCallbacks(followUpTimeout)
                     if (loop.phase == ConversationLoop.Phase.LISTENING) run(loop.silence())
                 }
             },

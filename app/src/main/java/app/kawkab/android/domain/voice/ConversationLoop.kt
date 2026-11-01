@@ -52,9 +52,17 @@ class ConversationLoop(private val maxSilentRetries: Int = DEFAULT_SILENT_RETRIE
 
     private var silentRetries = 0
 
+    /**
+     * `true` while listening for a follow-up after a spoken reply (task 28). Silence then ends the
+     * conversation instead of asking again.
+     */
+    var followingUp: Boolean = false
+        private set
+
     /** @return [Step.Listen], or [Step.Stop] when the loop was already running (the tap toggles). */
     fun tap(): Step = if (phase == Phase.IDLE) {
         silentRetries = 0
+        followingUp = false
         phase = Phase.LISTENING
         Step.Listen
     } else {
@@ -68,6 +76,7 @@ class ConversationLoop(private val maxSilentRetries: Int = DEFAULT_SILENT_RETRIE
         val trimmed = text.trim()
         if (trimmed.isEmpty()) return silence()
         silentRetries = 0
+        followingUp = false
         phase = Phase.WAITING
         return Step.Send(trimmed)
     }
@@ -75,6 +84,12 @@ class ConversationLoop(private val maxSilentRetries: Int = DEFAULT_SILENT_RETRIE
     /** The recognizer ended with nothing (silence or no match). */
     fun silence(): Step {
         if (phase != Phase.LISTENING) return Step.None
+        if (followingUp) {
+            // No follow-up within the window: the conversation is over (task 28).
+            followingUp = false
+            phase = Phase.IDLE
+            return Step.Stop
+        }
         silentRetries += 1
         if (silentRetries > maxSilentRetries) {
             phase = Phase.IDLE
@@ -98,6 +113,7 @@ class ConversationLoop(private val maxSilentRetries: Int = DEFAULT_SILENT_RETRIE
     fun spoken(): Step {
         if (phase != Phase.SPEAKING) return Step.None
         phase = Phase.LISTENING
+        followingUp = true
         return Step.Listen
     }
 
@@ -105,6 +121,7 @@ class ConversationLoop(private val maxSilentRetries: Int = DEFAULT_SILENT_RETRIE
     fun bargeIn(): Step {
         if (phase != Phase.SPEAKING) return Step.None
         phase = Phase.LISTENING
+        followingUp = false
         return Step.StopSpeakingAndListen
     }
 
@@ -119,5 +136,11 @@ class ConversationLoop(private val maxSilentRetries: Int = DEFAULT_SILENT_RETRIE
     companion object {
         /** Silent rounds in a row before the loop stops by itself. */
         const val DEFAULT_SILENT_RETRIES: Int = 2
+
+        /** How long Kawkab waits for a follow-up after speaking, without the wake word (task 28). */
+        const val FOLLOW_UP_MS: Long = 8_000L
+
+        /** Silence that ends the owner's turn (task 28; smart-turn is not used, see DECISIONS.md). */
+        const val END_OF_TURN_SILENCE_MS: Long = 700L
     }
 }

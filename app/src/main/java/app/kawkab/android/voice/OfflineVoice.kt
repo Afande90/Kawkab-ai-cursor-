@@ -4,6 +4,7 @@ import android.content.Context
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import app.kawkab.android.domain.text.ReplyLanguage
+import app.kawkab.android.domain.text.SpokenSentences
 import java.util.Locale
 
 /**
@@ -14,6 +15,9 @@ import java.util.Locale
 class OfflineVoice(context: Context) {
     private var ready = false
     private var onDone: (() -> Unit)? = null
+
+    @Volatile
+    private var lastUtterance: String? = null
     private val tts: TextToSpeech = TextToSpeech(context.applicationContext) { status ->
         ready = status == TextToSpeech.SUCCESS
     }
@@ -23,19 +27,21 @@ class OfflineVoice(context: Context) {
             object : UtteranceProgressListener() {
                 override fun onStart(utteranceId: String?) = Unit
                 override fun onDone(utteranceId: String?) {
-                    onDone?.invoke()
+                    // Each sentence is its own utterance; the reply is done after the last one.
+                    if (utteranceId == lastUtterance) onDone?.invoke()
                 }
 
                 @Deprecated("Deprecated in the platform; still called on older phones.")
                 override fun onError(utteranceId: String?) {
-                    onDone?.invoke()
+                    if (utteranceId == lastUtterance) onDone?.invoke()
                 }
             },
         )
     }
 
     /**
-     * Speaks [text]; [done] runs when it ends or cannot be spoken.
+     * Speaks [text] sentence by sentence, so the first sentence starts at once (task 28); [done]
+     * runs when the last one ends or cannot be spoken.
      *
      * @param text What to say.
      * @param language The reply's language.
@@ -51,7 +57,12 @@ class OfflineVoice(context: Context) {
         // Offline voices only: a network voice would send the reply off the phone.
         tts.voices?.firstOrNull { it.locale.language == tts.language?.language && !it.isNetworkConnectionRequired }
             ?.let { tts.voice = it }
-        tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, UTTERANCE)
+        val sentences = SpokenSentences.split(text).ifEmpty { listOf(text) }
+        lastUtterance = "$UTTERANCE-${sentences.lastIndex}"
+        sentences.forEachIndexed { index, sentence ->
+            val mode = if (index == 0) TextToSpeech.QUEUE_FLUSH else TextToSpeech.QUEUE_ADD
+            tts.speak(sentence, mode, null, "$UTTERANCE-$index")
+        }
     }
 
     /** Stops speaking at once (barge-in or the stop tap). */
