@@ -11,6 +11,8 @@ removing or reordering one by hand is undone by the next run.
 Only Kotlin files appear inside the generated blocks.
 
 <!-- AUTO-GEN:FILE_MAP -->
+- `accessibility/` - Tests for the accessibility service: the floating button.
+  - `KawkabButtonCallbackTest.kt` - Task 23b: the floating accessibility button opens the panel.
 - `architecture/` - Structural guards run as tests: the Konsist layer rules and the censuses that pin an invariant to the code. `docs/static-analysis.md` says what each one enforces, and `ArchitectureGuardsDocumentedTest` keeps that table complete.
   - `AppFunctionServiceManifestGuardTest.kt` - Every AppFunctions entry point is registered in its module's manifest exactly as the compiler generated it, and nothing else is registered as an AppFunctions service.
   - `ArchitectureGuardsDocumentedTest.kt` - Holds the Konsist table of `docs/static-analysis.md` to the suite it describes.
