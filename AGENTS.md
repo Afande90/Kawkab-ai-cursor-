@@ -4,6 +4,37 @@ You are building **Kawkab (كوكب)**, a private on-device personal assistant f
 The complete plan is `KAWKAB_SPEC.md` in the root of this repo. It is the only source of truth.
 Read the whole spec before your first change in every task.
 
+## OWNER'S VISION RESET (2 Nov 2026). This overrides anything below that conflicts.
+
+The owner: "The whole point is the voice command, and then by itself it should proceed to calling. No point of me clicking any button whatsoever. I'm coping with what's in the app I'm trying to reverse-engineer, instead of the app taking what's in it and changing it to what I want."
+
+Kawkab is **voice-first and acts by itself**. Knotwork is the engine underneath, not the product the owner sees. These rules replace spec §0.4.1 to §0.4.3 and the `OUTBOUND` tap rule:
+
+1. **Voice → action, with no button.** "Kawkab, call Abdalla Mubadala" places the call. "Kawkab, text Omar I'm late" sends the SMS. "Kawkab, set an alarm for 6" sets it.
+   - Before any outbound action, Kawkab says what it is doing ("Calling Abdalla Mubadala") and acts after a **3-second cancel window**. Saying "stop", "cancel", "لا" or "وقف", or tapping, cancels it.
+   - Nothing needs a tap, and nothing needs a "yes".
+   - Typed commands behave the same way, with the same cancel window shown on screen.
+2. **Ambiguity is resolved by voice**, never by buttons. "Which Abdalla: Mubadala or Wad Abdalla?" The owner answers by voice ("Mubadala", "the first"). Kawkab remembers the answer and never asks again for that name.
+3. **Keep only these hard blocks:**
+   - never act inside banking, payment, wallet or password screens (the denylist stays);
+   - never delete the owner's data without an explicit spoken "yes";
+   - everything stays on the phone.
+
+   Update the tool-classification test, `safety/` and `DECISIONS.md` to match: the outbound tier becomes "announce + 3 s cancel", not "tap".
+4. **The home screen is the owner's mockup**, not a chat list:
+   - a big planet, "Say 'Kawkab'", a small "or tap to talk", and a short list of what Kawkab just did;
+   - conversation opens full-screen as voice, with the transcript underneath.
+5. **Hide the engine.**
+   - Behind Settings → Advanced: Pipelines, Tools, the console strip, token counters, model file names, the "uses · set_alarm" hints, and the raw tool cards.
+   - The bottom bar becomes Home, Screenshots, Growth (as in the mockup).
+   - Settings keeps only: Voice, Phone access, Models, Privacy, About, Advanced.
+6. **The wake word is priority one.** 43 % recall, and 0/18 for the Arabic voice, is not acceptable.
+   - Train a proper "Kawkab" detector, openWakeWord-style, on synthetic speech in many voices: Arabic, Sudanese-accented and English, with noise. Keep the sherpa-onnx keyword spotter as a second opinion.
+   - Target recall ≥ 90 % and ≤ 1 false wake per 10 h on the frozen set.
+   - Fix the launch crash (M1.8) first.
+
+Do M1.8 (31–35, including 34b, with 34b rewritten by rules 1 and 2) and then **M2-V (this section, rules 1 to 6)** before anything else in this file.
+
 ## Where the work lives
 
 This repository is dedicated to Kawkab. Work on `main`.
