@@ -114,4 +114,6 @@ Only Kotlin files appear inside the generated blocks.
 - `tier1/` - Tier 1 emulator harness. Inference is the debug stub engine, so the test never loads a model.
   - `Tier1FastPathStateTest.kt` - Tier 1 check that a planned message is the row the stub messenger stored.
   - `Tier1StubEngineTest.kt` - Tier 1 emulator harness (spec §12.1).
+- `voice/` - Wake-word tests on the device with injected audio (task 27).
+  - `WakeSpotterInstrumentedTest.kt` - Task 27, Tier 1 with injected audio: the real VAD and spotter from `assets/wake/` on the emulator.
 <!-- /AUTO-GEN:FILE_MAP -->

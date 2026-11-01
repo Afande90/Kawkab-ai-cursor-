@@ -5,11 +5,11 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 import java.io.File
 
-/** Task 23: eight items, a "5 of 8 on" summary, and the banner count. */
+/** Tasks 23 and 27: nine items, a "5 of 9 on" summary, and a banner count without the optional wake word. */
 class PhoneAccessSummaryTest {
 
     @Test
-    fun `the eight items are in the owner's order`() {
+    fun `the nine items are in the owner's order`() {
         assertEquals(
             listOf(
                 "CONTACTS",
@@ -20,17 +20,20 @@ class PhoneAccessSummaryTest {
                 "ACCESSIBILITY",
                 "BATTERY",
                 "ASSISTANT",
+                "WAKE_WORD",
             ),
             PhoneAccessItem.entries.map { it.name },
         )
         assertNull(PhoneAccessStatus.permission(PhoneAccessItem.ASSISTANT))
+        assertNull(PhoneAccessStatus.permission(PhoneAccessItem.WAKE_WORD))
     }
 
     @Test
     fun `summary and off count`() {
         val on = PhoneAccessItem.entries.take(5).associateWith { true }
         val lines = PhoneAccessStatus.lines(on)
-        assertEquals(5 to 8, PhoneAccessStatus.summary(lines))
+        assertEquals(5 to 9, PhoneAccessStatus.summary(lines))
+        // The wake word is optional: off, it does not count as missing.
         assertEquals(3, PhoneAccessStatus.offCount(lines))
     }
 
@@ -38,7 +41,12 @@ class PhoneAccessSummaryTest {
     fun `the progress and banner text exist in both languages`() {
         listOf("values", "values-ar").forEach { dir ->
             val strings = File("src/main/res/$dir/strings_phone_access.xml").readText()
-            listOf("phone_access_progress", "phone_access_banner", "phone_access_item_assistant").forEach { key ->
+            listOf(
+                "phone_access_progress",
+                "phone_access_banner",
+                "phone_access_item_assistant",
+                "phone_access_item_wake",
+            ).forEach { key ->
                 assertEquals("$dir $key", true, strings.contains("name=\"$key\""))
             }
         }
