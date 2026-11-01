@@ -132,6 +132,19 @@ class OnboardingViewModelTest {
     }
 
     @Test
+    fun `a 12 GB phone is told it will download E2B, and a flagship E4B`() = runTest {
+        // Task 25: the scenario cards and "needs this" show the size of this phone's model.
+        val midRange = newViewModel(DeviceMemory { 12L * DefaultBrain.BYTES_PER_GIB })
+        advanceUntilIdle()
+        assertEquals(OnboardingLiteRtModel.Gemma4E2B, midRange.state.value.recommendedModel)
+        assertEquals("2.59 GB", midRange.state.value.recommendedModel?.sizeLabel)
+
+        val flagship = newViewModel()
+        advanceUntilIdle()
+        assertEquals(OnboardingLiteRtModel.Gemma4E4B, flagship.state.value.recommendedModel)
+    }
+
+    @Test
     fun `finishOnboarding sets hasCompletedOnboarding without touching firstLaunch`() = runTest {
         val viewModel = newViewModel()
 

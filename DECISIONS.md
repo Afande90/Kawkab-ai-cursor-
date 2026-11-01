@@ -451,3 +451,7 @@ The composer mic dictates with Android's `SpeechRecognizer` and `EXTRA_PREFER_OF
 ## 2026-11-01 — leftover knot icon (task 24)
 
 The onboarding header and the empty-chat brand tile drew the upstream hub glyph, which reads as the old knot logo, next to "Kawkab". Both now draw the planet mark (`AppIcons.Mark`), and the branding test checks both. The hub glyph stays where it means "discover models" (the Models top bar and the Discover rows); it is a function icon, not a logo. The empty-chat and onboarding screenshot goldens were re-recorded; no other golden changed.
+
+## 2026-11-01 — onboarding model sizes (task 25)
+
+The scenarios name E4B as their model, and the cards printed that size on every phone. Onboarding already downloads the phone's pick (E2B below 16 GB of RAM, task 15). The view state now carries that pick as `recommendedModel`; the scenario cards print its size, and the download step marks it "needs this". On a 12 GB phone the cards say 2.59 GB. Previews without a recommendation look as before, so the onboarding goldens did not change.
