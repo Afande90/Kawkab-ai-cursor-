@@ -6,6 +6,7 @@ import android.os.HandlerThread
 import android.os.SystemClock
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import app.kawkab.android.assistant.AssistantEntry
 import app.kawkab.android.domain.safety.ActionDenylist
 import app.kawkab.android.domain.safety.ActivityLog
 import app.kawkab.android.domain.safety.ActivityLogEntry
@@ -54,10 +55,15 @@ class KawkabAccessibilityService : AccessibilityService() {
         worker = thread
         workerHandler = Handler(thread.looper)
         screenWatch.fullReader = ::fullSnapshot
+        // The floating Kawkab button opens the assistant panel (task 23b).
+        accessibilityButtonController.registerAccessibilityButtonCallback(buttonCallback)
     }
+
+    private val buttonCallback = KawkabButtonCallback { AssistantEntry.open(this) }
 
     override fun onDestroy() {
         if (instance === this) instance = null
+        accessibilityButtonController.unregisterAccessibilityButtonCallback(buttonCallback)
         if (screenWatch.fullReader != null) screenWatch.fullReader = null
         worker?.quitSafely()
         worker = null

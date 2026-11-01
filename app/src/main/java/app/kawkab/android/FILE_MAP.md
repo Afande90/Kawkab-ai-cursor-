@@ -14,6 +14,7 @@ Only Kotlin files appear inside the generated blocks.
 - `accessibility/` - Screen reading and taps. Every click goes through the outbound tap guard, and every event is checked against the denylist.
   - `AccessibilityNodeTraversal.kt` - Walks an accessibility tree.
   - `KawkabAccessibilityService.kt` - Accessibility service that reads the screen and taps only through `GuardedTap`.
+  - `KawkabButtonCallback.kt` - The floating accessibility button (task 23b): a tap opens the Kawkab assistant panel over the current app, the same panel as a long-press of power, or a new chat when Kawkab is not the assistant.
 - `App.kt` - Main Android Application class.
 - `assistant/` - The digital-assistant panel: a power-button long-press opens Kawkab over the current app, and a tap still gates every hands command.
   - `AskKawkabTileService.kt` - The "Ask Kawkab" Quick Settings tile (task 23k): a fallback that works even when the power button is set to the power menu.
