@@ -342,6 +342,8 @@ private fun ChooseScenarioStep(state: OnboardingViewState, callbacks: Onboarding
         OnboardingScenario.entries.forEach { scenario ->
             ScenarioCard(
                 scenario = scenario,
+                // The size of the model this phone will download, not the scenario's largest (task 25).
+                model = state.recommendedModel ?: state.liteRtModel,
                 selected = scenario == state.selectedScenario,
                 enabled = interactive,
                 onClick = { callbacks.onScenarioPick(scenario) },
@@ -352,7 +354,13 @@ private fun ChooseScenarioStep(state: OnboardingViewState, callbacks: Onboarding
 }
 
 @Composable
-private fun ScenarioCard(scenario: OnboardingScenario, selected: Boolean, enabled: Boolean, onClick: () -> Unit) {
+private fun ScenarioCard(
+    scenario: OnboardingScenario,
+    model: OnboardingLiteRtModel,
+    selected: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
     val containerColor = if (selected) {
         MaterialTheme.colorScheme.primaryContainer
     } else {
@@ -402,18 +410,18 @@ private fun ScenarioCard(scenario: OnboardingScenario, selected: Boolean, enable
             }
             RadioCircle(selected = selected)
         }
-        ScenarioMetaRow(scenario = scenario)
+        ScenarioMetaRow(scenario = scenario, model = model)
     }
 }
 
 @Composable
-private fun ScenarioMetaRow(scenario: OnboardingScenario) {
+private fun ScenarioMetaRow(scenario: OnboardingScenario, model: OnboardingLiteRtModel) {
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(KnotworkTheme.spacing.sp2),
         verticalArrangement = Arrangement.spacedBy(KnotworkTheme.spacing.sp1),
     ) {
         MetaChip(
-            text = stringResource(R.string.knotwork_onboarding_scenario_meta_model, scenario.requiredModel.sizeLabel),
+            text = stringResource(R.string.knotwork_onboarding_scenario_meta_model, model.sizeLabel),
         )
         scenarioMetaExtras(scenario).forEach { chip -> MetaChip(text = chip.text, sensitive = chip.sensitive) }
     }
@@ -495,7 +503,7 @@ private fun DownloadStep(state: OnboardingViewState, callbacks: OnboardingCallba
     // The scenario's model is shown first ("needs this"), but the headline / body
     // follow the *currently selected* model so they stay consistent with the CTA
     // and progress when the user overrides via "Or choose another".
-    val requiredModel = scenario?.requiredModel ?: state.liteRtModel
+    val requiredModel = state.recommendedModel ?: scenario?.requiredModel ?: state.liteRtModel
     val selectedModel = state.liteRtModel
     Column(
         verticalArrangement = Arrangement.spacedBy(KnotworkTheme.spacing.sp3),

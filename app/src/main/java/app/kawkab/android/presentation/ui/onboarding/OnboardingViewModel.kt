@@ -148,7 +148,7 @@ class OnboardingViewModel @Inject constructor(
         // Write-once, so re-entering onboarding later never moves the start.
         // Declared after the state properties so the block can never run before
         // the fields a future marker might read are initialised.
-        _state.update { it.copy(liteRtModel = phoneModel()) }
+        _state.update { it.copy(liteRtModel = phoneModel(), recommendedModel = phoneModel()) }
         markMilestone(OnboardingMilestone.ONBOARDING_STARTED)
         attachToRunningDownload()
         observeInterruptions()

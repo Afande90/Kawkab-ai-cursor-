@@ -139,6 +139,11 @@ data class OnboardingViewState(
     val selectedScenario: OnboardingScenario? = null,
     val isSettingUpScenario: Boolean = false,
     val liteRtModel: OnboardingLiteRtModel = OnboardingLiteRtModel.Gemma4E4B,
+    /**
+     * The model this phone will download (E2B below flagship RAM, task 25), shown on the scenario
+     * cards and as "needs this"; `null` falls back to the scenario's model.
+     */
+    val recommendedModel: OnboardingLiteRtModel? = null,
     val scenarioPreview: OnboardingDefaultPipelinePreview? = null,
     val downloadProgress: Float? = null,
     val downloadError: String? = null,
