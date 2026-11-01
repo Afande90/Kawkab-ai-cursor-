@@ -399,6 +399,7 @@ Only Kotlin files appear inside the generated blocks.
     - `TriggerTelemetryTest.kt` - Pins the stable `telemetryKind` strings for every `TriggerCondition` variant.
   - `phoneaccess/` - Tests for the phone-access status lines and the missing-permission card.
     - `PhoneAccessStatusTest.kt` - Status lines and the card a command shows when a grant is missing.
+    - `PhoneAccessSummaryTest.kt` - Task 23: eight items, a "5 of 8 on" summary, and the banner count.
   - `pipelineio/` - Tests for the pipeline import/export gateway.
     - `CookbookRecipeValidationTest.kt` - Validates the pipeline recipes published in `docs/recipes/`, which [docs/cookbook.md] tells a reader to download and import.
     - `ImportedPipelineClaimsTest.kt` - `ImportedPipelineClaims` — an imported pipeline's `uses · …` hints keep only the tools its own TOOL nodes call.

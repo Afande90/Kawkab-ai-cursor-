@@ -74,6 +74,8 @@ Only Kotlin files appear inside the generated blocks.
     - `orchestrator/` - Compose tests for the pipeline-library surface.
       - `presets/` - Compose tests for the preset gallery.
         - `PresetCategoryBadgeLayoutTest.kt` - Layout guard for the preset category badge on both preset rows: asserts the badge sits entirely inside its row when the preset name is long. Instrumented rather than JVM because the same assertions under a Robolectric-hosted composition reported nonsense (a 62 dp root for a full-width row) and stayed green with every fix reverted. Measures **position**, not height — a starved badge that has been pushed past the right edge is the same bug one constraint later, and height does not see it.
+    - `phoneaccess/` - Emulator tests for the Phone access banner and its eight items.
+      - `PhoneAccessBannerTest.kt` - Task 23 on the emulator: with permissions off, the chat banner shows and opens Phone access.
     - `pipeline/` - Compose tests for the pipeline editor surface.
       - `editor/` - Compose tests for the editor screen.
         - `canvas/` - Compose tests for the canvas's own composables, measured on a device.

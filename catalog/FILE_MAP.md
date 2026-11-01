@@ -549,6 +549,8 @@ matters.
     - `MoreSectionsTest.kt` - Pins the structure of the More tab.
   - `onboarding/` - the scenario onboarding flow.
     - `OnboardingContentSnapshotTest.kt` - Roborazzi snapshot baseline for the scenario `OnboardingContent` across the value-gallery, motivated-download, and ready states, in both themes.
+  - `phoneaccess/` - Phone access screenshot goldens and card structure.
+    - `PhoneAccessContentSnapshotTest.kt` - Task 23: the Phone access cards, as screenshot goldens, and their structure.
   - `pipelines/` - the pipeline library and preset manager, including the README hero shot.
     - `HeroSnapshotTest.kt` - Roborazzi baseline for the README "Pipeline library" hero shot at the canonical 1080 × 2400 resolution.
     - `PipelineLibraryContentSnapshotTest.kt` - Roborazzi snapshot baseline for `PipelineLibraryContent` across the 7 documented states (`compose/screens/README.md §C3 · Pipeline library`) in both themes.
@@ -574,6 +576,7 @@ matters.
     - `RunLimitsSnapshotTest.kt` - Roborazzi baselines for the run-limits screen.
     - `SettingsCategorySnapshotTest.kt` - Roborazzi baseline for the settings category sub-screens.
     - `SettingsHintBehaviourTest.kt` - Behaviour of the settings hint affordance: the parts a Roborazzi baseline cannot show.
+    - `SettingsHubPhoneAccessTest.kt` - Task 23: Phone access is a Basic row on the settings hub, and it opens the screen.
     - `SettingsHubSearchTest.kt` - Behavioural tests for the settings-hub search surface: result rows render and route on tap, and the no-match empty state offers a working clear action.
     - `SettingsHubSnapshotTest.kt` - Roborazzi baseline for the redesigned settings **hub** (category list + inline Basic controls): Default / Loading / RestartRequired × Light/Dark, plus a font-scale 200% variant.
     - `SettingsPreview.kt` - Internal preview fixtures backing the settings hub + category snapshot suites.
