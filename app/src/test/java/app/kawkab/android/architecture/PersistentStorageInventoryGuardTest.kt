@@ -405,6 +405,21 @@ class PersistentStorageInventoryGuardTest {
         ),
 
         /**
+         * The wake word's on/off switch and its counters (`WakeWordSwitch`, task 27) and the
+         * "Confirm by voice" switch (`VoiceConfirmSwitch`, task 29): two small plain preferences
+         * files about this phone's microphone. The domain-wide `sharedpref` rule keeps them out of
+         * backups, so a restored phone starts with both off.
+         */
+        VOICE_SWITCHES(
+            domain = "sharedpref",
+            plaintextPath = null,
+            erasedBy = null,
+            kept = "two on/off switches and a wake counter, not user content",
+            archive = emptyList(),
+            notArchived = "microphone settings of this phone; a new phone starts with both off",
+        ),
+
+        /**
          * The hands activity log, one JSON-lines file. Readable, so it is excluded by name.
          * The recovery wipe is the locked-database escape and does not delete it.
          */
@@ -478,6 +493,8 @@ class PersistentStorageInventoryGuardTest {
             "/data/backup/RestoreLayout.kt" to "RESTORE, and the DATABASE, WORKSPACE, ATTACHMENTS it replaces",
             "/data/backup/StagedDatabasePreparer.kt" to "RESTORE: the staged database, opened once through Room",
             "/di/SafetyModule.kt" to "ACTIVITY_LOG",
+            "/voice/WakeWordSwitch.kt" to "VOICE_SWITCHES",
+            "/voice/VoiceConfirmSwitch.kt" to "VOICE_SWITCHES",
         )
     }
 }

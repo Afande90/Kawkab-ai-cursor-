@@ -6,6 +6,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import app.kawkab.android.domain.phoneaccess.PhoneAccessItem
 import app.kawkab.android.domain.phoneaccess.PhoneAccessStatus
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -31,8 +32,10 @@ class PhoneAccessBannerTest {
     }
 
     @Test
-    fun phoneAccessListsEightItems() {
+    fun phoneAccessListsEveryItem() {
+        // Ten since the wake word (task 27) and voice confirmation (task 29).
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals(8, AndroidPhoneAccess.lines(context).size)
+        assertEquals(PhoneAccessItem.entries.size, AndroidPhoneAccess.lines(context).size)
+        assertEquals(10, PhoneAccessItem.entries.size)
     }
 }
