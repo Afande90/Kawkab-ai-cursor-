@@ -443,3 +443,7 @@ The screen is a design-system screen in the catalog: a progress line, then eight
 ## 2026-11-01 — floating accessibility button (task 23b)
 
 The accessibility service config adds `flagRequestAccessibilityButton`, and the service registers an `AccessibilityButtonController` callback when it connects (and removes it when it stops). A tap opens the assistant panel through the voice interaction service when Kawkab holds the assistant role; the panel reads the current screen only when the owner allows it, as before. Without the role, the tap opens a new chat. Android's accessibility button reports no long-press, so there is no long-press action.
+
+## 2026-11-01 — the mic before M4 (task 23c)
+
+The composer mic dictates with Android's `SpeechRecognizer` and `EXTRA_PREFER_OFFLINE = true`, using `createOnDeviceSpeechRecognizer` when the phone has one, so audio does not go to a cloud recognizer through Kawkab. The language is `ar-SD` on an Arabic phone (Android falls back to `ar` when it has no Sudanese model) and `en-US` otherwise. The transcript is added to the input box; nothing is sent until the owner taps Send. A missing offline language shows a message with Download, which starts the on-device model download on Android 13+ or opens the voice-input settings. With no recognizer at all, a one-line hint replaces the error card. The old record-and-transcribe path stays in the code for audio-capable models but the mic no longer starts it. Recording a clip from the attach menu is unchanged.
