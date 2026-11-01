@@ -264,3 +264,32 @@ not in the APK and were not copied.
     No licence file on the repository. No code was copied.
   * PocketClaw — MIT License
     https://github.com/ManojRakshu/pocketclaw
+
+--------------------------------------------------------------------------------
+sherpa-onnx — Apache License 2.0
+--------------------------------------------------------------------------------
+
+com.github.k2-fsa.sherpa-onnx:sherpa-onnx v1.13.8 (keyword spotting and VAD for the wake word),
+and the bundled sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01 model.
+Copyright (c) 2022-2026 Xiaomi Corporation and the k2-fsa contributors
+https://github.com/k2-fsa/sherpa-onnx
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+--------------------------------------------------------------------------------
+ONNX Runtime — MIT License
+--------------------------------------------------------------------------------
+
+Inside the sherpa-onnx AAR. Copyright (c) Microsoft Corporation.
+https://github.com/microsoft/onnxruntime
+
+--------------------------------------------------------------------------------
+Silero VAD — MIT License
+--------------------------------------------------------------------------------
+
+assets/wake/silero_vad.onnx. Copyright (c) 2020-present Silero Team.
+https://github.com/snakers4/silero-vad
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software
+and associated documentation files (the "Software"), to deal in the Software without
+restriction, subject to the conditions of the MIT License; the above copyright notice and this
+permission notice shall be included in all copies or substantial portions of the Software.

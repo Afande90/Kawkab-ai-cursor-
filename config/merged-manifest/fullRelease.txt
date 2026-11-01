@@ -25,6 +25,7 @@ uses-permission android.permission.CALL_PHONE
 uses-permission android.permission.EXECUTE_APP_FUNCTIONS
 uses-permission android.permission.FOREGROUND_SERVICE
 uses-permission android.permission.FOREGROUND_SERVICE_DATA_SYNC
+uses-permission android.permission.FOREGROUND_SERVICE_MICROPHONE
 uses-permission android.permission.FOREGROUND_SERVICE_SPECIAL_USE
 uses-permission android.permission.INTERNET
 uses-permission android.permission.POST_NOTIFICATIONS

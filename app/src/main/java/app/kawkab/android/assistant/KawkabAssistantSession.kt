@@ -32,6 +32,7 @@ import app.kawkab.android.presentation.ui.phoneaccess.AndroidPhoneAccess
 import app.kawkab.android.voice.ConversationDriver
 import app.kawkab.android.voice.OfflineSpeech
 import app.kawkab.android.voice.OfflineVoice
+import app.kawkab.android.voice.WakeWordService
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -78,13 +79,17 @@ class KawkabAssistantSession(
     override fun onShow(args: android.os.Bundle?, showFlags: Int) {
         super.onShow(args, showFlags)
         release.shown()
-        // A long-press of power (or the assist gesture) starts conversation mode at once (task 23l).
-        if (VoiceStart.fromGesture(showFlags) && hasMicrophone()) conversation().tap()
+        // The panel holds the microphone now; the wake word listens again when it closes (task 27).
+        WakeWordService.pause()
+        // A long-press of power, the assist gesture or the wake word starts conversation mode at once.
+        val woke = args?.getBoolean(WakeWordService.EXTRA_WAKE) == true
+        if ((woke || VoiceStart.fromGesture(showFlags)) && hasMicrophone()) conversation().tap()
     }
 
     override fun onHide() {
         conversation?.release()
         conversation = null
+        WakeWordService.resume()
         release.hidden()
         super.onHide()
     }

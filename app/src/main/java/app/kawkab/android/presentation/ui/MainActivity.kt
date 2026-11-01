@@ -32,6 +32,7 @@ import app.kawkab.android.presentation.ui.navigation.AppShellScaffold
 import app.kawkab.android.presentation.ui.navigation.NavRoutes
 import app.kawkab.android.presentation.ui.navigation.navigateToDeepLink
 import app.kawkab.android.presentation.ui.phoneaccess.AndroidPhoneAccess
+import app.kawkab.android.voice.WakeWordService
 import com.jakewharton.processphoenix.ProcessPhoenix
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -80,6 +81,12 @@ class MainActivity : ComponentActivity() {
      * *subsequent* intent so a warm tap navigates in place instead of stacking a
      * second chat.
      */
+    override fun onResume() {
+        super.onResume()
+        // A microphone service may start only while the app is in front (task 27).
+        WakeWordService.startIfEnabled(this)
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)

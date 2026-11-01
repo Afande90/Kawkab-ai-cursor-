@@ -474,6 +474,14 @@ android {
             // its HITL gate and its ceilings. The release workflow asserts the library
             // stays out and `mediapipe_tasks_jni` stays in.
             excludes += "**/libmediapipe_tasks_textgenai_jni.so"
+            // sherpa-onnx (task 27) loads only its JNI library and onnxruntime; its C and C++
+            // API libraries are for other languages.
+            excludes += "**/libsherpa-onnx-c-api.so"
+            excludes += "**/libsherpa-onnx-cxx-api.so"
+            // Native libraries are stored compressed (task 27). Stored uncompressed they were 134 MB
+            // of the 150 MB APK limit, and onnxruntime adds 27 MB more. Android extracts them at
+            // install; the download is about half the size.
+            useLegacyPackaging = true
         }
     }
 
@@ -2208,6 +2216,8 @@ dependencies {
     // LiteRT LLM Inference
     implementation(libs.litertlm)
     implementation(libs.llamatik)
+    // Wake word (task 27): keyword spotting and Silero VAD on onnxruntime.
+    implementation(libs.sherpa.onnx)
 
     // MediaPipe Tasks Text.
     //

@@ -54,6 +54,9 @@ enum class PhoneAccessKind {
 
     /** The digital assistant role. */
     Assistant,
+
+    /** Listening for the wake word "Kawkab" (task 27). */
+    WakeWord,
 }
 
 /**
@@ -190,6 +193,7 @@ private fun iconOf(kind: PhoneAccessKind): ImageVector = when (kind) {
     PhoneAccessKind.ScreenControl -> AppIcons.Eye
     PhoneAccessKind.Background -> AppIcons.Bolt
     PhoneAccessKind.Assistant -> AppIcons.Chat
+    PhoneAccessKind.WakeWord -> AppIcons.Mic
 }
 
 private const val ICON_DP = 20

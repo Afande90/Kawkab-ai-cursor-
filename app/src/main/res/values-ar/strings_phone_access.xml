@@ -41,4 +41,27 @@
         <item quantity="many">يحتاج كوكب %d إذناً. انقر لفتح الوصول إلى الهاتف.</item>
         <item quantity="other">يحتاج كوكب %d إذن. انقر لفتح الوصول إلى الهاتف.</item>
     </plurals>
+    <!-- Task 27: wake word. -->
+    <string name="phone_access_item_wake">كلمة التنبيه</string>
+    <string name="phone_access_reason_wake">قل «كوكب» لتبدأ الكلام دون لمس الهاتف. الاستماع يبقى على الهاتف ولا يُسجَّل شيء.</string>
+    <string name="wake_turn_on">تشغيل</string>
+    <string name="wake_turn_off">إيقاف</string>
+    <string name="wake_note_off">اختياري. يظهر إشعار ما دام كوكب يستمع. بعد إعادة التشغيل افتح كوكب مرة ليبدأ من جديد.</string>
+    <string name="wake_note_starting">يستمع الآن. تظهر الأرقام بعد 15 دقيقة.</string>
+    <string name="wake_note_battery">بطارية الهاتف: %1$s%% في الساعة أثناء الاستماع.</string>
+    <string name="wake_note_battery_unknown">يظهر استهلاك البطارية بعد 15 دقيقة دون شحن.</string>
+    <string name="wake_channel_name">كلمة التنبيه</string>
+    <string name="wake_notification_title">كوكب يستمع لاسمه</string>
+    <string name="wake_notification_body">قل «كوكب». لا يُسجَّل شيء ولا يُرسَل.</string>
+    <string name="wake_notification_stop">إيقاف</string>
+    <string name="wake_heard_title">كوكب سمعك</string>
+    <string name="wake_heard_body">اضغط لتتكلم. اجعل كوكب المساعد لتستغني عن هذه الضغطة.</string>
+    <plurals name="wake_note_wakes">
+        <item quantity="zero">لم يستيقظ في %2$s ساعة.</item>
+        <item quantity="one">استيقظ مرة واحدة في %2$s ساعة (%3$s في الساعة).</item>
+        <item quantity="two">استيقظ مرتين في %2$s ساعة (%3$s في الساعة).</item>
+        <item quantity="few">استيقظ %1$d مرات في %2$s ساعة (%3$s في الساعة).</item>
+        <item quantity="many">استيقظ %1$d مرة في %2$s ساعة (%3$s في الساعة).</item>
+        <item quantity="other">استيقظ %1$d مرة في %2$s ساعة (%3$s في الساعة).</item>
+    </plurals>
 </resources>

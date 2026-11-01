@@ -19,6 +19,13 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        // sherpa-onnx (task 27) publishes its Android AAR only on GitHub releases and JitPack.
+        // JitPack serves the release AAR byte for byte (SHA-256 pinned in verification-metadata),
+        // and only for this one group.
+        exclusiveContent {
+            forRepository { maven("https://jitpack.io") }
+            filter { includeGroup("com.github.k2-fsa.sherpa-onnx") }
+        }
     }
 }
 

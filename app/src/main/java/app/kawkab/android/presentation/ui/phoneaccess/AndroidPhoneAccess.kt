@@ -9,9 +9,11 @@ import android.provider.Settings
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import app.kawkab.android.assistant.AssistantRoleRequest
+import app.kawkab.android.domain.phoneaccess.MissingPermission
 import app.kawkab.android.domain.phoneaccess.PhoneAccessItem
 import app.kawkab.android.domain.phoneaccess.PhoneAccessLine
 import app.kawkab.android.domain.phoneaccess.PhoneAccessStatus
+import app.kawkab.android.voice.WakeWordSwitch
 
 /**
  * Reads the phone's current grants. The screen shows one status line per item.
@@ -57,6 +59,8 @@ object AndroidPhoneAccess {
                     power?.isIgnoringBatteryOptimizations(context.packageName) == true
                 }
                 PhoneAccessItem.ASSISTANT -> AssistantRoleRequest.isHeld(context)
+                PhoneAccessItem.WAKE_WORD ->
+                    WakeWordSwitch.isEnabled(context) && granted(context, MissingPermission.RECORD_AUDIO)
                 else -> granted(context, PhoneAccessStatus.permission(item))
             }
         }

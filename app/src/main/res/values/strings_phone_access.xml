@@ -37,4 +37,23 @@
         <item quantity="one">Kawkab needs %d permission. Tap to open Phone access.</item>
         <item quantity="other">Kawkab needs %d permissions. Tap to open Phone access.</item>
     </plurals>
+    <!-- Task 27: wake word. -->
+    <string name="phone_access_item_wake">Wake word</string>
+    <string name="phone_access_reason_wake">Say “Kawkab” to start talking without touching the phone. Listening stays on the phone and nothing is recorded.</string>
+    <string name="wake_turn_on">Turn on</string>
+    <string name="wake_turn_off">Turn off</string>
+    <string name="wake_note_off">Optional. A notification shows while Kawkab listens. After a restart, open Kawkab once to start it again.</string>
+    <string name="wake_note_starting">Listening. Numbers appear after 15 minutes.</string>
+    <string name="wake_note_battery">Phone battery: %1$s%% per hour while listening.</string>
+    <string name="wake_note_battery_unknown">Battery use shows once the phone has not charged for 15 minutes.</string>
+    <string name="wake_channel_name">Wake word</string>
+    <string name="wake_notification_title">Kawkab is listening for its name</string>
+    <string name="wake_notification_body">Say “Kawkab”. Nothing is recorded or sent.</string>
+    <string name="wake_notification_stop">Stop</string>
+    <string name="wake_heard_title">Kawkab heard you</string>
+    <string name="wake_heard_body">Tap to talk. Make Kawkab the assistant to skip this tap.</string>
+    <plurals name="wake_note_wakes">
+        <item quantity="one">Woke %1$d time in %2$s h (%3$s per hour).</item>
+        <item quantity="other">Woke %1$d times in %2$s h (%3$s per hour).</item>
+    </plurals>
 </resources>

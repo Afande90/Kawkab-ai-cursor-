@@ -431,6 +431,10 @@ The image loader (`io.coil-kt.coil3:coil-compose:3.6.3`) is a direct dependency 
 | PhoneCLI (github.com/HKUDS/PhoneCLI) | MIT | credited; no code copied | https://github.com/HKUDS/PhoneCLI | no |
 | Local Assistant (github.com/sergarsilla/local-assistant) | Apache-2.0 | credited; no code copied | https://github.com/sergarsilla/local-assistant | no |
 | Llamatik (github.com/ferranpons/Llamatik, com.llamatik:core 2.0.0) | MIT | llama.cpp runtime; Gradle dependency; native libraries in the APK; no weights bundled | https://github.com/ferranpons/Llamatik | yes |
+| sherpa-onnx (github.com/k2-fsa/sherpa-onnx, 1.13.8 AAR via JitPack, same bytes as the release asset) | Apache-2.0 | Wake-word keyword spotter and VAD; native libraries in the APK | https://github.com/k2-fsa/sherpa-onnx | yes |
+| ONNX Runtime (inside the sherpa-onnx AAR) | MIT | Runs the wake-word models | https://github.com/microsoft/onnxruntime | yes |
+| sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01 | Apache-2.0 | Keyword model in `assets/wake/` | https://github.com/k2-fsa/sherpa-onnx/releases/tag/kws-models | yes |
+| Silero VAD (silero_vad.onnx) | MIT | Voice activity detector in `assets/wake/` | https://github.com/snakers4/silero-vad | yes |
 | Qwen3 1.7B | Apache-2.0 | selectable tool-call brain; Q4_K_M GGUF is an owner download; not in the APK | https://huggingface.co/Qwen/Qwen3-1.7B | no |
 | OnDevice LLM (github.com/sebytzr16/on-device-llm) | MIT | credited; no code copied | https://github.com/sebytzr16/on-device-llm | no |
 | FunctionGemma 270M (google/functiongemma-270m-it) | Gemma Terms of Use | gated; tier-2 intent candidate; not downloaded; not fine-tuned here | https://huggingface.co/google/functiongemma-270m-it | no |

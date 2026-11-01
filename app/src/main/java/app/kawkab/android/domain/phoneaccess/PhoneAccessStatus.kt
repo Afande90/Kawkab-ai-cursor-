@@ -24,7 +24,8 @@ object PhoneAccessStatus {
         PhoneAccessItem.CALENDAR -> MissingPermission.WRITE_CALENDAR
         PhoneAccessItem.NOTIFICATIONS -> MissingPermission.POST_NOTIFICATIONS
         PhoneAccessItem.MICROPHONE -> MissingPermission.RECORD_AUDIO
-        PhoneAccessItem.ACCESSIBILITY, PhoneAccessItem.BATTERY, PhoneAccessItem.ASSISTANT -> null
+        PhoneAccessItem.ACCESSIBILITY, PhoneAccessItem.BATTERY, PhoneAccessItem.ASSISTANT, PhoneAccessItem.WAKE_WORD,
+        -> null
     }
 
     /**
@@ -36,12 +37,12 @@ object PhoneAccessStatus {
     fun summary(lines: List<PhoneAccessLine>): Pair<Int, Int> = lines.count { it.on } to lines.size
 
     /**
-     * How many items are still off, for the chat banner.
+     * How many items are still off, for the chat banner. The wake word is optional and not counted.
      *
      * @param lines The current lines.
      * @return The count.
      */
-    fun offCount(lines: List<PhoneAccessLine>): Int = lines.count { !it.on }
+    fun offCount(lines: List<PhoneAccessLine>): Int = lines.count { !it.on && it.item != PhoneAccessItem.WAKE_WORD }
 
     /**
      * True when [enabledServices] names [serviceClass].
@@ -77,6 +78,9 @@ enum class PhoneAccessItem {
 
     /** Being the phone's digital assistant (task 23). */
     ASSISTANT,
+
+    /** Listening for "Kawkab" in the background; optional, so it never counts as missing (task 27). */
+    WAKE_WORD,
 }
 
 /**

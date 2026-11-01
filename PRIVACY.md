@@ -393,6 +393,7 @@ would. Kawkab never checks on its own.
 | Internet, network state | Model downloads, and the opt-in cloud/MCP/tool paths above | Always declared; used only for the paths you configure |
 | Notifications | Run progress, background-run results, confirmation prompts, model downloads and why one stopped | Asked on first run |
 | Microphone | Voice input you record for a message; processed on-device | Asked when you first record audio |
+| Microphone in the background | The wake word "Kawkab": a foreground service with a notification listens on the phone. Audio is never stored and never sent; the models ship in the app | Only after you turn on Wake word in Phone access; the notification's Stop turns it off |
 | Approximate and precise location | Only to match a Wi-Fi trigger against specific network names — Android ties Wi-Fi identity to location | Asked only if you scope a Wi-Fi trigger to named networks |
 | Foreground service, wake lock | Keeping a model download or a running pipeline alive while the screen is off | Used only while such work is running |
 | Run at boot | Re-arming your scheduled triggers after a restart, so an automation you set up does not silently stop | Declared by the scheduling library; used only if you created a trigger |

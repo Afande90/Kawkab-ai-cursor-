@@ -22,6 +22,8 @@
     <!-- Granted to ModelDownloadWorker so a multi-gigabyte model download keeps
          running (and stays visible) while the user leaves the app. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <!-- Wake word "Kawkab" (task 27): a microphone service with a visible notification. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <!-- ACTION_CALL only. The outbound card is the gate. There is no SEND_SMS permission. -->
@@ -304,6 +306,12 @@
                 <action android:name="android.app.appfunctions.AppFunctionService" />
             </intent-filter>
         </service>
+
+        <!-- Wake word (task 27). Not exported: only the app starts and stops it. -->
+        <service
+            android:name=".voice.WakeWordService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
 
         <service
             android:name=".data.services.AgentForegroundService"

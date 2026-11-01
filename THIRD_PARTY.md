@@ -48,6 +48,7 @@ Fine-tunes inherit those terms. EmbeddingGemma has no verified model card in thi
 - PhoneCLI (github.com/HKUDS/PhoneCLI, MIT): the idea of stored app maps and macros replayed with no model call. No code was copied.
 - Local Assistant (github.com/sergarsilla/local-assistant, Apache-2.0): the idea of registering as the digital assistant and of trying Qwen3 1.7B for tool calls. No code was copied. Their published tool-choice counts are theirs, not a Kawkab measurement.
 - Llamatik (github.com/ferranpons/Llamatik, MIT, com.llamatik:core 2.0.0): the llama.cpp runtime. The library is a Gradle dependency, so its native code is in the APK. No weights are bundled.
+- sherpa-onnx (github.com/k2-fsa/sherpa-onnx, Apache-2.0, 1.13.8 AAR) with ONNX Runtime (MIT): the wake word (task 27). Bundled in `assets/wake/`: the sherpa-onnx-kws-zipformer-gigaspeech-3.3M-2024-01-01 keyword model (Apache-2.0) and Silero VAD (github.com/snakers4/silero-vad, MIT).
 - Qwen3 1.7B (Apache-2.0): a selectable tool-call brain. The Models screen can download the Q4_K_M GGUF. The weights are not in the APK.
 - OnDevice LLM (github.com/sebytzr16/on-device-llm, MIT): the idea of Parakeet and Kokoro for on-device speech. No code was copied.
 - FunctionGemma 270M (google/functiongemma-270m-it, Gemma Terms of Use, gated): a tier-2 intent candidate. Not downloaded. Not fine-tuned here.

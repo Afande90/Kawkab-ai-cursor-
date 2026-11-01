@@ -26,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
@@ -40,6 +41,7 @@ import app.kawkab.android.domain.phoneaccess.MissingPermission
 import app.kawkab.android.domain.phoneaccess.PhoneAccessItem
 import app.kawkab.android.domain.phoneaccess.PhoneAccessLine
 import app.kawkab.android.domain.phoneaccess.PhoneAccessStatus
+import app.kawkab.android.voice.WakeWordSwitch
 import app.kawkab.design.components.chat.ChatContent
 import app.kawkab.design.components.chat.ChatRole
 import app.kawkab.design.screens.chat.ChatHomeMessageRow
@@ -92,6 +94,14 @@ fun PhoneAccessScreen(onDone: () -> Unit, requestPermission: String? = null) {
                 permission != null -> permissionLauncher.launch(permission)
                 item == PhoneAccessItem.ACCESSIBILITY -> openSafely(context, AndroidPhoneAccess.accessibilitySettings())
                 item == PhoneAccessItem.BATTERY -> openSafely(context, AndroidPhoneAccess.batterySettings(context))
+                item == PhoneAccessItem.WAKE_WORD -> {
+                    if (micOn(lines)) {
+                        WakeWordSwitch.set(context, !on)
+                        tick += 1
+                    } else {
+                        permissionLauncher.launch(MissingPermission.RECORD_AUDIO)
+                    }
+                }
                 else -> AssistantRoleRequest.create(context)?.let(roleLauncher::launch)
                     ?: openSafely(context, AssistantRoleRequest.settingsFallback(context))
             }
@@ -115,9 +125,39 @@ private fun card(line: PhoneAccessLine): PhoneAccessCard = PhoneAccessCard(
         PhoneAccessItem.ASSISTANT ->
             stringResource(R.string.phone_access_power_button) + "\n" +
                 stringResource(R.string.phone_access_assistant_fallback)
+        PhoneAccessItem.WAKE_WORD -> wakeNote(line.on)
         else -> null
     },
 )
+
+private fun micOn(lines: List<PhoneAccessLine>): Boolean =
+    lines.firstOrNull { it.item == PhoneAccessItem.MICROPHONE }?.on == true
+
+/** The wake word card's counters: wakes and battery per hour since it was turned on (task 27). */
+@Composable
+private fun wakeNote(on: Boolean): String {
+    val context = LocalContext.current
+    val stats = WakeWordSwitch.stats(context)
+    if (!on || stats == null) return stringResource(R.string.wake_note_off)
+    val now = System.currentTimeMillis()
+    val perHour = stats.wakesPerHour(now)
+        ?: return stringResource(R.string.wake_note_starting)
+    val charging = WakeWordSwitch.charged(context) || WakeWordSwitch.isCharging(context)
+    val battery = stats.batteryPerHour(now, WakeWordSwitch.batteryPercent(context), charging)
+    val wakes =
+        pluralStringResource(
+            R.plurals.wake_note_wakes,
+            stats.wakes,
+            stats.wakes,
+            "%.1f".format(stats.hours(now)),
+            "%.2f".format(perHour),
+        )
+    return if (battery == null) {
+        wakes + "\n" + stringResource(R.string.wake_note_battery_unknown)
+    } else {
+        wakes + "\n" + stringResource(R.string.wake_note_battery, "%.1f".format(battery))
+    }
+}
 
 private fun appInfo(context: Context): Intent =
     Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
@@ -132,6 +172,7 @@ private fun kindOf(item: PhoneAccessItem): PhoneAccessKind = when (item) {
     PhoneAccessItem.ACCESSIBILITY -> PhoneAccessKind.ScreenControl
     PhoneAccessItem.BATTERY -> PhoneAccessKind.Background
     PhoneAccessItem.ASSISTANT -> PhoneAccessKind.Assistant
+    PhoneAccessItem.WAKE_WORD -> PhoneAccessKind.WakeWord
 }
 
 private fun itemOf(kind: PhoneAccessKind): PhoneAccessItem = PhoneAccessItem.entries.first { kindOf(it) == kind }
@@ -145,9 +186,11 @@ private fun titleOf(item: PhoneAccessItem): Int = when (item) {
     PhoneAccessItem.ACCESSIBILITY -> R.string.phone_access_item_screen
     PhoneAccessItem.BATTERY -> R.string.phone_access_item_background
     PhoneAccessItem.ASSISTANT -> R.string.phone_access_item_assistant
+    PhoneAccessItem.WAKE_WORD -> R.string.phone_access_item_wake
 }
 
 private fun buttonOf(item: PhoneAccessItem, on: Boolean): Int = when {
+    item == PhoneAccessItem.WAKE_WORD -> if (on) R.string.wake_turn_off else R.string.wake_turn_on
     on -> R.string.phone_access_button_review
     item == PhoneAccessItem.ACCESSIBILITY -> R.string.phone_access_accessibility_open
     item == PhoneAccessItem.BATTERY -> R.string.phone_access_battery_open
@@ -255,6 +298,7 @@ private fun reasonOf(item: PhoneAccessItem): Int = when (item) {
     PhoneAccessItem.ACCESSIBILITY -> R.string.phone_access_reason_accessibility
     PhoneAccessItem.BATTERY -> R.string.phone_access_reason_battery
     PhoneAccessItem.ASSISTANT -> R.string.phone_access_reason_assistant
+    PhoneAccessItem.WAKE_WORD -> R.string.phone_access_reason_wake
 }
 
 private fun openSafely(context: Context, intent: Intent) {
