@@ -7,6 +7,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.platform.app.InstrumentationRegistry
 import app.kawkab.design.screens.onboarding.OnboardingScenario
 import app.kawkab.design.screens.onboarding.OnboardingStep
@@ -136,7 +137,8 @@ class OnboardingScreenPagerTest {
         val phoneAccessTitle = ctx.getString(app.kawkab.android.R.string.phone_access_title)
         val phoneAccessDone = ctx.getString(app.kawkab.android.R.string.phone_access_done)
         composeTestRule.onNodeWithText(text = phoneAccessTitle).assertIsDisplayed()
-        composeTestRule.onNodeWithText(text = phoneAccessDone).performClick()
+        // The list grew with the assistant card (task 23), so Done sits below the fold.
+        composeTestRule.onNodeWithText(text = phoneAccessDone).performScrollTo().performClick()
         assertEquals("onCompleted should fire exactly once after phone access", 1, completed)
     }
 
