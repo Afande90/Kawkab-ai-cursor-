@@ -447,3 +447,7 @@ The accessibility service config adds `flagRequestAccessibilityButton`, and the 
 ## 2026-11-01 — the mic before M4 (task 23c)
 
 The composer mic dictates with Android's `SpeechRecognizer` and `EXTRA_PREFER_OFFLINE = true`, using `createOnDeviceSpeechRecognizer` when the phone has one, so audio does not go to a cloud recognizer through Kawkab. The language is `ar-SD` on an Arabic phone (Android falls back to `ar` when it has no Sudanese model) and `en-US` otherwise. The transcript is added to the input box; nothing is sent until the owner taps Send. A missing offline language shows a message with Download, which starts the on-device model download on Android 13+ or opens the voice-input settings. With no recognizer at all, a one-line hint replaces the error card. The old record-or-pick chooser (transcription by an audio-capable model) stays in the code, but the mic no longer opens it; it comes back with the M4 voice stack.
+
+## 2026-11-01 — leftover knot icon (task 24)
+
+The onboarding header and the empty-chat brand tile drew the upstream hub glyph, which reads as the old knot logo, next to "Kawkab". Both now draw the planet mark (`AppIcons.Mark`), and the branding test checks both. The hub glyph stays where it means "discover models" (the Models top bar and the Discover rows); it is a function icon, not a logo. The empty-chat and onboarding screenshot goldens were re-recorded; no other golden changed.

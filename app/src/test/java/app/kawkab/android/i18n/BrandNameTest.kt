@@ -54,4 +54,23 @@ class BrandNameTest {
         val COMMENT: Regex = Regex("""<!--.*?-->""", RegexOption.DOT_MATCHES_ALL)
         val BODY: Regex = Regex("""<(?:string|item)\b[^>]*>(.*?)</(?:string|item)>""", RegexOption.DOT_MATCHES_ALL)
     }
+
+    @Test
+    fun `the onboarding header and the empty-chat tile draw the planet mark, not the knot`() {
+        // Task 24: the upstream hub (knot) glyph sat next to "Kawkab" in both places.
+        val onboarding = java.io.File(
+            "../catalog/src/main/java/app/kawkab/design/screens/onboarding/OnboardingContent.kt",
+        ).readText()
+        val brandIcon =
+            Regex(
+                "imageVector = AppIcons\\.(\\w+),\\s*contentDescription = null,\\s*tint = MaterialTheme.colorScheme.primary,\\s*modifier = Modifier.size\\(LogoIconSize\\)",
+            )
+        org.junit.Assert.assertEquals("Mark", brandIcon.find(onboarding)?.groupValues?.get(1))
+        val chat = java.io.File("../catalog/src/main/java/app/kawkab/design/screens/chat/ChatHomeContent.kt").readText()
+        val tileIcon =
+            Regex(
+                "imageVector = AppIcons\\.(\\w+),\\s*contentDescription = null,\\s*tint = MaterialTheme.colorScheme.primary,\\s*modifier = Modifier.size\\(BrandGlyphInnerSize\\)",
+            )
+        org.junit.Assert.assertEquals("Mark", tileIcon.find(chat)?.groupValues?.get(1))
+    }
 }
