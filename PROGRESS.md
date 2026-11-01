@@ -41,7 +41,21 @@ Dates are calendar dates in Asia/Dubai. The owner asked for commits on `main` an
 | 21. Phone-access setup | done | 30 Oct 2026 | `3e1dd845` (`3d27b8ee` tests, `5b2ed210` extras guard and Continue, `ff0e9901` lint) |
 | 22. Close out M1.5 and tag `m1.5` | done | 30 Oct 2026 | this commit, tag `m1.5` |
 
-Next task: M2 is not split into tasks yet. Do not start it until those tasks are written.
+## M1.6
+
+| Task | Status | Date | Commit |
+|---|---|---|---|
+| 23f. Engine window back to 4,096, allocation recovery, runtime labels | done | 31 Oct 2026 | `488dcfd8` (tests `de8ce71d`, `9c2c5cd0`) |
+| 23d. Accessibility work per event; tab-switch benchmark (gate BLOCKED) | done | 31 Oct 2026 | `26b4eeac` (tests `dea53681`, benchmark `d59c0096`, `7a8e1caf`) |
+| 23j. Call flow: chips, word matching, App info, dialer fallback, 60 s limit | done | 31 Oct 2026 | `ab579a21` (tests `8cd55511`) |
+| 23h. Stray quotes, tool names as text, re-ask | done | 31 Oct 2026 | `154fa83b` (tests `9e62489b`) |
+| 23i. LOCAL tier with Undo, readable cards, time format | done | 31 Oct 2026 | `bc69ddec` (tests `e14c5918`) |
+
+Next task: 23g.
+
+Tasks 23f, 23d, 23j, 23h and 23i, 31 Oct 2026: the GitHub Check passed on `532d80c6` (run 41252985203), which contains all five. Instrumented on `532d80c6` (run 41252985223): Full API 36, Foss API 36 and Full API 34 passed; the tab-switch benchmark job failed (see DECISIONS.md, 23d BLOCKED). Local checks for each task: `:app:ktlintCheck`, `:app:detekt`, `:app:verifyFileMap`, `:app:verifyNoOrphanedKdoc` and the targeted `:app:testFossDebugUnitTest` classes named in each test commit. BLOCKED gates: 23f emulator reply with E2B (hardware), 23d median frame time on the emulator.
+
+
 
 Task 20c, 29 Oct 2026: a planner line must be one typed decision. The history keeps the goal and the last 9 steps. Four error tiers each have a recovery. The loop stops after 5 failures in a row, or the same unknown tool 3 times. Successful commands are stored on the Growth screen and can be deleted. The same sentence replays with no model when the grammar does not match. The owner line is first on every local and cloud prompt. Stated facts are injected when any are stored. A biometric check is asked only after the tap, and only when the tool tier and the words both say the step is risky. The hands path still completes on the tap, because the card has no fingerprint prompt yet. Older images in the prompt become a text note capped at 100 tokens. Gecko was not measured. EmbeddingGemma stays. PocketClaw's 1–3 second and 5 second figures are theirs. Checks: `:app:ktlintFormat`, `:app:ktlintCheck`, `:app:detekt`, and `:app:testFossDebugUnitTest` for `HarnessRulesTest` (10 tests, 0 failures), `ChatTierRouterTest`, `HandsSafetyTest`, `LiteRtNodeExecutorTest`, and `CloudLlmNodeExecutorTest` passed (`/tmp/gradle-t20c-tests2.log`, BUILD SUCCESSFUL in 10s). `:app:verifyFileMap` and `:app:verifyDocLinks` passed (`/tmp/gradle-t20c-verify.log`, BUILD SUCCESSFUL in 1s). The emulator was not run. No gate is BLOCKED. GitHub Actions was not run.
 
