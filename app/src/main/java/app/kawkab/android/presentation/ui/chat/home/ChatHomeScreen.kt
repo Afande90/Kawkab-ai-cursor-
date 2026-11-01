@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -679,8 +680,11 @@ fun ChatHomeScreen(
         }
         PhoneAccessBanner(
             onOpen = onOpenPhoneAccess,
+            // Below the top bar, which sits under the status bar: without the inset the banner
+            // covered the overflow button on phones with a tall status bar.
             modifier = Modifier
                 .align(Alignment.TopCenter)
+                .windowInsetsPadding(WindowInsets.statusBars)
                 .padding(top = 64.dp),
         )
         ConversationButton(
