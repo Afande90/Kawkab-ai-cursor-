@@ -51,7 +51,20 @@ Dates are calendar dates in Asia/Dubai. The owner asked for commits on `main` an
 | 23h. Stray quotes, tool names as text, re-ask | done | 31 Oct 2026 | `154fa83b` (tests `9e62489b`) |
 | 23i. LOCAL tier with Undo, readable cards, time format | done | 31 Oct 2026 | `bc69ddec` (tests `e14c5918`) |
 
-Next task: 23g.
+| 23g. One reply in the user's language; shorter prompt (model scoring BLOCKED) | done | 1 Nov 2026 | `ed9a4a38`, `075f6e50`, `f4f95034` (set `e9b0c2c4`, tests `219397ec`) |
+| 23e. GGUF active only after a load; Gemma fallback | done | 1 Nov 2026 | `6dfdbc81` (tests `2c0041fc`) |
+| 23k. Real assistant role, tile, shortcut, power-button step | done | 1 Nov 2026 | `229d2f73`, `a7884058` (tests `31398016`) |
+| 23l. Conversation mode, offline speech in and out | done | 1 Nov 2026 | `5636a43b` (tests `05e4e2b3`) |
+| 23. Phone access easy to find and read | done | 1 Nov 2026 | `22cddc4e`, `2dcde7a4` (tests `2d2d870c`, `1b9b0e27`) |
+| 23b. Floating accessibility button opens the panel | done | 1 Nov 2026 | `0a5c104e` (tests `6437e382`) |
+| 23c. Mic dictates offline | done | 1 Nov 2026 | `04c9bbd7`, `2356b8c3`, `e1f0bea5` (tests `5b773dd3`) |
+| 24. Planet mark replaces the old icon | done | 1 Nov 2026 | `790a4a3e` (tests `50993d31`) |
+| 25. Onboarding shows this phone's model size | done | 1 Nov 2026 | `fa5247ff` (tests `2cc14113`) |
+| 25b. One fixed signing key (secrets BLOCKED: owner steps in docs/owner-checks/M1.6.md) | done, BLOCKED part | 1 Nov 2026 | `c79851dc` |
+| 25c. Pre-release APK per green push; Check for updates on About | done | 1 Nov 2026 | `e1e6475c` (tests `4bf4b478`) |
+| 26. Close out: green Check, owner check, tag `m1.6` | done | 1 Nov 2026 | this commit |
+
+Next task: 27 (M1.7).
 
 Tasks 23f, 23d, 23j, 23h and 23i, 31 Oct 2026: the GitHub Check passed on `532d80c6` (run 41252985203), which contains all five. Instrumented on `532d80c6` (run 41252985223): Full API 36, Foss API 36 and Full API 34 passed; the tab-switch benchmark job failed (see DECISIONS.md, 23d BLOCKED). Local checks for each task: `:app:ktlintCheck`, `:app:detekt`, `:app:verifyFileMap`, `:app:verifyNoOrphanedKdoc` and the targeted `:app:testFossDebugUnitTest` classes named in each test commit. BLOCKED gates: 23f emulator reply with E2B (hardware), 23d median frame time on the emulator.
 
