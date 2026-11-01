@@ -28,6 +28,7 @@ Kawkab is **voice-first and acts by itself**. Knotwork is the engine underneath,
    - Behind Settings → Advanced: Pipelines, Tools, the console strip, token counters, model file names, the "uses · set_alarm" hints, and the raw tool cards.
    - The bottom bar becomes Home, Screenshots, Growth (as in the mockup).
    - Settings keeps only: Voice, Phone access, Models, Privacy, About, Advanced.
+5b. **The app's own text is English only** (owner, 2 Nov): titles, labels, menus, buttons, settings and notifications. No Arabic titles, and no right-to-left layout for the interface. Kawkab still understands and answers Arabic and Sudanese in conversation, and shows that text as spoken. Replace the Arabic `values-ar` interface strings with English for every locale, and turn the Arabic-translation test into a check that the interface text is English.
 6. **The wake word is priority one.** 43 % recall, and 0/18 for the Arabic voice, is not acceptable.
    - Train a proper "Kawkab" detector, openWakeWord-style, on synthetic speech in many voices: Arabic, Sudanese-accented and English, with noise. Keep the sherpa-onnx keyword spotter as a second opinion.
    - Target recall ≥ 90 % and ≤ 1 false wake per 10 h on the frozen set.
