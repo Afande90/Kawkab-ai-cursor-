@@ -384,6 +384,12 @@ Code-review suspects, to verify:
 34. **Power button.**
     - Phone access must show "Default assistant: on or off" from `RoleManager`.
     - It must say plainly that on Nothing OS the power button must be set to the assistant (Settings → System → Gestures or Buttons → Press and hold power button → Digital assistant), and deep-link there if an intent exists.
+34b. **Calling must be faster than doing it by hand (owner verdict, 2 Nov).** The call works now, but it took: chips → approval card → Android's "Complete action using: Phone calls / Zoom" chooser → the call. The owner: "no faster than doing it myself." Fix:
+    - **One tap at most.** Tapping a contact chip *is* the confirmation for that call, with no second card. With a single exact match ("call Abdalla Mubadala"), show one card, "Call Abdalla Mubadala (·6117)?", and one tap calls.
+    - **No app chooser.** With `CALL_PHONE` granted, place the call through `TelecomManager.placeCall(Uri.fromParts("tel", number, null), …)`, or an `ACTION_CALL` intent restricted to the default dialer package (`TelecomManager.defaultDialerPackage`). Never let Zoom or another app intercept a phone call.
+    - **Remember the choice.** After the owner picks "Abdalla Mubadala" for "abdalla", the next "call abdalla" goes straight to the one-tap card. Store the alias in memory and show it on the Growth screen, where it can be deleted.
+    - **Voice.** With confirm-by-voice on and the phone unlocked, "Kawkab, call Abdalla Mubadala" → "Calling Abdalla Mubadala" → "yes" calls, with no tap.
+    - **Instrumented tests:** chip tap places the call with no extra card; no chooser appears when two apps handle `tel:`; the second "call abdalla" skips the chips.
 35. **Close out:** green Check including the release-launch job, `docs/owner-checks/M1.8.md`, a pre-release APK, tag `m1.8`. Push the `m1.6` and `m1.7` tags too; they are missing on GitHub.
 
 ### Later milestones
