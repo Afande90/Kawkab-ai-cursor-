@@ -367,6 +367,8 @@ The owner installed `build-20261101-ed0af57` (the foss release APK, R8-minified)
 
 The CI emulator tests run the debug build, so nothing ever launched the minified release APK.
 
+**Owner confirmed, 2 Nov 01:57:** with the microphone permission revoked, the same APK opens and works. So the crash is in the microphone path at launch (`WakeWordService` → sherpa-onnx). Start the investigation there.
+
 Code-review suspects, to verify:
 - `MainActivity.onCreate` → `WakeWordService.startIfEnabled` starts sherpa-onnx at launch. `proguard-rules.pro` has no keep rules for `com.k2fsa.sherpa.onnx.**`, and none for Llamatik (`com.llamatik.**`). JNI code that reads Kotlin fields or classes by name crashes once R8 renames them.
 - Also check: the microphone foreground-service type and its permission on Android 14 and later; and model or keyword files missing on first launch.
