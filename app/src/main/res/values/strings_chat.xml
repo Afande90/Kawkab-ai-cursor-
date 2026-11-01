@@ -242,4 +242,8 @@
     <string name="action_card_tap">Tap “%1$s”?</string>
     <string name="action_card_primary_call">Call</string>
     <string name="action_card_primary_send">Send</string>
+    <string name="conversation_talk">Talk</string>
+    <string name="conversation_listening">Listening… tap to stop</string>
+    <string name="conversation_thinking">Thinking… tap to stop</string>
+    <string name="conversation_speaking">Speaking… tap to stop</string>
 </resources>

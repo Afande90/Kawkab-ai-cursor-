@@ -195,4 +195,8 @@
     <string name="action_card_tap">أنقر «%1$s»؟</string>
     <string name="action_card_primary_call">اتصال</string>
     <string name="action_card_primary_send">إرسال</string>
+    <string name="conversation_talk">تحدّث</string>
+    <string name="conversation_listening">أستمع… انقر للإيقاف</string>
+    <string name="conversation_thinking">أفكّر… انقر للإيقاف</string>
+    <string name="conversation_speaking">أتحدّث… انقر للإيقاف</string>
 </resources>

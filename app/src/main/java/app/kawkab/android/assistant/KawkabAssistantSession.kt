@@ -29,6 +29,9 @@ import app.kawkab.android.presentation.state.ActiveSessionTracker
 import app.kawkab.android.presentation.state.ChatEntryRequestRelay
 import app.kawkab.android.presentation.ui.MainActivity
 import app.kawkab.android.presentation.ui.phoneaccess.AndroidPhoneAccess
+import app.kawkab.android.voice.ConversationDriver
+import app.kawkab.android.voice.OfflineSpeech
+import app.kawkab.android.voice.OfflineVoice
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -75,12 +78,33 @@ class KawkabAssistantSession(
     override fun onShow(args: android.os.Bundle?, showFlags: Int) {
         super.onShow(args, showFlags)
         release.shown()
+        // A long-press of power (or the assist gesture) starts conversation mode at once (task 23l).
+        if (VoiceStart.fromGesture(showFlags) && hasMicrophone()) conversation().tap()
     }
 
     override fun onHide() {
+        conversation?.release()
+        conversation = null
         release.hidden()
         super.onHide()
     }
+
+    private var conversation: ConversationDriver? = null
+
+    private fun conversation(): ConversationDriver = conversation ?: ConversationDriver(
+        speech = OfflineSpeech(appContext),
+        voice = OfflineVoice(appContext),
+        send = { text ->
+            input.setText(text)
+            sendLine()
+        },
+        onPhase = { },
+    ).also { conversation = it }
+
+    private fun hasMicrophone(): Boolean = androidx.core.content.ContextCompat.checkSelfPermission(
+        appContext,
+        android.Manifest.permission.RECORD_AUDIO,
+    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
 
     override fun onHandleAssist(state: AssistState) {
         structure = state.assistStructure
@@ -205,6 +229,8 @@ class KawkabAssistantSession(
     private fun render(state: AgentOrchestratorState) {
         when (state) {
             is AgentOrchestratorState.WaitingForApproval -> {
+                // Voice never confirms an outbound action: listening stops until the tap.
+                conversation?.waitsForTap()
                 pendingRequestId = state.requestId
                 status.text = appContext.getString(R.string.assistant_needs_you)
                 approve.visibility = View.VISIBLE
@@ -216,6 +242,7 @@ class KawkabAssistantSession(
                 approve.visibility = View.GONE
                 deny.visibility = View.GONE
                 status.text = state.finalResponse.ifBlank { appContext.getString(R.string.assistant_done) }
+                conversation?.replied(state.finalResponse)
                 grant.visibility = if (MissingPermission.permissionIn(status.text.toString()) == null) {
                     View.GONE
                 } else {

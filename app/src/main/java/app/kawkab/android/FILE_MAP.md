@@ -24,6 +24,7 @@ Only Kotlin files appear inside the generated blocks.
   - `KawkabAssistantSessionService.kt` - Opens one Kawkab assistant panel over the current app.
   - `KawkabRecognitionService.kt` - Satisfies the assistant service contract without sending speech off the phone.
   - `KawkabVoiceInteractionService.kt` - Registers Kawkab as a digital assistant.
+  - `VoiceStart.kt` - When the assistant panel starts listening by itself (task 23l).
 - `data/` - Data layer encompassing local, remote, and repository implementations.
   - `audio/` - Voice-input capture.
     - `AudioRecorderImpl.kt` - `AudioRecorder` backed by platform `AudioRecord`: captures 16 kHz mono 16-bit PCM into a WAV inside `AudioCaptureStore`, ticks elapsed seconds into `RecordingState`, and auto-stops at the limit. Mic opened only after the composer permission gate (`@SuppressLint("MissingPermission")`). Excluded from Kover (Android-bound).
@@ -931,6 +932,8 @@ Only Kotlin files appear inside the generated blocks.
     - `VerificationEvent.kt` - What a running check reports, in order: one `CallChecked` per repeated call, one `VisitSettled` per visit whose calls are all done, and one terminal event — `Finished`, `Stopped` or `Failed`.
     - `VerificationPlan.kt` - What a check of a finished run will do, decided before it starts: every node visit of the run tree in the order the run made them, and for each either the on-device calls it will repeat or why it will not.
     - `VerifyRunUseCase.kt` - Checks a finished run by repeating its on-device model calls.
+  - `voice/` - Conversation mode as a pure loop: listen, send, speak, listen again, with barge-in.
+    - `ConversationLoop.kt` - Conversation mode (task 23l): listen, send what was said, speak the reply, listen again, until the owner taps stop.
 - `hands/` - Phone actions ported from OpenDroid: alias phrases, macro recording, habit detection, and the intent calls for the five core commands.
   - `AliasResolver.kt` - Maps a short phrase to one action hint.
   - `AndroidContactBook.kt` - Reads the owner's contacts when READ_CONTACTS has been granted.
@@ -1022,6 +1025,7 @@ Only Kotlin files appear inside the generated blocks.
         - `ConsoleCopyPayloads.kt` - Pure clipboard-payload formatting for the console: one log line, all filtered lines, one Vars row (whole value, never abbreviated), one Traces span, and the `Copy all` payload for the tab actually on screen. Stateless, so it sits beside the delegate rather than on it; the clipboard write itself stays in the Composable that owns `LocalClipboardManager`.
         - `ContactChoicePrompt.kt` - Tappable contact chips for a call or text waiting on a pick (task 23j).
         - `ContentReportIssueUrl.kt` - Builds the URL that opens the public issue tracker with a report prefilled.
+        - `ConversationButton.kt` - Conversation mode (task 23l): tap once to talk; Kawkab listens offline, sends what was said, speaks the reply with an offline voice, and listens again.
         - `LocalUndoChip.kt` - The Undo chip shown for 10 seconds after a local action (task 23i).
         - `ReportResponseDialog.kt` - Stateless dialog collecting a flag against a model-authored message (category chips + note), plus `contentReportIssueUrl` — the prefilled `issues/new` URL, truncated to a browser-safe length after percent-encoding. No delivery of its own: the screen offers clipboard or issue tracker.
         - `RunDisplay.kt` - How the run strip writes a run: numbers grouped and rounded for reading — seeds and windows in groups, temperatures as recorded, durations as a person estimates them — with, beside it in this file, the projection of a run's description onto the strip and the rule for when a check asks first.
@@ -1229,6 +1233,10 @@ Only Kotlin files appear inside the generated blocks.
       - `TriggersScreen.kt` - Slim mapper. Folds `TriggersUiState` into the catalog `TriggersViewState` (rows carry a derived health badge via `TriggerHealthEvaluator`); renders the inline stack editor → **detail** (`TriggerDetailContent`, its journal grouped via `TriggerJournalGrouper` + localized here) → list, with a `BackHandler` walking that stack, and hosts the shared delete `Dialog`. Owns the localised string bundles, the pre-resolved human-readable condition lines (via `TriggerConditionFormatter` + plurals), the journal vocabulary → catalog-enum projection, and the domain-condition ↔ catalog-type projection.
       - `TriggersUiState.kt` - Triggers UI state: `triggers`, `pipelines` (for the binding picker + bound-name lookup), `openMenuTriggerId`, `healthInputs` (per-trigger journal facts for the list badge), `detailTriggerId` + `detailJournal` (the open detail surface and its journal; `null` journal = loading), `editor: TriggerEditorDraft?`, `deleteTarget: TriggerDeleteTarget?`. `TriggerEditorDraft` holds the editable fields + per-condition params and resolves to a domain `TriggerCondition` (with the 15-min interval floor + `canSave` validation); `fromTrigger` round-trips an existing trigger (preset-vs-custom interval inference).
       - `TriggersViewModel.kt` - Triggers ViewModel. Injects `TriggerRepository` + `PipelineRepository` + `SaveTriggerUseCase` + `SyncTriggersUseCase` + `ObserveTriggerHealthInputsUseCase` + `ObserveTriggerJournalUseCase`. Observes triggers + pipelines + health inputs; a second `flatMapLatest` collector follows the open detail trigger's journal. Drives the detail surface (`onRowClick`→`openDetail`, `closeDetail`, `editFromDetail`), the editor lifecycle + per-field setters, the inline `toggleEnabled`, and the delete flow (which also closes the detail when its trigger is deleted). Re-syncs the background runtime after every save / enable-toggle / delete so runtime mutations take effect immediately.
+- `voice/` - Offline speech recognition and text-to-speech, and the driver that runs conversation mode with them.
+  - `ConversationDriver.kt` - Runs `ConversationLoop` with Android's offline recognizer and voice (task 23l).
+  - `OfflineSpeech.kt` - Android's speech recognizer, offline only (tasks 23c and 23l).
+  - `OfflineVoice.kt` - Android text-to-speech with offline voices, in the reply's language (task 23l).
 <!-- /AUTO-GEN:FILE_MAP -->
 
 ## Distribution flavour and debug source sets

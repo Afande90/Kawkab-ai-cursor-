@@ -648,6 +648,16 @@ fun ChatHomeScreen(
                 onGranted = viewModel::retryLastUserTurn,
             )
         }
+        ConversationButton(
+            viewState = viewState,
+            send = { text ->
+                viewModel.onComposerValueChange(text)
+                viewModel.sendMessage()
+            },
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(start = 16.dp, bottom = 112.dp),
+        )
         viewModel.localUndo?.let { undo ->
             LocalUndoChip(
                 undo = undo,
