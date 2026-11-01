@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -46,6 +45,8 @@ import app.kawkab.android.voice.VoiceConfirmSwitch
 import app.kawkab.android.voice.WakeWordSwitch
 import app.kawkab.design.components.chat.ChatContent
 import app.kawkab.design.components.chat.ChatRole
+import app.kawkab.design.components.dialogs.ConfirmDialog
+import app.kawkab.design.components.dialogs.ConfirmDialogUi
 import app.kawkab.design.screens.chat.ChatHomeMessageRow
 import app.kawkab.design.screens.phoneaccess.PhoneAccessCard
 import app.kawkab.design.screens.phoneaccess.PhoneAccessContent
@@ -135,16 +136,16 @@ fun PhoneAccessScreen(onDone: () -> Unit, requestPermission: String? = null) {
 /** The warning of spec §0.4.3, shown before "Confirm by voice" turns on (task 29). */
 @Composable
 private fun VoiceConfirmWarning(onEnable: () -> Unit, onCancel: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onCancel,
-        title = { Text(stringResource(R.string.voice_confirm_warning_title)) },
-        text = { Text(stringResource(R.string.voice_confirm_warning_body)) },
-        confirmButton = {
-            TextButton(onClick = onEnable) { Text(stringResource(R.string.voice_confirm_warning_enable)) }
-        },
-        dismissButton = {
-            TextButton(onClick = onCancel) { Text(stringResource(R.string.voice_confirm_warning_cancel)) }
-        },
+    ConfirmDialog(
+        ui = ConfirmDialogUi(
+            title = stringResource(R.string.voice_confirm_warning_title),
+            body = stringResource(R.string.voice_confirm_warning_body),
+            confirmLabel = stringResource(R.string.voice_confirm_warning_enable),
+            cancelLabel = stringResource(R.string.voice_confirm_warning_cancel),
+            destructive = true,
+        ),
+        onConfirm = onEnable,
+        onDismiss = onCancel,
     )
 }
 
