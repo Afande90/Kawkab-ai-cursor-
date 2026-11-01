@@ -23,6 +23,7 @@ data class AcknowledgmentEntry(val name: String, val license: String)
  *   read offline — the same line the Help row shows, so the two agree by
  *   construction. Empty
  *   renders no section at all.
+ * @property updateStatus The answer of the last owner-started update check, or empty before any.
  */
 data class AboutViewState(
     val appName: String,
@@ -34,14 +35,20 @@ data class AboutViewState(
     val acknowledgments: List<AcknowledgmentEntry>,
     val privacyBody: String,
     val documentationSummary: String = "",
+    val updateStatus: String = "",
 )
 
-/** One-shot callbacks consumed by `AboutContent`. */
+/**
+ * One-shot callbacks consumed by `AboutContent`.
+ *
+ * @property onCheckForUpdates The owner's tap on the update button (task 25c). `null` hides it.
+ */
 class AboutCallbacks(
     val onBack: () -> Unit = {},
     val onOpenLicense: () -> Unit = {},
     val onOpenPrivacyPolicy: () -> Unit = {},
     val onOpenDocumentation: () -> Unit = {},
+    val onCheckForUpdates: (() -> Unit)? = null,
 )
 
 /** Convenience factory returning a no-op callback bundle. */
@@ -60,4 +67,5 @@ data class AboutStrings(
     val sectionDocumentation: String = "DOCUMENTATION",
     val documentationBody: String = "Troubleshooting, FAQ and the guides.",
     val documentationCta: String = "Help",
+    val updateCta: String = "Check for updates",
 )

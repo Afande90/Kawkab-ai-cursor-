@@ -384,6 +384,8 @@ Only Kotlin files appear inside the generated blocks.
       - `HandAgentTools.kt` - The hands tools published next to the original built-ins.
       - `LocalAppFunctionManager.kt` - Manager for local app functions.
       - `SearchTool.kt` - Local web search tool.
+  - `update/` - The owner-started update check against GitHub releases (task 25c).
+    - `UpdateChecker.kt` - Asks GitHub for the newest Kawkab pre-release (task 25c).
 - `di/` - Dependency Injection configurations (Hilt).
   - `ApplicationScope.kt` - `@Qualifier` for the application-lifetime `CoroutineScope` provided by `CoroutinesModule`.
   - `AppModule.kt` - General app-level DI module.
@@ -799,6 +801,8 @@ Only Kotlin files appear inside the generated blocks.
     - `TitleText.kt` - `String.collapseWhitespace()` + `String.toSingleLineTitle(maxLength, ellipsis)`, shared by chat auto-rename and share-session naming so their single-line-title logic cannot drift.
   - `triggerio/` - JSON serialisation gateway for automation-trigger conditions.
     - `TriggerConditionCodec.kt` - Single source of truth for the `TriggerCondition` ↔ JSON wire shape stored in `triggers.conditionJson` (org.json, discriminator under `type`). Total decode: null/blank/malformed/unknown-type/missing-payload all return `null` (the repository skips such rows).
+  - `update/` - Reading GitHub's release list into the newest downloadable build (task 25c).
+    - `LatestBuild.kt` - The newest pre-release on the repository (task 25c).
   - `usecases/` - Business logic Use Cases.
     - `ActivateModelUseCase.kt` - Makes a model the active one only after its file exists and it loaded once (task 23e).
     - `AgentOrchestratorUseCase.kt` - Use case for agent orchestration. `invoke(...)` (interactive, carries an `origin`) and `enqueueScheduled(...)` (background, accepts an explicit `pipelineId` + `origin` + optional pre-minted `runId`) so entry surfaces attribute and bind their runs; a trigger threads its pre-minted `runId` through so the run shares identity with its journal row.
@@ -992,6 +996,7 @@ Only Kotlin files appear inside the generated blocks.
   - `ui/` - UI screens and ViewModels.
     - `about/` - About screen (full Knotwork redesign on top of `AboutContent`: hero brand mark + version / license / acknowledgments / privacy cards).
       - `AboutScreen.kt` - Slim wrapper around the catalog `AboutContent`. Owns the 20-entry hand-maintained acknowledgments list (`AboutAcknowledgments`) and the outbound License / Privacy URLs (`AboutLinks`) opened via `ACTION_VIEW`. Both objects are `internal` so their drift guards (`AboutAcknowledgmentsTest`, `AboutLinksTest` — the latter resolves the privacy link's anchor against the real `README.md` headings) can read them.
+      - `AboutUpdateViewModel.kt` - The About screen's "Check for updates" button (task 25c).
     - `automation/` - External-automation request journal (Settings → Background & triggers → Request journal). Read-only by design: every control that could widen the entry point stays a Background settings row, so the app's most security-sensitive switch remains searchable and deep-linkable.
       - `ExternalAutomationJournalScreen.kt` - Slim mapper. Folds `ExternalAutomationJournalUiState` into the catalog `ExternalAutomationJournalViewState`: groups rows by device-local day through the shared `JournalDayGrouper`, ticks a coarse clock so relative timestamps advance while the screen is open, projects the domain status / rejection-reason dictionaries onto the catalog enums, and clips every caller-supplied string (request id, target, package) to a length this app chose rather than the caller. Builds the "how another app calls this" block from `ExternalAutomationContract` itself, so it cannot teach a call the parser would refuse.
       - `ExternalAutomationJournalUiState.kt` - Journal screen state: `contractEnabled`, `boundPipelineName` (resolved, so a deleted binding reads as unbound exactly as the authorizer treats it), and `entries` — nullable while the first read is in flight, because an unread journal is a skeleton and an empty one is a teaching state.

@@ -405,4 +405,11 @@
     <string name="help_reader_error_body">The file shipped with the app is unreadable. Reinstalling replaces it. The same document is on the web, unchanged.</string>
     <string name="help_reader_error_primary">Open in browser</string>
     <string name="help_reader_error_secondary">Try again</string>
+    <!-- Task 25c: owner-started update check on About. -->
+    <string name="about_update_cta">Check for updates</string>
+    <string name="about_update_checking">Checking GitHub…</string>
+    <string name="about_update_none">You have the newest build.</string>
+    <string name="about_update_failed">Could not reach GitHub. Try again later.</string>
+    <string name="about_update_available">%1$s is ready. Tap to download it.</string>
+    <string name="about_update_download_cta">Download %1$s</string>
 </resources>

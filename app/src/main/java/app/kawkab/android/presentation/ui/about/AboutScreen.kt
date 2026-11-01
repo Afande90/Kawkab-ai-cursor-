@@ -2,11 +2,14 @@ package app.kawkab.android.presentation.ui.about
 
 import android.content.Intent
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.core.net.toUri
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import app.kawkab.android.BuildConfig
 import app.kawkab.android.R
 import app.kawkab.android.domain.constants.DocumentationLinks
@@ -24,8 +27,15 @@ import app.kawkab.design.screens.about.AcknowledgmentEntry
  * a heavy dependency and is deferred to a follow-up).
  */
 @Composable
-fun AboutScreen(onBack: () -> Unit, onNavigateToHelp: () -> Unit, modifier: Modifier = Modifier) {
+fun AboutScreen(
+    onBack: () -> Unit,
+    onNavigateToHelp: () -> Unit,
+    modifier: Modifier = Modifier,
+    updates: AboutUpdateViewModel = hiltViewModel(),
+) {
     val context = LocalContext.current
+    val update by updates.state.collectAsState()
+    val available = (update as? UpdateState.Available)?.build
     val state = AboutViewState(
         appName = stringResource(R.string.app_name),
         tagline = stringResource(R.string.about_tagline),
@@ -41,6 +51,7 @@ fun AboutScreen(onBack: () -> Unit, onNavigateToHelp: () -> Unit, modifier: Modi
             DocumentationLinks.DOCUMENTS.size,
             DocumentationLinks.DOCUMENTS.count { it.delivery == DocumentationLinks.Delivery.BUNDLED },
         ),
+        updateStatus = updateStatusText(update),
     )
     val strings = AboutStrings(
         title = stringResource(R.string.about_title),
@@ -54,6 +65,8 @@ fun AboutScreen(onBack: () -> Unit, onNavigateToHelp: () -> Unit, modifier: Modi
         sectionDocumentation = stringResource(R.string.about_section_documentation),
         documentationBody = stringResource(R.string.about_documentation_body),
         documentationCta = stringResource(R.string.help_title),
+        updateCta = available?.let { stringResource(R.string.about_update_download_cta, it.tag) }
+            ?: stringResource(R.string.about_update_cta),
     )
     AboutContent(
         state = state,
@@ -72,8 +85,24 @@ fun AboutScreen(onBack: () -> Unit, onNavigateToHelp: () -> Unit, modifier: Modi
                 }
             },
             onOpenDocumentation = onNavigateToHelp,
+            onCheckForUpdates = {
+                if (available == null) {
+                    updates.check()
+                } else {
+                    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, available.apkUrl.toUri())) }
+                }
+            },
         ),
     )
+}
+
+@Composable
+private fun updateStatusText(update: UpdateState): String = when (update) {
+    UpdateState.Idle -> ""
+    UpdateState.Checking -> stringResource(R.string.about_update_checking)
+    UpdateState.UpToDate -> stringResource(R.string.about_update_none)
+    UpdateState.Failed -> stringResource(R.string.about_update_failed)
+    is UpdateState.Available -> stringResource(R.string.about_update_available, update.build.tag)
 }
 
 /**

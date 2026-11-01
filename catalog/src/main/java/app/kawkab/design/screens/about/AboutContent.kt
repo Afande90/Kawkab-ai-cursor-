@@ -65,7 +65,9 @@ fun AboutContent(
             verticalArrangement = Arrangement.spacedBy(KnotworkTheme.spacing.sp4),
         ) {
             item(key = "hero") { Hero(state = state) }
-            item(key = "version") { VersionCard(state = state, strings = strings) }
+            item(key = "version") {
+                VersionCard(state = state, strings = strings, onCheckForUpdates = callbacks.onCheckForUpdates)
+            }
             // Above the licence and the credits on purpose. For a user who
             // arrived from a store listing with no room for a URL, this card is
             // the only place the documentation is named at all — putting it
@@ -141,7 +143,7 @@ private fun Hero(state: AboutViewState) {
 }
 
 @Composable
-private fun VersionCard(state: AboutViewState, strings: AboutStrings) {
+private fun VersionCard(state: AboutViewState, strings: AboutStrings, onCheckForUpdates: (() -> Unit)?) {
     // All About cards share the same template:
     //  - `LabelSm` section header (uppercase, muted)
     //  - `BodyBase` primary value
@@ -165,6 +167,21 @@ private fun VersionCard(state: AboutViewState, strings: AboutStrings) {
             style = KnotworkTextStyles.Caption,
             color = KnotworkTheme.extended.onSurfaceMuted,
         )
+        // Only the owner's tap checks; nothing here runs on its own (spec §0.2).
+        if (onCheckForUpdates != null) {
+            KnotworkSecondaryButton(
+                text = strings.updateCta,
+                onClick = onCheckForUpdates,
+                size = app.kawkab.design.components.buttons.KnotworkButtonSize.Sm,
+            )
+        }
+        if (state.updateStatus.isNotEmpty()) {
+            Text(
+                text = state.updateStatus,
+                style = KnotworkTextStyles.Caption,
+                color = KnotworkTheme.extended.onSurfaceMuted,
+            )
+        }
     }
 }
 

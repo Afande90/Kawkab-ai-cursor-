@@ -16,8 +16,9 @@ The app processes your conversations **on your phone**, using a language model
 you download to the device. Data leaves the device only along these paths — a
 cloud model carrying your own API key (in a pipeline step, or as the embedding
 model for memory), an MCP server you added, a model download, an outbound
-request from one of the two built-in tools that reach the network, or (in the
-`full` build only) crash reports you opted in to. All of them are off until you
+request from one of the two built-in tools that reach the network, an update
+check you start on the About screen (section 3.10), or (in the `full` build
+only) crash reports you opted in to. All of them are off until you
 configure them except one: the built-in Wikipedia lookup is on from the first
 launch, and section 3.4 says so and says how to turn it off. Each path is
 listed below with what it sends, where, and how to stop it. Files you
@@ -336,6 +337,14 @@ a way to clear them. MCP servers come from the backup, so a sign-in for a server
 it does not list is kept but goes unused. The app opens no connection to do it.
 
 ---
+
+### 3.10 Update check (you start it)
+
+The About screen has a "Check for updates" button. Only when you tap it, Kawkab
+asks GitHub (`api.github.com`) for the newest Kawkab build, and shows a
+download link if there is a newer one. The request carries nothing about you,
+your phone or your data; GitHub sees the request itself, as any web server
+would. Kawkab never checks on its own.
 
 ## 4. What never leaves your device
 

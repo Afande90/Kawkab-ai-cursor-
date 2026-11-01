@@ -1,0 +1,71 @@
+name: Pre-release APK
+
+# Task 25c: one-tap APK download. After every green Check on a push to `main`,
+# the foss arm64 APK that Check built is published as a GitHub pre-release,
+# tagged with the build date and short commit. The repository is public, so the
+# owner downloads the `.apk` directly, without logging in or unzipping. Only
+# the 5 newest pre-releases are kept. Tagged releases (`release.yml`) are not
+# touched: they are not pre-releases.
+#
+# It republishes the artefact the Check produced rather than building again, so
+# what is published is exactly what the gate passed.
+
+on:
+  workflow_run:
+    workflows: [Check]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: prerelease
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish the APK as a pre-release
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RUN_ID: ${{ github.event.workflow_run.id }}
+      HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+      KEEP: '5'
+    steps:
+      - name: Download the Check's APK
+        run: |
+          set -euo pipefail
+          gh run download "$RUN_ID" --name kawkab-foss-arm64-release --dir apk
+          ls -l apk
+
+      - name: Publish the pre-release
+        run: |
+          set -euo pipefail
+          short="${HEAD_SHA:0:7}"
+          tag="build-$(date -u +%Y%m%d)-$short"
+          cp apk/app-foss-release.apk "kawkab-$tag.apk"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Pre-release $tag already exists."
+            exit 0
+          fi
+          gh release create "$tag" "kawkab-$tag.apk" \
+            --prerelease \
+            --target "$HEAD_SHA" \
+            --title "Kawkab $tag" \
+            --notes "Built from $HEAD_SHA by Check run $RUN_ID. Download the .apk and install it."
+
+      - name: Keep only the newest pre-releases
+        run: |
+          set -euo pipefail
+          gh release list --limit 100 --json tagName,isPrerelease,createdAt \
+            --jq "[.[] | select(.isPrerelease)] | sort_by(.createdAt) | reverse | .[$KEEP:] | .[].tagName" \
+            | while read -r old; do
+                [[ -n "$old" ]] || continue
+                echo "Removing $old"
+                gh release delete "$old" --yes --cleanup-tag
+              done
