@@ -361,6 +361,29 @@ The owner wants to talk to Kawkab smoothly, without pressing anything. This pull
     - Contact choices are read aloud as a short numbered list, and the owner can answer by voice ("the second one", "Mubadala").
 30. **Close out:** green Check, `docs/owner-checks/M1.7.md` (say "Kawkab, set an alarm for 6"; "Kawkab, call Abdalla Mubadala"), tag `m1.7`.
 
+### M1.8: Hotfix, the release APK crashes on launch (owner phone, 2 Nov 2026)
+
+The owner installed `build-20261101-ed0af57` (the foss release APK, R8-minified) on the Nothing Phone (3a), Android 16. He granted every permission. **Every launch shows the splash and then the app closes.** A long-press of power still shows only the power menu.
+
+The CI emulator tests run the debug build, so nothing ever launched the minified release APK.
+
+Code-review suspects, to verify:
+- `MainActivity.onCreate` → `WakeWordService.startIfEnabled` starts sherpa-onnx at launch. `proguard-rules.pro` has no keep rules for `com.k2fsa.sherpa.onnx.**`, and none for Llamatik (`com.llamatik.**`). JNI code that reads Kotlin fields or classes by name crashes once R8 renames them.
+- Also check: the microphone foreground-service type and its permission on Android 14 and later; and model or keyword files missing on first launch.
+
+31. **Reproduce first.**
+    - Add a CI job that builds `assembleFossRelease`, installs that exact minified APK on the API 36 emulator, grants every runtime permission, enables the accessibility service, turns the wake word on, launches `MainActivity`, and asserts the process is alive with the chat visible after 30 s.
+    - It must fail on `ed0af57`. Keep it in the Check permanently.
+32. **Fix.**
+    - Add precise keep rules for sherpa-onnx and Llamatik (JNI-facing classes and fields), and any others the job reveals.
+    - Wrap every native or service start at launch so that a failure disables that feature, shows a card ("Wake word couldn't start: …") and never kills the app.
+    - Add a crash breadcrumb: if the previous launch died within 10 s, start in safe mode (wake word off, accessibility work off) and say so.
+33. **Crash reports the owner can send without adb.** Keep an on-device crash log of the last 5 crashes, with stack traces and no personal content. Add Settings → About → "Copy crash report", which copies the text so the owner can paste it to his reviewer. Nothing is uploaded.
+34. **Power button.**
+    - Phone access must show "Default assistant: on or off" from `RoleManager`.
+    - It must say plainly that on Nothing OS the power button must be set to the assistant (Settings → System → Gestures or Buttons → Press and hold power button → Digital assistant), and deep-link there if an intent exists.
+35. **Close out:** green Check including the release-launch job, `docs/owner-checks/M1.8.md`, a pre-release APK, tag `m1.8`. Push the `m1.6` and `m1.7` tags too; they are missing on GitHub.
+
 ### Later milestones
 - **M2 to M8:** split each milestone in spec §13 into tasks of the same size as above.
 - Write the new tasks into this list in a pull request before starting them.
