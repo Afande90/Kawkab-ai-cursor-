@@ -21,9 +21,15 @@ Kawkab is **voice-first and acts by itself**. Knotwork is the engine underneath,
    - everything stays on the phone.
 
    Update the tool-classification test, `safety/` and `DECISIONS.md` to match: the outbound tier becomes "announce + 3 s cancel", not "tap".
-4. **The home screen is the owner's mockup**, not a chat list:
-   - a big planet, "Say 'Kawkab'", a small "or tap to talk", and a short list of what Kawkab just did;
-   - conversation opens full-screen as voice, with the transcript underneath.
+4. **The UI is "Pocket LCD" (owner chose direction F, 2 Nov).** The whole app looks like one physical device, not a chat app. This replaces the planet mockup and all Knotwork/Material screens the owner sees. Build it in Compose as one shared `KawkabDevice` scaffold used by every screen:
+   - **Body:** vertical gradient `#D6D2C9 → #C7C3B9`. Header row: "KAWKAB K-1" left, state word + a round status LED right (IBM Plex Mono 11 sp, letter-spacing 0.16 em, `#5E5A52`).
+   - **LED colours:** grey `#6E6A62` standby · green `#3FBF4A` listening/speaking · amber `#F2A51A` asking/needs you · orange `#E2611B` acting. Mirror the same state on the Nothing Glyph lights while the app is in the foreground (Glyph Developer Kit).
+   - **LCD:** dark bezel `#2A2925` (radius 18, padding 14) around a green panel `#A9B48A` (radius 8, inner shadow), text `#1E2416` in the VT323 font, all caps for app text. Arabic/Sudanese speech is shown inside the LCD in Noto Kufi Arabic, right-to-left, as spoken; labels stay English ("YOU:", "KAWKAB:").
+   - **Keys:** three under the LCD: HOME, SHOTS, GROWTH (`#E7E4DD`, shadow `0 4dp 0 #9B978E`; the current screen's key looks pressed: `#BDB8AE`, inset shadow). These replace the bottom bar.
+   - **Big round orange talk key** (`#E2611B`, 124 dp, shadow `#9C3F0E`) with speaker-grille dot patterns either side. It is optional: voice always works without it. Its label changes with state (HOLD TO TALK / HEARING YOU / JUST SAY IT / CUT IN / MIC ON). During a countdown it becomes a black STOP key.
+   - **Screens (match the owner-approved canvas boards F1–F8):** F1 Idle ("SAY KAWKAB_" blinking cursor, date, battery, "> ALARM 06:00 .... OK" log of what was just done) · F2 Listening (pixel waveform, live transcript, "I ACT WHEN YOU STOP TALKING") · F3 Which ("WHICH ABDALLA?" numbered 1/2, "SAY 1 OR 2, I'LL REMEMBER") · F4 Calling (name, number, "YOUR USUAL", huge 3-2-1 digit, block progress bar, STOP) · F5 Talk (YOU/KAWKAB lines, result line like "> REMINDER SET TUE 09:00") · F6 Shots (screenshots sorted into [JOB] [BILL] [PLACE] boxes, one inverted "? … SAY IT" box) · F7 Growth (what it learned this week, "RIGHT FIRST TIME 86%" with a pixel bar chart, "SAY 'FORGET …' TO REMOVE", MY VOICE key) · F8 Voice enrollment ("SAY 'KAWKAB'", [■■■■■■□□□□] 6/10, "ONLY YOU CAN WAKE ME").
+   - Bundle VT323, IBM Plex Mono and Noto Kufi Arabic as font resources (all OFL, no network fetch). Respect reduced-motion (no blinking cursor). Minimum touch target 48 dp.
+   - Add a Compose screenshot test per screen F1–F8.
 5. **Hide the engine.**
    - Behind Settings → Advanced: Pipelines, Tools, the console strip, token counters, model file names, the "uses · set_alarm" hints, and the raw tool cards.
    - The bottom bar becomes Home, Screenshots, Growth (as in the mockup).
