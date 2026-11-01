@@ -33,7 +33,26 @@ Kawkab is **voice-first and acts by itself**. Knotwork is the engine underneath,
    - Target recall ≥ 90 % and ≤ 1 false wake per 10 h on the frozen set.
    - Fix the launch crash (M1.8) first.
 
-Do M1.8 (31–35, including 34b, with 34b rewritten by rules 1 and 2) and then **M2-V (this section, rules 1 to 6)** before anything else in this file.
+7. **Kawkab answers only the owner's voice.** This replaces the spec's "voice lock is convenience only" for wake-up.
+   - Add a one-time enrollment in setup: the owner says "Kawkab" about 10 times and two short sentences, in the app.
+   - Use these to:
+     - (a) personalise the wake-word detector on his own "Kawkab" (few-shot fine-tune or template match on top of the generic detector);
+     - (b) build a speaker profile with sherpa-onnx speaker verification.
+   - A wake or command from any other voice is ignored. This is also the protection that makes rule 1 safe, alongside the 3 s cancel.
+   - Recordings stay on the phone and can be deleted and redone in Settings → Voice.
+8. **Jev decides act or ask** (spec §5; the owner insisted on "Gemma WITH Jev" from day one, and it was never built).
+   - Use a Jev-style decision model (Jev-Style 0.8B, GGUF on the Llamatik runtime) for typed decisions with calibrated confidence: which contact, which app, act now or ask, and whether this is a command or a chat.
+   - High confidence: act, with the 3 s cancel. Low confidence: one short spoken question.
+   - Gemma stays for language and images.
+9. **Natural voice loop (Parlor).** Use Parlor's design: end-of-turn detection (smart-turn), sentence-by-sentence speech, barge-in, and "actions never ride the speech" (the action decision is a separate structured call).
+   - The owner's personal-use rule now allows AGPL: evaluate VoiceStudio and Kokoro or Piper for a natural Arabic and English voice that runs on the phone. Pick by listening quality and speed, and record the choice.
+10. **Memory and learning that the owner can see.** Pull forward from M5:
+    - Talorys memory-history rules and DeerFlow idle memory extraction;
+    - every choice the owner makes (which Abdalla, which app, how he phrases things) is remembered and reused;
+    - the Genie skill cache replays successful tasks with no model call;
+    - all of it shows on the Growth screen with a delete button.
+
+Do M1.8 (31–35, including 34b, with 34b rewritten by rules 1 and 2) and then **M2-V (this section, rules 1 to 10)** before anything else in this file.
 
 ## Where the work lives
 
