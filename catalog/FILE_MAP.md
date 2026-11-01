@@ -328,6 +328,8 @@ Paths below are relative to `src/main/java/app/kawkab/design/`.
   - `onboarding/` - Onboarding pages.
     - `OnboardingContent.kt` - four-step pager (Welcome / LiteRtModel / CloudKeys / Ready) with progress bar and per-step CTAs.
     - `OnboardingViewState.kt` - step enum + model options (Gemma4E2B / Gemma4E4B / CustomUrl).
+  - `phoneaccess/` - Phone access screen: a progress line and one card per item with its reason, status chip and button.
+    - `PhoneAccessContent.kt` - Phone access as design-system cards: a progress line, then one card per item with its icon, reason, an On/Off chip (green or amber) and one full-width button.
   - `pipelines/` - Pipeline-library page, its view-state and preview fixtures.
     - `PipelineLibraryContent.kt` - pipeline list with sort/filter, per-row overflow, default/active badges, swipe-reveal.
     - `PipelineLibraryPreview.kt` - deterministic preview fixtures (4 sample pipelines) for snapshots.

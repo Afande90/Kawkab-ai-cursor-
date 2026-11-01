@@ -19,6 +19,8 @@ class SettingsCallbacks(
     val onSearchResultClick: (HubSearchResultRow) -> Unit = {},
     /** Clear the hub search query (empty-state action + field trailing icon). */
     val onClearSearch: () -> Unit = {},
+    /** Open the Phone access screen from its hub row (task 23). */
+    val onOpenPhoneAccess: () -> Unit = {},
     /** Open the Generation sub-screen from the hub's system-instructions row. */
     val onOpenSystemInstructions: () -> Unit = {},
     /** Open the Models management surface (Discover / model catalogue). */

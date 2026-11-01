@@ -8,6 +8,7 @@ import android.os.PowerManager
 import android.provider.Settings
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
+import app.kawkab.android.assistant.AssistantRoleRequest
 import app.kawkab.android.domain.phoneaccess.PhoneAccessItem
 import app.kawkab.android.domain.phoneaccess.PhoneAccessLine
 import app.kawkab.android.domain.phoneaccess.PhoneAccessStatus
@@ -55,6 +56,7 @@ object AndroidPhoneAccess {
                     val power = context.getSystemService(PowerManager::class.java)
                     power?.isIgnoringBatteryOptimizations(context.packageName) == true
                 }
+                PhoneAccessItem.ASSISTANT -> AssistantRoleRequest.isHeld(context)
                 else -> granted(context, PhoneAccessStatus.permission(item))
             }
         }

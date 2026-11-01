@@ -491,6 +491,7 @@
 
     <!-- Hub + category navigation -->
     <string name="knotwork_settings_hub_basic">Basic</string>
+    <string name="knotwork_settings_phone_access">Phone access</string>
     <string name="knotwork_settings_hub_categories">Categories</string>
 
     <!-- Settings search -->

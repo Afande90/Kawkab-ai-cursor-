@@ -27,4 +27,19 @@
     <string name="phone_access_assistant_role_off">Kawkab is not the digital assistant yet.</string>
     <string name="phone_access_power_button">Also set the power button: Settings → System → Gestures (or Buttons) → Press and hold power button → Digital assistant. Nothing OS may set it to the power menu.</string>
     <string name="phone_access_assistant_fallback">Or use the “Ask Kawkab” Quick Settings tile or home-screen shortcut.</string>
+    <string name="phone_access_progress">%1$d of %2$d on</string>
+    <string name="phone_access_item_contacts">Contacts</string>
+    <string name="phone_access_item_phone">Phone</string>
+    <string name="phone_access_item_calendar">Calendar</string>
+    <string name="phone_access_item_notifications">Notifications</string>
+    <string name="phone_access_item_microphone">Microphone</string>
+    <string name="phone_access_item_screen">Screen control</string>
+    <string name="phone_access_item_background">Run in background</string>
+    <string name="phone_access_item_assistant">Default assistant</string>
+    <string name="phone_access_reason_assistant">So a long-press of the power button opens Kawkab over any app.</string>
+    <string name="phone_access_button_review">Review in settings</string>
+    <plurals name="phone_access_banner">
+        <item quantity="one">Kawkab needs %d permission. Tap to open Phone access.</item>
+        <item quantity="other">Kawkab needs %d permissions. Tap to open Phone access.</item>
+    </plurals>
 </resources>

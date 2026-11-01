@@ -9,15 +9,11 @@ import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -30,7 +26,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
@@ -43,13 +38,20 @@ import app.kawkab.android.assistant.AssistantRoleRequest
 import app.kawkab.android.domain.phoneaccess.GrantRoute
 import app.kawkab.android.domain.phoneaccess.MissingPermission
 import app.kawkab.android.domain.phoneaccess.PhoneAccessItem
+import app.kawkab.android.domain.phoneaccess.PhoneAccessLine
 import app.kawkab.android.domain.phoneaccess.PhoneAccessStatus
 import app.kawkab.design.components.chat.ChatContent
 import app.kawkab.design.components.chat.ChatRole
 import app.kawkab.design.screens.chat.ChatHomeMessageRow
+import app.kawkab.design.screens.phoneaccess.PhoneAccessCard
+import app.kawkab.design.screens.phoneaccess.PhoneAccessContent
+import app.kawkab.design.screens.phoneaccess.PhoneAccessKind
+import app.kawkab.design.screens.phoneaccess.PhoneAccessViewState
 
 /**
- * Shows each phone-access item, with a grant path when it is off.
+ * Phone access (task 23): a progress line ("5 of 8 on") and one design-system card per item,
+ * each with its reason, an On/Off chip and one full-width button. The status is read again
+ * whenever the owner comes back from Android settings.
  *
  * @param onDone Leaves the screen after the owner has seen the list.
  * @param requestPermission A permission to ask for as soon as the screen opens.
@@ -58,8 +60,10 @@ import app.kawkab.design.screens.chat.ChatHomeMessageRow
 fun PhoneAccessScreen(onDone: () -> Unit, requestPermission: String? = null) {
     val context = LocalContext.current
     var tick by remember { mutableIntStateOf(0) }
-    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         tick += 1
+        // Android will not ask again: send the owner to App info instead of doing nothing (task 23j).
+        if (!granted) openSafely(context, appInfo(context))
     }
     val roleLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         tick += 1
@@ -69,68 +73,86 @@ fun PhoneAccessScreen(onDone: () -> Unit, requestPermission: String? = null) {
     LaunchedEffect(requestPermission) {
         if (!requestPermission.isNullOrBlank()) permissionLauncher.launch(requestPermission)
     }
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .safeDrawingPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(all = 16.dp),
-    ) {
-        Text(stringResource(R.string.phone_access_title))
-        TextButton(onClick = onDone) { Text(stringResource(R.string.phone_access_done)) }
-        lines.forEach { line ->
-            Text(stringResource(reasonOf(line.item)))
-            Text(stringResource(if (line.on) R.string.phone_access_on else R.string.phone_access_off))
-            val permission = PhoneAccessStatus.permission(line.item)
-            if (permission != null && !line.on) {
-                TextButton(onClick = { permissionLauncher.launch(permission) }) {
-                    Text(stringResource(R.string.phone_access_grant))
-                }
+    val state = PhoneAccessViewState(
+        title = stringResource(R.string.phone_access_title),
+        progress = PhoneAccessStatus.summary(lines).let { (on, total) ->
+            stringResource(R.string.phone_access_progress, on, total)
+        },
+        cards = lines.map { line -> card(line) },
+        doneLabel = stringResource(R.string.phone_access_done),
+    )
+    PhoneAccessContent(
+        state = state,
+        onCard = { kind ->
+            val item = itemOf(kind)
+            val permission = PhoneAccessStatus.permission(item)
+            val on = lines.firstOrNull { it.item == item }?.on == true
+            when {
+                permission != null && on -> openSafely(context, appInfo(context))
+                permission != null -> permissionLauncher.launch(permission)
+                item == PhoneAccessItem.ACCESSIBILITY -> openSafely(context, AndroidPhoneAccess.accessibilitySettings())
+                item == PhoneAccessItem.BATTERY -> openSafely(context, AndroidPhoneAccess.batterySettings(context))
+                else -> AssistantRoleRequest.create(context)?.let(roleLauncher::launch)
+                    ?: openSafely(context, AssistantRoleRequest.settingsFallback(context))
             }
-            if (line.item == PhoneAccessItem.ACCESSIBILITY) {
-                Text(stringResource(R.string.phone_access_restricted_title))
-                Image(
-                    painter = painterResource(R.drawable.phone_access_menu),
-                    contentDescription = stringResource(R.string.phone_access_menu_cd),
-                )
-                Text(stringResource(R.string.phone_access_restricted_body))
-                TextButton(onClick = { openSafely(context, AndroidPhoneAccess.accessibilitySettings()) }) {
-                    Text(stringResource(R.string.phone_access_accessibility_open))
-                }
-            }
-            if (line.item == PhoneAccessItem.BATTERY) {
-                Text(stringResource(R.string.phone_access_nothing))
-                TextButton(onClick = { openSafely(context, AndroidPhoneAccess.batterySettings(context)) }) {
-                    Text(stringResource(R.string.phone_access_battery_open))
-                }
-            }
-        }
-        Text(stringResource(R.string.phone_access_assistant_title))
-        // Whether Kawkab really holds the role, read again whenever the owner comes back (task 23k).
-        val roleHeld = remember(tick, lifecycleState) { AssistantRoleRequest.isHeld(context) }
-        Text(
-            stringResource(
-                if (roleHeld) R.string.phone_access_assistant_role_on else R.string.phone_access_assistant_role_off,
-            ),
-        )
-        AssistantRoleRequest.steps(context).forEach { step -> Text(step) }
-        if (!roleHeld) {
-            TextButton(
-                onClick = {
-                    val intent = AssistantRoleRequest.create(context)
-                    if (intent == null) {
-                        openSafely(context, AssistantRoleRequest.settingsFallback(context))
-                    } else {
-                        roleLauncher.launch(intent)
-                    }
-                },
-            ) {
-                Text(stringResource(R.string.phone_access_assistant_open))
-            }
-        }
-        Text(stringResource(R.string.phone_access_power_button))
-        Text(stringResource(R.string.phone_access_assistant_fallback))
-    }
+        },
+        onDone = onDone,
+        modifier = Modifier.safeDrawingPadding(),
+    )
+}
+
+@Composable
+private fun card(line: PhoneAccessLine): PhoneAccessCard = PhoneAccessCard(
+    kind = kindOf(line.item),
+    title = stringResource(titleOf(line.item)),
+    reason = stringResource(reasonOf(line.item)),
+    on = line.on,
+    statusLabel = stringResource(if (line.on) R.string.phone_access_on else R.string.phone_access_off),
+    buttonLabel = stringResource(buttonOf(line.item, line.on)),
+    note = when (line.item) {
+        PhoneAccessItem.ACCESSIBILITY -> stringResource(R.string.phone_access_restricted_body).takeUnless { line.on }
+        PhoneAccessItem.BATTERY -> stringResource(R.string.phone_access_nothing)
+        PhoneAccessItem.ASSISTANT ->
+            stringResource(R.string.phone_access_power_button) + "\n" +
+                stringResource(R.string.phone_access_assistant_fallback)
+        else -> null
+    },
+)
+
+private fun appInfo(context: Context): Intent =
+    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+private fun kindOf(item: PhoneAccessItem): PhoneAccessKind = when (item) {
+    PhoneAccessItem.CONTACTS -> PhoneAccessKind.Contacts
+    PhoneAccessItem.PHONE -> PhoneAccessKind.Phone
+    PhoneAccessItem.CALENDAR -> PhoneAccessKind.Calendar
+    PhoneAccessItem.NOTIFICATIONS -> PhoneAccessKind.Notifications
+    PhoneAccessItem.MICROPHONE -> PhoneAccessKind.Microphone
+    PhoneAccessItem.ACCESSIBILITY -> PhoneAccessKind.ScreenControl
+    PhoneAccessItem.BATTERY -> PhoneAccessKind.Background
+    PhoneAccessItem.ASSISTANT -> PhoneAccessKind.Assistant
+}
+
+private fun itemOf(kind: PhoneAccessKind): PhoneAccessItem = PhoneAccessItem.entries.first { kindOf(it) == kind }
+
+private fun titleOf(item: PhoneAccessItem): Int = when (item) {
+    PhoneAccessItem.CONTACTS -> R.string.phone_access_item_contacts
+    PhoneAccessItem.PHONE -> R.string.phone_access_item_phone
+    PhoneAccessItem.CALENDAR -> R.string.phone_access_item_calendar
+    PhoneAccessItem.NOTIFICATIONS -> R.string.phone_access_item_notifications
+    PhoneAccessItem.MICROPHONE -> R.string.phone_access_item_microphone
+    PhoneAccessItem.ACCESSIBILITY -> R.string.phone_access_item_screen
+    PhoneAccessItem.BATTERY -> R.string.phone_access_item_background
+    PhoneAccessItem.ASSISTANT -> R.string.phone_access_item_assistant
+}
+
+private fun buttonOf(item: PhoneAccessItem, on: Boolean): Int = when {
+    on -> R.string.phone_access_button_review
+    item == PhoneAccessItem.ACCESSIBILITY -> R.string.phone_access_accessibility_open
+    item == PhoneAccessItem.BATTERY -> R.string.phone_access_battery_open
+    item == PhoneAccessItem.ASSISTANT -> R.string.phone_access_assistant_open
+    else -> R.string.phone_access_grant
 }
 
 /**
@@ -232,6 +254,7 @@ private fun reasonOf(item: PhoneAccessItem): Int = when (item) {
     PhoneAccessItem.MICROPHONE -> R.string.phone_access_reason_microphone
     PhoneAccessItem.ACCESSIBILITY -> R.string.phone_access_reason_accessibility
     PhoneAccessItem.BATTERY -> R.string.phone_access_reason_battery
+    PhoneAccessItem.ASSISTANT -> R.string.phone_access_reason_assistant
 }
 
 private fun openSafely(context: Context, intent: Intent) {

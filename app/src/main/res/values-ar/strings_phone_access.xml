@@ -27,4 +27,23 @@
     <string name="phone_access_assistant_role_off">كوكب ليس المساعد الرقمي بعد.</string>
     <string name="phone_access_power_button">اضبط زر التشغيل أيضاً: الإعدادات ← النظام ← الإيماءات (أو الأزرار) ← الضغط المطوّل على زر التشغيل ← المساعد الرقمي. قد يضبطه Nothing OS على قائمة التشغيل.</string>
     <string name="phone_access_assistant_fallback">أو استخدم مربع «اسأل كوكب» في الإعدادات السريعة أو اختصار الشاشة الرئيسية.</string>
+    <string name="phone_access_progress">%1$d من %2$d مفعّلة</string>
+    <string name="phone_access_item_contacts">جهات الاتصال</string>
+    <string name="phone_access_item_phone">الهاتف</string>
+    <string name="phone_access_item_calendar">التقويم</string>
+    <string name="phone_access_item_notifications">الإشعارات</string>
+    <string name="phone_access_item_microphone">الميكروفون</string>
+    <string name="phone_access_item_screen">التحكم في الشاشة</string>
+    <string name="phone_access_item_background">العمل في الخلفية</string>
+    <string name="phone_access_item_assistant">المساعد الافتراضي</string>
+    <string name="phone_access_reason_assistant">حتى يفتح الضغط المطوّل على زر التشغيل كوكب فوق أي تطبيق.</string>
+    <string name="phone_access_button_review">راجِع في الإعدادات</string>
+    <plurals name="phone_access_banner">
+        <item quantity="zero">يحتاج كوكب %d إذن. انقر لفتح الوصول إلى الهاتف.</item>
+        <item quantity="one">يحتاج كوكب إذناً واحداً. انقر لفتح الوصول إلى الهاتف.</item>
+        <item quantity="two">يحتاج كوكب إذنين. انقر لفتح الوصول إلى الهاتف.</item>
+        <item quantity="few">يحتاج كوكب %d أذونات. انقر لفتح الوصول إلى الهاتف.</item>
+        <item quantity="many">يحتاج كوكب %d إذناً. انقر لفتح الوصول إلى الهاتف.</item>
+        <item quantity="other">يحتاج كوكب %d إذن. انقر لفتح الوصول إلى الهاتف.</item>
+    </plurals>
 </resources>

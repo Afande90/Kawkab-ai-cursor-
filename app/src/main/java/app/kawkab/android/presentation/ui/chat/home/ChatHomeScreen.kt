@@ -75,6 +75,7 @@ import app.kawkab.android.presentation.ui.common.RunTerminationCopyMapper
 import app.kawkab.android.presentation.ui.common.rememberJournalExportHandlers
 import app.kawkab.android.presentation.ui.common.resolve
 import app.kawkab.android.presentation.ui.phoneaccess.MissingPermissionPrompt
+import app.kawkab.android.presentation.ui.phoneaccess.PhoneAccessBanner
 import app.kawkab.android.presentation.ui.phoneaccess.permissionInThread
 import app.kawkab.design.components.buttons.KnotworkPrimaryButton
 import app.kawkab.design.components.buttons.KnotworkTextButton
@@ -648,6 +649,12 @@ fun ChatHomeScreen(
                 onGranted = viewModel::retryLastUserTurn,
             )
         }
+        PhoneAccessBanner(
+            onOpen = onOpenPhoneAccess,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 64.dp),
+        )
         ConversationButton(
             viewState = viewState,
             send = { text ->

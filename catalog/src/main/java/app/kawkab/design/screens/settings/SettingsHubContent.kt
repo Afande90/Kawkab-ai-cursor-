@@ -408,6 +408,16 @@ private fun HubBasicBlock(state: SettingsHubViewState, callbacks: SettingsCallba
         verticalArrangement = Arrangement.spacedBy(KnotworkTheme.spacing.sp3),
     ) {
         SettingsSectionLabel(text = stringResource(R.string.knotwork_settings_hub_basic))
+        // Phone access first: until it is on, the hands cannot work (task 23).
+        state.phoneAccessSummary?.let { summary ->
+            NavLinkRow(
+                icon = AppIcons.Shield,
+                title = stringResource(R.string.knotwork_settings_phone_access),
+                state = summary,
+                onClick = callbacks.onOpenPhoneAccess,
+                modifier = Modifier.testTag(PHONE_ACCESS_ROW_TAG),
+            )
+        }
         // Every hub row is anchored, exactly like a category row. Without this
         // the controls most people ever touch were the ones with no explanation
         // available — the hub was the one screen where the whole feature was
@@ -575,3 +585,6 @@ private val SEARCH_EMPTY_TILE = 56.dp
 private val LOADING_SUMMARY_HEIGHT = 9.dp
 private const val LOADING_SUMMARY_FRACTION = 0.68f
 private const val LOADING_TILE_ALPHA = 0.5f
+
+/** Test tag of the Phone access row on the settings hub. */
+const val PHONE_ACCESS_ROW_TAG: String = "settings_phone_access"

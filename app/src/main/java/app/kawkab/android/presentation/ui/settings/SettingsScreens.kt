@@ -7,10 +7,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -25,14 +22,18 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.currentStateAsState
 import app.kawkab.android.R
 import app.kawkab.android.domain.models.EntrySurface
 import app.kawkab.android.domain.models.MemoryImportStrategy
 import app.kawkab.android.domain.models.ProviderId
 import app.kawkab.android.domain.models.ToolApprovalPolicy
+import app.kawkab.android.domain.phoneaccess.PhoneAccessStatus
 import app.kawkab.android.domain.text.toDisplaySafe
 import app.kawkab.android.presentation.tile.requestAddDutyTile
 import app.kawkab.android.presentation.ui.common.openDocumentation
+import app.kawkab.android.presentation.ui.phoneaccess.AndroidPhoneAccess
 import app.kawkab.design.components.dialogs.SingleChoiceDialog
 import app.kawkab.design.components.dialogs.SingleChoiceDialogUi
 import app.kawkab.design.components.dialogs.SingleChoiceOptionUi
@@ -134,8 +135,16 @@ fun SettingsHubScreen(viewModel: SettingsViewModel, nav: SettingsNavActions) {
             nav.onOpenCategory(row.categoryId)
         },
     )
+    // Phone access is the first Basic row, with its "5 of 8 on" read again on every return (task 23).
+    val context = LocalContext.current
+    val lifecycleState by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
+    val phoneAccess = remember(lifecycleState) { PhoneAccessStatus.summary(AndroidPhoneAccess.lines(context)) }
+    val phoneAccessSummary = stringResource(R.string.phone_access_progress, phoneAccess.first, phoneAccess.second)
     SettingsSurface(viewModel) {
-        SettingsHubContent(state = buildHubViewState(uiState), callbacks = callbacks)
+        SettingsHubContent(
+            state = buildHubViewState(uiState).copy(phoneAccessSummary = phoneAccessSummary),
+            callbacks = callbacks,
+        )
     }
 }
 
@@ -379,14 +388,6 @@ fun PrivacySettingsScreen(viewModel: SettingsViewModel, nav: SettingsNavActions)
                     advancedExpanded = highlight.advancedExpanded,
                 )
             }
-            TextButton(
-                onClick = nav.onOpenPhoneAccess,
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(all = 8.dp),
-            ) {
-                Text(text = stringResource(R.string.phone_access_open))
-            }
         }
     }
 }
@@ -478,6 +479,7 @@ private fun rememberSettingsCallbacks(
         onSearchResultClick = onSearchResultClick,
         onClearSearch = onClearSearch,
         onOpenSystemInstructions = { nav.onOpenCategory(SettingsCategoryId.Generation) },
+        onOpenPhoneAccess = nav.onOpenPhoneAccess,
         onManageModelsClick = nav.onOpenModels,
         onOpenManageTools = nav.onOpenManageTools,
         onOpenAllowedDomains = nav.onOpenAllowedDomains,

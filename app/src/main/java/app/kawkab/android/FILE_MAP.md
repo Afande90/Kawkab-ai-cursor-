@@ -1132,6 +1132,7 @@ Only Kotlin files appear inside the generated blocks.
       - `ProviderAvailability.kt` - Which providers are set up on this device, for the node sheet's *Provider* and *Engine* fields.
     - `phoneaccess/` - The Phone access screen and the Android reads behind its status lines.
       - `AndroidPhoneAccess.kt` - Reads the phone's current grants.
+      - `PhoneAccessBanner.kt` - "Kawkab needs N permissions" at the top of the chat while anything is off (task 23).
       - `PhoneAccessScreen.kt` - Shows each phone-access item, with a grant path when it is off.
     - `pipeline/` - Pipeline editor surface.
       - `editor/` - Production pipeline editor — toolbar, ZoomRail, MiniMap, FilterBar, EmptyPipelineState, DotGridBackground, ValidationAutoFix, copy/paste, search, grid toggle. Composes pipelines only; execution belongs to chat / triggers.

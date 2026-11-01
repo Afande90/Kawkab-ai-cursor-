@@ -345,6 +345,7 @@
     <string name="knotwork_settings_section_providers">المزوّدون الخارجيون</string>
 
     <string name="knotwork_settings_hub_basic">أساسي</string>
+    <string name="knotwork_settings_phone_access">الوصول إلى الهاتف</string>
     <string name="knotwork_settings_hub_categories">الفئات</string>
 
     <string name="knotwork_settings_search_hint">بحث في الإعدادات</string>

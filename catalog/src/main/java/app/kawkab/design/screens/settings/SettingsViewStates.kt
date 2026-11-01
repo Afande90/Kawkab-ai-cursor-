@@ -122,6 +122,8 @@ data class SettingsHubViewState(
     val restartRequiredMessage: String? = null,
     val searchQuery: String = "",
     val searchResults: List<HubSearchResultRow> = emptyList(),
+    /** "5 of 8 on" for the Phone access row (task 23); `null` hides the row. */
+    val phoneAccessSummary: String? = null,
 )
 
 // ─── Generation ──────────────────────────────────────────────────────────────

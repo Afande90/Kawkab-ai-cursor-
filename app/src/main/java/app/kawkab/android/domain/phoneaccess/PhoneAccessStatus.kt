@@ -24,8 +24,24 @@ object PhoneAccessStatus {
         PhoneAccessItem.CALENDAR -> MissingPermission.WRITE_CALENDAR
         PhoneAccessItem.NOTIFICATIONS -> MissingPermission.POST_NOTIFICATIONS
         PhoneAccessItem.MICROPHONE -> MissingPermission.RECORD_AUDIO
-        PhoneAccessItem.ACCESSIBILITY, PhoneAccessItem.BATTERY -> null
+        PhoneAccessItem.ACCESSIBILITY, PhoneAccessItem.BATTERY, PhoneAccessItem.ASSISTANT -> null
     }
+
+    /**
+     * How many items are on, and how many there are (task 23): "5 of 8 on".
+     *
+     * @param lines The current lines.
+     * @return On count to total.
+     */
+    fun summary(lines: List<PhoneAccessLine>): Pair<Int, Int> = lines.count { it.on } to lines.size
+
+    /**
+     * How many items are still off, for the chat banner.
+     *
+     * @param lines The current lines.
+     * @return The count.
+     */
+    fun offCount(lines: List<PhoneAccessLine>): Int = lines.count { !it.on }
 
     /**
      * True when [enabledServices] names [serviceClass].
@@ -58,6 +74,9 @@ enum class PhoneAccessItem {
 
     /** Staying running when the phone is idle. */
     BATTERY,
+
+    /** Being the phone's digital assistant (task 23). */
+    ASSISTANT,
 }
 
 /**
