@@ -630,7 +630,7 @@ private fun BrandGlyphTile() {
             .background(color = app.kawkab.design.tokens.KnotworkPalette.Accent100),
     ) {
         Icon(
-            imageVector = AppIcons.Hub,
+            imageVector = AppIcons.Mark,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(BrandGlyphInnerSize),

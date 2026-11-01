@@ -155,7 +155,7 @@ private fun OnboardingTopBar(state: OnboardingViewState, callbacks: OnboardingCa
             ),
     ) {
         Icon(
-            imageVector = AppIcons.Hub,
+            imageVector = AppIcons.Mark,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(LogoIconSize),
