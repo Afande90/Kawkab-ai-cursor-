@@ -64,7 +64,18 @@ Dates are calendar dates in Asia/Dubai. The owner asked for commits on `main` an
 | 25c. Pre-release APK per green push; Check for updates on About | done | 1 Nov 2026 | `e1e6475c` (tests `4bf4b478`) |
 | 26. Close out: green Check, owner check, tag `m1.6` | done | 1 Nov 2026 | this commit |
 
-Next task: 27 (M1.7).
+Tag `m1.6` is on `9b2bc801` locally; pushing tags is refused from the build machine (HTTP 403), see docs/owner-checks/M1.7.md.
+
+## M1.7
+
+| Task | Status | Date | Commit |
+|---|---|---|---|
+| 27. Wake word "Kawkab" (recall/false-wake gate BLOCKED) | done | 1 Nov 2026 | `418c402c`, `65739f34` (set `85479370`, tests `6c296e6c`, `5d66f84c`, `24efb149`, script `05b2a1c7`) |
+| 28. Continuous conversation (Whisper and sherpa voice BLOCKED, Android fallbacks) | done | 1 Nov 2026 | `a594ed83` (tests `3b862af2`) |
+| 29. Hands-free actions within the safety rules | done | 1 Nov 2026 | `c5f01168`, `4c9abc51` (tests `c3540ca2`) |
+| 30. Close out: green Check, owner check, tag `m1.7` | done | 1 Nov 2026 | this commit |
+
+Next task: write the M2 tasks into this list (AGENTS.md, Later milestones).
 
 Tasks 23f, 23d, 23j, 23h and 23i, 31 Oct 2026: the GitHub Check passed on `532d80c6` (run 41252985203), which contains all five. Instrumented on `532d80c6` (run 41252985223): Full API 36, Foss API 36 and Full API 34 passed; the tab-switch benchmark job failed (see DECISIONS.md, 23d BLOCKED). Local checks for each task: `:app:ktlintCheck`, `:app:detekt`, `:app:verifyFileMap`, `:app:verifyNoOrphanedKdoc` and the targeted `:app:testFossDebugUnitTest` classes named in each test commit. BLOCKED gates: 23f emulator reply with E2B (hardware), 23d median frame time on the emulator.
 
