@@ -127,6 +127,9 @@ fun PocketHomeScreen(
             else -> ""
         }
     }.orEmpty()
+    val failure = (state.visual as? app.kawkab.android.presentation.ui.chat.home.ChatHomeUiState.Error)
+        ?.message?.let(PocketErrors::reply)
+    LaunchedEffect(failure) { if (failure != null) driver?.replied(failure) }
     val pending = state.pending.tool
     fun send(text: String) {
         editing = false
@@ -155,6 +158,7 @@ fun PocketHomeScreen(
             } else {
                 notice = "Kept it."
             }
+            driver?.replied(notice)
             forget = null
             return
         }
@@ -166,6 +170,7 @@ fun PocketHomeScreen(
                 filing.remember(reviewShot.attachment!!.path, category)
                 categories = filing.all()
                 notice = "Filed as $category."
+                driver?.replied(notice)
             }
             return
         }
@@ -191,6 +196,7 @@ fun PocketHomeScreen(
         } else {
             text
         }
+        notice = ""
         heard = input
         menu = null
         page = DevicePage.TALK
@@ -444,9 +450,9 @@ fun PocketHomeScreen(
         battery = "${context.getSystemService(
             BatteryManager::class.java,
         )?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) ?: 0}%",
-        heard = heard, reply = notice.ifBlank { lastReply },
+        heard = heard, reply = failure ?: notice.ifBlank { lastReply },
         result = lastReply.takeIf {
-            it.startsWith("Alarm") || it.startsWith("Timer") || it.startsWith("Called")
+            listOf("Alarm", "Timer", "Called", "SMS submitted", "Sent", "Opened", "Reminder").any(it::startsWith)
         }.orEmpty(),
         name =
         args["name"] ?: args["spoken"] ?: args["contact"]
