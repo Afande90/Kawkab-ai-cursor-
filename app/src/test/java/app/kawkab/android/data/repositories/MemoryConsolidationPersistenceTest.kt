@@ -16,17 +16,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 
-/**
- * Verifies the compaction write path against a **real** in-memory Room database
- * rather than a mocked DAO: consolidation must leave the store holding the
- * summary and nothing it replaced.
- *
- * The mocked-DAO tests in [MemoryRepositoryImplTest] pin the call contract; this
- * one pins the storage outcome, which is the part a user would feel — a
- * consolidation that inserts a summary but fails to remove the originals grows
- * the table it exists to shrink, and one that removes chunks it was not asked to
- * remove destroys facts.
- */
+/** Real Room compaction preserves source history and reduces the active retrieval set. */
 @RunWith(RobolectricTestRunner::class)
 class MemoryConsolidationPersistenceTest {
 
@@ -61,7 +51,7 @@ class MemoryConsolidationPersistenceTest {
     }
 
     @Test
-    fun `given consolidated originals when replaced then only the summary and untouched chunks remain`() = runTest {
+    fun `given consolidated originals when replaced then history remains and only current chunks are retrieved`() = runTest {
         seed(1L, "fact one")
         seed(2L, "fact two")
         seed(3L, "fact three")
@@ -74,12 +64,13 @@ class MemoryConsolidationPersistenceTest {
         )
 
         val stored = repository.getAllMemories()
-        // No storage leak: three chunks in, one summary out, and the chunk that
-        // was not part of the cluster is left exactly as it was.
-        assertEquals(setOf("unrelated fact", "merged fact"), stored.map { it.text }.toSet())
+        assertEquals(5, stored.size)
+        assertEquals(setOf(1L, 2L, 3L), stored.filter { "status:past" in it.tags }.map { it.id }.toSet())
+        val active = repository.findSimilarMemories(floatArrayOf(1f, 0f), null).map { it.first }
+        assertEquals(setOf("unrelated fact", "merged fact"), active.map { it.text }.toSet())
         val summary = stored.single { it.text == "merged fact" }
         assertEquals(MemorySource.Compaction(originalChunkIds = listOf(1L, 2L, 3L)), summary.source)
-        assertEquals(2, dao.countMemories())
+        assertEquals(5, dao.countMemories())
     }
 
     @Test
