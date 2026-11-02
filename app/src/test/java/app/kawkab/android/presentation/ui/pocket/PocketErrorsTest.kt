@@ -12,6 +12,7 @@ class PocketErrorsTest {
         assertFalse(text.contains("gguf"))
         assertFalse(text.contains("Native"))
     }
+
     @Test fun `permissions and locked phones receive useful separate instructions`() {
         assertTrue(PocketErrors.reply("Missing permission android.permission.CALL_PHONE").contains("Phone access"))
         assertTrue(PocketErrors.reply("Phone is locked").contains("Unlock"))
