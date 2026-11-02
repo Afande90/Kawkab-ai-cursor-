@@ -78,3 +78,7 @@ The 3D-Speaker CAMPPlus ONNX export is Apache-2.0, pinned at echo-hello/speech_c
 - llama.cpp (MIT): matching public C API headers are prepared at build time against the exact submodule commit of the existing Llamatik 2.0.0 runtime. No second runtime is compiled.
 
 - Owner voice-loop evaluation, 2 November 2026: VoiceStudio (`debpalash/VoiceStudio`, AGPL-3.0, personal-use only) was evaluated as a reference, not linked or copied. smart-turn-v3 (`pipecat-ai/smart-turn-v3`, BSD-2-Clause) has CPU ONNX exports but is not enabled without Android parity/timing checks. Kokoro remains an English candidate. Piper Arabic redistribution permission is unresolved, so no voice weights are shipped. Details: `docs/owner-checks/M2-V.md`.
+
+## Foreground Glyph mirror (owner-authorized personal use)
+
+Nothing Glyph Developer Kit 2.0: official SDK, personal-use only under the owner's explicit instruction. The AAR is not committed. Gradle downloads the official release artifact from immutable upstream commit 8ee807a9312a640b0d43051450924e3446bc1d78, SHA-256 329393019db5f0f987c6245855d13fa273d06756c68829ca0f6ae686ba336da1. Vendor bytecode is not modified. Phone (3a)'s lights are white; the app mirrors green/amber state meanings using breathing and attention patterns, and displays live countdown progress on its C strip. Android 16+ removes the SDK API-key restriction. Older Nothing OS versions need an issued key or Nothing's documented development mode; unsupported/rejected devices quietly do nothing.

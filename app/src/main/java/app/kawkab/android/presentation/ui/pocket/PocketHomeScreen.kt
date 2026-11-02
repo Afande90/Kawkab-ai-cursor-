@@ -42,6 +42,7 @@ import app.kawkab.android.domain.phoneaccess.PhoneAccessStatus
 import app.kawkab.android.domain.text.ReplyLanguage
 import app.kawkab.android.domain.voice.ConversationLoop
 import app.kawkab.android.domain.voice.SpokenOwnerAnswer
+import app.kawkab.android.glyph.GlyphMirror
 import app.kawkab.android.hands.ContactChoice
 import app.kawkab.android.presentation.ui.chat.home.ActionSentence
 import app.kawkab.android.presentation.ui.chat.home.ChatHomeViewModel
@@ -464,11 +465,15 @@ fun PocketHomeScreen(
             0,
             COUNTDOWN_SECONDS,
         ),
+        countdownProgress = pending?.runsAtMs?.let {
+            (1f - (it - now).toFloat() / (COUNTDOWN_SECONDS * SECOND_MS)).coerceIn(0f, 1f)
+        },
         enrolled = enrollmentCount, learned = learned,
         shots = shots.mapIndexed { index, shot ->
             DeviceShot("SCREENSHOT ${index + 1}", categories[shot.attachment?.path] ?: "UNFILED", shot == reviewShot)
         },
     )
+    GlyphMirror(device)
     KawkabDevice(
         device,
         onHome = {

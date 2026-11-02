@@ -21,6 +21,7 @@ import app.kawkab.android.domain.models.AgentOrchestratorState
 import app.kawkab.android.domain.repositories.PrivacySettings
 import app.kawkab.android.domain.voice.ConversationLoop
 import app.kawkab.android.domain.voice.VoiceAnswers
+import app.kawkab.android.glyph.GlyphMirror
 import app.kawkab.android.hands.ContactChoice
 import app.kawkab.android.presentation.state.ActiveSessionTracker
 import app.kawkab.android.presentation.state.ChatEntryRequestRelay
@@ -81,6 +82,7 @@ class KawkabAssistantSession(
         setContent {
             val state by device.collectAsState()
             KnotworkTheme {
+                GlyphMirror(state)
                 KawkabDevice(
                     state,
                     onHome = {
@@ -294,6 +296,11 @@ class KawkabAssistantSession(
                 while (pending?.requestId == state.requestId) {
                     device.value =
                         device.value.copy(
+                            countdownProgress = (
+                                1f -
+                                    (state.runsAtMs - System.currentTimeMillis()).toFloat() /
+                                    (COUNTDOWN_SECONDS * SECOND_MS)
+                                ).coerceIn(0f, 1f),
                             seconds = ((state.runsAtMs - System.currentTimeMillis() + SECOND_MS - 1) / SECOND_MS)
                                 .toInt().coerceIn(0, COUNTDOWN_SECONDS),
                         )

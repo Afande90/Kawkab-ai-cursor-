@@ -76,3 +76,5 @@ __pycache__/
 
 # Built locally or by CI from the pinned verdict adapter source.
 /app/src/main/jniLibs/*/libkawkab_decision.so
+
+/kawkab-m2v2.bundle

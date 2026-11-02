@@ -8,6 +8,7 @@ import app.kawkab.android.buildtools.DetektAnalysisModeGuard
 import app.kawkab.android.buildtools.DexInstantiabilityChecker
 import app.kawkab.android.buildtools.DexInvocationChecker
 import app.kawkab.android.buildtools.DocumentationRef
+import app.kawkab.android.buildtools.DownloadPinnedArtifact
 import app.kawkab.android.buildtools.ExternalAutomationDocsGenerator
 import app.kawkab.android.buildtools.FileMapSpec
 import app.kawkab.android.buildtools.GenerateDocumentationLinksTask
@@ -2164,6 +2165,18 @@ configurations.configureEach {
     exclude(group = "org.slf4j", module = "slf4j-simple")
 }
 
+// Official SDK 2.0 release artifact; upstream has no GitHub release tags, so pin its commit URL.
+val downloadGlyphSdk by tasks.registering(DownloadPinnedArtifact::class) {
+    url.set(
+        "https://raw.githubusercontent.com/Nothing-Developer-Programme/Glyph-Developer-Kit/" +
+            "8ee807a9312a640b0d43051450924e3446bc1d78/sdk/glyph-matrix-sdk-2.0.aar",
+    )
+    sha256.set("329393019db5f0f987c6245855d13fa273d06756c68829ca0f6ae686ba336da1")
+    outputFile.set(layout.buildDirectory.file("downloaded/glyph-matrix-sdk-2.0.aar"))
+}
+
+tasks.named("preBuild") { dependsOn(downloadGlyphSdk) }
+
 dependencies {
     // Design-system module — `KnotworkTheme` (currently a `MaterialTheme`
     // pass-through) plus the ported foundations in Kotlin sources.
@@ -2218,6 +2231,7 @@ dependencies {
     implementation(libs.llamatik)
     // Wake word (task 27): keyword spotting and Silero VAD on onnxruntime.
     implementation(libs.sherpa.onnx)
+    implementation(files(downloadGlyphSdk.flatMap { it.outputFile }).builtBy(downloadGlyphSdk))
 
     // MediaPipe Tasks Text.
     //

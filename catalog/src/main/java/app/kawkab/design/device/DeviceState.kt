@@ -26,6 +26,7 @@ data class DeviceState(
     val usual: Boolean = false,
     val choices: List<String> = emptyList(),
     val seconds: Int = 3,
+    val countdownProgress: Float? = null,
     val enrolled: Int = 0,
     val enrollmentTotal: Int = 12,
     val shots: List<DeviceShot> = emptyList(),

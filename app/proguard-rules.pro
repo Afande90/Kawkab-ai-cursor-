@@ -181,3 +181,6 @@
 
 # Verdict JNI uses this exact class and method names.
 -keep class app.kawkab.android.voice.JevRuntime { *; }
+
+# Official Glyph SDK binds Nothing OS through its AIDL service.
+-keep class com.nothing.** { *; }
