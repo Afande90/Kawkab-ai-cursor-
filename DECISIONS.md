@@ -523,3 +523,8 @@ Final targeted unit run: 79 tests, 0 failures, 0 errors, 0 skipped, BUILD SUCCES
 ## 2026-11-02 — reset rule 5b: English interface
 
 All Arabic resource overrides now carry the default English copy, including English plural forms for every Arabic quantity. Non-translatable constants fall back to defaults. The shared Compose theme and Android application keep interface layout left to right; spoken Arabic content gets its own text direction in the LCD. The former Arabic-key test now checks that every localized override matches English. The Arabic-locale Compose test exercises the actual theme and asserts left-to-right layout. Checks passed: both targeted tests, app/catalog ktlintCheck and detekt, app verifyComplianceSource (BUILD SUCCESSFUL, 3m 37s). No push, tag or publish operation is part of this continuation, by the owner's latest instruction.
+
+
+## 2026-11-02 — reset rule 4: shared Pocket LCD foundation
+
+KawkabDevice renders F1–F8 from one immutable state, with the exact body/panel/bezel/LED colours, 124 dp talk/STOP key, tactile HOME/SHOTS/GROWTH keys, grille dots, bundled fonts, reduced-motion cursor and Arabic speech text direction. Product data is separate from preview fixtures: the live UI never invents 86% accuracy. All eight Compose screenshot cases passed after recording their goldens, with catalog ktlintCheck, detekt and app compliance. App owner-voice policy and conversation tests also passed in the same invocation (BUILD SUCCESSFUL, 1m 37s). App routing and device controls are integrated in the next commit.

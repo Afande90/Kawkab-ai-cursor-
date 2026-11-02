@@ -445,3 +445,5 @@ The image loader (`io.coil-kt.coil3:coil-compose:3.6.3`) is a direct dependency 
 | PocketClaw (github.com/ManojRakshu/pocketclaw) | MIT | credited; no code copied; not Pocket LLM | https://github.com/ManojRakshu/pocketclaw | no |
 | Gecko 110M | not yet verified | embedding candidate; not measured; not downloaded | task 20c | no |
 
+
+| VT323 / IBM Plex Mono / Noto Kufi Arabic | SIL OFL 1.1 | personal and commercial; attribution; reserved names | google/fonts ofl directories; third_party/fonts | yes |

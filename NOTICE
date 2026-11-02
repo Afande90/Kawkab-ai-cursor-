@@ -293,3 +293,5 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 and associated documentation files (the "Software"), to deal in the Software without
 restriction, subject to the conditions of the MIT License; the above copyright notice and this
 permission notice shall be included in all copies or substantial portions of the Software.
+
+Pocket LCD fonts: VT323 (Peter Hull), IBM Plex Mono (IBM), Noto Kufi Arabic (The Noto Project). Bundled under SIL Open Font License 1.1; licences in third_party/fonts.

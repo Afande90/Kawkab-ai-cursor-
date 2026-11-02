@@ -65,3 +65,7 @@ No new third-party component. The stub messenger is first-party test code and is
 ## Development tool, not in the APK
 
 Drawflow 0.0.60 is inlined in `pipeline-editor.html` under the MIT licence. The notice is in `NOTICE`.
+
+## Pocket LCD fonts
+
+VT323, IBM Plex Mono and Noto Kufi Arabic are bundled from google/fonts under SIL OFL 1.1. Licence copies are in third_party/fonts. No fonts are fetched at runtime.
