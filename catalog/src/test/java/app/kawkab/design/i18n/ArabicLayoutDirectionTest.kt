@@ -1,8 +1,8 @@
 package app.kawkab.design.i18n
 
 import android.content.res.Configuration
-import android.view.View
 import androidx.compose.runtime.CompositionLocalProvider
+import app.kawkab.design.theme.KnotworkTheme
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -16,7 +16,7 @@ import org.robolectric.annotation.Config
 import java.util.Locale
 
 /**
- * Compose under an Arabic locale lays out right to left (spec §0.6).
+ * Reset rule 5b: the interface stays left to right even on an Arabic phone.
  */
 @RunWith(AndroidJUnit4::class)
 class ArabicLayoutDirectionTest {
@@ -25,18 +25,15 @@ class ArabicLayoutDirectionTest {
 
     @Test
     @Config(sdk = [36], qualifiers = "ar")
-    fun `given an arabic locale when composed then layout direction is rtl`() {
+    fun `an Arabic phone still has an English left to right interface`() {
         composeTestRule.setContent {
             val configuration = Configuration(LocalConfiguration.current)
             configuration.setLocale(Locale.forLanguageTag("ar"))
             configuration.setLayoutDirection(Locale.forLanguageTag("ar"))
-            val direction = if (configuration.layoutDirection == View.LAYOUT_DIRECTION_RTL) {
-                LayoutDirection.Rtl
-            } else {
-                LayoutDirection.Ltr
-            }
-            CompositionLocalProvider(LocalLayoutDirection provides direction) {
-                assertEquals(LayoutDirection.Rtl, LocalLayoutDirection.current)
+            CompositionLocalProvider(LocalConfiguration provides configuration, LocalLayoutDirection provides LayoutDirection.Rtl) {
+                KnotworkTheme {
+                    assertEquals(LayoutDirection.Ltr, LocalLayoutDirection.current)
+                }
             }
         }
     }

@@ -1,48 +1,50 @@
 package app.kawkab.android.i18n
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.w3c.dom.Element
 import java.io.File
+import javax.xml.parsers.DocumentBuilderFactory
 
-/**
- * Fails when a default `strings.xml` key has no Arabic resource (spec §0.6).
- * Gradle runs this test with the working directory set to the `app` module.
- */
+/** Reset rule 5b: locale overrides must preserve the English interface, including plural forms. */
 class ArabicStringKeysTest {
     @Test
-    fun `given default string resources when arabic is required then every key exists`() {
-        val roots = listOf(File("src/main/res"), File("../catalog/src/main/res"))
-        val missing = mutableListOf<String>()
-        roots.forEach { root ->
-            val values = File(root, "values")
-            val arabic = File(root, "values-ar")
-            val files = values.listFiles { file ->
-                file.isFile && file.name.startsWith("strings") && file.name.endsWith(".xml")
-            }?.sortedBy { it.name }.orEmpty()
-            assertTrue("No string files under ${values.path}", files.isNotEmpty())
-            files.forEach { english ->
-                val translated = File(arabic, english.name)
-                if (!translated.isFile) {
-                    missing += "${english.path} (no ${translated.path})"
-                    return@forEach
-                }
-                val expected = resourceNames(english)
-                val actual = resourceNames(translated)
-                expected.forEach { name ->
-                    if (name !in actual) missing += "${english.path}#$name"
+    fun `every locale uses English interface resources`() {
+        listOf(File("src/main/res"), File("../catalog/src/main/res")).forEach { root ->
+            val defaults = File(root, "values").listFiles().orEmpty()
+                .filter { it.name.startsWith("strings") && it.extension == "xml" }
+                .flatMap { entries(it).entries }.associate { it.toPair() }
+            assertTrue(defaults.isNotEmpty())
+            root.listFiles().orEmpty().filter { it.name.startsWith("values-") }.forEach { locale ->
+                locale.listFiles().orEmpty().filter { it.name.startsWith("strings") && it.extension == "xml" }
+                    .forEach { file ->
+                        entries(file).forEach { (key, text) ->
+                            val fallback = key.substringBeforeLast('/') + "/other"
+                            assertEquals("${file.path}#$key", defaults[key] ?: defaults[fallback], text)
+                        }
+                    }
+            }
+        }
+    }
+
+    private fun entries(file: File): Map<String, String> {
+        val factory = DocumentBuilderFactory.newInstance()
+        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
+        val children = factory.newDocumentBuilder().parse(file).documentElement.childNodes
+        return buildMap {
+            for (i in 0 until children.length) {
+                val node = children.item(i) as? Element ?: continue
+                val name = node.getAttribute("name")
+                if (node.tagName == "string") put(name, node.textContent.trim())
+                if (node.tagName == "plurals") {
+                    val items = node.getElementsByTagName("item")
+                    for (j in 0 until items.length) {
+                        val item = items.item(j) as Element
+                        put("$name/${item.getAttribute("quantity")}", item.textContent.trim())
+                    }
                 }
             }
         }
-        assertTrue(
-            "Arabic translations missing:\n" + missing.joinToString("\n"),
-            missing.isEmpty(),
-        )
-    }
-
-    private fun resourceNames(file: File): Set<String> {
-        val names = linkedSetOf<String>()
-        val pattern = Regex("""<(?:string|plurals)\b[^>]*\bname="([^"]+)"""")
-        pattern.findAll(file.readText()).forEach { match -> names += match.groupValues[1] }
-        return names
     }
 }
