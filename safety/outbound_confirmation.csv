@@ -4,5 +4,5 @@ send_sms,announce_3s,"Owner vision rule 1: said aloud, runs after a 3 s cancel w
 send_message,announce_3s,"Owner vision rule 1: said aloud, runs after a 3 s cancel window in the open chat or panel"
 macro_send,announce_3s,"Owner vision rule 1: said aloud, runs after a 3 s cancel window in the open chat or panel"
 delete_file,explicit_yes,"Owner vision rule 3: deleting the owner's data needs an explicit yes"
-http_request,tap,"Owner vision rule 3: everything stays on the phone; a network request still asks"
-submit_tap,tap,"A tap on a send, pay or confirm button inside another app still asks"
+http_request,local_only,"Owner vision rule 3: remote HTTP is refused; loopback stays on the phone"
+submit_tap,announce_3s,"Owner vision rule 1: announce and allow cancellation; the payment denylist remains binding"

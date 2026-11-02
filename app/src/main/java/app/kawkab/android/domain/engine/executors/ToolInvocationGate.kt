@@ -28,6 +28,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
@@ -135,13 +136,22 @@ class ToolInvocationGate @Inject constructor(
             risk = risk,
             requestId = requestId,
             context = resolveRequestContext(runId),
-            runsAtMs = System.currentTimeMillis() + OutboundCountdown.WINDOW_MS,
+            runsAtMs = System.currentTimeMillis() + ANNOUNCEMENT_TIMEOUT_MS + OutboundCountdown.WINDOW_MS,
         )
         val deferred = CompletableDeferred<Boolean>()
         val holder = PendingApprovalHolder(deferred, request)
         activeApprovalDeferreds[sessionId] = holder
         emit(NodeOutput.State(request))
         return try {
+            val announced = withTimeoutOrNull(ANNOUNCEMENT_TIMEOUT_MS) {
+                select<Boolean> {
+                    holder.announced.onAwait { true }
+                    deferred.onAwait { false }
+                }
+            } == true
+            if (!announced) return false
+            holder.request = request.copy(runsAtMs = System.currentTimeMillis() + OutboundCountdown.WINDOW_MS)
+            emit(NodeOutput.State(holder.request))
             withTimeoutOrNull(OutboundCountdown.WINDOW_MS) { deferred.await() } ?: true
         } finally {
             activeApprovalDeferreds.remove(sessionId, holder)
@@ -161,7 +171,8 @@ class ToolInvocationGate @Inject constructor(
      */
     private data class PendingApprovalHolder(
         val deferred: CompletableDeferred<Boolean>,
-        val request: AgentOrchestratorState.WaitingForApproval,
+        var request: AgentOrchestratorState.WaitingForApproval,
+        val announced: CompletableDeferred<Unit> = CompletableDeferred(),
         var spokenDeletionConsent: Boolean = false,
     )
 
@@ -197,6 +208,13 @@ class ToolInvocationGate @Inject constructor(
         }
         if (!activeApprovalDeferreds.remove(sessionId, holder)) return false
         return holder.deferred.complete(isApproved)
+    }
+
+    /** A UI speech callback starts the cancel window; neither typed nor spoken yes can do that. */
+    fun announcementFinished(sessionId: String, requestId: String): Boolean {
+        val holder = activeApprovalDeferreds[sessionId]?.takeIf { it.request.requestId == requestId } ?: return false
+        if (holder.request.runsAtMs == null) return false
+        return holder.announced.complete(Unit)
     }
 
     /**
@@ -298,6 +316,19 @@ class ToolInvocationGate @Inject constructor(
             emit(NodeOutput.Result(NodeExecutionResult(error = errorMsg, resolvedToolName = resolvedToolName)))
             return@with
         }
+        // The owner permits local processing only. Tool-selected remote requests cannot bypass
+        // this rule through an Advanced allowlist or an old approval notification.
+        if (!localNetworkOnly(resolvedToolName, resolvedToolArgs)) {
+            emit(
+                NodeOutput.Result(
+                    NodeExecutionResult(
+                        error = "Everything stays on this phone. Remote HTTP actions are disabled.",
+                        resolvedToolName = resolvedToolName,
+                    ),
+                ),
+            )
+            return@with
+        }
         // Hard-deny gate: when the user has opted to block destructive tools
         // outright, refuse the call before even staging the HITL prompt.
         //
@@ -348,8 +379,7 @@ class ToolInvocationGate @Inject constructor(
             decision == PendingDecision.DENIED || (parkedAnswer.risk == risk && resolvedToolName != "delete_file")
         }
         val askAgain = parkedAnswer != null && appliedDecision == null
-        val needsApproval =
-            askAgain || alwaysConfirm || toolSettings.toolApprovalPolicy.first().requiresApproval(risk)
+        val needsApproval = approvalRequired(askAgain, alwaysConfirm, risk, sessionId)
         var spokenDeletionConsent = false
         var isApproved = true
         val countdown = countdownApplies(
@@ -548,6 +578,19 @@ class ToolInvocationGate @Inject constructor(
         emit(NodeOutput.Result(NodeExecutionResult(outputText = result, resolvedToolName = resolvedToolName)))
     }
 
+    private suspend fun approvalRequired(askAgain: Boolean, always: Boolean, risk: ToolRisk, session: String): Boolean =
+        if (risk == ToolRisk.LOCAL && interactiveSessions.isInteractive(session)) {
+            false
+        } else {
+            askAgain || always || toolSettings.toolApprovalPolicy.first().requiresApproval(risk)
+        }
+
+    private fun localNetworkOnly(tool: String, arguments: String): Boolean {
+        if (tool != "http_request") return true
+        val host = runCatching { java.net.URI(org.json.JSONObject(arguments).optString("url")).host }.getOrNull()
+        return host in setOf("localhost", "127.0.0.1", "::1", "[::1]")
+    }
+
     /**
      * The answer the user gave to the approval request a resumed run parked on.
      *
@@ -674,3 +717,5 @@ class ToolInvocationGate @Inject constructor(
         val context: ApprovalRequestContext?,
     )
 }
+
+private const val ANNOUNCEMENT_TIMEOUT_MS = 20_000L

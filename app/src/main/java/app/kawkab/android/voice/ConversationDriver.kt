@@ -22,6 +22,7 @@ class ConversationDriver(
     private val onPhase: (ConversationLoop.Phase) -> Unit,
     private val answer: (String) -> Unit = {},
 ) {
+    private var announcementDone: (() -> Unit)? = null
     private val loop = ConversationLoop()
     private val main = Handler(Looper.getMainLooper())
 
@@ -48,7 +49,8 @@ class ConversationDriver(
     }
 
     /** Announces an action even when the command was typed; only cancellation is listened for. */
-    fun announce(sentence: String) {
+    fun announce(sentence: String, done: () -> Unit = {}) {
+        announcementDone = done
         if (loop.phase == ConversationLoop.Phase.IDLE) loop.tap()
         run(loop.waitsForTap(sentence, voiceMayAnswer = true, cancelOnly = true))
     }
@@ -70,7 +72,13 @@ class ConversationDriver(
                 answer(step.text)
             }
             is ConversationLoop.Step.Speak -> {
-                voice.speak(step.text, step.language) { main.post { run(loop.spoken()) } }
+                val announced = announcementDone.also { announcementDone = null }
+                voice.speak(step.text, step.language) {
+                    main.post {
+                        announced?.invoke()
+                        run(loop.spoken())
+                    }
+                }
                 // Listening while speaking lets the owner talk over the reply (barge-in).
                 listen()
             }
