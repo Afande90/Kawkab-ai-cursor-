@@ -28,8 +28,10 @@ import app.kawkab.android.domain.voice.SpokenOwnerAnswer
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
@@ -307,9 +309,11 @@ class ToolInvocationGate @Inject constructor(
                 resolvedToolArgs,
                 alwaysConfirm,
             )
-        } catch (cancelled: CancellationException) {
-            decisions.outcome(sessionId, resolvedToolName, "cancelled")
-            throw cancelled
+        } finally {
+            // Let cancellation propagate untouched; retain its audit evidence during cleanup.
+            if (!currentCoroutineContext().isActive) {
+                decisions.outcome(sessionId, resolvedToolName, "cancelled")
+            }
         }
     }
 
