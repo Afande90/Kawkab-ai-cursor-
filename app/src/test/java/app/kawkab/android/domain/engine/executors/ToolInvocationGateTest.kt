@@ -61,8 +61,13 @@ class ToolInvocationGateTest {
     @Test
     fun `Jev selected local actions wait three seconds after speech and record the outcome`() = runTest {
         val fixture = Fixture(
-            ToolApprovalPolicy.NeverPrompt, ToolRisk.LOCAL, null,
-            runId = null, tool = "set_alarm", interactive = true, judged = true,
+            ToolApprovalPolicy.NeverPrompt,
+            ToolRisk.LOCAL,
+            null,
+            runId = null,
+            tool = "set_alarm",
+            interactive = true,
+            judged = true,
         )
         val job = launch { fixture.dispatch() }
         runCurrent()
