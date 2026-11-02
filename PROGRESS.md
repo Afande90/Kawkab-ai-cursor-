@@ -75,7 +75,7 @@ Tag `m1.6` is on `9b2bc801` locally; pushing tags is refused from the build mach
 | 29. Hands-free actions within the safety rules | done | 1 Nov 2026 | `c5f01168`, `4c9abc51` (tests `c3540ca2`) |
 | 30. Close out: green Check, owner check, tag `m1.7` | done | 1 Nov 2026 | this commit |
 
-Next task: write the M2 tasks into this list (AGENTS.md, Later milestones).
+Next task: finish M1.8 close-out, then M2-V under the owner's vision reset. Do not start later milestones.
 
 Tasks 23f, 23d, 23j, 23h and 23i, 31 Oct 2026: the GitHub Check passed on `532d80c6` (run 41252985203), which contains all five. Instrumented on `532d80c6` (run 41252985223): Full API 36, Foss API 36 and Full API 34 passed; the tab-switch benchmark job failed (see DECISIONS.md, 23d BLOCKED). Local checks for each task: `:app:ktlintCheck`, `:app:detekt`, `:app:verifyFileMap`, `:app:verifyNoOrphanedKdoc` and the targeted `:app:testFossDebugUnitTest` classes named in each test commit. BLOCKED gates: 23f emulator reply with E2B (hardware), 23d median frame time on the emulator.
 
@@ -120,3 +120,19 @@ Task 7 checks, 28 Oct 2026, all passed: `ArabicStringKeysTest`, `StubLlmInferenc
 Task 5 checks, 28 Oct 2026: `./gradlew :app:testFossDebugUnitTest --tests app.kawkab.android.presentation.ui.about.AboutAcknowledgmentsTest :app:ktlintKotlinScriptCheck :app:verifyComplianceSource` passed (BUILD SUCCESSFUL in 35s). The compliance source scan passed (3432 files). No gate is BLOCKED.
 
 Task 6 checks, 28 Oct 2026: `./gradlew :app:assembleFossRelease` passed in 5m 28s. `scripts/check-apk-size.sh` passed: 64380860 bytes, arm64-v8a only, limit 150000000. GitHub Actions was not run here, so the new job is not claimed as a CI pass. No gate is BLOCKED.
+
+
+## M1.8 continuation — 2 Nov 2026
+
+The workspace arrived without a checkout. Main was cloned, pulled with `--ff-only`, and inspected with `git log -30`, `git status`, `git tag`, remote branches and open PRs. The working tree was clean at `9b64c54f`. The two old translation branches have no commits outside main. The only open PR is dependency update #2; it is unrelated to this hotfix.
+
+| Task | Status | Evidence |
+|---|---|---|
+| 31. Minified release launch in Check | existing implementation, green baseline | `7fd312cb`; Check run 41366560458 on `9b64c54f` passes API 36 release launch |
+| 32. JNI keep rules, isolated wake process, safe mode | existing implementation plus local countdown follow-up | `b62bfa70`; original tests `9b64c54f` |
+| 33. Local crash report | implemented; personal abort-message follow-up committed locally | native messages and exit descriptions omitted |
+| 34. Power button | existing role check and guide; settings deep-link follow-up committed locally | exported power/gesture settings where present |
+| 34b. Fast calling under reset rules 1 and 2 | local follow-ups; CI pending | spoken/typed cancel window, no chooser fallback, removable aliases in Growth |
+| 35. Close-out, tags, published updated APK | BLOCKED | Git and REST writes HTTP 403; no completion tag |
+
+Baseline Check, Instrumented and pre-release publishing passed on `9b64c54f`; this does not verify the local continuation. Detailed release status and APK provenance are in docs/owner-checks/M1.8.md. Local tags `m1.6` (`9b2bc801`) and `m1.7` (`ed0af57d`) were restored, but GitHub rejected their push. M2-V has not been started because the unfinished M1.8 release gate comes first.
