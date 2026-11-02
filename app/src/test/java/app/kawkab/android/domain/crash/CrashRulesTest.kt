@@ -8,6 +8,15 @@ import org.junit.Test
 /** Tasks 32 and 33: the crash log keeps frames without messages, five at most, and decides safe mode. */
 class CrashRulesTest {
     @Test
+    fun `native abort messages never reveal command content`() {
+        val raw = "Abort message: call Omar about the rent\n#00 pc 123 /system/lib64/libc.so"
+        val trace = CrashRules.nativeTrace(raw)
+        assertFalse(trace.contains("Omar"))
+        assertFalse(trace.contains("rent"))
+        assertTrue(trace.contains("#00 pc"))
+    }
+
+    @Test
     fun `a trace keeps classes and frames but never the message`() {
         val error = IllegalStateException("call Omar about the rent", RuntimeException("secret note"))
         val trace = CrashRules.trace(error)
