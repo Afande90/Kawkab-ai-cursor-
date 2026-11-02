@@ -91,7 +91,8 @@ object CrashLog {
                 else -> return@forEach
             }
             val raw = runCatching { exit.traceInputStream?.bufferedReader()?.use { it.readText() } }.getOrNull()
-            val trace = raw?.let(CrashRules::nativeTrace)?.ifBlank { null } ?: "No stack trace available (reason ${exit.reason})."
+            val trace = raw?.let(CrashRules::nativeTrace)?.ifBlank { null }
+                ?: "No stack trace available (reason ${exit.reason})."
             // Only the app process's own crash makes the next start a safe one.
             record(
                 prefs,

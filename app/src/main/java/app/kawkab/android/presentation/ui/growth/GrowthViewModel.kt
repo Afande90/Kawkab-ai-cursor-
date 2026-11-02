@@ -6,9 +6,9 @@ import app.kawkab.android.domain.harness.SkillCache
 import app.kawkab.android.hands.ContactAliasStore
 import app.kawkab.android.hands.ContactMatch
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import javax.inject.Inject
 
 /**
  * The Growth screen: successful plans, ranked, and deletable.

@@ -109,8 +109,10 @@ private fun CountdownSpeech(requestId: String, sentence: String, runsAt: Long, o
             override fun onNothing(code: Int) {
                 if (active && System.currentTimeMillis() < runsAt) {
                     main.postDelayed({
-                        if (active) runCatching {
-                            speech.listen(OfflineSpeech.languageFor(java.util.Locale.getDefault()), this)
+                        if (active) {
+                            runCatching {
+                                speech.listen(OfflineSpeech.languageFor(java.util.Locale.getDefault()), this)
+                            }
                         }
                     }, RETRY_MS)
                 }

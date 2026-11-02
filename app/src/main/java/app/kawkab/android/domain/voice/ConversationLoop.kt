@@ -7,7 +7,7 @@ import app.kawkab.android.domain.text.ReplyLanguage
  * until the owner taps stop. Speaking over the reply stops it (barge-in).
  *
  * Pure: the Android driver turns each [Step] into speech recognition, text-to-speech or a send.
- * Voice never confirms an outbound action; the tap card stays (spec §0.4.3).
+ * Announced outbound actions listen for cancellation; explicit questions use a separate answer mode.
  */
 class ConversationLoop(private val maxSilentRetries: Int = DEFAULT_SILENT_RETRIES) {
     /** Where the loop is. */
@@ -92,9 +92,7 @@ class ConversationLoop(private val maxSilentRetries: Int = DEFAULT_SILENT_RETRIE
     fun heard(text: String): Step {
         // Cancellation must work during the spoken announcement, before TTS completes.
         if (phase == Phase.SPEAKING && card != null && VoiceAnswers.answer(text) == VoiceAnswers.Answer.NO) {
-            card = null
-            phase = Phase.WAITING
-            return Step.Answer(text.trim())
+            phase = Phase.LISTENING
         }
         if (phase != Phase.LISTENING) return Step.None
         val trimmed = text.trim()
@@ -117,12 +115,15 @@ class ConversationLoop(private val maxSilentRetries: Int = DEFAULT_SILENT_RETRIE
     /** The recognizer ended with nothing (silence or no match). */
     fun silence(): Step {
         if (phase != Phase.LISTENING) return Step.None
-        if (card == CardMode.CANCEL_ONLY) return Step.Listen
         if (card != null) {
-            // No spoken answer: the card stays for a tap, and its result is still spoken.
-            card = null
-            phase = Phase.WAITING
-            return Step.Stop
+            return if (card == CardMode.CANCEL_ONLY) {
+                Step.Listen
+            } else {
+                // An explicit question remains pending; silence cannot approve it.
+                card = null
+                phase = Phase.WAITING
+                Step.Stop
+            }
         }
         if (followingUp) {
             // No follow-up within the window: the conversation is over (task 28).
