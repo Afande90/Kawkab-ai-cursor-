@@ -42,6 +42,20 @@ class MemoryDaoTest {
         dao = database.memoryDao()
     }
 
+    @Test
+    fun consolidationPreservesOriginalFactsUntilSpokenForget() = runBlocking {
+        val first = dao.insertMemory(unpinned("original one", 1L))
+        val second = dao.insertMemory(unpinned("original two", 2L))
+        val summary = dao.replaceWithConsolidated(unpinned("summary", 3L).copy(
+            source = app.kawkab.android.domain.models.MemorySource.Compaction(listOf(first, second))),
+            listOf(first, second))
+        assertEquals(3, dao.getAllMemories().size)
+        assertTrue(dao.getAllMemories().first { it.id == first }.tagsCsv.contains("status:past"))
+        dao.deleteMemoryAndDerived(first)
+        assertEquals(listOf(second), dao.getAllMemories().map { it.id })
+        assertFalse(dao.getAllMemories().any { it.id == summary })
+    }
+
     @After
     fun teardown() {
         database.close()
