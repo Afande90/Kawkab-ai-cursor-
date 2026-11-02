@@ -10,6 +10,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows.shadowOf
 
 /** Voice settings persist and cross the wake-process boundary as a complete immutable snapshot. */
 @RunWith(RobolectricTestRunner::class)
@@ -26,6 +27,17 @@ class WakeListeningConfigTest {
             .edit().putBoolean("enabled", false).commit()
         assertEquals(WakeListeningMode.OFF, WakeWordSwitch.config(context).mode)
         assertFalse(WakeWordSwitch.isEnabled(context))
+    }
+
+    @Test fun `a failed wake service is stopped as well as disabled so retry gets fresh capture`() {
+        val context = RuntimeEnvironment.getApplication()
+        context.startService(Intent(context, WakeWordService::class.java))
+        WakeWordSwitch.set(context, true)
+        WakeWordSwitch.failed(context, "microphone unavailable")
+        assertFalse(WakeWordSwitch.isEnabled(context))
+        assertEquals(WakeListeningMode.OFF, WakeWordSwitch.config(context).mode)
+        assertEquals("microphone unavailable", WakeWordSwitch.failure(context))
+        assertEquals(WakeWordService::class.java.name, shadowOf(context).nextStoppedService.component?.className)
     }
 
     @Test fun `sleep hours can be saved before enrollment without enabling capture`() {
