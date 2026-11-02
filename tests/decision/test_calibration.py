@@ -23,6 +23,10 @@ class DecisionCalibrationTest(unittest.TestCase):
             result = module.measurements(final, scores, 1.0, 0.95)
             self.assertLess(result['precision'], 0.95)
 
+    def test_smoke_fixtures_cannot_certify_production(self):
+        rows = [json.loads(line) for line in (ROOT / 'evals/decisions/v1/manifest.jsonl').read_text().splitlines()]
+        self.assertFalse(module.production_eligible([row for row in rows if row['split'] == 'test']))
+
     def test_uniform_uncertainty_has_no_auto_actions(self):
         row = dict(id='one', options=['act', 'ask'], label='act')
         self.assertEqual(0, module.measurements([row], {'one': [0, 0]}, 1.0, 0.95)['acted'])
