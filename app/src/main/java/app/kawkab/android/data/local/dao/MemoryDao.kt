@@ -153,9 +153,8 @@ interface MemoryDao {
     /**
      * Deletes a batch of memory chunks by id in one statement.
      *
-     * Backs the atomic consolidation step ([replaceWithConsolidated]); a
-     * per-id loop there could fail partway and leave a summary coexisting with
-     * some of the very chunks it replaced.
+     * Used by explicit forgetting to remove a fact and its dependent summaries.
+     * Automatic consolidation preserves original chunks as history.
      *
      * @param ids Identifiers of the chunks to delete. An empty list is a no-op.
      */
@@ -177,8 +176,8 @@ interface MemoryDao {
      *
      * The owner reset forbids automatic deletion: originals stay as history.
      * Summary and status changes must not be separable: a crash (or a failing statement)
-     * between them would either duplicate the facts (summary saved, originals
-     * kept) or lose them outright (originals deleted, summary missing). Room's
+     * between them could leave the summary and its sources simultaneously current.
+     * Room's
      * transaction gives the all-or-nothing guarantee the compaction contract
      * advertises.
      *

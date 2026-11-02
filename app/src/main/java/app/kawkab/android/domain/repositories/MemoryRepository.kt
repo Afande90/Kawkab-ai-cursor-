@@ -33,15 +33,10 @@ interface MemoryRepository {
     ): Long
 
     /**
-     * Atomically replaces a set of chunks with the consolidation summary that
-     * subsumes them: the summary is written and the originals removed in a
-     * single transaction.
-     *
-     * This is the only sanctioned way for compaction to delete a chunk. Saving
-     * and deleting separately can half-apply — leaving a summary alongside the
-     * facts it duplicates, or (worse) deleting facts whose summary never
-     * landed — and compaction is the one background path that destroys data the
-     * user cannot recover.
+     * Atomically inserts a consolidation summary and marks its source chunks past.
+     * Originals remain available as history until the owner explicitly forgets them.
+     * Summary insertion and source status changes share one transaction so a crash
+     * cannot expose a partially applied consolidation.
      *
      * @param text The summary text produced by the consolidation prompt.
      * @param embedding The summary's embedding, produced by the **active**
