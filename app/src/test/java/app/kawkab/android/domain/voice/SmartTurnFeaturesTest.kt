@@ -13,7 +13,9 @@ import kotlin.math.sin
 /** Every bin is compared to the independent frozen NumPy/Whisper reference, including padding and trimming. */
 class SmartTurnFeaturesTest {
     @Test fun shortAudioMatchesLeadingPaddingAndWhisperFeatures() = compare("short", signal(15360))
+
     @Test fun longAudioMatchesLastEightSeconds() = compare("long", signal(144000))
+
     @Test fun silenceIsFiniteAndMatchesTheReference() = compare("silence", FloatArray(16000))
 
     private fun signal(size: Int): FloatArray = FloatArray(size) { index ->

@@ -39,8 +39,14 @@ class SmartTurnBudgetTest {
         val release = CountDownLatch(1)
         val cancelled = AtomicBoolean(false)
         val blocked = object : TurnCompletionModel {
-            override fun probability(samples: FloatArray): Float { release.await(); return 0.99f }
-            override fun cancel() { cancelled.set(true); release.countDown() }
+            override fun probability(samples: FloatArray): Float {
+                release.await()
+                return 0.99f
+            }
+            override fun cancel() {
+                cancelled.set(true)
+                release.countDown()
+            }
         }
         SmartTurnBudget(blocked).use { detector ->
             assertSame(TurnCompletion.Fallback, detector.evaluate(floatArrayOf(0f)))
@@ -49,7 +55,9 @@ class SmartTurnBudgetTest {
     }
 
     @Test fun incompleteDoesNotEndTheTurnAtTheOldSilenceBoundary() {
-        val model = object : TurnCompletionModel { override fun probability(samples: FloatArray): Float = 0.4f }
+        val model = object : TurnCompletionModel {
+            override fun probability(samples: FloatArray): Float = 0.4f
+        }
         SmartTurnBudget(model).use { detector ->
             val result = detector.evaluate(floatArrayOf(0f))
             assertSame(TurnCompletion.Incomplete, result)
@@ -58,7 +66,9 @@ class SmartTurnBudgetTest {
     }
 
     @Test fun completeUsesTheShortSemanticPause() {
-        val model = object : TurnCompletionModel { override fun probability(samples: FloatArray): Float = 0.9f }
+        val model = object : TurnCompletionModel {
+            override fun probability(samples: FloatArray): Float = 0.9f
+        }
         SmartTurnBudget(model).use { detector ->
             val result = detector.evaluate(floatArrayOf(0f))
             assertSame(TurnCompletion.Complete, result)
@@ -68,7 +78,9 @@ class SmartTurnBudgetTest {
     }
 
     @Test fun malformedScoresUseFallback() {
-        val model = object : TurnCompletionModel { override fun probability(samples: FloatArray): Float = Float.NaN }
+        val model = object : TurnCompletionModel {
+            override fun probability(samples: FloatArray): Float = Float.NaN
+        }
         SmartTurnBudget(model).use { detector ->
             assertSame(TurnCompletion.Fallback, detector.evaluate(floatArrayOf(0f)))
         }
