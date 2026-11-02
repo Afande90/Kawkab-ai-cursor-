@@ -179,3 +179,12 @@ Continued from the owner's main at `3fad0a84`, after the requested fetch/reset. 
 Local evidence before the final full check: 109 targeted tests passed, including the classes exposed by the first full run; full/foss instrumented test sources and the benchmark compiled. Legacy policy assertions were corrected for English-only UI, phone-only networking and speaker-verified deletion. Mock HTTP requests explicitly bypass host proxies. All changes have separate commits from the production code they test.
 
 The final full `check` result is recorded in the bundle's validation report. Device execution of the native coexistence/navigation tests and the 16 ms timing measurement remain CI checks: this VM has no connected phone or emulator, and AGENTS reserves emulator execution for CI. No hardware pass is claimed.
+
+
+## Wake-service battery controls — 2 Nov 2026
+
+Implemented the owner's battery request on top of M2-V3. Voice settings now expose ALWAYS / SMART (default) / ONLY WHILE CHARGING / OFF, optional sleep hours, and daily wake-microphone minutes. Existing explicit OFF settings remain off. SMART and charging-only modes pause for covered proximity, face down and low uncharged battery; calls, conversations and optional sleep pause every enabled mode. Hardware events close and release AudioRecord, and the worker waits without a wake lock. Inexact sleep-boundary alarms allow idle resumption without new permissions.
+
+Silero's bounded speech windows gate both keyword paths and owner speaker verification. Silent frames no longer run personal features, and pre-roll buffers retain independent samples without continual allocation. Daily duration aggregates use monotonic time and local-date boundaries, persist in noBackupFilesDir, and are visible in Voice. No audio is logged. Abrupt process death can lose the current one-minute interval; no measured handset battery percentage is claimed.
+
+Targeted policy, sensor, recorder-lifecycle, settings, accounting and storage-inventory tests passed. A CI test opens a real recorder and verifies release for every pause rule. Local static-check and compilation results are included in the battery bundle report; actual phone power measurements and device execution remain CI/phone evidence. No push, tag or project-setting change is made.
