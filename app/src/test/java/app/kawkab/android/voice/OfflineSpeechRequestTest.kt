@@ -14,8 +14,14 @@ import org.robolectric.annotation.Config
 class OfflineSpeechRequestTest {
     @Test fun semanticEndpointOwnsTheExternalAudioSession() {
         val request = OfflineSpeech.request("en-US", controlledEndpoint = true)
-        assertEquals(RecognizerIntent.EXTRA_AUDIO_SOURCE, request.getStringExtra(RecognizerIntent.EXTRA_SEGMENTED_SESSION))
-        assertEquals(15000L, request.getLongExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 0))
+        assertEquals(
+            RecognizerIntent.EXTRA_AUDIO_SOURCE,
+            request.getStringExtra(RecognizerIntent.EXTRA_SEGMENTED_SESSION),
+        )
+        assertEquals(
+            15000L,
+            request.getLongExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 0),
+        )
     }
 
     @Test fun unsupportedSegmentedProvidersKeepThe700MillisecondFallback() {
