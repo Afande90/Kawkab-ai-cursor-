@@ -51,27 +51,28 @@ class MemoryConsolidationPersistenceTest {
     }
 
     @Test
-    fun `given consolidated originals when replaced then history remains and only current chunks are retrieved`() = runTest {
-        seed(1L, "fact one")
-        seed(2L, "fact two")
-        seed(3L, "fact three")
-        seed(4L, "unrelated fact")
+    fun `given consolidated originals when replaced then history remains and only current chunks are retrieved`() =
+        runTest {
+            seed(1L, "fact one")
+            seed(2L, "fact two")
+            seed(3L, "fact three")
+            seed(4L, "unrelated fact")
 
-        repository.replaceWithConsolidated(
-            text = "merged fact",
-            embedding = floatArrayOf(0.6f, 0.8f),
-            originalIds = listOf(1L, 2L, 3L),
-        )
+            repository.replaceWithConsolidated(
+                text = "merged fact",
+                embedding = floatArrayOf(0.6f, 0.8f),
+                originalIds = listOf(1L, 2L, 3L),
+            )
 
-        val stored = repository.getAllMemories()
-        assertEquals(5, stored.size)
-        assertEquals(setOf(1L, 2L, 3L), stored.filter { "status:past" in it.tags }.map { it.id }.toSet())
-        val active = repository.findSimilarMemories(floatArrayOf(1f, 0f), null).map { it.first }
-        assertEquals(setOf("unrelated fact", "merged fact"), active.map { it.text }.toSet())
-        val summary = stored.single { it.text == "merged fact" }
-        assertEquals(MemorySource.Compaction(originalChunkIds = listOf(1L, 2L, 3L)), summary.source)
-        assertEquals(5, dao.countMemories())
-    }
+            val stored = repository.getAllMemories()
+            assertEquals(5, stored.size)
+            assertEquals(setOf(1L, 2L, 3L), stored.filter { "status:past" in it.tags }.map { it.id }.toSet())
+            val active = repository.findSimilarMemories(floatArrayOf(1f, 0f), null).map { it.first }
+            assertEquals(setOf("unrelated fact", "merged fact"), active.map { it.text }.toSet())
+            val summary = stored.single { it.text == "merged fact" }
+            assertEquals(MemorySource.Compaction(originalChunkIds = listOf(1L, 2L, 3L)), summary.source)
+            assertEquals(5, dao.countMemories())
+        }
 
     @Test
     fun `given an empty original list when replaced then the summary is stored and nothing is deleted`() = runTest {
