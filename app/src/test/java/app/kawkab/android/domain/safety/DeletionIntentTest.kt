@@ -13,6 +13,20 @@ class DeletionIntentTest {
         assertFalse(DeletionIntent.target("Send", "app:id/send"))
     }
 
+    @Test fun `a nullable Java thread local never supplies deletion consent`() {
+        val field = DeletionConsent::class.java.getDeclaredField("permitted").apply { isAccessible = true }
+        @Suppress("UNCHECKED_CAST")
+        val state = field.get(null) as ThreadLocal<Boolean?>
+        state.set(null)
+        try {
+            assertFalse(DeletionConsent.allowed())
+            DeletionConsent.withOwnerConsent(true) { assertTrue(DeletionConsent.allowed()) }
+            assertFalse(DeletionConsent.allowed())
+        } finally {
+            state.remove()
+        }
+    }
+
     @Test fun `a temporary permit is scoped to the synchronous verified action`() {
         assertFalse(DeletionConsent.allowed())
         DeletionConsent.withOwnerConsent(true) { assertTrue(DeletionConsent.allowed()) }
