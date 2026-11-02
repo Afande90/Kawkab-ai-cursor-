@@ -14,7 +14,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Frame timing for "switch Chat → Pipelines → Tools → More → Chat" (task 23d).
+ * Frame timing for "switch HOME → SHOTS → GROWTH → HOME" (task 23d).
  *
  * No model is loaded: tab switching must not depend on model state. The gate is a median frame
  * time under 16 ms on the CI emulator, read from this benchmark's JSON by the workflow.
@@ -36,11 +36,11 @@ class TabSwitchBenchmark {
             pressHome()
             startActivityAndWait()
             device.skipOnboarding()
-            device.wait(Until.hasObject(By.text(CHAT)), WAIT_MS)
+            check(device.wait(Until.hasObject(By.text(HOME)), WAIT_MS))
         },
     ) {
-        for (tab in listOf(PIPELINES, TOOLS, MORE, CHAT)) {
-            device.findObject(By.text(tab))?.click()
+        for (tab in listOf(SHOTS, GROWTH, HOME)) {
+            requireNotNull(device.wait(Until.findObject(By.text(tab)), WAIT_MS)) { "Missing device key: $tab" }.click()
             device.waitForIdle()
         }
     }
@@ -56,10 +56,9 @@ class TabSwitchBenchmark {
         const val TARGET_PACKAGE = "app.kawkab.android.debug"
         const val ITERATIONS = 5
         const val WAIT_MS = 10_000L
-        const val CHAT = "Chat"
-        const val PIPELINES = "Pipelines"
-        const val TOOLS = "Tools"
-        const val MORE = "More"
+        const val HOME = "HOME"
+        const val SHOTS = "SHOTS"
+        const val GROWTH = "GROWTH"
         const val SKIP = "Skip"
         const val CONTINUE = "Continue"
     }

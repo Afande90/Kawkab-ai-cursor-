@@ -2,7 +2,6 @@ package app.kawkab.android.presentation.ui.navigation
 
 import android.content.Intent
 import androidx.activity.ComponentActivity
-import androidx.compose.material3.Text
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
@@ -11,14 +10,10 @@ import androidx.compose.ui.test.performClick
 import androidx.core.net.toUri
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.ComposeNavigator
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.get
 import app.kawkab.android.presentation.state.ChatEntryRequest
 import app.kawkab.android.presentation.state.ChatEntryRequestRelay
-import app.kawkab.android.presentation.state.TransientMessageRelay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -58,10 +53,10 @@ class NavigationContractTest {
     // ─── Finding #14: the settings-owned tools surface ─────────────────────
 
     @Test
-    fun settingsToolsManageKeepsTheSettingsBackStackAndTheMoreHighlight() {
+    fun settingsToolsManageKeepsTheSettingsBackStackAndHomeKey() {
         startShell()
-        composeTestRule.onNodeWithText(MORE_TAB_LABEL).performClick()
-        navigateTo(NavRoutes.SETTINGS)
+        openAdvanced()
+        composeTestRule.onNodeWithText("ENGINE SETTINGS").performClick()
         navigateTo(NavRoutes.SETTINGS_TOOLS)
         // The production wiring of `SettingsNavActions.onOpenManageTools`.
         navigateTo(NavRoutes.SETTINGS_TOOLS_MANAGE)
@@ -87,14 +82,14 @@ class NavigationContractTest {
             // …and the shell must not think it is sitting on a tab root.
             assertFalse(isTabRootStack(navController.stackRoutes()))
         }
-        composeTestRule.onNodeWithText(MORE_TAB_LABEL).assertIsSelected()
+        composeTestRule.onNodeWithText(CHAT_TAB_LABEL).assertIsSelected()
     }
 
     @Test
     fun backFromTheSettingsOwnedToolsSurfaceReturnsToItsCategory() {
         startShell()
-        composeTestRule.onNodeWithText(MORE_TAB_LABEL).performClick()
-        navigateTo(NavRoutes.SETTINGS)
+        openAdvanced()
+        composeTestRule.onNodeWithText("ENGINE SETTINGS").performClick()
         navigateTo(NavRoutes.SETTINGS_TOOLS)
         navigateTo(NavRoutes.SETTINGS_TOOLS_MANAGE)
 
@@ -116,8 +111,8 @@ class NavigationContractTest {
     @Test
     fun tabSwitchFromADeepSubtreeCollapsesToTheAnchor() {
         startShell()
-        composeTestRule.onNodeWithText(MORE_TAB_LABEL).performClick()
-        navigateTo(NavRoutes.SETTINGS)
+        openAdvanced()
+        composeTestRule.onNodeWithText("ENGINE SETTINGS").performClick()
         navigateTo(NavRoutes.SETTINGS_TOOLS)
         navigateTo(NavRoutes.SETTINGS_TOOLS_MANAGE)
 
@@ -136,24 +131,26 @@ class NavigationContractTest {
     // ─── Tab ownership derived from the stack ──────────────────────────────
 
     @Test
-    fun aScreenTheOldRouteTableNeverListedStillHighlightsItsTab() {
+    fun aScreenTheOldRouteTableNeverListedStillKeepsTheHomeKey() {
         // `tools/allowed-domains` was one of ten registered destinations missing
         // from the removed `belongsToTab` table: no tab lit up at all on them.
         startShell()
-        composeTestRule.onNodeWithText(TOOLS_TAB_LABEL).performClick()
+        openAdvanced()
+        composeTestRule.onNodeWithText("TOOLS").performClick()
         navigateTo(NavRoutes.ALLOWED_DOMAINS)
 
         composeTestRule.onNodeWithText(ALLOWED_DOMAINS_BODY).assertIsDisplayed()
-        composeTestRule.onNodeWithText(TOOLS_TAB_LABEL).assertIsSelected()
+        composeTestRule.onNodeWithText(CHAT_TAB_LABEL).assertIsSelected()
     }
 
     @Test
-    fun theNestedPipelinesGraphHighlightsItsOwnTab() {
+    fun theNestedPipelinesGraphKeepsTheHomeKey() {
         startShell()
-        composeTestRule.onNodeWithText(PIPELINES_TAB_LABEL).performClick()
+        openAdvanced()
+        composeTestRule.onNodeWithText("PIPELINES").performClick()
 
         composeTestRule.onNodeWithText(PIPELINES_BODY).assertIsDisplayed()
-        composeTestRule.onNodeWithText(PIPELINES_TAB_LABEL).assertIsSelected()
+        composeTestRule.onNodeWithText(CHAT_TAB_LABEL).assertIsSelected()
     }
 
     // ─── The notification deep link ────────────────────────────────────────
@@ -163,8 +160,8 @@ class NavigationContractTest {
         startShell()
         // Get the user somewhere else first, exactly as a backgrounded app is
         // when a background HITL notification arrives.
-        composeTestRule.onNodeWithText(MORE_TAB_LABEL).performClick()
-        navigateTo(NavRoutes.SETTINGS)
+        openAdvanced()
+        composeTestRule.onNodeWithText("ENGINE SETTINGS").performClick()
 
         val handled = dispatchDeepLink("${NavRoutes.DEEP_LINK_SCHEME}://chat/$SESSION_ID")
 
@@ -183,7 +180,8 @@ class NavigationContractTest {
     @Test
     fun bareChatDeepLinkLandsOnTheChatHomeWithoutSwitchingSession() {
         startShell()
-        composeTestRule.onNodeWithText(TOOLS_TAB_LABEL).performClick()
+        composeTestRule.onNodeWithText("GROWTH").performClick()
+        composeTestRule.onNodeWithText("growth-body").assertIsDisplayed()
 
         val handled = dispatchDeepLink("${NavRoutes.DEEP_LINK_SCHEME}://chat")
 
@@ -195,13 +193,13 @@ class NavigationContractTest {
     @Test
     fun pipelinesDeepLinkEntersThePipelinesTabAsATabSwitch() {
         startShell()
-        composeTestRule.onNodeWithText(MORE_TAB_LABEL).performClick()
+        openAdvanced()
 
         val handled = dispatchDeepLink(NavRoutes.PIPELINES_DEEP_LINK_PATTERN)
 
         assertTrue(handled)
         composeTestRule.onNodeWithText(PIPELINES_BODY).assertIsDisplayed()
-        composeTestRule.onNodeWithText(PIPELINES_TAB_LABEL).assertIsSelected()
+        composeTestRule.onNodeWithText(CHAT_TAB_LABEL).assertIsSelected()
         composeTestRule.runOnIdle {
             // Anchor + the tab, never the More tab left buried underneath.
             assertEquals(listOf(NavRoutes.CHAT_TAB, NavRoutes.PIPELINE_LIBRARY), navController.stackRoutes())
@@ -211,7 +209,8 @@ class NavigationContractTest {
     @Test
     fun anUnknownDeepLinkLeavesTheCurrentDestinationUntouched() {
         startShell()
-        composeTestRule.onNodeWithText(TOOLS_TAB_LABEL).performClick()
+        openAdvanced()
+        composeTestRule.onNodeWithText("TOOLS").performClick()
 
         val handled = dispatchDeepLink("${NavRoutes.DEEP_LINK_SCHEME}://not-a-destination")
 
@@ -230,23 +229,13 @@ class NavigationContractTest {
         composeTestRule.setContent {
             val nav = rememberNavController()
             navController = nav
-            AppShellScaffold(navController = nav, transientMessageRelay = TransientMessageRelay()) { _ ->
-                NavHost(navController = nav, startDestination = NavRoutes.CHAT_TAB) {
-                    composable(NavRoutes.CHAT_TAB) { Text(CHAT_BODY) }
-                    navigation(startDestination = NavRoutes.PIPELINE_LIBRARY, route = NavRoutes.PIPELINES_GRAPH) {
-                        composable(NavRoutes.PIPELINE_LIBRARY) { Text(PIPELINES_BODY) }
-                    }
-                    composable(NavRoutes.TOOLS) { Text(TOOLS_BODY) }
-                    composable(NavRoutes.ALLOWED_DOMAINS) { Text(ALLOWED_DOMAINS_BODY) }
-                    composable(NavRoutes.MORE) { Text(MORE_BODY) }
-                    navigation(startDestination = NavRoutes.SETTINGS_HUB, route = NavRoutes.SETTINGS) {
-                        composable(NavRoutes.SETTINGS_HUB) { Text(SETTINGS_HUB_BODY) }
-                        composable(NavRoutes.SETTINGS_TOOLS) { Text(SETTINGS_TOOLS_BODY) }
-                        composable(NavRoutes.SETTINGS_TOOLS_MANAGE) { Text(SETTINGS_TOOLS_MANAGE_BODY) }
-                    }
-                }
-            }
+            PocketNavigationTestHost(nav, chatEntryRelay)
         }
+    }
+
+    private fun openAdvanced() {
+        composeTestRule.onNodeWithText("⋮").performClick()
+        composeTestRule.onNodeWithText("ADVANCED").performClick()
     }
 
     /** Pushes [route] the way a screen's own nav callback does. */
@@ -293,14 +282,9 @@ class NavigationContractTest {
         const val PIPELINES_BODY = "pipeline-library-body"
         const val TOOLS_BODY = "tools-body"
         const val ALLOWED_DOMAINS_BODY = "allowed-domains-body"
-        const val MORE_BODY = "more-body"
-        const val SETTINGS_HUB_BODY = "settings-hub-body"
         const val SETTINGS_TOOLS_BODY = "settings-tools-body"
         const val SETTINGS_TOOLS_MANAGE_BODY = "settings-tools-manage-body"
 
-        const val CHAT_TAB_LABEL = "Chat"
-        const val PIPELINES_TAB_LABEL = "Pipelines"
-        const val TOOLS_TAB_LABEL = "Tools"
-        const val MORE_TAB_LABEL = "More"
+        const val CHAT_TAB_LABEL = "HOME"
     }
 }
