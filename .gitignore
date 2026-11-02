@@ -78,3 +78,5 @@ __pycache__/
 /app/src/main/jniLibs/*/libkawkab_decision.so
 
 /kawkab-m2v2.bundle
+
+/kawkab-m2v3.bundle

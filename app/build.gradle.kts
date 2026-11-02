@@ -14,6 +14,7 @@ import app.kawkab.android.buildtools.FileMapSpec
 import app.kawkab.android.buildtools.GenerateDocumentationLinksTask
 import app.kawkab.android.buildtools.GenerateFileMapTask
 import app.kawkab.android.buildtools.GitCommitId
+import app.kawkab.android.buildtools.IsolateOrtRuntime
 import app.kawkab.android.buildtools.LintBaselineGuard
 import app.kawkab.android.buildtools.PinnedNdk
 import app.kawkab.android.buildtools.R8MappingChecker
@@ -480,9 +481,6 @@ android {
             // API libraries are for other languages.
             excludes += "**/libsherpa-onnx-c-api.so"
             excludes += "**/libsherpa-onnx-cxx-api.so"
-            // Both pinned libraries use ORT C API 28 (1.28.0 Java bridge / 1.28.2 sherpa).
-            // Either shared runtime serves both bridges; package exactly one copy per ABI.
-            pickFirsts += "**/libonnxruntime.so"
             // Native libraries are stored compressed (task 27). Stored uncompressed they were 134 MB
             // of the 150 MB APK limit, and onnxruntime adds 27 MB more. Android extracts them at
             // install; the download is about half the size.
@@ -2188,7 +2186,20 @@ val downloadSmartTurnModel by tasks.registering(DownloadPinnedArtifact::class) {
     outputFile.set(layout.buildDirectory.file("generated/turnAssets/voice/smart-turn-v3.2-cpu.onnx"))
 }
 
-tasks.named("preBuild") { dependsOn(downloadGlyphSdk, downloadSmartTurnModel) }
+// Resolve the signed original as a build input, never as a competing APK runtime.
+val ortBridgeInput = configurations.create("ortBridgeInput") {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    isTransitive = false
+}
+val isolateOrtRuntime by tasks.registering(IsolateOrtRuntime::class) {
+    inputAar.set(layout.file(providers.provider { ortBridgeInput.singleFile }))
+    script.set(rootProject.layout.projectDirectory.file("training/turn/isolate_runtime.py"))
+    tools.set(layout.buildDirectory.dir("downloaded/elf-tool"))
+    outputAar.set(layout.buildDirectory.file("generated/ort/onnxruntime-isolated.aar"))
+}
+
+tasks.named("preBuild") { dependsOn(downloadGlyphSdk, downloadSmartTurnModel, isolateOrtRuntime) }
 
 dependencies {
     // Design-system module — `KnotworkTheme` (currently a `MaterialTheme`
@@ -2243,7 +2254,8 @@ dependencies {
     implementation(libs.litertlm)
     implementation(libs.llamatik)
     // Wake word (task 27): keyword spotting and Silero VAD on onnxruntime.
-    implementation(libs.onnx.runtime)
+    add(ortBridgeInput.name, libs.onnx.runtime)
+    implementation(files(isolateOrtRuntime.flatMap { it.outputAar }).builtBy(isolateOrtRuntime))
     implementation(libs.sherpa.onnx)
     implementation(files(downloadGlyphSdk.flatMap { it.outputFile }).builtBy(downloadGlyphSdk))
 
