@@ -163,3 +163,19 @@ Baseline Check, Instrumented and pre-release publishing passed on `9b64c54f`; th
 
 
 Continuation local checks: **79 targeted tests passed, 0 failed, 0 errors, 0 skipped**; foss debug app and test sources compiled. app ktlintCheck, detekt, verifyFileMap, verifyNoOrphanedKdoc, verifyComplianceSource and verifyDocLinks passed in the final invocation (BUILD SUCCESSFUL, 2m 7s). No full local Check or emulator run. Follow-up CI and publication remain BLOCKED by HTTP 403. The exact test classes and recovery bundle are recorded in docs/owner-checks/M1.8.md.
+
+
+## M2-V3 CI repairs — 2 Nov 2026
+
+Continued from the owner's main at `3fad0a84`, after the requested fetch/reset. The owner handles pushing, tagging and publication; none was attempted in this round. This supersedes the old release-write blocker above.
+
+1. Preserve sherpa's exact native core and isolate the differently versioned Java ORT core under its own SONAME. The pinned build tool updates JNI dependency and version-need metadata; every ABI is checked. Real wake and smart-turn inference are tested together in both API orders in one process.
+2. Both release manifest contracts and Privacy §5 include the Nothing-only foreground Glyph permission.
+3. Decision readiness and voice enrollment propagate cancellation. The tool gate audits cancelled jobs in cleanup rather than intercepting cancellation. Both typed detekt variants reported zero findings.
+4. All eleven navigation contracts use HOME / SHOTS / GROWTH, and engine access through Settings → Advanced. Advanced screens retain the Pocket keys; chat deep links restore HOME. The benchmark uses the same keys and retains its 16 ms median gate.
+5. Compaction retains originals as history but removes them from active retrieval. Pinned facts remain retrievable; real Room and lifecycle tests assert that active compaction still occurs. The old total-row expectation was wrong.
+6. Nullable deletion consent requires explicit `true`; a null Java thread-local value means no deletion.
+
+Local evidence before the final full check: 109 targeted tests passed, including the classes exposed by the first full run; full/foss instrumented test sources and the benchmark compiled. Legacy policy assertions were corrected for English-only UI, phone-only networking and speaker-verified deletion. Mock HTTP requests explicitly bypass host proxies. All changes have separate commits from the production code they test.
+
+The final full `check` result is recorded in the bundle's validation report. Device execution of the native coexistence/navigation tests and the 16 ms timing measurement remain CI checks: this VM has no connected phone or emulator, and AGENTS reserves emulator execution for CI. No hardware pass is claimed.
