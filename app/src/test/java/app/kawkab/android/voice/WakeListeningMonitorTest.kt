@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.media.AudioManager
 import android.os.BatteryManager
+import app.kawkab.android.domain.voice.WakeListeningMode
 import app.kawkab.android.domain.voice.WakeListeningConfig
 import app.kawkab.android.domain.voice.WakePauseReason
 import org.junit.Assert.assertEquals
@@ -39,7 +40,7 @@ class WakeListeningMonitorTest {
         val audio = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         var reason: WakePauseReason? = null
         WakeListeningMonitor(context, { false }, { reason = it }).use { monitor ->
-            monitor.configure(WakeListeningConfig())
+            monitor.configure(WakeListeningConfig(mode = WakeListeningMode.ALWAYS))
             for (mode in listOf(AudioManager.MODE_RINGTONE, AudioManager.MODE_IN_CALL, AudioManager.MODE_IN_COMMUNICATION)) {
                 audio.mode = mode
                 shadowOf(android.os.Looper.getMainLooper()).idle()
@@ -47,6 +48,7 @@ class WakeListeningMonitorTest {
             }
             audio.mode = AudioManager.MODE_NORMAL
             shadowOf(android.os.Looper.getMainLooper()).idle()
+            assertNull(reason)
         }
     }
 }
