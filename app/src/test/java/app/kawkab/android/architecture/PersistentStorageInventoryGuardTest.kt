@@ -519,7 +519,7 @@ class PersistentStorageInventoryGuardTest {
             "/voice/OwnerVoice.kt" to "OWNER_LEARNING (speaker profile and recordings)",
             "/voice/PersonalWakeDetector.kt" to "OWNER_LEARNING (reads owner templates)",
             "/hands/AndroidSkillPersistence.kt" to "OWNER_LEARNING (successful plans)",
-            "/data/decision/AndroidTypedJudge.kt" to "OWNER_LEARNING (final-test certificate)",
+            "/data/decision/AndroidDecisionAudit.kt" to "OWNER_LEARNING (private decision/outcome log)",
             "/di/AppModule.kt" to "DATASTORE (preferencesDataStoreFile) and DATABASE (Room.databaseBuilder)",
             "/data/local/AttachmentStoreImpl.kt" to "ATTACHMENTS",
             "/data/local/AgentWorkspaceImpl.kt" to "WORKSPACE",

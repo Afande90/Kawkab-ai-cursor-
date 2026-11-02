@@ -54,7 +54,13 @@ class FileDecisionAuditTest {
     }
 
     private fun record(session: String): DecisionRecord = DecisionRecord(
-        session, "call Abdalla", "Which contact?", listOf("first", "second"), doubleArrayOf(5.0, 0.0),
-        DecisionResult.Chosen("first", 0.99), "model", 20L,
+        session,
+        "call Abdalla",
+        "Which contact?",
+        listOf("first", "second"),
+        doubleArrayOf(5.0, 0.0),
+        DecisionResult.Chosen("first", 0.99),
+        "model",
+        20L,
     )
 }
