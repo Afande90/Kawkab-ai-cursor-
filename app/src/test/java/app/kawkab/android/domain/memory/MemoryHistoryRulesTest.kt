@@ -12,6 +12,7 @@ class MemoryHistoryRulesTest {
         assertFalse(MemoryHistoryRules.explicitChange("My phone is blue", "My phone is black"))
         assertFalse(MemoryHistoryRules.explicitChange("My home is in Cairo", "I might have moved home"))
     }
+
     @Test fun `unrelated topics and uncertain language cannot retire a fact`() {
         assertFalse(MemoryHistoryRules.explicitChange("My car is red", "I moved home"))
         assertTrue(MemoryHistoryRules.needsExplicitChange("My job is teaching", "My job is design"))

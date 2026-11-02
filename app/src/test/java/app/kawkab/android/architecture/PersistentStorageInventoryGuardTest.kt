@@ -514,6 +514,7 @@ class PersistentStorageInventoryGuardTest {
 
         /** Every production file that reaches a storage root, by path suffix, with the root. */
         val KNOWN_SITES = mapOf(
+            "/presentation/ui/pocket/ShotCategories.kt" to "OWNER_LEARNING (private screenshot labels)",
             "/voice/OwnerVoice.kt" to "OWNER_LEARNING (speaker profile and recordings)",
             "/voice/PersonalWakeDetector.kt" to "OWNER_LEARNING (reads owner templates)",
             "/hands/AndroidSkillPersistence.kt" to "OWNER_LEARNING (successful plans)",
