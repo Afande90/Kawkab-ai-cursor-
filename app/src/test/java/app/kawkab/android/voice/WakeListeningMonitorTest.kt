@@ -27,7 +27,7 @@ class WakeListeningMonitorTest {
         val alarms = context.getSystemService(AlarmManager::class.java)
         val monitor = WakeListeningMonitor(context, { false }, {})
         monitor.configure(WakeListeningConfig(sleepEnabled = true))
-        assertEquals(AlarmManager.RTC_WAKEUP, shadowOf(alarms).peekNextScheduledAlarm().type)
+        assertEquals(AlarmManager.RTC_WAKEUP, requireNotNull(shadowOf(alarms).peekNextScheduledAlarm()).type)
         monitor.close()
         assertNull(shadowOf(alarms).peekNextScheduledAlarm())
     }
