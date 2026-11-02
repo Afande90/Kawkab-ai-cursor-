@@ -134,10 +134,17 @@ class OllamaEmbeddingProviderTest {
         }
 
     @Test
-    fun `given local-only mode on and a private address over https when isAvailable then true`() = runTest {
+    fun `given phone-only mode on then a private LAN address is unavailable`() = runTest {
         localOnlyMode.value = true
         every { apiKeyRepository.getBaseUrl(CloudProvider.OLLAMA) } returns flowOf("https://192.168.1.2:11434")
 
+        assertFalse(provider.isAvailable())
+    }
+
+    @Test
+    fun `given phone-only mode on then an on-device loopback server remains available`() = runTest {
+        localOnlyMode.value = true
+        every { apiKeyRepository.getBaseUrl(CloudProvider.OLLAMA) } returns flowOf("https://127.0.0.1:11434")
         assertTrue(provider.isAvailable())
     }
 

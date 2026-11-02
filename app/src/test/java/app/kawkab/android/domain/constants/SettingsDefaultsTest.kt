@@ -56,7 +56,7 @@ class SettingsDefaultsTest {
         assertEquals(true, SettingsDefaults.USAGE_TELEMETRY_ENABLED_DEFAULT)
         assertEquals(true, SettingsDefaults.SCHEDULED_TASK_NOTIFICATIONS_ENABLED_DEFAULT)
         assertEquals(false, SettingsDefaults.BLOCK_DESTRUCTIVE_TOOLS_DEFAULT)
-        assertEquals(false, SettingsDefaults.BLOCK_NETWORK_FROM_LOCAL_MODEL_DEFAULT)
+        assertEquals(true, SettingsDefaults.BLOCK_NETWORK_FROM_LOCAL_MODEL_DEFAULT)
         assertEquals(5, SettingsDefaults.MEMORY_SUMMARY_DEFAULT_LIMIT_DEFAULT)
     }
 

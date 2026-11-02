@@ -1,5 +1,6 @@
 package app.kawkab.android.domain.usecases
 
+import app.kawkab.android.domain.voice.SpokenOwnerAnswer
 import app.kawkab.android.domain.engine.TaskQueueManager
 import app.kawkab.android.domain.engine.executors.ToolInvocationGate
 import app.kawkab.android.domain.models.NodeOutput
@@ -93,6 +94,13 @@ class ApprovalRequestAddressingTest {
         val fixture = Fixture()
         fixture.raiseLiveGate(this)
 
+        // Request identity alone cannot approve deletion; verified spoken evidence is also required.
+        assertEquals(
+            PendingSubmissionOutcome.NothingPending,
+            fixture.useCase(SESSION_ID, fixture.liveRequestId(), isApproved = true),
+        )
+        fixture.assertLiveGateUntouched()
+        SpokenOwnerAnswer.record("yes")
         val outcome = fixture.useCase(SESSION_ID, fixture.liveRequestId(), isApproved = true)
         runCurrent()
 

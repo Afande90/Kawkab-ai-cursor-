@@ -330,18 +330,16 @@ class PipelineSecurityContourTest {
     }
 
     @Test
-    fun `http request to a non-allowlisted host is refused in the observation and the run continues`() = runTest {
+    fun `remote HTTP is blocked before execution even with NeverPrompt`() = runTest {
         every { settingsRepository.toolApprovalPolicy } returns flowOf(ToolApprovalPolicy.NeverPrompt)
         httpArgs = """{"method":"GET","url":"https://blocked.example.com/data"}"""
 
         val states = engine(sessionId, "fetch a url", toolGraph(HttpRequestExecutor.TOOL_NAME)).toList()
 
         val terminal = states.last()
-        assertTrue("Run must continue past the refusal, was $terminal", terminal is AgentOrchestratorState.Completed)
-        assertTrue(
-            "Observation must carry the allowlist refusal, was: ${(terminal as AgentOrchestratorState.Completed).finalResponse}",
-            terminal.finalResponse.contains("not in the allowlist"),
-        )
+        assertTrue("Remote requests must be blocked, was $terminal", terminal is AgentOrchestratorState.Error)
+        assertTrue((terminal as AgentOrchestratorState.Error).message.contains("Everything stays on this phone"))
+        coVerify(exactly = 0) { toolRepository.executeTool(HttpRequestExecutor.TOOL_NAME, any(), any()) }
     }
 
     @Test

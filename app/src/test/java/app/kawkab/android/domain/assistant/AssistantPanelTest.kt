@@ -162,7 +162,7 @@ class AssistantPanelTest {
     }
 
     @Test
-    fun `assistant steps exist in English and Arabic and the service is registered`() {
+    fun `assistant steps stay English in every locale and the service is registered`() {
         val english = File("src/main/res/values/strings.xml").readText()
         val arabic = File("src/main/res/values-ar/strings.xml").readText()
         DefaultAssistantGuide.steps.forEach { name ->
@@ -170,7 +170,8 @@ class AssistantPanelTest {
             assertTrue(arabic.contains("name=\"$name\""))
         }
         assertTrue(english.contains("Choose Kawkab."))
-        assertTrue(arabic.contains("كوكب"))
+        assertTrue(arabic.contains("Choose Kawkab."))
+        assertFalse(Regex("[\\u0600-\\u06FF]").containsMatchIn(arabic))
         val manifest = File("src/main/AndroidManifest.xml").readText()
         assertTrue(manifest.contains("android.service.voice.VoiceInteractionService"))
         assertTrue(manifest.contains(".assistant.KawkabVoiceInteractionService"))
