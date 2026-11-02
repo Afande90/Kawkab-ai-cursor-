@@ -22,6 +22,21 @@ import org.robolectric.shadows.ShadowSensor
 /** Real Android battery broadcasts and audio-mode callbacks reach the capture policy. */
 @RunWith(RobolectricTestRunner::class)
 class WakeListeningMonitorTest {
+    @Test fun `conversation control can refresh capture even if the computed reason has not changed`() {
+        val context = RuntimeEnvironment.getApplication()
+        var changes = 0
+        var reason: WakePauseReason? = null
+        WakeListeningMonitor(context, { false }, { changes++; reason = it }).use { monitor ->
+            monitor.configure(WakeListeningConfig(mode = WakeListeningMode.ALWAYS))
+            val initial = changes
+            monitor.refresh()
+            assertEquals(initial, changes)
+            monitor.refresh(force = true)
+            assertEquals(initial + 1, changes)
+            assertNull(reason)
+        }
+    }
+
     @Test fun `optional sleep hours arm a wakeup boundary and closing cancels it`() {
         val context = RuntimeEnvironment.getApplication()
         val alarms = context.getSystemService(AlarmManager::class.java)
