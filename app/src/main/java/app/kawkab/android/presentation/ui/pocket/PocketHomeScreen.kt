@@ -596,20 +596,7 @@ fun PocketHomeScreen(
                                 enroll()
                             }
                         })
-                        DeviceKey(
-                            if (WakeWordSwitch.isEnabled(
-                                    context,
-                                )
-                            ) {
-                                "WAKE WORD: ON"
-                            } else {
-                                "WAKE WORD: OFF"
-                            },
-                            onClick = {
-                                if (enrolled) WakeWordSwitch.set(context, !WakeWordSwitch.isEnabled(context))
-                                tick += 1
-                            },
-                        )
+                        PocketListeningSettings(enrolled)
                         DeviceKey("DELETE MY RECORDINGS", onClick = {
                             SpokenOwnerAnswer.clear()
                             forget = "voice"
