@@ -15,6 +15,7 @@ class DeletionIntentTest {
 
     @Test fun `a nullable Java thread local never supplies deletion consent`() {
         val field = DeletionConsent::class.java.getDeclaredField("permitted").apply { isAccessible = true }
+
         @Suppress("UNCHECKED_CAST")
         val state = field.get(null) as ThreadLocal<Boolean?>
         state.set(null)
