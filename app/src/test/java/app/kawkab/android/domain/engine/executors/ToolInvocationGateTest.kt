@@ -560,6 +560,33 @@ class ToolInvocationGateTest {
      * @param runId the run the call belongs to; `null` for a non-persisted (editor test) run, which cannot park.
      * @param liveWindowMs the live approval window setting, read once per raised gate.
      */
+    @Test
+    fun `typed approval cannot delete but fresh verified spoken yes can`() = runTest {
+        val fixture = Fixture(ToolApprovalPolicy.NeverPrompt, ToolRisk.OUTBOUND, null, tool = "delete_file")
+        val job = launch { fixture.dispatch() }
+        runCurrent()
+        val request = fixture.liveRequestId()
+        assertFalse(fixture.gate.resumeWithApproval(SESSION_ID, request, true))
+        assertEquals(0, fixture.executions)
+        app.kawkab.android.domain.voice.SpokenOwnerAnswer.record("yes")
+        assertTrue(fixture.gate.resumeWithApproval(SESSION_ID, request, true))
+        runCurrent()
+        assertEquals(1, fixture.executions)
+        coVerify {
+            fixture.toolRepository.executeTool("delete_file", ARGS,
+                match { it.spokenDeletionConsent })
+        }
+        job.cancel()
+    }
+
+    @Test
+    fun `remote HTTP cannot send phone data even after approval`() = runTest {
+        val fixture = Fixture(ToolApprovalPolicy.NeverPrompt, ToolRisk.OUTBOUND, null, tool = "http_request")
+        val outputs = fixture.dispatch()
+        assertEquals(0, fixture.executions)
+        assertTrue(outputs.lastResult().error.orEmpty().contains("on this phone"))
+    }
+
     private class Fixture(
         policy: ToolApprovalPolicy,
         risk: ToolRisk,

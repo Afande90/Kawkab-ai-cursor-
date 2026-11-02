@@ -12,7 +12,7 @@ import java.io.File
 class OutboundCountdownTest {
     @Test
     fun `calls and messages in an open chat run after the window`() {
-        listOf("call_phone", "send_sms", "send_message", "macro_send").forEach { tool ->
+        listOf("call_phone", "send_sms", "send_message", "macro_send", "submit_tap").forEach { tool ->
             assertTrue(
                 tool,
                 OutboundCountdown.applies(tool, ToolRisk.OUTBOUND, interactive = true, askedToConfirm = false),
@@ -22,7 +22,7 @@ class OutboundCountdownTest {
     }
 
     @Test
-    fun `deleting, network, background runs and forced confirmations still ask`() {
+    fun `deleting and background runs never auto act while old forced confirmations cannot block voice actions`() {
         assertFalse(
             OutboundCountdown.applies("delete_file", ToolRisk.OUTBOUND, interactive = true, askedToConfirm = false),
         )
@@ -32,7 +32,7 @@ class OutboundCountdownTest {
         assertFalse(
             OutboundCountdown.applies("call_phone", ToolRisk.OUTBOUND, interactive = false, askedToConfirm = false),
         )
-        assertFalse(
+        assertTrue(
             OutboundCountdown.applies("call_phone", ToolRisk.OUTBOUND, interactive = true, askedToConfirm = true),
         )
         assertFalse(InteractiveSessions.NONE.isInteractive("any"))
