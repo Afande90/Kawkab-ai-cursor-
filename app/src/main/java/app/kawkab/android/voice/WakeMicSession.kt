@@ -44,9 +44,6 @@ class WakeMicSession(
     /** Prevent a frame read before a pause from waking the phone after its resource has been closed. */
     fun isCurrent(candidate: WakeCapture): Boolean = synchronized(lock) { allowed && capture === candidate }
 
-    /** A failed input can be replaced without changing the current listening policy. */
-    fun discard(candidate: WakeCapture) = synchronized(lock) { if (capture === candidate) release() }
-
     /** Capture time is checkpointed while open, including silence. No I/O runs under this lock. */
     fun checkpoint() = synchronized(lock) { usage(meter.checkpoint(wall(), elapsed(), zone())) }
 

@@ -2,20 +2,31 @@ package app.kawkab.android.domain.voice
 
 import java.time.LocalTime
 
-/** Owner-selected wake service modes; SMART is the battery-saving default. */
+/** Owner-selected wake service modes; SMART is the battery-saving default.
+ * @property label English label on the Voice settings keys.
+ */
 enum class WakeListeningMode(val label: String) {
+    /** Explicit override of proximity, orientation and low-battery heuristics. */
     ALWAYS("ALWAYS"),
+    /** Apply all automatic battery and sensor pauses. */
     SMART("SMART"),
+    /** Require charging as well as the smart conditions. */
     CHARGING("ONLY WHILE CHARGING"),
+    /** Stop the wake service and release its microphone. */
     OFF("OFF"),
 }
 
-/** Optional local sleep schedule. Equal endpoints mean no scheduled pause. */
+/** Optional local sleep schedule. Equal endpoints mean no scheduled pause.
+ * @property mode Owner-selected listening mode.
+ * @property sleepEnabled Whether the local sleep window pauses wake capture.
+ * @property sleepStartMinute Inclusive window start, in minutes since midnight.
+ * @property sleepEndMinute Exclusive window end, in minutes since midnight.
+ */
 data class WakeListeningConfig(
     val mode: WakeListeningMode = WakeListeningMode.SMART,
     val sleepEnabled: Boolean = false,
-    val sleepStartMinute: Int = 22 * 60,
-    val sleepEndMinute: Int = 7 * 60,
+    val sleepStartMinute: Int = DEFAULT_SLEEP_START,
+    val sleepEndMinute: Int = DEFAULT_SLEEP_END,
 ) {
     init {
         require(sleepStartMinute in 0 until MINUTES_PER_DAY && sleepEndMinute in 0 until MINUTES_PER_DAY)
@@ -23,10 +34,19 @@ data class WakeListeningConfig(
 
     private companion object {
         const val MINUTES_PER_DAY = 24 * 60
+        const val DEFAULT_SLEEP_START = 22 * 60
+        const val DEFAULT_SLEEP_END = 7 * 60
     }
 }
 
-/** Only device state is needed; no call identity or audio content is recorded. */
+/** Only device state is needed; no call identity or audio content is recorded.
+ * @property covered Whether the proximity sensor reports a nearby cover.
+ * @property faceDown Whether orientation points the screen downward.
+ * @property batteryPercent Current battery percentage, from zero to one hundred.
+ * @property charging Whether Android reports charging or full on external power.
+ * @property inCall Whether the device audio mode is a call, ringtone or communication mode.
+ * @property conversation Whether the foreground conversation owns capture instead.
+ */
 data class WakeListeningState(
     val covered: Boolean = false,
     val faceDown: Boolean = false,
@@ -36,15 +56,25 @@ data class WakeListeningState(
     val conversation: Boolean = false,
 )
 
-/** Visible reasons for releasing, rather than merely ignoring, microphone capture. */
+/** Visible reasons for releasing, rather than merely ignoring, microphone capture.
+ * @property label English explanation in the foreground notification.
+ */
 enum class WakePauseReason(val label: String) {
+    /** The owner disabled wake listening. */
     OFF("OFF"),
+    /** A foreground conversation owns the microphone. */
     CONVERSATION("CONVERSATION"),
+    /** The device is handling ringing or call audio. */
     CALL("CALL IN PROGRESS"),
+    /** The current local time falls inside the optional sleep window. */
     SLEEP("SLEEP HOURS"),
+    /** The charging-only mode is waiting for external power. */
     NOT_CHARGING("WAITING FOR CHARGING"),
+    /** The proximity sensor is covered. */
     COVERED("PROXIMITY COVERED"),
+    /** The screen points downward. */
     FACE_DOWN("FACE DOWN"),
+    /** Battery is below twenty percent and is not charging. */
     LOW_BATTERY("BATTERY UNDER 20%"),
 }
 

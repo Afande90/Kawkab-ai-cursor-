@@ -25,6 +25,7 @@ object WakeWordSwitch {
     private const val SLEEP = "sleep_enabled"
     private const val SLEEP_START = "sleep_start"
     private const val SLEEP_END = "sleep_end"
+    private const val LAST_MINUTE_OF_DAY = 24 * 60 - 1
 
     /** SMART is the default; setup must still enroll the owner before enabling capture. */
     fun config(context: Context): WakeListeningConfig {
@@ -39,8 +40,8 @@ object WakeWordSwitch {
         return WakeListeningConfig(
             mode,
             p.getBoolean(SLEEP, false),
-            p.getInt(SLEEP_START, defaults.sleepStartMinute).coerceIn(0, 1439),
-            p.getInt(SLEEP_END, defaults.sleepEndMinute).coerceIn(0, 1439),
+            p.getInt(SLEEP_START, defaults.sleepStartMinute).coerceIn(0, LAST_MINUTE_OF_DAY),
+            p.getInt(SLEEP_END, defaults.sleepEndMinute).coerceIn(0, LAST_MINUTE_OF_DAY),
         )
     }
 
@@ -70,8 +71,8 @@ object WakeWordSwitch {
         return WakeListeningConfig(
             mode,
             intent.getBooleanExtra(SLEEP, false),
-            intent.getIntExtra(SLEEP_START, fallback.sleepStartMinute).coerceIn(0, 1439),
-            intent.getIntExtra(SLEEP_END, fallback.sleepEndMinute).coerceIn(0, 1439),
+            intent.getIntExtra(SLEEP_START, fallback.sleepStartMinute).coerceIn(0, LAST_MINUTE_OF_DAY),
+            intent.getIntExtra(SLEEP_END, fallback.sleepEndMinute).coerceIn(0, LAST_MINUTE_OF_DAY),
         )
     }
 
@@ -114,6 +115,7 @@ object WakeWordSwitch {
             putString(MODE, WakeListeningMode.OFF.name)
             putString(FAILURE, reason)
         }
+        WakeWordService.stop(context)
     }
 
     /** @return Why the wake word last failed to start, or `null`. Cleared when it is turned on again. */
