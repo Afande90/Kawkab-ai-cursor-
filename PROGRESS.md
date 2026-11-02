@@ -2,6 +2,18 @@
 
 Dates are calendar dates in Asia/Dubai. The owner asked for commits on `main` and no pull requests, so each task records its commit instead of a pull-request link.
 
+## M2-V local continuation — 2 Nov 2026 (current)
+
+This entry supersedes the older release-write gate below. The owner pushed the earlier work and explicitly forbids further pushes, tags or publication. Development continued locally from `origin/main` at `b5797b49`. No remote write was attempted in this continuation. The delivery is a Git bundle, not a newly published APK or a claimed green CI run.
+
+The rule-by-rule implementation and remaining gaps are in [M2-V.md](docs/owner-checks/M2-V.md). F4 now uses the requested 400dp LCD, 22/46/32/22sp text, 150sp right-aligned digit with a measured 127.5sp line box, an adjacent 26sp bottom progress bar, external hint and black-shadow STOP key. Every F screen has a bottom-pinned final block and a screenshot test. A measured regression caught Compose ignoring the single-line height style; an explicit height corrected it without loosening the test tolerance.
+
+Completed targeted local runs cover the announcement-complete three-second gate, spoken deletion evidence, banking guards, voice-only ambiguity and learned choices, durable memory/skill history, owner speaker/wake policies, direct SMS, assistant utterance handoff, strict on-phone HTTP/MCP/model processing, English/LTR UI, owner-friendly errors and all eight screenshot screens. The integrated consent, owner-policy, SMS and egress batches passed; the final F4 geometry/screenshot/static batch passed in 1m27s. Python wake-pipeline tests: 7 passed. Decision calibration/mutation tests: 4 passed. The native adapter and standalone phone fixture reader pass host C++17 syntax checking against matching Llamatik headers; that does not verify Android linking or model inference.
+
+Final Android lint, instrumented-source compilation, generated-file-map, documentation and screenshot verification are recorded below after completion. The full Check and emulator are reserved for CI, as required by AGENTS.md.
+
+Remaining gates are explicit: physical Glyph integration has no established SDK redistribution licence here; generic wake training lacks the licensed Sudanese voice and real negative corpus; speaker accuracy, Jev precision/parity/latency and real assistant/call/SMS behavior need the phone; native cross-compilation needs the pinned NDK; smart-turn and a listening-selected natural Arabic/English voice are not completed. The complete wake training pipeline and actual Android verdict-readout/calibration commands are supplied. No fabricated metric or production decision certificate is included.
+
 ## M0
 
 | Task | Status | Date | Commit |

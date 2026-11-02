@@ -76,3 +76,5 @@ The 3D-Speaker CAMPPlus ONNX export is Apache-2.0, pinned at echo-hello/speech_c
 
 - Jev-Style 0.8B Decision v3 (Apache-2.0): optional, owner-started public model download. Verdict protocol reference; no upstream runtime source copied. Exact revision, hash and unmeasured gates: `training/decision/README.md`. No hosted inference.
 - llama.cpp (MIT): matching public C API headers are prepared at build time against the exact submodule commit of the existing Llamatik 2.0.0 runtime. No second runtime is compiled.
+
+- Owner voice-loop evaluation, 2 November 2026: VoiceStudio (`debpalash/VoiceStudio`, AGPL-3.0, personal-use only) was evaluated as a reference, not linked or copied. smart-turn-v3 (`pipecat-ai/smart-turn-v3`, BSD-2-Clause) has CPU ONNX exports but is not enabled without Android parity/timing checks. Kokoro remains an English candidate. Piper Arabic redistribution permission is unresolved, so no voice weights are shipped. Details: `docs/owner-checks/M2-V.md`.

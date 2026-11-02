@@ -148,6 +148,7 @@ Only Kotlin files appear inside the generated blocks.
       - `MigrationStepGuardTest.kt` - Runs every step of `ALL_MIGRATIONS` on real SQLite and validates the schema it leaves against the schema Room exported for the step's target version — one test case per step, in `check`.
     - `PathContainmentTest.kt` - Verifies `PathContainment` on a real filesystem: `..`, a sibling sharing the root's name as a prefix, and a symlink out are all refused — the three ways a prefix test on the string as written lets a path escape.
     - `settings/` - Tests of the settings section stores' shared read helper.
+      - `OwnerNetworkPolicyTest.kt` - Advanced legacy switches cannot enable off-phone model processing.
       - `PreferencesOrEmptyTest.kt` - `preferencesOrEmpty`: readable preferences pass through, an `IOException` becomes empty preferences, any other failure propagates.
       - `ToolSettingsStoreTest.kt` - `ToolSettingsStore`'s MCP server list as an observer sees it while a server changes, on a real file-backed DataStore.
     - `SettingsManagerTest.kt` - Tests for SettingsManager.
@@ -290,6 +291,9 @@ Only Kotlin files appear inside the generated blocks.
     - `TimeAndIdConstantsTest.kt` - Pins the time-unit and notification-id constants exposed by `TimeAndIdConstants`.
   - `crash/` - Tests of the crash log rules and the safe-mode start (tasks 32 and 33).
     - `CrashRulesTest.kt` - Tasks 32 and 33: the crash log keeps frames without messages, five at most, and decides safe mode.
+  - `decision/` - **No description** — replace this line by hand.
+    - `DecisionCoordinatorTest.kt` - Classification and permission to act are separate structured decisions.
+    - `DecisionPolicyTest.kt` - A confident number alone is never a certificate of action precision.
   - `engine/` - Tests for the graph execution engine and its supporting abstractions.
     - `AutoProviderTest.kt` - Unit tests for `AutoProvider` — what a node set to "auto" runs on.
     - `ChatHistoryWindowPlannerTest.kt` - Unit tests for `ChatHistoryWindowPlanner` — the pure planner that decides how a session's chat history is split into a summarised prefix and a verbatim live window.
@@ -374,6 +378,9 @@ Only Kotlin files appear inside the generated blocks.
     - `CommandTextTest.kt` - Task 23h: quotes, trailing punctuation and emoji no longer hide a command from the fast path.
   - `harness/` - Tests for typed decisions, the skill cache, image notes, and the extra biometric check.
     - `HarnessRulesTest.kt` - Planner decisions, history, breakers, the skill cache, and the extra biometric check.
+    - `SkillPersistenceTest.kt` - Restart and deletion must affect the actual replay store.
+  - `memory/` - **No description** — replace this line by hand.
+    - `MemoryHistoryRulesTest.kt` - Explicit changes and uncertain conflicts cannot be collapsed into the same write.
   - `memoryio/` - Tests for the long-term-memory export/import gateway.
     - `MemoryJsonSerializerTest.kt` - Unit tests for `MemoryJsonSerializer` — the serialize → parse round-trip, the provenance / tag fidelity, and the never-throwing failure paths.
     - `MemorySourceJsonTest.kt` - Unit tests for `MemorySourceJson` — the shared `MemorySource` ↔ JSON codec used by both the Room column converter and the memory export file.
@@ -438,6 +445,7 @@ Only Kotlin files appear inside the generated blocks.
   - `repositories/` - Tests of the definitions the domain repository contracts carry beside their accessors.
     - `ApiKeyRepositoryTest.kt` - Unit tests for the definitions `ApiKeyRepository` carries beside its accessors: `requiredCredential` and `isConfigured`.
   - `safety/` - Unit tests for the tap guard, the denylist, the activity log, macro replay, and habit detection.
+    - `DeletionIntentTest.kt` - Generic taps and macros cannot bypass spoken-only deletion through an ordinary confirmation flag.
     - `HandsSafetyTest.kt` - Tap guard, denylist, activity log, macro replay, and habit detection.
     - `LazyScreenCheckTest.kt` - Task 23d: the screen text is read lazily and throttled, and the full denylist check still runs immediately before every action.
     - `M1GateTest.kt` - Milestone gates for outbound confirmation, the three denylist layers, and the activity log.
@@ -615,14 +623,17 @@ Only Kotlin files appear inside the generated blocks.
     - `ConversationLoopTest.kt` - Task 23l: listen, send, speak, listen again; tap stops; speaking over the reply stops it.
     - `OwnerVoicePolicyTest.kt` - Owner voice is mandatory; missing, silent, invalid and different speakers cannot authorize commands.
     - `VoiceAnswersTest.kt` - Task 29 and spec §0.4.3: what a spoken answer may do.
+    - `WakeFeaturesTest.kt` - Portable wake features must handle silence and separate different sounds without a model.
     - `WakeWordTest.kt` - Task 27: the wake word's gate, speech window, counters and keyword file.
 - `editor/` - Guard over the browser pipeline editor: its context configuration must still mirror the domain sources.
   - `BrowserEditorContextConfigGuardTest.kt` - Drift guard for the browser pipeline editor's hand-maintained `defaultContextConfig(typeId)` JS function in `pipeline-editor.html`.
 - `hands/` - Tests for stored app maps: replay without a model, check the screen, and stop for an outbound tap.
+  - `AppChoiceRulesTest.kt` - An ambiguous app label cannot silently pick the first installed app.
   - `AppMapReplayTest.kt` - Stored app maps replay without a model, check the screen, and still stop for an outbound tap.
   - `CallFlowTest.kt` - Task 23j: contact matching, the pending choice, the grant route and the dialer fallback.
   - `CallRoutingTest.kt` - Calls must use the phone service, with a default-dialer-only fallback.
   - `ContactQuestionTest.kt` - Task 29: contact choices are read aloud as a short numbered list of names.
+  - `DirectSmsTest.kt` - Sending must dispatch through Android SMS, without racing a newly opened message composer.
   - `LocalActionsTest.kt` - Task 23i: local actions do not ask, can be undone for 10 seconds, and read times properly.
   - `RememberedContactTest.kt` - Task 34b and vision rule 2: a pick is remembered and never asked again for that name.
 - `i18n/` - Arabic string-key coverage for the app and catalog resources.
@@ -653,6 +664,8 @@ Only Kotlin files appear inside the generated blocks.
     - `SharedIntentFieldsTest.kt` - Unit tests for `SharedIntentFields.read` — the only place `ShareReceiverActivity` touches a caller's extras.
   - `startup/` - Tests for the cold-start upkeep: every step failing in turn leaves the others running.
     - `StartupMaintenanceTest.kt` - `StartupMaintenance` must survive every one of its steps failing — the case it was written for is a database whose key is lost, where the trigger sync threw `DbPassphraseUnavailableException` out of `MainActivity` and killed the process before the splash could show *Erase data*, on every launch.
+  - `state/` - **No description** — replace this line by hand.
+    - `SpokenHandoffTest.kt` - A verified assistant transcript must reach the main voice loop, not wait for a Send tap.
   - `ui/` - Tests for the screens and their ViewModels.
     - `about/` - Tests for the About surface.
       - `AboutAcknowledgmentsTest.kt` - Drift guard for the hand-maintained `AboutAcknowledgments` list surfaced on the About screen.
@@ -745,6 +758,8 @@ Only Kotlin files appear inside the generated blocks.
           - `MiniMapGeometryTest.kt` - Pure-Kotlin tests for `MiniMapGeometry`.
           - `ShippedPipelineLayoutTest.kt` - Guards the layout of every pipeline the project ships as a file: the bundled presets under `src/main/assets/presets/pipelines/` and the cookbook recipes under `docs/recipes/`.
           - `ValidationAutoFixTest.kt` - Pure-Kotlin tests for `ValidationAutoFix` recipes.
+    - `pocket/` - **No description** — replace this line by hand.
+      - `PocketErrorsTest.kt` - Failed voice commands need a visible explanation without exposing the engine.
     - `prompts/` - Tests for the prompt library.
       - `PromptLibraryViewModelTest.kt` - Unit tests for `PromptLibraryViewModel`.
     - `settings/` - Tests for the settings screens and their catalogues.

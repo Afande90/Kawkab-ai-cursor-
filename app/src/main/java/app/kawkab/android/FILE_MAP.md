@@ -26,6 +26,7 @@ Only Kotlin files appear inside the generated blocks.
   - `KawkabAssistantSessionService.kt` - Opens one Kawkab assistant panel over the current app.
   - `KawkabRecognitionService.kt` - Satisfies the assistant service contract without sending speech off the phone.
   - `KawkabVoiceInteractionService.kt` - Registers Kawkab as a digital assistant.
+  - `PocketSessionOwner.kt` - A voice interaction window has no Activity to own its Compose lifecycle.
   - `VoiceStart.kt` - When the assistant panel starts listening by itself (task 23l).
 - `crash/` - The on-device crash log and the safe-mode start (tasks 32 and 33).
   - `CrashLog.kt` - The on-device crash log and the safe-mode start (tasks 32 and 33).
@@ -59,6 +60,8 @@ Only Kotlin files appear inside the generated blocks.
     - `SafBackupDocuments.kt` - `BackupDocuments` over the Storage Access Framework.
     - `SqlCipherDatabaseSnapshotter.kt` - `DatabaseSnapshotter` on SQLCipher's `sqlcipher_export()`.
     - `StagedDatabasePreparer.kt` - Makes a staged database ready to replace the app's own.
+  - `decision/` - **No description** — replace this line by hand.
+    - `AndroidTypedJudge.kt` - The exact installed GGUF and a model-specific final-test certificate are both mandatory.
   - `engine/` - Core LLM and inference engines.
     - `AndroidDeviceMemory.kt` - Reads total RAM from `ActivityManager`.
     - `AndroidRunEnvironment.kt` - `RunEnvironment` read from the build and the device.
@@ -453,6 +456,10 @@ Only Kotlin files appear inside the generated blocks.
     - `TransientCacheDirectory.kt` - Every directory the app creates under its cache to pass a file to another app, or to take one from it — and the one retention rule all of them share.
   - `crash/` - Pure rules of the crash log: frames without messages, the last five, safe mode.
     - `CrashRecord.kt` - One crash in the on-device crash log (task 33).
+  - `decision/` - **No description** — replace this line by hand.
+    - `DecisionCoordinator.kt` - Two explicit verdict calls keep generated speech out of action selection.
+    - `DecisionPolicy.kt` - Jev verdict-slot logit differences become calibrated typed choices, never generated JSON.
+    - `TypedJudge.kt` - Decisions are structured separately from anything spoken by the language model.
   - `engine/` - Engine interfaces and abstractions.
     - `AutoProvider.kt` - What a node set to `"auto"` runs on: the first provider of `ORDER` with a saved API key.
     - `ChatHistoryWindowPlanner.kt` - Pure, clock-free planner that decides, per node execution, how a session's chat history splits into a summarised prefix (`ChatHistoryView.earlierSummary`) and a verbatim live window; bounds the over-budget history to the last N messages and flags graceful truncation when no summary is ready. Hosts the shared `CHARS_PER_TOKEN` token estimate.
@@ -546,6 +553,8 @@ Only Kotlin files appear inside the generated blocks.
     - `ImageMemory.kt` - Older images travel in the prompt as a short text note.
     - `SkillCache.kt` - Successful plans, ranked by how often they succeeded.
     - `SlidingHistory.kt` - The goal plus the last few steps.
+  - `memory/` - **No description** — replace this line by hand.
+    - `MemoryHistoryRules.kt` - Talorys history: a similarity score cannot silently rewrite a single-valued life fact.
   - `memoryio/` - JSON serialisation gateway for long-term memory export/import.
     - `MemoryJsonSerializer.kt` - Two-way mapper between the memory table and the portable `schemaVersion: 1` export document (`embeddingProviderId` + `exportedAt` + per-chunk `id`/`text`/`embedding`/`source`/`timestamp`/`isPinned`/`tags` and an optional `history` of earlier versions). Never-throwing `parse` returns `Success / SchemaMismatch / Failure`.
     - `MemorySourceJson.kt` - Single source of truth for the `MemorySource` ↔ JSON wire shape; shared by the Room `source` column converter (`data/local/Converters`) and `MemoryJsonSerializer` so the column encoding and the export file stay byte-identical.
@@ -747,6 +756,7 @@ Only Kotlin files appear inside the generated blocks.
     - `ActionDenylist.kt` - Package denylist, screen heuristics, and the intent guard.
     - `ActionRunner.kt` - The only way a hands action runs.
     - `ActivityLog.kt` - The on-device activity log.
+    - `DeletionIntent.kt` - Delete controls require explicit speaker-verified yes, including through a generic accessibility tap.
     - `DenylistStore.kt` - The editable package denylist.
     - `OutboundCountdown.kt` - The owner's vision rule 1 (2 Nov 2026): a call or a message the owner asked for in person is announced ("Calling Abdalla Mubadala") and runs after a 3-second cancel window.
     - `OutboundTapGuard.kt` - Decides whether a tap target looks outbound from `safety/outbound_patterns.txt`.
@@ -946,12 +956,17 @@ Only Kotlin files appear inside the generated blocks.
     - `VerifyRunUseCase.kt` - Checks a finished run by repeating its on-device model calls.
   - `voice/` - Conversation mode as a pure loop: listen, send, speak, listen again, with barge-in.
     - `ConversationLoop.kt` - Conversation mode (task 23l): listen, send what was said, speak the reply, listen again, until the owner taps stop.
+    - `OwnerVoicePolicy.kt` - Speaker verification policy, independent of Android and model-generated confidence.
     - `VoiceAnswers.kt` - Short spoken answers in a hands-free conversation (task 29): "undo" after a local action, and "yes" or "no" to a confirmation card.
+    - `WakeFeatures.kt` - Duration-normalized Goertzel log-spectral features; identical to the local CPU training pipeline.
     - `WakeWord.kt` - The wake word "Kawkab" / "كوكب" (task 27).
 - `hands/` - Phone actions ported from OpenDroid: alias phrases, macro recording, habit detection, and the intent calls for the five core commands.
   - `AliasResolver.kt` - Maps a short phrase to one action hint.
+  - `AndroidAppChoice.kt` - App identities come from PackageManager; the judge can only pick an installed allowlisted option.
   - `AndroidContactBook.kt` - Reads the owner's contacts when READ_CONTACTS has been granted.
   - `AndroidPhoneHands.kt` - Intent and accessibility implementation of `PhoneHands`.
+  - `AndroidSkillPersistence.kt` - Successful local plans are private, atomic and excluded from device backup.
+  - `AppChoice.kt` - App ambiguity uses the same act-or-ask rule as contact ambiguity.
   - `AppMapReplay.kt` - Replays a stored macro and checks the screen after every step.
   - `BundledAppMaps.kt` - Stored maps for Phone, Messages, Clock, Calendar, WhatsApp and Gmail.
   - `ContactAliasStore.kt` - Which contact the owner meant by a name (task 34b, vision rule 2).
@@ -1184,6 +1199,11 @@ Only Kotlin files appear inside the generated blocks.
         - `sheet/` - Bottom-sheet hosts the editor opens over the canvas.
           - `NodeConfigSheetHost.kt` - Thin adapter exposing the catalog `NodeConfigSheet` (with all 12 per-type forms + validator) to the editor screen.
           - `NodeTypePickerSheet.kt` - The pipeline editor's "Add node" sheet: the catalog's `NodeTypePickerSheetBody` inside a full-height `ModalBottomSheet`.
+    - `pocket/` - **No description** — replace this line by hand.
+      - `PocketErrors.kt` - Ordinary owner messages; diagnostic detail remains behind Advanced and crash-report copying.
+      - `PocketHomeScreen.kt` - The owner's product surface.
+      - `PocketServices.kt` - Services needed by the device shell without adding presentation duties to the chat engine.
+      - `ShotCategories.kt` - Only owner-supplied labels are remembered; image bytes remain in the existing attachment store.
     - `prompts/` - Prompt Library screen components. The screen is wired end-to-end onto the new `PromptPreset` catalogue (bundled + user) — the legacy `PromptTemplate` source is no longer consulted here.
       - `PromptImportDialogHost.kt` - Maps each import outcome onto the shared `OutcomeDialog` family: info for a version/unknown-key note, **shield (not red)** for a refused capability — a ceiling that held is not an error — red only for "nothing was imported", and an icon-less question for the re-import decision. Node types are named by their raw enum, matching the tabs.
       - `PromptLibraryScreen.kt` - Slim mapper. Folds `PromptLibraryUiState` (bundled + user presets) into the catalog `PromptLibraryViewState`, hosts the editor `ModalBottomSheet` with `PromptEditorSheetBody`. Categories come from `PromptPresetConstants.LLM_DRIVEN_NODE_TYPES`. Also owns the two SAF surfaces — `OpenDocument` for import (filtering `text/markdown` **and** `text/*`, because most providers report a `.md` file as plain text) and `CreateDocument` for export — reading and writing off the main thread, plus the snackbar host.
@@ -1255,8 +1275,12 @@ Only Kotlin files appear inside the generated blocks.
       - `TriggersViewModel.kt` - Triggers ViewModel. Injects `TriggerRepository` + `PipelineRepository` + `SaveTriggerUseCase` + `SyncTriggersUseCase` + `ObserveTriggerHealthInputsUseCase` + `ObserveTriggerJournalUseCase`. Observes triggers + pipelines + health inputs; a second `flatMapLatest` collector follows the open detail trigger's journal. Drives the detail surface (`onRowClick`→`openDetail`, `closeDetail`, `editFromDetail`), the editor lifecycle + per-field setters, the inline `toggleEnabled`, and the delete flow (which also closes the detail when its trigger is deleted). Re-syncs the background runtime after every save / enable-toggle / delete so runtime mutations take effect immediately.
 - `voice/` - Offline speech recognition and text-to-speech, and the driver that runs conversation mode with them.
   - `ConversationDriver.kt` - Runs `ConversationLoop` with Android's offline recognizer and voice (task 23l).
+  - `JevRuntime.kt` - Verdict-slot readout using Llamatik's exact native runtime, separate from generated speech.
   - `OfflineSpeech.kt` - Android's speech recognizer, offline only (tasks 23c and 23l).
   - `OfflineVoice.kt` - Android text-to-speech with offline voices, in the reply's language (task 23l).
+  - `OwnerAudioPipe.kt` - One PCM stream feeds both Android's offline recognizer and the speaker verifier.
+  - `OwnerVoice.kt` - Offline sherpa-onnx speaker verification.
+  - `PersonalWakeDetector.kt` - Learned generic head plus the owner's ten few-shot keyword templates; sherpa remains a second opinion.
   - `VoiceConfirmSwitch.kt` - The owner's "Confirm by voice" setting (task 29, spec §0.4.3).
   - `WakeHealth.kt` - Whether the wake process died in native code since the wake word was last turned on (M1.8).
   - `WakeRelayReceiver.kt` - The app-process side of the wake word (M1.8).
