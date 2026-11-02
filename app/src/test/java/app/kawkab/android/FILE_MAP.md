@@ -613,6 +613,7 @@ Only Kotlin files appear inside the generated blocks.
     - `ConversationCardTest.kt` - Task 29: a card is read aloud, then waits for a tap or listens once for an answer.
     - `ConversationFollowUpTest.kt` - Task 28: after a spoken reply Kawkab listens for a follow-up; silence then ends the talk.
     - `ConversationLoopTest.kt` - Task 23l: listen, send, speak, listen again; tap stops; speaking over the reply stops it.
+    - `OwnerVoicePolicyTest.kt` - Owner voice is mandatory; missing, silent, invalid and different speakers cannot authorize commands.
     - `VoiceAnswersTest.kt` - Task 29 and spec §0.4.3: what a spoken answer may do.
     - `WakeWordTest.kt` - Task 27: the wake word's gate, speech window, counters and keyword file.
 - `editor/` - Guard over the browser pipeline editor: its context configuration must still mirror the domain sources.
