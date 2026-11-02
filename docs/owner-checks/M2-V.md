@@ -32,13 +32,13 @@ There is no listening winner. Selecting one without hearing Arabic/English outpu
 
 ## Handoff and verification
 
-The detailed test classes and final local outcomes are recorded in PROGRESS.md. Targeted unit/screenshot tests and lint/static/compliance checks run locally. The full Check and emulator belong to CI and have not run for unpublished local commits. No new APK is claimed published.
+Final local verification passed in 9m12s: Android lint, app/catalog style and static analysis, instrumented-source compilation, file maps, documentation, source/dependency/domain compliance, targeted interface/error tests and all eight screenshot goldens. The detailed test areas and outcomes are recorded in PROGRESS.md. Targeted unit/screenshot tests and lint/static/compliance checks run locally. The full Check and emulator belong to CI and have not run for unpublished local commits. No new APK is claimed published.
 
 To inspect the bundle without changing the current branch:
 
 ```sh
 git bundle verify kawkab-m2v.bundle
-git fetch ./kawkab-m2v.bundle main:m2v-review
+git fetch ./kawkab-m2v.bundle HEAD:m2v-review
 git log --oneline main..m2v-review
 ```
 

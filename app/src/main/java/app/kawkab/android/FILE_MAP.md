@@ -60,7 +60,7 @@ Only Kotlin files appear inside the generated blocks.
     - `SafBackupDocuments.kt` - `BackupDocuments` over the Storage Access Framework.
     - `SqlCipherDatabaseSnapshotter.kt` - `DatabaseSnapshotter` on SQLCipher's `sqlcipher_export()`.
     - `StagedDatabasePreparer.kt` - Makes a staged database ready to replace the app's own.
-  - `decision/` - **No description** — replace this line by hand.
+  - `decision/` - Typed model verdicts, calibrated confidence and act-or-ask routing.
     - `AndroidTypedJudge.kt` - The exact installed GGUF and a model-specific final-test certificate are both mandatory.
   - `engine/` - Core LLM and inference engines.
     - `AndroidDeviceMemory.kt` - Reads total RAM from `ActivityManager`.
@@ -456,7 +456,7 @@ Only Kotlin files appear inside the generated blocks.
     - `TransientCacheDirectory.kt` - Every directory the app creates under its cache to pass a file to another app, or to take one from it — and the one retention rule all of them share.
   - `crash/` - Pure rules of the crash log: frames without messages, the last five, safe mode.
     - `CrashRecord.kt` - One crash in the on-device crash log (task 33).
-  - `decision/` - **No description** — replace this line by hand.
+  - `decision/` - Typed model verdicts, calibrated confidence and act-or-ask routing.
     - `DecisionCoordinator.kt` - Two explicit verdict calls keep generated speech out of action selection.
     - `DecisionPolicy.kt` - Jev verdict-slot logit differences become calibrated typed choices, never generated JSON.
     - `TypedJudge.kt` - Decisions are structured separately from anything spoken by the language model.
@@ -553,7 +553,7 @@ Only Kotlin files appear inside the generated blocks.
     - `ImageMemory.kt` - Older images travel in the prompt as a short text note.
     - `SkillCache.kt` - Successful plans, ranked by how often they succeeded.
     - `SlidingHistory.kt` - The goal plus the last few steps.
-  - `memory/` - **No description** — replace this line by hand.
+  - `memory/` - Conservative memory history and explicit forgetting dependencies.
     - `MemoryHistoryRules.kt` - Talorys history: a similarity score cannot silently rewrite a single-valued life fact.
   - `memoryio/` - JSON serialisation gateway for long-term memory export/import.
     - `MemoryJsonSerializer.kt` - Two-way mapper between the memory table and the portable `schemaVersion: 1` export document (`embeddingProviderId` + `exportedAt` + per-chunk `id`/`text`/`embedding`/`source`/`timestamp`/`isPinned`/`tags` and an optional `history` of earlier versions). Never-throwing `parse` returns `Success / SchemaMismatch / Failure`.
@@ -1199,7 +1199,7 @@ Only Kotlin files appear inside the generated blocks.
         - `sheet/` - Bottom-sheet hosts the editor opens over the canvas.
           - `NodeConfigSheetHost.kt` - Thin adapter exposing the catalog `NodeConfigSheet` (with all 12 per-type forms + validator) to the editor screen.
           - `NodeTypePickerSheet.kt` - The pipeline editor's "Add node" sheet: the catalog's `NodeTypePickerSheetBody` inside a full-height `ModalBottomSheet`.
-    - `pocket/` - **No description** — replace this line by hand.
+    - `pocket/` - Owner-facing Pocket LCD routes, local learning and useful error messages.
       - `PocketErrors.kt` - Ordinary owner messages; diagnostic detail remains behind Advanced and crash-report copying.
       - `PocketHomeScreen.kt` - The owner's product surface.
       - `PocketServices.kt` - Services needed by the device shell without adding presentation duties to the chat engine.

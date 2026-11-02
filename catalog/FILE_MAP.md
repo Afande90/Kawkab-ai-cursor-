@@ -153,7 +153,7 @@ Paths below are relative to `src/main/java/app/kawkab/design/`.
   - `topbar/` - top-app-bar chrome.
     - `JournalExportActions.kt` - The pair of top-bar actions that hands a journal to the user: **share it** and **save it to a file**.
     - `KnotworkTopAppBarShell.kt` - wraps a `TopAppBar` in a column with an attached hairline divider so it never bleeds into scrolled content.
-- `device/` - **No description** — replace this line by hand.
+- `device/` - Shared Pocket LCD scaffold, physical keys and eight screen states.
   - `DeviceState.kt` - Immutable presentation data, with no model identifiers, counters or raw tool calls.
   - `KawkabDevice.kt` - One physical device, shared by F1–F8 and the owner's settings pages.
 - `foundations/` - catalog pages.
@@ -504,7 +504,7 @@ matters.
   - `topbar/` - top-bar actions whose behaviour outruns their appearance.
     - `JournalExportActionsBehaviourTest.kt` - Behaviour of the journal-export actions on both journal surfaces — the parts a Roborazzi baseline cannot show.
 - `ComposeTestRuleV2GuardTest.kt` - Keeps the design system's tests on the v2 Compose test APIs.
-- `device/` - **No description** — replace this line by hand.
+- `device/` - Shared Pocket LCD scaffold, physical keys and eight screen states.
   - `PocketDeviceSnapshotTest.kt` - One screenshot for every owner-approved LCD screen; fixed motion and fixture data.
 - `foundations/` - the foundations catalog page — the surface that renders the tokens themselves.
   - `FoundationsCatalogPageSnapshotTest.kt` - Roborazzi snapshot baseline for the `FoundationsCatalogPage` in both Knotwork themes.

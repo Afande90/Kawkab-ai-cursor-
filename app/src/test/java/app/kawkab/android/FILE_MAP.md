@@ -291,7 +291,7 @@ Only Kotlin files appear inside the generated blocks.
     - `TimeAndIdConstantsTest.kt` - Pins the time-unit and notification-id constants exposed by `TimeAndIdConstants`.
   - `crash/` - Tests of the crash log rules and the safe-mode start (tasks 32 and 33).
     - `CrashRulesTest.kt` - Tasks 32 and 33: the crash log keeps frames without messages, five at most, and decides safe mode.
-  - `decision/` - **No description** — replace this line by hand.
+  - `decision/` - Regression tests for typed model verdicts, calibrated confidence and act-or-ask routing.
     - `DecisionCoordinatorTest.kt` - Classification and permission to act are separate structured decisions.
     - `DecisionPolicyTest.kt` - A confident number alone is never a certificate of action precision.
   - `engine/` - Tests for the graph execution engine and its supporting abstractions.
@@ -379,7 +379,7 @@ Only Kotlin files appear inside the generated blocks.
   - `harness/` - Tests for typed decisions, the skill cache, image notes, and the extra biometric check.
     - `HarnessRulesTest.kt` - Planner decisions, history, breakers, the skill cache, and the extra biometric check.
     - `SkillPersistenceTest.kt` - Restart and deletion must affect the actual replay store.
-  - `memory/` - **No description** — replace this line by hand.
+  - `memory/` - Regression tests for conservative memory history and explicit forgetting dependencies.
     - `MemoryHistoryRulesTest.kt` - Explicit changes and uncertain conflicts cannot be collapsed into the same write.
   - `memoryio/` - Tests for the long-term-memory export/import gateway.
     - `MemoryJsonSerializerTest.kt` - Unit tests for `MemoryJsonSerializer` — the serialize → parse round-trip, the provenance / tag fidelity, and the never-throwing failure paths.
@@ -664,7 +664,7 @@ Only Kotlin files appear inside the generated blocks.
     - `SharedIntentFieldsTest.kt` - Unit tests for `SharedIntentFields.read` — the only place `ShareReceiverActivity` touches a caller's extras.
   - `startup/` - Tests for the cold-start upkeep: every step failing in turn leaves the others running.
     - `StartupMaintenanceTest.kt` - `StartupMaintenance` must survive every one of its steps failing — the case it was written for is a database whose key is lost, where the trigger sync threw `DbPassphraseUnavailableException` out of `MainActivity` and killed the process before the splash could show *Erase data*, on every launch.
-  - `state/` - **No description** — replace this line by hand.
+  - `state/` - Regression tests for durable successful-plan storage and replay.
     - `SpokenHandoffTest.kt` - A verified assistant transcript must reach the main voice loop, not wait for a Send tap.
   - `ui/` - Tests for the screens and their ViewModels.
     - `about/` - Tests for the About surface.
@@ -758,7 +758,7 @@ Only Kotlin files appear inside the generated blocks.
           - `MiniMapGeometryTest.kt` - Pure-Kotlin tests for `MiniMapGeometry`.
           - `ShippedPipelineLayoutTest.kt` - Guards the layout of every pipeline the project ships as a file: the bundled presets under `src/main/assets/presets/pipelines/` and the cookbook recipes under `docs/recipes/`.
           - `ValidationAutoFixTest.kt` - Pure-Kotlin tests for `ValidationAutoFix` recipes.
-    - `pocket/` - **No description** — replace this line by hand.
+    - `pocket/` - Regression tests for owner-facing Pocket LCD routes, local learning and useful error messages.
       - `PocketErrorsTest.kt` - Failed voice commands need a visible explanation without exposing the engine.
     - `prompts/` - Tests for the prompt library.
       - `PromptLibraryViewModelTest.kt` - Unit tests for `PromptLibraryViewModel`.
