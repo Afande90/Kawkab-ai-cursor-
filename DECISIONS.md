@@ -518,3 +518,8 @@ Baseline evidence: Check run 41366560458 and Instrumented run 41366560554 are gr
 ### M1.8 continuation: local checks
 
 Final targeted unit run: 79 tests, 0 failures, 0 errors, 0 skipped, BUILD SUCCESSFUL in 2m 7s. Classes: ConversationCardTest, ConversationLoopTest, ConversationFollowUpTest, RememberedContactTest, ContactQuestionTest, OutboundCountdownTest, CrashRulesTest, CallFlowTest, CallRoutingTest, ToolInvocationGateTest and HarnessRulesTest. Foss debug application and test sources compiled. Also passed: app ktlintCheck, detekt, verifyFileMap, verifyNoOrphanedKdoc, verifyComplianceSource and verifyDocLinks. The full Check and emulator were not run locally. An initial Robolectric runtime download could not reach the network; forwarding the environment proxy and trusted CA through a user-level Gradle test configuration fixed it without changing repository build settings or verification rules. Fresh CI remains BLOCKED by GitHub writes, as above.
+
+
+## 2026-11-02 — reset rule 5b: English interface
+
+All Arabic resource overrides now carry the default English copy, including English plural forms for every Arabic quantity. Non-translatable constants fall back to defaults. The shared Compose theme and Android application keep interface layout left to right; spoken Arabic content gets its own text direction in the LCD. The former Arabic-key test now checks that every localized override matches English. The Arabic-locale Compose test exercises the actual theme and asserts left-to-right layout. Checks passed: both targeted tests, app/catalog ktlintCheck and detekt, app verifyComplianceSource (BUILD SUCCESSFUL, 3m 37s). No push, tag or publish operation is part of this continuation, by the owner's latest instruction.

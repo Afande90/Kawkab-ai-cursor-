@@ -5,6 +5,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import app.kawkab.design.a11y.KnotworkA11y
 import app.kawkab.design.a11y.LocalKnotworkA11y
 import app.kawkab.design.tokens.DefaultKnotworkElevation
@@ -57,6 +59,7 @@ fun KnotworkTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composab
     val colorScheme = if (darkTheme) knotworkDarkColorScheme() else knotworkLightColorScheme()
     val extended = if (darkTheme) knotworkExtendedColorsDark() else knotworkExtendedColorsLight()
     CompositionLocalProvider(
+        LocalLayoutDirection provides LayoutDirection.Ltr,
         LocalKnotworkExtendedColors provides extended,
         LocalKnotworkSpacing provides DefaultKnotworkSpacing,
         LocalKnotworkShapes provides DefaultKnotworkShapes,

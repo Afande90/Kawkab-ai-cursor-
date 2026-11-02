@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="splash_starting">جارٍ البدء…</string>
+    <string name="splash_starting">Starting…</string>
 
-    <string name="splash_data_locked_title">تعذّر فتح بياناتك</string>
-    <string name="splash_data_locked_body">تعذّرت قراءة مفتاح التشفير الذي يحمي بياناتك المحلية. هذا غالبًا مؤقت، مثلًا بعد تحديث أندرويد مباشرة. أعد المحاولة أولًا. إذا استمرت المشكلة، فالسبيل الوحيد لمتابعة استخدام التطبيق هو مسح بياناتك والبدء من جديد.</string>
-    <string name="splash_data_locked_reset">مسح البيانات</string>
-    <string name="splash_reset_dialog_title">مسح بياناتك؟</string>
-    <string name="splash_reset_dialog_body">هذا يحذف نهائيًا محادثاتك وذاكرتك الطويلة ومساراتك وإعداداتك المسبقة وملفات مساحة العمل والمرفقات والمهام المجدولة على هذا الجهاز. تُحفظ إعداداتك والمفاتيح المحفوظة. لا يمكن التراجع عن هذا. اكتب %1$s للتأكيد.</string>
-    <string name="splash_reset_dialog_hint">اكتب %1$s للتأكيد</string>
-    <string name="splash_reset_dialog_confirm">مسح البيانات</string>
+    <!-- Data-locked recovery surface (database passphrase unavailable). -->
+    <string name="splash_data_locked_title">Your data can’t be unlocked</string>
+    <string name="splash_data_locked_body">The encryption key protecting your local data could not be read. This is often temporary — for example right after updating Android. Try again first. If the problem persists, the only way to keep using the app is to erase your data and start fresh.</string>
+    <string name="splash_data_locked_reset">Erase data</string>
+    <string name="splash_reset_dialog_title">Erase your data?</string>
+    <string name="splash_reset_dialog_body">This permanently deletes your chats, long-term memory, pipelines, presets, workspace files, attachments and scheduled tasks on this device. Your settings and saved keys are kept. This cannot be undone. Type %1$s to confirm.</string>
+    <string name="splash_reset_dialog_hint">Type %1$s to confirm</string>
+    <string name="splash_reset_dialog_confirm">Erase data</string>
 </resources>
