@@ -1,0 +1,39 @@
+package app.kawkab.android.voice
+
+import android.content.Intent
+import app.kawkab.android.domain.voice.WakeListeningConfig
+import app.kawkab.android.domain.voice.WakeListeningMode
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+
+/** Voice settings persist and cross the wake-process boundary as a complete immutable snapshot. */
+@RunWith(RobolectricTestRunner::class)
+class WakeListeningConfigTest {
+    @Test fun `smart is selected by default but setup has not yet enabled the microphone`() {
+        val context = RuntimeEnvironment.getApplication<android.app.Application>()
+        assertEquals(WakeListeningMode.SMART, WakeWordSwitch.config(context).mode)
+        assertFalse(WakeWordSwitch.isEnabled(context))
+    }
+
+    @Test fun `updating listening mode preserves wake counts and sends current sleep hours`() {
+        val context = RuntimeEnvironment.getApplication<android.app.Application>()
+        WakeWordSwitch.set(context, true)
+        WakeWordSwitch.countWake(context)
+        val config = WakeListeningConfig(WakeListeningMode.CHARGING, true, 23 * 60, 6 * 60)
+        WakeWordSwitch.configure(context, config)
+        assertEquals(config, WakeWordSwitch.config(context))
+        assertEquals(1, WakeWordSwitch.stats(context)!!.wakes)
+        val intent = WakeWordSwitch.attachConfig(context, Intent())
+        WakeWordSwitch.configure(context, config.copy(mode = WakeListeningMode.OFF))
+        assertFalse(WakeWordSwitch.isEnabled(context))
+        assertEquals(config, WakeWordSwitch.readConfig(context, intent))
+        WakeWordSwitch.set(context, true)
+        assertTrue(WakeWordSwitch.isEnabled(context))
+        assertEquals(WakeListeningMode.SMART, WakeWordSwitch.config(context).mode)
+    }
+}

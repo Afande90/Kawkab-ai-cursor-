@@ -32,6 +32,17 @@ class WakeWordTest {
     }
 
     @Test
+    fun `pre-roll retains earlier samples when the microphone reuses its frame buffer`() {
+        val window = SpeechWindow(preRollFrames = 2, hangoverFrames = 0)
+        val reused = floatArrayOf(1f)
+        window.feed(reused, false)
+        reused[0] = 2f
+        window.feed(reused, false)
+        reused[0] = 3f
+        assertEquals(listOf(1f, 2f, 3f), window.feed(reused, true).map { it[0] })
+    }
+
+    @Test
     fun `reset forgets the pre-roll`() {
         val window = SpeechWindow(preRollFrames = 4, hangoverFrames = 0)
         window.feed(floatArrayOf(1f), speech = false)
