@@ -447,6 +447,16 @@ class PersistentStorageInventoryGuardTest {
             notArchived = "learned contact choices of this phone; a new phone learns them again",
         ),
 
+        /** Owner audio, learned plans and judge certificates are private and never backed up. */
+        OWNER_LEARNING(
+            domain = "root",
+            plaintextPath = null,
+            erasedBy = null,
+            kept = "phone-specific owner profile and plans; removable through Voice and Growth, not the database reset",
+            archive = emptyList(),
+            notArchived = "Android noBackupFilesDir is excluded from platform backup and app archives",
+        ),
+
         /**
          * The hands activity log, one JSON-lines file. Readable, so it is excluded by name.
          * The recovery wipe is the locked-database escape and does not delete it.
@@ -504,6 +514,10 @@ class PersistentStorageInventoryGuardTest {
 
         /** Every production file that reaches a storage root, by path suffix, with the root. */
         val KNOWN_SITES = mapOf(
+            "/voice/OwnerVoice.kt" to "OWNER_LEARNING (speaker profile and recordings)",
+            "/voice/PersonalWakeDetector.kt" to "OWNER_LEARNING (reads owner templates)",
+            "/hands/AndroidSkillPersistence.kt" to "OWNER_LEARNING (successful plans)",
+            "/data/decision/AndroidTypedJudge.kt" to "OWNER_LEARNING (final-test certificate)",
             "/di/AppModule.kt" to "DATASTORE (preferencesDataStoreFile) and DATABASE (Room.databaseBuilder)",
             "/data/local/AttachmentStoreImpl.kt" to "ATTACHMENTS",
             "/data/local/AgentWorkspaceImpl.kt" to "WORKSPACE",

@@ -293,15 +293,16 @@ class MemoryExtractionUseCaseTest {
         assertEquals(1, outcome.saved)
         coVerify(exactly = 1) { memoryRepository.saveMemory("Is allergic to cats", any(), any(), any()) }
         coVerify(exactly = 0) { memoryHistoryRepository.supersede(any(), any(), any(), any(), any()) }
+        coVerify { memoryRepository.setMemoryTags(any(), match { "review" in it && "status:unsure" in it }) }
     }
 
     @Test
     fun `given an update of an unpinned fact when invoke then the stored chunk is replaced in place`() = runTest {
         // Given
-        stubReply("""[{"type": "preference", "text": "Lives in Munich"}]""")
+        stubReply("""[{"type": "preference", "text": "Moved home to Munich"}]""")
         coEvery { memoryHistoryRepository.findSupersedeCandidate(any()) } returns
             (storedChunk("Lives in Berlin") to 0.98f)
-        coEvery { supersedeJudge.judge("Lives in Berlin", "Lives in Munich") } returns SupersedeVerdict.UPDATE
+        coEvery { supersedeJudge.judge("Lives in Berlin", "Moved home to Munich") } returns SupersedeVerdict.UPDATE
 
         // When
         val outcome = useCase(sessionId, messages)
@@ -312,7 +313,7 @@ class MemoryExtractionUseCaseTest {
         coVerify(exactly = 1) {
             memoryHistoryRepository.supersede(
                 STORED_ID,
-                "Lives in Munich",
+                "Moved home to Munich",
                 any(),
                 MemorySource.ChatSession(sessionId),
                 listOf("preference"),
@@ -325,7 +326,7 @@ class MemoryExtractionUseCaseTest {
     fun `given the stored chunk is deleted before the update lands when invoke then the fact is saved as new`() =
         runTest {
             // Given — the user deleted the chunk between the candidate search and the write.
-            stubReply("""[{"type": "preference", "text": "Lives in Munich"}]""")
+            stubReply("""[{"type": "preference", "text": "Moved home to Munich"}]""")
             coEvery { memoryHistoryRepository.findSupersedeCandidate(any()) } returns
                 (storedChunk("Lives in Berlin") to 0.98f)
             coEvery { supersedeJudge.judge(any(), any()) } returns SupersedeVerdict.UPDATE
@@ -337,13 +338,13 @@ class MemoryExtractionUseCaseTest {
             // Then — the new fact is not lost with the chunk it would have replaced.
             assertEquals(1, outcome.saved)
             assertEquals(0, outcome.replaced)
-            coVerify(exactly = 1) { memoryRepository.saveMemory("Lives in Munich", any(), any(), any()) }
+            coVerify(exactly = 1) { memoryRepository.saveMemory("Moved home to Munich", any(), any(), any()) }
         }
 
     @Test
     fun `given an update of a pinned fact when invoke then it waits beside the pinned chunk`() = runTest {
         // Given
-        stubReply("""[{"type": "preference", "text": "Lives in Munich"}]""")
+        stubReply("""[{"type": "preference", "text": "Moved home to Munich"}]""")
         coEvery { memoryHistoryRepository.findSupersedeCandidate(any()) } returns
             (storedChunk("Lives in Berlin", isPinned = true) to 0.98f)
         coEvery { supersedeJudge.judge(any(), any()) } returns SupersedeVerdict.UPDATE
@@ -354,7 +355,7 @@ class MemoryExtractionUseCaseTest {
         // Then — a pinned fact is never replaced by an automatic write.
         assertEquals(1, outcome.waitingOnPinned)
         coVerify(exactly = 1) {
-            memoryHistoryRepository.saveUpdateOfPinned(STORED_ID, "Lives in Munich", any(), any(), listOf("preference"))
+            memoryHistoryRepository.saveUpdateOfPinned(STORED_ID, "Moved home to Munich", any(), any(), listOf("preference"))
         }
         coVerify(exactly = 0) { memoryHistoryRepository.supersede(any(), any(), any(), any(), any()) }
     }
