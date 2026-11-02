@@ -86,14 +86,14 @@ class MemoryRepositoryImpl @Inject constructor(
 
     override suspend fun findSimilarMemories(queryEmbedding: FloatArray, limit: Int?): List<Pair<MemoryChunk, Float>> =
         withContext(Dispatchers.Default) {
-            // Full-table scan, deliberately: a recency window here would make old
+            // Scan active history without an age cutoff: a recency window would make old
             // but relevant chunks invisible to retrieval regardless of similarity
             // (see the interface KDoc). The pool stays bounded by the compaction
             // hard-limit; the warning below flags the pathological case where the
             // linear scan starts to cost real time.
             val startedAtNanos = System.nanoTime()
             val pool = memoryDao.getAllMemories().mapNotNull { entity ->
-                entity.toMemoryChunkOrNull()
+                entity.toMemoryChunkOrNull()?.takeUnless { "status:past" in it.tags }
             }
             if (pool.size > SEARCH_POOL_WARN_THRESHOLD) {
                 Timber.w(
