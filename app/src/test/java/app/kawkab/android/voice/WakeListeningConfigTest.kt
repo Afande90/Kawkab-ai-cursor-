@@ -37,7 +37,7 @@ class WakeListeningConfigTest {
         assertFalse(WakeWordSwitch.isEnabled(context))
         assertEquals(WakeListeningMode.OFF, WakeWordSwitch.config(context).mode)
         assertEquals("microphone unavailable", WakeWordSwitch.failure(context))
-        assertEquals(WakeWordService::class.java.name, shadowOf(context).nextStoppedService.component?.className)
+        assertEquals(WakeWordService::class.java.name, requireNotNull(shadowOf(context).nextStoppedService).component?.className)
     }
 
     @Test fun `sleep hours can be saved before enrollment without enabling capture`() {
