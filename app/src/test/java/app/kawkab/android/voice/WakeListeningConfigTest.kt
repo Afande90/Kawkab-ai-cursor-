@@ -20,6 +20,14 @@ class WakeListeningConfigTest {
         assertFalse(WakeWordSwitch.isEnabled(context))
     }
 
+    @Test fun `an existing explicit off setting migrates to off rather than silently enabling smart`() {
+        val context = RuntimeEnvironment.getApplication()
+        context.getSharedPreferences("wake_word", android.content.Context.MODE_PRIVATE)
+            .edit().putBoolean("enabled", false).commit()
+        assertEquals(WakeListeningMode.OFF, WakeWordSwitch.config(context).mode)
+        assertFalse(WakeWordSwitch.isEnabled(context))
+    }
+
     @Test fun `sleep hours can be saved before enrollment without enabling capture`() {
         val context = RuntimeEnvironment.getApplication()
         val config = WakeListeningConfig(sleepEnabled = true)
