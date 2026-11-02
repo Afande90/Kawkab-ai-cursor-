@@ -136,3 +136,6 @@ The workspace arrived without a checkout. Main was cloned, pulled with `--ff-onl
 | 35. Close-out, tags, published updated APK | BLOCKED | Git and REST writes HTTP 403; no completion tag |
 
 Baseline Check, Instrumented and pre-release publishing passed on `9b64c54f`; this does not verify the local continuation. Detailed release status and APK provenance are in docs/owner-checks/M1.8.md. Local tags `m1.6` (`9b2bc801`) and `m1.7` (`ed0af57d`) were restored, but GitHub rejected their push. M2-V has not been started because the unfinished M1.8 release gate comes first.
+
+
+Continuation local checks: **79 targeted tests passed, 0 failed, 0 errors, 0 skipped**; foss debug app and test sources compiled. app ktlintCheck, detekt, verifyFileMap, verifyNoOrphanedKdoc, verifyComplianceSource and verifyDocLinks passed in the final invocation (BUILD SUCCESSFUL, 2m 7s). No full local Check or emulator run. Follow-up CI and publication remain BLOCKED by HTTP 403. The exact test classes and recovery bundle are recorded in docs/owner-checks/M1.8.md.
