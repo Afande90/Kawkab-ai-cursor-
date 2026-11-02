@@ -9,6 +9,12 @@ import dagger.hilt.components.SingletonComponent
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 interface PocketServices {
+    /** Speech completion starts the full three-second cancel window. */
+    fun gate(): app.kawkab.android.domain.engine.executors.ToolInvocationGate
+
+    /** Existing local image messages populate the screenshot inbox. */
+    fun chats(): app.kawkab.android.domain.repositories.ChatRepository
+
     /** Persists successful first voice setup. */
     fun appState(): AppStateSettings
 }

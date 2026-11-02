@@ -1,354 +1,312 @@
 package app.kawkab.android.assistant
 
-import android.annotation.SuppressLint
 import android.app.assist.AssistStructure
 import android.content.Context
 import android.content.Intent
-import android.graphics.Color
+import android.os.Bundle
 import android.service.voice.VoiceInteractionSession
-import android.view.Gravity
 import android.view.View
-import android.widget.Button
-import android.widget.EditText
-import android.widget.LinearLayout
-import android.widget.Switch
-import android.widget.TextView
-import androidx.core.graphics.toColorInt
-import androidx.core.view.isVisible
-import app.kawkab.android.R
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import app.kawkab.android.domain.assistant.AssistantCommandRunner
 import app.kawkab.android.domain.assistant.AssistantModelRelease
-import app.kawkab.android.domain.assistant.AssistantPlan
-import app.kawkab.android.domain.assistant.AssistantPlanner
 import app.kawkab.android.domain.assistant.ScreenTextCollector
 import app.kawkab.android.domain.assistant.ScreenTextPolicy
 import app.kawkab.android.domain.engine.LlmInferenceEngine
 import app.kawkab.android.domain.models.AgentOrchestratorState
-import app.kawkab.android.domain.phoneaccess.MissingPermission
 import app.kawkab.android.domain.repositories.PrivacySettings
+import app.kawkab.android.domain.voice.ConversationLoop
 import app.kawkab.android.domain.voice.VoiceAnswers
+import app.kawkab.android.hands.ContactChoice
 import app.kawkab.android.presentation.state.ActiveSessionTracker
 import app.kawkab.android.presentation.state.ChatEntryRequestRelay
 import app.kawkab.android.presentation.ui.MainActivity
 import app.kawkab.android.presentation.ui.chat.home.ActionSentence
 import app.kawkab.android.presentation.ui.common.resolve
-import app.kawkab.android.presentation.ui.phoneaccess.AndroidPhoneAccess
 import app.kawkab.android.voice.ConversationDriver
 import app.kawkab.android.voice.OfflineSpeech
 import app.kawkab.android.voice.OfflineVoice
-import app.kawkab.android.voice.VoiceConfirmSwitch
+import app.kawkab.android.voice.OwnerVoice
 import app.kawkab.android.voice.WakeWordService
+import app.kawkab.design.device.DevicePage
+import app.kawkab.design.device.DeviceSignal
+import app.kawkab.design.device.DeviceState
+import app.kawkab.design.device.KawkabDevice
+import app.kawkab.design.theme.KnotworkTheme
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-/**
- * The panel a long-press of the power button opens over the current app.
- *
- * A grammar match goes through the tap gate, and approve and deny sit on this panel.
- * Anything else opens the main chat. Screen text is read only after the owner allows it and asks.
- */
+/** Power-button and wake-word entry use the same Pocket LCD device as the main app. */
 class KawkabAssistantSession(
     private val appContext: Context,
     private val runner: AssistantCommandRunner,
     private val privacy: PrivacySettings,
-    private val engine: LlmInferenceEngine,
-    private val sessions: ActiveSessionTracker,
+    engine: LlmInferenceEngine,
+    sessions: ActiveSessionTracker,
     private val relay: ChatEntryRequestRelay,
+    private val choice: ContactChoice = ContactChoice(),
 ) : VoiceInteractionSession(appContext) {
     private val uiScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val releaseScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val release = AssistantModelRelease(
-        scope = releaseScope,
+        releaseScope,
         chatOpen = { sessions.activeSessionId.value != null },
         unload = { engine.unload() },
     )
+    private val owner = PocketSessionOwner()
+    private val device = MutableStateFlow(DeviceState())
     private var structure: AssistStructure? = null
-    private var pendingRequestId: String? = null
+    private var pending: AgentOrchestratorState.WaitingForApproval? = null
+    private var countdown: Job? = null
+    private var contactWatch: Job? = null
     private var busy = false
-    private var writingSwitch = false
-    private lateinit var input: EditText
-    private lateinit var status: TextView
-    private lateinit var screenText: TextView
-    private lateinit var approve: Button
-    private lateinit var deny: Button
-    private lateinit var grant: Button
-    private lateinit var screenSwitch: Switch
+    private var conversation: ConversationDriver? = null
 
-    override fun onCreateContentView(): View = buildPanel()
+    override fun onCreateContentView(): View = ComposeView(appContext).apply {
+        setViewTreeLifecycleOwner(owner)
+        setViewTreeSavedStateRegistryOwner(owner)
+        setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+        setContent {
+            val state by device.collectAsState()
+            KnotworkTheme {
+                KawkabDevice(
+                    state,
+                    onHome = {
+                        cancelAction()
+                        openChat("")
+                    },
+                    onShots = {
+                        cancelAction()
+                        device.value = device.value.copy(page = DevicePage.SHOTS)
+                    },
+                    onGrowth = {
+                        cancelAction()
+                        device.value = device.value.copy(page = DevicePage.GROWTH)
+                    },
+                    onSettings = {
+                        cancelAction()
+                        openChat("")
+                    },
+                    onVoice = { openChat("") },
+                    onTalk = { if (pending != null) cancelAction() else startTalking() },
+                )
+            }
+        }
+    }
 
-    override fun onShow(args: android.os.Bundle?, showFlags: Int) {
+    override fun onShow(args: Bundle?, showFlags: Int) {
         super.onShow(args, showFlags)
+        owner.show()
         release.shown()
-        // The panel holds the microphone now; the wake word listens again when it closes (task 27).
         WakeWordService.pause(appContext)
         AssistantPanelVisibility.shown = true
-        // A long-press of power, the assist gesture or the wake word starts conversation mode at once.
+        if (!OwnerVoice(appContext).enrolled()) {
+            device.value = device.value.copy(page = DevicePage.ENROLL, reply = "ENROLL YOUR VOICE IN THE APP")
+            return
+        }
+        contactWatch?.cancel()
+        contactWatch = uiScope.launch {
+            choice.state.collect { contact ->
+                if (contact != null) {
+                    device.value = device.value.copy(
+                        page = DevicePage.WHICH,
+                        signal = DeviceSignal.ASKING,
+                        name = contact.args[ContactChoice.SPOKEN].orEmpty(),
+                        choices = contact.choices.map { it.name },
+                    )
+                    conversation().ask(
+                        ContactChoice.question(
+                            contact.args[ContactChoice.SPOKEN].orEmpty(),
+                            contact.choices.size,
+                            contact.choices.map { it.name },
+                        ),
+                    )
+                }
+            }
+        }
         val woke = args?.getBoolean(WakeWordService.EXTRA_WAKE) == true
-        if ((woke || VoiceStart.fromGesture(showFlags)) && hasMicrophone()) conversation().tap()
+        if (woke || VoiceStart.fromGesture(showFlags)) startTalking()
     }
 
     override fun onHide() {
+        contactWatch?.cancel()
+        cancelAction()
         conversation?.release()
         conversation = null
+        owner.hide()
         WakeWordService.resume(appContext)
         AssistantPanelVisibility.shown = false
         release.hidden()
         super.onHide()
     }
 
-    private var conversation: ConversationDriver? = null
-    private var pendingTool: String = ""
-
-    private fun cardSentence(state: AgentOrchestratorState.WaitingForApproval): String {
-        val args = ActionSentence.arguments(state.arguments)
-        // An announced call says what it is doing and runs unless stopped (vision rule 1).
-        if (state.runsAtMs != null) return appContext.resolve(ActionSentence.announcement(state.toolName, args))
-        return ActionSentence.of(state.toolName, args)?.let { appContext.resolve(it) }
-            ?: appContext.getString(R.string.assistant_needs_you)
+    override fun onDestroy() {
+        owner.destroy()
+        uiScope.cancel()
+        super.onDestroy()
     }
-
-    /** A spoken answer to the waiting card, judged by the safety rule of spec §0.4.3 (task 29). */
-    private fun answerCard(heard: String) {
-        val requestId = pendingRequestId ?: return
-        val decision = VoiceAnswers.decide(
-            answer = VoiceAnswers.answer(heard),
-            voiceConfirmOn = VoiceConfirmSwitch.isEnabled(appContext),
-            screenOn = VoiceConfirmSwitch.screenOn(appContext),
-            locked = VoiceConfirmSwitch.locked(appContext),
-        )
-        when (decision) {
-            VoiceAnswers.Decision.APPROVE, VoiceAnswers.Decision.DENY -> uiScope.launch {
-                runner.answerByVoice(requestId, decision == VoiceAnswers.Decision.APPROVE, heard, pendingTool)
-            }
-            VoiceAnswers.Decision.NEED_TAP -> if (approve.isVisible) {
-                status.text = appContext.getString(R.string.assistant_voice_needs_tap)
-            }
-        }
-    }
-
-    private fun conversation(): ConversationDriver = conversation ?: ConversationDriver(
-        speech = OfflineSpeech(appContext),
-        voice = OfflineVoice(appContext),
-        send = { text ->
-            input.setText(text)
-            sendLine()
-        },
-        onPhase = { },
-        answer = ::answerCard,
-    ).also { conversation = it }
-
-    private fun hasMicrophone(): Boolean = androidx.core.content.ContextCompat.checkSelfPermission(
-        appContext,
-        android.Manifest.permission.RECORD_AUDIO,
-    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
 
     override fun onHandleAssist(state: AssistState) {
         structure = state.assistStructure
     }
 
-    override fun onDestroy() {
-        uiScope.cancel()
-        super.onDestroy()
+    private fun startTalking() {
+        if (OwnerVoice(appContext).enrolled()) conversation().tap() else openChat("")
     }
 
-    @SuppressLint("UseSwitchCompatOrMaterialCode")
-    private fun buildPanel(): View {
-        val root = LinearLayout(appContext).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(PADDING_DP), dp(PADDING_DP), dp(PADDING_DP), dp(PADDING_DP))
-            setBackgroundColor(GROUND.toColorInt())
-            gravity = Gravity.BOTTOM
-        }
-        root.addView(title(appContext.getString(R.string.assistant_panel_title)))
-        input = EditText(appContext).apply {
-            hint = appContext.getString(R.string.assistant_panel_hint)
-            setTextColor(Color.WHITE)
-            setHintTextColor(MUTED.toColorInt())
-        }
-        status = body("")
-        screenText = body("")
-        screenSwitch = Switch(appContext).apply {
-            text = appContext.getString(R.string.assistant_use_screen)
-            setTextColor(Color.WHITE)
-        }
-        approve = button(appContext.getString(R.string.assistant_approve), AMBER)
-        deny = button(appContext.getString(R.string.assistant_deny), INDIGO)
-        approve.visibility = View.GONE
-        deny.visibility = View.GONE
-        grant = button(appContext.getString(R.string.phone_access_grant), AMBER)
-        grant.visibility = View.GONE
-        val send = button(appContext.getString(R.string.assistant_send), INDIGO)
-        val read = button(appContext.getString(R.string.assistant_read_screen), INDIGO)
-        listOf(input, screenSwitch, read, screenText, send, status, approve, deny, grant).forEach {
-            root.addView(it, wrap())
-        }
-        wire(send, read)
-        return root
-    }
-
-    private fun wire(send: Button, read: Button) {
-        send.setOnClickListener { sendLine() }
-        read.setOnClickListener { readScreen() }
-        approve.setOnClickListener {
-            pendingRequestId?.let { requestId -> uiScope.launch { runner.answer(requestId, approved = true) } }
-        }
-        deny.setOnClickListener {
-            pendingRequestId?.let { requestId -> uiScope.launch { runner.answer(requestId, approved = false) } }
-        }
-        grant.setOnClickListener {
-            val permission = MissingPermission.permissionIn(status.text.toString()) ?: return@setOnClickListener
-            val intent = Intent(appContext, MainActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                putExtra(AndroidPhoneAccess.PERMISSION_EXTRA, permission)
+    private fun conversation(): ConversationDriver = conversation ?: ConversationDriver(
+        speech = OfflineSpeech(appContext),
+        voice = OfflineVoice(appContext),
+        send = ::sendLine,
+        onPhase = { phase ->
+            val signal = when (phase) {
+                ConversationLoop.Phase.LISTENING -> DeviceSignal.LISTENING
+                ConversationLoop.Phase.SPEAKING -> DeviceSignal.SPEAKING
+                else -> device.value.signal
             }
-            startAssistantActivity(intent)
-            hide()
-        }
-        uiScope.launch {
-            privacy.useScreenText.collect { allowed ->
-                writingSwitch = true
-                screenSwitch.isChecked = allowed
-                writingSwitch = false
-            }
-        }
-        screenSwitch.setOnCheckedChangeListener { _, checked ->
-            if (!writingSwitch) uiScope.launch { privacy.setUseScreenText(checked) }
-        }
-    }
-
-    private fun sendLine() {
-        if (busy) return
-        val typed = input.text.toString().trim()
-        val plan = AssistantPlanner.plan(typed) ?: return
-        input.setText("")
-        when (plan) {
-            is AssistantPlan.OpenChat -> openChat(plan.text)
-            is AssistantPlan.Tool -> {
-                busy = true
-                status.text = ""
+            device.value = device.value.copy(
+                signal = signal,
+                page = if (phase == ConversationLoop.Phase.LISTENING && pending == null && choice.state.value == null) {
+                    DevicePage.LISTENING
+                } else {
+                    device.value.page
+                },
+            )
+        },
+        answer = { text ->
+            val request = pending
+            if (request == null) {
+                sendLine(text)
+            } else {
                 uiScope.launch {
-                    try {
-                        runner.run(typed, plan.command, ::render)
-                    } catch (cancelled: CancellationException) {
-                        throw cancelled
-                    } catch (failure: Exception) {
-                        status.text = failure.message ?: appContext.getString(R.string.assistant_done)
-                    } finally {
-                        busy = false
+                    when (VoiceAnswers.answer(text)) {
+                        VoiceAnswers.Answer.NO -> runner.answerByVoice(request.requestId, false, text, request.toolName)
+                        VoiceAnswers.Answer.YES -> runner.answerByVoice(request.requestId, true, text, request.toolName)
+                        else -> Unit
                     }
                 }
             }
+        },
+    ).also { conversation = it }
+
+    private fun sendLine(text: String) {
+        if (busy || text.isBlank()) return
+        device.value = device.value.copy(heard = text, page = DevicePage.TALK)
+        uiScope.launch {
+            busy = true
+            try {
+                if (text.equals("read my screen", true)) {
+                    readScreen()
+                } else if (!runner.route(text, ::render)) {
+                    openChat(text)
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                device.value = device.value.copy(reply = "I could not finish that. Please try again.")
+            } finally {
+                busy = false
+            }
         }
+    }
+
+    private fun cancelAction() {
+        pending?.let { request -> uiScope.launch { runner.answer(request.requestId, false) } }
     }
 
     private fun openChat(text: String) {
-        relay.prefill(text)
-        val intent = Intent(appContext, MainActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        }
-        startAssistantActivity(intent)
+        if (text.isNotBlank()) relay.prefill(text)
+        startAssistantActivity(
+            Intent(appContext, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            },
+        )
         hide()
     }
 
-    private fun readScreen() {
-        uiScope.launch {
-            val allowed = privacy.useScreenText.first()
-            if (!ScreenTextPolicy.allow(ownerAllows = allowed, requested = true)) {
-                status.text = appContext.getString(R.string.assistant_screen_off)
-                return@launch
-            }
-            val text = ScreenTextCollector.collect(AssistScreenNodes.of(structure))
-            screenText.text = text.ifBlank { appContext.getString(R.string.assistant_screen_empty) }
+    private suspend fun readScreen() {
+        val allowed = privacy.useScreenText.first()
+        val reply = if (ScreenTextPolicy.allow(ownerAllows = allowed, requested = true)) {
+            ScreenTextCollector.collect(AssistScreenNodes.of(structure)).ifBlank { "There is no readable screen text." }
+        } else {
+            "Allow screen text in Settings before asking me to read it."
         }
+        device.value = device.value.copy(reply = reply)
+        conversation().replied(reply)
     }
 
     private fun render(state: AgentOrchestratorState) {
         when (state) {
-            is AgentOrchestratorState.WaitingForApproval -> {
-                // The card is read aloud (task 29). A spoken yes counts only when the owner turned
-                // on "Confirm by voice" and the phone is on and unlocked; otherwise it waits for a tap.
-                pendingTool = state.toolName
-                val announced = state.runsAtMs != null
-                pendingRequestId = state.requestId
-                if (announced && hasMicrophone()) {
-                    conversation().announce(cardSentence(state))
-                } else {
-                    conversation?.waitsForTap(
-                        sentence = cardSentence(state),
-                        voiceMayAnswer = VoiceConfirmSwitch.isEnabled(appContext),
-                    )
-                }
-                pendingRequestId = state.requestId
-                status.text = if (announced) cardSentence(state) else appContext.getString(R.string.assistant_needs_you)
-                // Announced: no Approve, only STOP; it runs by itself after 3 s.
-                approve.visibility = if (announced) View.GONE else View.VISIBLE
-                deny.text = appContext.getString(if (announced) R.string.countdown_stop else R.string.assistant_deny)
-                deny.visibility = View.VISIBLE
-                grant.visibility = View.GONE
-            }
+            is AgentOrchestratorState.WaitingForApproval -> showPending(state)
             is AgentOrchestratorState.Completed -> {
-                pendingRequestId = null
-                approve.visibility = View.GONE
-                deny.visibility = View.GONE
-                status.text = state.finalResponse.ifBlank { appContext.getString(R.string.assistant_done) }
-                conversation?.replied(state.finalResponse)
-                grant.visibility = if (MissingPermission.permissionIn(status.text.toString()) == null) {
-                    View.GONE
-                } else {
-                    View.VISIBLE
-                }
-                busy = false
+                pending = null
+                countdown?.cancel()
+                device.value =
+                    device.value.copy(
+                        page = if (choice.state.value == null) DevicePage.TALK else DevicePage.WHICH,
+                        reply = state.finalResponse,
+                        signal = DeviceSignal.STANDBY,
+                    )
+                if (choice.state.value == null) conversation().replied(state.finalResponse)
             }
             is AgentOrchestratorState.Error -> {
-                pendingRequestId = null
-                approve.visibility = View.GONE
-                deny.visibility = View.GONE
-                grant.visibility = View.GONE
-                status.text = state.message
-                busy = false
+                pending = null
+                countdown?.cancel()
+                device.value = device.value.copy(
+                    page = DevicePage.TALK,
+                    reply = state.message,
+                    signal = DeviceSignal.ASKING,
+                )
             }
             else -> Unit
         }
     }
 
-    private fun title(text: String): TextView = TextView(appContext).apply {
-        this.text = text
-        setTextColor(Color.WHITE)
-        textSize = TITLE_SP
-    }
-
-    private fun body(text: String): TextView = TextView(appContext).apply {
-        this.text = text
-        setTextColor(Color.WHITE)
-        textSize = BODY_SP
-    }
-
-    private fun button(label: String, color: String): Button = Button(appContext).apply {
-        text = label
-        setTextColor(Color.WHITE)
-        setBackgroundColor(color.toColorInt())
-    }
-
-    private fun wrap(): LinearLayout.LayoutParams = LinearLayout.LayoutParams(
-        LinearLayout.LayoutParams.MATCH_PARENT,
-        LinearLayout.LayoutParams.WRAP_CONTENT,
-    ).apply { topMargin = dp(GAP_DP) }
-
-    private fun dp(value: Int): Int = (value * appContext.resources.displayMetrics.density).toInt()
-
-    private companion object {
-        const val GROUND: String = "#070A14"
-        const val INDIGO: String = "#5457E8"
-        const val AMBER: String = "#F2B45A"
-        const val MUTED: String = "#A8B0C2"
-        const val PADDING_DP: Int = 24
-        const val GAP_DP: Int = 12
-        const val TITLE_SP: Float = 22f
-        const val BODY_SP: Float = 16f
+    private fun showPending(state: AgentOrchestratorState.WaitingForApproval) {
+        val firstAnnouncement = pending?.requestId != state.requestId
+        pending = state
+        val args = ActionSentence.arguments(state.arguments)
+        val sentence = appContext.resolve(ActionSentence.announcement(state.toolName, args))
+        if (state.runsAtMs != null) {
+            device.value = device.value.copy(
+                page = DevicePage.CALLING,
+                signal = DeviceSignal.ACTING,
+                name = args["name"] ?: args["spoken"] ?: args["contact"].orEmpty(),
+                number = args["number"] ?: args["contact"].orEmpty(),
+                usual =
+                args["spoken"]?.let { choice.remembered(it) } != null,
+            )
+            if (firstAnnouncement) conversation().announce(sentence) { runner.announced(state.requestId) }
+            countdown?.cancel()
+            countdown = uiScope.launch {
+                while (pending?.requestId == state.requestId) {
+                    device.value =
+                        device.value.copy(
+                            seconds = ((state.runsAtMs - System.currentTimeMillis() + SECOND_MS - 1) / SECOND_MS)
+                                .toInt().coerceIn(0, COUNTDOWN_SECONDS),
+                        )
+                    delay(COUNTDOWN_TICK_MS)
+                }
+            }
+        } else {
+            device.value = device.value.copy(page = DevicePage.TALK, signal = DeviceSignal.ASKING, reply = sentence)
+            conversation().ask("$sentence. Say yes or cancel.")
+        }
     }
 }
+
+private const val SECOND_MS = 1_000L
+private const val COUNTDOWN_SECONDS = 3
+private const val COUNTDOWN_TICK_MS = 100L

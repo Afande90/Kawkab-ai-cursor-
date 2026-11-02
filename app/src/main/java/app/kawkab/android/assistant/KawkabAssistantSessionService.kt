@@ -16,6 +16,8 @@ import javax.inject.Inject
  */
 @AndroidEntryPoint
 class KawkabAssistantSessionService : VoiceInteractionSessionService() {
+    @Inject lateinit var choice: app.kawkab.android.hands.ContactChoice
+
     @Inject lateinit var runner: AssistantCommandRunner
 
     @Inject lateinit var privacy: PrivacySettings
@@ -33,5 +35,6 @@ class KawkabAssistantSessionService : VoiceInteractionSessionService() {
         engine = engine,
         sessions = sessions,
         relay = relay,
+        choice = choice,
     )
 }

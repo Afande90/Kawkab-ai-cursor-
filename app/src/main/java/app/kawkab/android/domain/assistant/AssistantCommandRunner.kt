@@ -24,6 +24,7 @@ class AssistantCommandRunner @Inject constructor(
     private val chats: ChatRepository,
     private val approvals: SubmitApprovalDecisionUseCase,
     private val log: ActivityLog,
+    private val gate: app.kawkab.android.domain.engine.executors.ToolInvocationGate? = null,
 ) {
     /**
      * Runs [command] for [text] and forwards each orchestrator state.
@@ -43,6 +44,18 @@ class AssistantCommandRunner @Inject constructor(
             )
         }
         router.runCommand(SESSION_ID, text, command, onState)
+    }
+
+    /** Routes follow-up contact answers through the same stateful router as the main device. */
+    suspend fun route(text: String, onState: (AgentOrchestratorState) -> Unit): Boolean {
+        val command = router.command(text) ?: return false
+        run(text, command, onState)
+        return true
+    }
+
+    /** Speech completion starts this panel's full cancel window. */
+    fun announced(requestId: String) {
+        gate?.announcementFinished(SESSION_ID, requestId)
     }
 
     /**

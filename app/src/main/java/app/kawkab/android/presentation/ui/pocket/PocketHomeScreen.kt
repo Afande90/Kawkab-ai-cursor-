@@ -35,6 +35,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.kawkab.android.BuildConfig
 import app.kawkab.android.assistant.AssistantRoleRequest
 import app.kawkab.android.crash.CrashLog
+import app.kawkab.android.domain.models.ChatMessage
 import app.kawkab.android.domain.phoneaccess.PhoneAccessItem
 import app.kawkab.android.domain.phoneaccess.PhoneAccessStatus
 import app.kawkab.android.domain.text.ReplyLanguage
@@ -58,12 +59,14 @@ import app.kawkab.design.components.chat.ChatRole
 import app.kawkab.design.device.DeviceKey
 import app.kawkab.design.device.DeviceLearning
 import app.kawkab.design.device.DevicePage
+import app.kawkab.design.device.DeviceShot
 import app.kawkab.design.device.DeviceSignal
 import app.kawkab.design.device.DeviceState
 import app.kawkab.design.device.KawkabDevice
 import app.kawkab.design.device.LcdLine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -88,9 +91,15 @@ fun PocketHomeScreen(
     val skills by growth.skills.collectAsState()
     val aliases by growth.aliases.collectAsState()
     val memories by growth.memories.collectAsState()
+    val past by growth.past.collectAsState()
     val models: ModelsViewModel = hiltViewModel()
     val modelState by models.uiState.collectAsState()
     val owner = remember { OwnerVoice(context) }
+    val filing = remember { ShotCategories(context) }
+    var shots by remember { mutableStateOf<List<ChatMessage>>(emptyList()) }
+    var categories by remember { mutableStateOf(filing.all()) }
+    val reviewShot = shots.firstOrNull { it.attachment?.path !in categories }
+
     var enrolled by remember { mutableStateOf(owner.enrolled()) }
     var page by remember { mutableStateOf(if (enrolled) initialPage ?: DevicePage.IDLE else DevicePage.ENROLL) }
     var menu by remember { mutableStateOf(initialMenu) }
@@ -101,6 +110,7 @@ fun PocketHomeScreen(
     var recording by remember { mutableStateOf(false) }
     var draft by remember { mutableStateOf("") }
     var editing by remember { mutableStateOf(false) }
+    var conversationQuestion by remember { mutableStateOf("") }
     var forget by remember { mutableStateOf<String?>(null) }
     var tick by remember { mutableIntStateOf(0) }
     val voice = remember { OfflineVoice(context) }
@@ -122,6 +132,11 @@ fun PocketHomeScreen(
                     owner.forget()
                     enrolled = false
                     page = DevicePage.ENROLL
+                } else if (forgetting.startsWith("shot:")) {
+                    filing.forget(forgetting.removePrefix("shot:"))
+                    categories = filing.all()
+                } else if (forgetting.startsWith("past:")) {
+                    growth.forgetPast(forgetting.removePrefix("past:").toLong())
                 } else if (forgetting.startsWith("memory:")) {
                     growth.forgetMemory(forgetting.removePrefix("memory:").toLong())
                 } else if (forgetting.startsWith("alias:")) {
@@ -134,6 +149,17 @@ fun PocketHomeScreen(
                 notice = "Kept it."
             }
             forget = null
+            return
+        }
+        if (page == DevicePage.SHOTS && reviewShot != null) {
+            val category = filing.answer(text)
+            if (category == null) {
+                conversationQuestion = "Is it a job, bill or place?"
+            } else {
+                filing.remember(reviewShot.attachment!!.path, category)
+                categories = filing.all()
+                notice = "Filed as $category."
+            }
             return
         }
         heard = text
@@ -164,6 +190,30 @@ fun PocketHomeScreen(
             }
         },
     ).also { driver = it }
+    LaunchedEffect(conversationQuestion) {
+        if (conversationQuestion.isNotBlank()) {
+            conversation().ask(conversationQuestion)
+            conversationQuestion = ""
+        }
+    }
+    LaunchedEffect(page, categories) {
+        if (page == DevicePage.SHOTS) {
+            val chats = dagger.hilt.android.EntryPointAccessors.fromApplication(
+                context,
+                PocketServices::class.java,
+            ).chats()
+            shots = withContext(Dispatchers.IO) {
+                chats.getAllSessions().flatMap { chats.getMessagesForSession(it).first() }
+                    .filter { it.attachment != null }.sortedByDescending { it.timestamp }.take(SHOTS_LIMIT)
+            }
+            if (shots.any {
+                    it.attachment?.path !in categories
+                }
+            ) {
+                conversation().ask("Is this screenshot a job, bill or place?")
+            }
+        }
+    }
     val microphone = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { tick += 1 }
     val settings = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { tick += 1 }
     suspend fun recordEnrollment() {
@@ -261,7 +311,10 @@ fun PocketHomeScreen(
             if (pending.runsAtMs !=
                 null
             ) {
-                conversation().announce(sentence)
+                conversation().announce(sentence) {
+                    dagger.hilt.android.EntryPointAccessors.fromApplication(context, PocketServices::class.java)
+                        .gate().announcementFinished(state.thread.currentSessionId, pending.requestId)
+                }
             } else {
                 conversation().ask("$sentence. Say yes or cancel.")
             }
@@ -326,7 +379,9 @@ fun PocketHomeScreen(
         result = lastReply.takeIf {
             it.startsWith("Alarm") || it.startsWith("Timer") || it.startsWith("Called")
         }.orEmpty(),
-        name = args["spoken"] ?: args["contact"] ?: pendingContact?.args?.get(ContactChoice.SPOKEN).orEmpty(),
+        name =
+        args["name"] ?: args["spoken"] ?: args["contact"]
+            ?: pendingContact?.args?.get(ContactChoice.SPOKEN).orEmpty(),
         number = args["number"] ?: args["contact"].orEmpty(), usual = args["spoken"]?.let { it in aliases } == true,
         choices = pendingContact?.choices?.map { it.name }.orEmpty(),
         seconds = (((pending?.runsAtMs ?: now) - now + SECOND_MS - 1) / SECOND_MS).toInt().coerceIn(
@@ -334,6 +389,9 @@ fun PocketHomeScreen(
             COUNTDOWN_SECONDS,
         ),
         enrolled = enrollmentCount, learned = learned,
+        shots = shots.mapIndexed { index, shot ->
+            DeviceShot("SCREENSHOT ${index + 1}", categories[shot.attachment?.path] ?: "UNFILED", shot == reviewShot)
+        },
     )
     KawkabDevice(
         device,
@@ -460,7 +518,9 @@ fun PocketHomeScreen(
                                 "ALL MODELS RUN ON THIS PHONE"
                             },
                         )
-                        modelState.downloadedModels.forEach { model ->
+                        modelState.downloadedModels.filterNot {
+                            it.path.endsWith(app.kawkab.android.data.decision.AndroidTypedJudge.FILE_NAME)
+                        }.forEach { model ->
                             DeviceKey(
                                 if (model.isActive) "CURRENT LANGUAGE MODEL" else "USE LANGUAGE MODEL",
                                 onClick = {
@@ -468,6 +528,12 @@ fun PocketHomeScreen(
                                 },
                             )
                         }
+                        DeviceKey("GET DECISION MODEL", onClick = {
+                            models.startDownload(
+                                app.kawkab.android.data.decision.AndroidTypedJudge.URL,
+                                app.kawkab.android.data.decision.AndroidTypedJudge.FILE_NAME,
+                            )
+                        })
                         DeviceKey("GET LANGUAGE & IMAGES", onClick = {
                             models.startDownload(GEMMA_URL, "gemma-4-E2B-it.litertlm")
                         })
@@ -509,3 +575,5 @@ private const val GEMMA_URL =
     "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm"
 
 private const val COUNTDOWN_SECONDS = 3
+
+private const val SHOTS_LIMIT = 20
