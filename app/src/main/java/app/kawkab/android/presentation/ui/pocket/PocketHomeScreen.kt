@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -600,7 +601,7 @@ fun PocketHomeScreen(
                                                     ?: AssistantRoleRequest.powerButtonSettings(context)
                                                 else -> Intent(
                                                     Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                                                    android.net.Uri.parse("package:${context.packageName}"),
+                                                    "package:${context.packageName}".toUri(),
                                                 )
                                             },
                                         )

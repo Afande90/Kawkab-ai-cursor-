@@ -66,6 +66,7 @@ private val Bezel = Color(BEZEL_ARGB)
 @Composable
 fun KawkabDevice(
     state: DeviceState,
+    modifier: Modifier = Modifier,
     onHome: () -> Unit = {},
     onShots: () -> Unit = {},
     onGrowth: () -> Unit = {},
@@ -73,7 +74,6 @@ fun KawkabDevice(
     onSettings: () -> Unit = {},
     onForget: (String) -> Unit = {},
     onVoice: () -> Unit = {},
-    modifier: Modifier = Modifier,
     lcdContent: (@Composable () -> Unit)? = null,
     lcdFooter: (@Composable () -> Unit)? = null,
     onLcdTap: () -> Unit = {},
@@ -131,9 +131,15 @@ fun KawkabDevice(
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(GAP_DP.dp)) {
-            DeviceKey("HOME", state.page !in listOf(DevicePage.SHOTS, DevicePage.GROWTH), onHome, Modifier.weight(1f))
-            DeviceKey("SHOTS", state.page == DevicePage.SHOTS, onShots, Modifier.weight(1f))
-            DeviceKey("GROWTH", state.page == DevicePage.GROWTH, onGrowth, Modifier.weight(1f))
+            DeviceKey(
+                "HOME",
+                onHome,
+                Modifier.weight(1f),
+                pressed =
+                state.page !in listOf(DevicePage.SHOTS, DevicePage.GROWTH),
+            )
+            DeviceKey("SHOTS", onShots, Modifier.weight(1f), pressed = state.page == DevicePage.SHOTS)
+            DeviceKey("GROWTH", onGrowth, Modifier.weight(1f), pressed = state.page == DevicePage.GROWTH)
         }
         TalkKey(state, onTalk)
     }
@@ -237,7 +243,7 @@ fun LcdLine(
 
 /** Tactile navigation and settings key, with a minimum 48 dp target. */
 @Composable
-fun DeviceKey(label: String, pressed: Boolean = false, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun DeviceKey(label: String, onClick: () -> Unit, modifier: Modifier = Modifier, pressed: Boolean = false) {
     Box(
         modifier.height(KEY_HEIGHT_DP.dp).background(Color(KEY_SHADOW_ARGB), RoundedCornerShape(KEY_RADIUS_DP.dp))
             .padding(bottom = if (pressed) 0.dp else KEY_SHADOW_DP.dp),
