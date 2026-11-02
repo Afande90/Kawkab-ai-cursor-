@@ -32,6 +32,12 @@ class ConversationDriver(
     /** The talk button: starts the loop, or stops it. */
     fun tap() = run(loop.tap())
 
+    /** Continues an already owner-verified panel utterance without another recording or Send tap. */
+    fun handoff(text: String) {
+        if (loop.phase == ConversationLoop.Phase.IDLE) loop.tap()
+        run(loop.heard(text))
+    }
+
     /** Kawkab's reply, to be spoken. */
     fun replied(text: String) = run(loop.replied(text))
 

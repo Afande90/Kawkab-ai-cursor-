@@ -48,6 +48,15 @@ sealed interface ChatEntryRequest {
 class ChatEntryRequestRelay @Inject constructor() {
 
     private val channel = Channel<ChatEntryRequest>(capacity = Channel.CONFLATED)
+    private val voiceChannel = Channel<String>(capacity = Channel.CONFLATED)
+
+    /** A verified assistant transcript enters the device's voice loop once, including cold starts. */
+    val voiceRequests: Flow<String> = voiceChannel.receiveAsFlow()
+
+    /** Called only by the owner-verified assistant path; it does not create a typed draft. */
+    fun spoken(text: String) {
+        if (text.isNotBlank()) voiceChannel.trySend(text)
+    }
 
     /** Stream drained by the chat home; each element is one entry request. */
     val requests: Flow<ChatEntryRequest> = channel.receiveAsFlow()

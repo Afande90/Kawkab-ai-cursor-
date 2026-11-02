@@ -227,7 +227,7 @@ class KawkabAssistantSession(
     }
 
     private fun openChat(text: String) {
-        if (text.isNotBlank()) relay.prefill(text)
+        if (text.isNotBlank()) relay.spoken(text)
         startAssistantActivity(
             Intent(appContext, MainActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
