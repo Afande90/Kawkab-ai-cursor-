@@ -283,6 +283,15 @@ class HttpRequestExecutorTest {
     }
 
     @Test
+    fun `an allowlisted remote redirect still cannot leave the phone`() = runTest {
+        allow(server.hostName, "example.com")
+        server.enqueue(MockResponse.Builder().code(302).addHeader("Location", "https://example.com/private").build())
+        val result = run("""{"method":"GET","url":"${server.url("/")}"}""")
+        assertTrue(result.contains("stays on this phone"))
+        assertEquals(1, server.requestCount)
+    }
+
+    @Test
     fun `given an in-allowlist redirect when execute then follows it`() = runTest {
         allow(server.hostName)
         server.enqueue(MockResponse.Builder().code(302).addHeader("Location", "/final").build())
