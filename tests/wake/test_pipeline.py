@@ -23,6 +23,9 @@ class WakePipelineTest(unittest.TestCase):
         self.assertTrue(pipeline.gates(90, 100, 1, 10)["passed"])
         self.assertFalse(pipeline.gates(89, 100, 0, 10)["passed"])
 
+    def test_majority_english_voice_cannot_hide_failed_arabic(self):
+        self.assertFalse(pipeline.gates(516, 534, 0, 10.79, {"en": 1.0, "ar": 0.0})["passed"])
+
     def test_silence_is_finite(self):
         import numpy as np
         self.assertTrue(np.isfinite(pipeline.features(np.zeros(16000))).all())
