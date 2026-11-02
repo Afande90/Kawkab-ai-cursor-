@@ -31,6 +31,17 @@ class AndroidTypedJudge @Inject constructor(
 ) : TypedJudge {
     private val lock = Mutex()
 
+    override suspend fun ready(): Boolean = withContext(Dispatchers.IO) {
+        runCatching {
+            if (tasks.globalState.value.isBusy || !JevRuntime.available) return@runCatching false
+            val model = models.findByFileName(FILE_NAME) ?: return@runCatching false
+            val certificate = JSONObject(File(context.noBackupFilesDir, "decision/calibration.json").readText())
+            models.currentFileHash(model.path) == SHA256 &&
+                certificate.optBoolean("production_ready") &&
+                certificate.optString("model_sha256") == SHA256
+        }.getOrDefault(false)
+    }
+
     override suspend fun choose(state: String, question: String, options: List<String>): DecisionResult =
         withContext(Dispatchers.Default) {
             lock.withLock {

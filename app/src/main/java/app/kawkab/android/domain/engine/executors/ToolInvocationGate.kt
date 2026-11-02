@@ -17,6 +17,7 @@ import app.kawkab.android.domain.repositories.ChatRepository
 import app.kawkab.android.domain.repositories.PendingInteractionRepository
 import app.kawkab.android.domain.repositories.ToolRepository
 import app.kawkab.android.domain.repositories.ToolSettings
+import app.kawkab.android.domain.safety.DeletionIntent
 import app.kawkab.android.domain.safety.InteractiveSessions
 import app.kawkab.android.domain.safety.OutboundCountdown
 import app.kawkab.android.domain.services.ApprovalNotifier
@@ -96,6 +97,8 @@ class ToolInvocationGate @Inject constructor(
     private val recordTriggerHitlEvent: RecordTriggerHitlEventUseCase,
     private val resolveRequestContext: ResolveApprovalRequestContextUseCase,
     private val interactiveSessions: InteractiveSessions = InteractiveSessions.NONE,
+    private val intents: app.kawkab.android.domain.decision.DecisionIntents =
+        app.kawkab.android.domain.decision.DecisionIntents(),
 ) {
 
     private val activeApprovalDeferreds = ConcurrentHashMap<String, PendingApprovalHolder>()
@@ -104,11 +107,13 @@ class ToolInvocationGate @Inject constructor(
         undecided: Boolean,
         needsApproval: Boolean,
         tool: String,
+        arguments: String,
         risk: ToolRisk,
         sessionId: String,
         mustAnswer: Boolean,
     ): Boolean = undecided &&
         needsApproval &&
+        !DeletionIntent.requiresYes(tool, arguments) &&
         OutboundCountdown.applies(
             tool = tool,
             risk = risk,
@@ -174,7 +179,11 @@ class ToolInvocationGate @Inject constructor(
         var request: AgentOrchestratorState.WaitingForApproval,
         val announced: CompletableDeferred<Unit> = CompletableDeferred(),
         var spokenDeletionConsent: Boolean = false,
-    )
+    ) {
+        init {
+            if (DeletionIntent.requiresYes(request.toolName, request.arguments)) SpokenOwnerAnswer.clear()
+        }
+    }
 
     /**
      * Completes the live approval request [requestId] of [sessionId] with the
@@ -202,7 +211,7 @@ class ToolInvocationGate @Inject constructor(
         val holder = activeApprovalDeferreds[sessionId]?.takeIf { it.request.requestId == requestId } ?: return false
         // A spoken yes or a stale Allow button must never shorten the cancel window.
         if (holder.request.runsAtMs != null && isApproved) return false
-        if (isApproved && holder.request.toolName == "delete_file") {
+        if (isApproved && needsSpokenYes(holder.request)) {
             if (!SpokenOwnerAnswer.consumeYes()) return false
             holder.spokenDeletionConsent = true
         }
@@ -316,6 +325,17 @@ class ToolInvocationGate @Inject constructor(
             emit(NodeOutput.Result(NodeExecutionResult(error = errorMsg, resolvedToolName = resolvedToolName)))
             return@with
         }
+        if (!intentAllowsAction(sessionId, risk)) {
+            emit(
+                NodeOutput.Result(
+                    NodeExecutionResult(
+                        error = "The owner asked for conversation. No phone action was authorized.",
+                        resolvedToolName = resolvedToolName,
+                    ),
+                ),
+            )
+            return@with
+        }
         // The owner permits local processing only. Tool-selected remote requests cannot bypass
         // this rule through an Advanced allowlist or an old approval notification.
         if (!localNetworkOnly(resolvedToolName, resolvedToolArgs)) {
@@ -376,7 +396,8 @@ class ToolInvocationGate @Inject constructor(
         // whatever the policy says: a quiet policy never gets to settle a
         // question the user was already asked.
         val appliedDecision = parkedAnswer?.takeIf { it.sameCall }?.decision?.takeIf { decision ->
-            decision == PendingDecision.DENIED || (parkedAnswer.risk == risk && resolvedToolName != "delete_file")
+            decision == PendingDecision.DENIED ||
+                (parkedAnswer.risk == risk && !DeletionIntent.requiresYes(resolvedToolName, resolvedToolArgs))
         }
         val askAgain = parkedAnswer != null && appliedDecision == null
         val needsApproval = approvalRequired(askAgain, alwaysConfirm, risk, sessionId)
@@ -386,6 +407,7 @@ class ToolInvocationGate @Inject constructor(
             undecided = appliedDecision == null,
             needsApproval = needsApproval,
             tool = resolvedToolName,
+            arguments = resolvedToolArgs,
             risk = risk,
             sessionId = sessionId,
             mustAnswer = askAgain or alwaysConfirm,
@@ -578,8 +600,14 @@ class ToolInvocationGate @Inject constructor(
         emit(NodeOutput.Result(NodeExecutionResult(outputText = result, resolvedToolName = resolvedToolName)))
     }
 
+    private fun needsSpokenYes(request: AgentOrchestratorState.WaitingForApproval): Boolean =
+        DeletionIntent.requiresYes(request.toolName, request.arguments)
+
+    private fun intentAllowsAction(session: String, risk: ToolRisk): Boolean =
+        risk == ToolRisk.READ_ONLY || !interactiveSessions.isInteractive(session) || intents.mayAct(session)
+
     private suspend fun approvalRequired(askAgain: Boolean, always: Boolean, risk: ToolRisk, session: String): Boolean =
-        if (risk == ToolRisk.LOCAL && interactiveSessions.isInteractive(session)) {
+        if (interactiveSessions.isInteractive(session) && risk !in setOf(ToolRisk.OUTBOUND, ToolRisk.DESTRUCTIVE)) {
             false
         } else {
             askAgain || always || toolSettings.toolApprovalPolicy.first().requiresApproval(risk)

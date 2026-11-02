@@ -114,6 +114,7 @@ fun PocketHomeScreen(
     var recording by remember { mutableStateOf(false) }
     var draft by remember { mutableStateOf("") }
     var editing by remember { mutableStateOf(false) }
+    var decisionQuestion by remember { mutableStateOf<Pair<String, String>?>(null) }
     var conversationQuestion by remember { mutableStateOf("") }
     var forget by remember { mutableStateOf<String?>(null) }
     var tick by remember { mutableIntStateOf(0) }
@@ -168,11 +169,57 @@ fun PocketHomeScreen(
             }
             return
         }
-        heard = text
+        if (state.visual is app.kawkab.android.presentation.ui.chat.home.ChatHomeUiState.Generating) return
+        val previous = decisionQuestion
+        var forced: Boolean? = null
+        val input = if (previous != null) {
+            decisionQuestion = null
+            if (previous.second == app.kawkab.android.domain.decision.DecisionCoordinator.INTENT_QUESTION) {
+                forced = when (text.trim().lowercase()) {
+                    "command", "action", "do it", "1", "أمر", "نفذ" -> true
+                    "chat", "question", "2", "سؤال", "كلام" -> false
+                    else -> {
+                        decisionQuestion = previous
+                        conversationQuestion = "Say command or question."
+                        return
+                    }
+                }
+                previous.first
+            } else {
+                "${previous.first} $text"
+            }
+        } else {
+            text
+        }
+        heard = input
         menu = null
         page = DevicePage.TALK
-        viewModel.onComposerValueChange(text)
-        viewModel.sendMessage()
+        scope.launch {
+            val services = dagger.hilt.android.EntryPointAccessors.fromApplication(context, PocketServices::class.java)
+            val known = app.kawkab.android.domain.fastpath.CommandFastPath.parse(input) != null ||
+                pendingContact != null ||
+                pendingApp != null
+            val choice = if (forced == null &&
+                !known &&
+                services.judge().ready()
+            ) {
+                services.decisions().route(input)
+            } else {
+                null
+            }
+            if (choice is app.kawkab.android.domain.decision.DecisionResult.Ask) {
+                decisionQuestion = input to choice.question
+                notice = choice.question
+                conversationQuestion = choice.question
+                return@launch
+            }
+            val mayAct =
+                forced ?: ((choice as? app.kawkab.android.domain.decision.DecisionResult.Chosen)?.option != "chat")
+            services.intents().remember(viewModel.state.value.thread.currentSessionId, mayAct)
+            val request = if (mayAct) input else "Answer conversationally without phone actions: $input"
+            viewModel.onComposerValueChange(request)
+            viewModel.sendMessage()
+        }
     }
     fun conversation(): ConversationDriver = driver ?: ConversationDriver(
         OfflineSpeech(context),
@@ -196,6 +243,12 @@ fun PocketHomeScreen(
             }
         },
     ).also { driver = it }
+    LaunchedEffect(state.thread.currentSessionId) {
+        if (state.thread.currentSessionId.isNotBlank()) {
+            dagger.hilt.android.EntryPointAccessors.fromApplication(context, PocketServices::class.java)
+                .entries().voiceRequests.collect { conversation().handoff(it) }
+        }
+    }
     LaunchedEffect(conversationQuestion) {
         if (conversationQuestion.isNotBlank()) {
             conversation().ask(conversationQuestion)
@@ -447,6 +500,7 @@ fun PocketHomeScreen(
             if (!enrolled) enroll()
         },
         onForget = { id ->
+            SpokenOwnerAnswer.clear()
             forget = id
             conversation().ask("Forget this learned item? Say yes or cancel.")
         },
@@ -482,6 +536,7 @@ fun PocketHomeScreen(
                             menu = null
                             page = DevicePage.ENROLL
                             if (enrolled) {
+                                SpokenOwnerAnswer.clear()
                                 forget = "voice"
                                 conversation().ask(
                                     "Delete your current voice profile before enrolling again? Say yes or cancel.",
@@ -505,6 +560,7 @@ fun PocketHomeScreen(
                             },
                         )
                         DeviceKey("DELETE MY RECORDINGS", onClick = {
+                            SpokenOwnerAnswer.clear()
                             forget = "voice"
                             conversation().ask("Delete your voice recordings? Say yes or cancel.")
                         })

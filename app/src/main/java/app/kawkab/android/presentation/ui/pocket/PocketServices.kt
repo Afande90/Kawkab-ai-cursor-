@@ -9,6 +9,18 @@ import dagger.hilt.components.SingletonComponent
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 interface PocketServices {
+    /** Optional calibrated command/chat and act/ask verdicts. */
+    fun judge(): app.kawkab.android.domain.decision.TypedJudge
+
+    /** Typed coordinator, independent of the language model's spoken answer. */
+    fun decisions(): app.kawkab.android.domain.decision.DecisionCoordinator
+
+    /** A conversational turn cannot authorize phone tools. */
+    fun intents(): app.kawkab.android.domain.decision.DecisionIntents
+
+    /** One-use verified voice handoff from the power-button panel. */
+    fun entries(): app.kawkab.android.presentation.state.ChatEntryRequestRelay
+
     /** Ambiguous installed apps use spoken choices shared with the system assistant. */
     fun apps(): app.kawkab.android.hands.AppChoice
 
