@@ -1,5 +1,6 @@
 package app.kawkab.android.data.tools.local.executors
 
+import app.kawkab.android.domain.models.ToolExecutionContext
 import app.kawkab.android.domain.models.WorkspaceError
 import app.kawkab.android.domain.models.WorkspaceResult
 import app.kawkab.android.domain.services.AgentWorkspace
@@ -36,8 +37,15 @@ class DeleteFileExecutorTest {
     }
 
     @Test
+    fun `without verified spoken consent deletion never reaches workspace`() = runTest {
+        val result = executor.execute("""{"path":"reports/old.md"}""")
+        assertEquals("Error: deletion needs a fresh spoken yes from the owner.", result)
+        coVerify(exactly = 0) { workspace.delete(any()) }
+    }
+
+    @Test
     fun `given blank path when execute then errors without touching workspace`() = runTest {
-        val result = executor.execute("""{"path":""}""")
+        val result = executor.execute("""{"path":""}""", ToolExecutionContext(spokenDeletionConsent = true))
 
         assertEquals("Error: missing 'path' argument.", result)
         coVerify(exactly = 0) { workspace.delete(any()) }
@@ -47,7 +55,7 @@ class DeleteFileExecutorTest {
     fun `given existing file when execute then deletes and acknowledges`() = runTest {
         coEvery { workspace.delete(any()) } returns WorkspaceResult.Success(Unit)
 
-        val result = executor.execute("""{"path":"reports/old.md"}""")
+        val result = executor.execute("""{"path":"reports/old.md"}""", ToolExecutionContext(spokenDeletionConsent = true))
 
         assertEquals("Deleted 'reports/old.md'.", result)
         coVerify { workspace.delete("reports/old.md") }
@@ -57,7 +65,7 @@ class DeleteFileExecutorTest {
     fun `given not-found failure when execute then maps to readable error`() = runTest {
         coEvery { workspace.delete(any()) } returns WorkspaceResult.Failure(WorkspaceError.NotFound)
 
-        val result = executor.execute("""{"path":"missing.txt"}""")
+        val result = executor.execute("""{"path":"missing.txt"}""", ToolExecutionContext(spokenDeletionConsent = true))
 
         assertEquals("Error: file 'missing.txt' not found.", result)
     }
@@ -66,7 +74,7 @@ class DeleteFileExecutorTest {
     fun `given path-outside failure when execute then maps to readable error`() = runTest {
         coEvery { workspace.delete(any()) } returns WorkspaceResult.Failure(WorkspaceError.PathOutsideWorkspace)
 
-        val result = executor.execute("""{"path":"../../secrets"}""")
+        val result = executor.execute("""{"path":"../../secrets"}""", ToolExecutionContext(spokenDeletionConsent = true))
 
         assertEquals("Error: path '../../secrets' is outside the workspace.", result)
     }
@@ -75,7 +83,7 @@ class DeleteFileExecutorTest {
     fun `given an invalid-path failure when execute then names the rules without echoing the path`() = runTest {
         coEvery { workspace.delete(any()) } returns WorkspaceResult.Failure(WorkspaceError.InvalidPath)
 
-        val result = executor.execute("""{"path":"bad"}""")
+        val result = executor.execute("""{"path":"bad"}""", ToolExecutionContext(spokenDeletionConsent = true))
 
         assertEquals(WorkspaceToolMessages.INVALID_PATH, result)
     }
