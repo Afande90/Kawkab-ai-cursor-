@@ -178,3 +178,6 @@
 # Llamatik (llama.cpp runtime). Its native bridge is reached the same way; its consumer rules
 # only silence warnings, so keep its classes and members by name too.
 -keep class com.llamatik.** { *; }
+
+# Verdict JNI uses this exact class and method names.
+-keep class app.kawkab.android.voice.JevRuntime { *; }

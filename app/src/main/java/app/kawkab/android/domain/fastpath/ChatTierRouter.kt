@@ -1,5 +1,7 @@
 package app.kawkab.android.domain.fastpath
 
+import app.kawkab.android.domain.decision.DecisionResult
+import app.kawkab.android.domain.decision.TypedJudge
 import app.kawkab.android.domain.engine.LlmInferenceEngine
 import app.kawkab.android.domain.engine.executors.ToolInvocationGate
 import app.kawkab.android.domain.harness.SkillCache
@@ -15,7 +17,9 @@ import app.kawkab.android.domain.prompt.ChatTranscript
 import app.kawkab.android.domain.repositories.ChatRepository
 import app.kawkab.android.domain.voice.VoiceAnswers
 import app.kawkab.android.hands.ContactAnswer
+import app.kawkab.android.hands.ContactBook
 import app.kawkab.android.hands.ContactChoice
+import app.kawkab.android.hands.ContactLookup
 import app.kawkab.android.hands.LocalUndo
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
@@ -122,6 +126,8 @@ class HandsChatTierRouter @Inject constructor(
     private val skills: SkillCache = SkillCache(),
     private val choice: ContactChoice = ContactChoice(),
     private val localUndo: LocalUndo? = null,
+    private val contacts: ContactBook? = null,
+    private val judge: TypedJudge = TypedJudge.NONE,
 ) : ChatTierRouter {
     private val picks: MutableSet<String> = java.util.Collections.synchronizedSet(mutableSetOf())
 
@@ -176,7 +182,20 @@ class HandsChatTierRouter @Inject constructor(
             onState(AgentOrchestratorState.Completed(reply))
             return
         }
-        val outcome = dispatch(sessionId, command.tool, json(command.args), onState, FAST_PATH)
+        val resolved = resolveContact(text, command)
+        if (resolved == null) {
+            val question = choice.state.value?.let { pending ->
+                ContactChoice.question(
+                    pending.args[ContactChoice.SPOKEN].orEmpty(),
+                    pending.choices.size,
+                    pending.choices.map { it.name },
+                )
+            } ?: "Who do you mean?"
+            save(sessionId, Role.AGENT, question, relayed = true, attachment = null)
+            onState(AgentOrchestratorState.Completed(question))
+            return
+        }
+        val outcome = dispatch(sessionId, resolved.tool, json(resolved.args), onState, FAST_PATH)
         // A local action ran without a card; say so and offer Undo for 10 seconds (task 23i).
         val local = RegisteredTools.all.any { it.name == command.tool && it.risk == ToolRisk.LOCAL }
         finish(sessionId, outcome, onState, relayed = true, note = LocalUndo.NO_ASK_NOTE.takeIf { local })
@@ -188,6 +207,54 @@ class HandsChatTierRouter @Inject constructor(
         if (outcome != null && outcome.error == null && !wasPick) {
             skills.remember(text, command.tool, command.args)
         }
+    }
+
+    private suspend fun resolveContact(text: String, command: PlannedCommand): PlannedCommand? {
+        val book = contacts
+        if (book == null || command.tool !in setOf("call_phone", "send_sms", "send_message")) return command
+        val spoken = command.args[ContactChoice.SPOKEN] ?: command.args["contact"].orEmpty()
+        var candidates = emptyList<app.kawkab.android.hands.ContactMatch>()
+        val number = choice.remembered(spoken)?.also { choice.lastResolved = it }?.phone
+            ?: ContactLookup.numberOrNull(
+                spoken,
+                book,
+                choice.lastResolved,
+                onChoices = { candidates = it },
+                onResolved = { choice.lastResolved = it },
+                failure = {},
+            )
+        if (number != null) {
+            return command.copy(
+                args = command.args + mapOf(
+                    "contact" to number,
+                    "spoken" to spoken,
+                    "number" to number,
+                    "name" to (choice.lastResolved?.name ?: spoken),
+                ),
+            )
+        }
+        if (candidates.isEmpty()) return command
+        val options = candidates.mapIndexed { i, c -> "${i + 1}: ${c.name} ${c.label}" }
+        val decision = judge.choose(text, "Which contact do you mean?", options)
+        val picked = (decision as? DecisionResult.Chosen)?.let { options.indexOf(it.option) }
+            ?.takeIf { it >= 0 }?.let { candidates[it] }
+        if (picked != null) {
+            return command.copy(
+                args = command.args + mapOf(
+                    "contact" to picked.phone,
+                    "number" to picked.phone,
+                    "spoken" to spoken,
+                    "name" to picked.name,
+                ),
+            )
+        }
+        choice.offer(
+            command.tool,
+            command.args + (ContactChoice.SPOKEN to spoken),
+            candidates,
+            System.currentTimeMillis(),
+        )
+        return null
     }
 
     override suspend fun runRecipe(

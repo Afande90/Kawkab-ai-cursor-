@@ -1,5 +1,7 @@
 package app.kawkab.android.di
 
+import app.kawkab.android.data.decision.AndroidTypedJudge
+import app.kawkab.android.domain.decision.TypedJudge
 import app.kawkab.android.domain.fastpath.ChatTierRouter
 import app.kawkab.android.domain.fastpath.HandsChatTierRouter
 import app.kawkab.android.presentation.ui.chat.home.TurnWatchdogConfig
@@ -14,6 +16,10 @@ import dagger.hilt.components.SingletonComponent
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class ChatTierModule {
+    /** Real verdict logits, with a conservative spoken-question fallback. */
+    @Binds
+    abstract fun bindTypedJudge(impl: AndroidTypedJudge): TypedJudge
+
     /** The router the chat screen uses for tier 1 and tier 2. */
     @Binds
     abstract fun bindChatTierRouter(impl: HandsChatTierRouter): ChatTierRouter

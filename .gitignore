@@ -73,3 +73,6 @@ fastlane/test_output/
 # Local handoff and Python caches.
 /kawkab-m2v.bundle
 __pycache__/
+
+# Built locally or by CI from the pinned verdict adapter source.
+/app/src/main/jniLibs/*/libkawkab_decision.so
