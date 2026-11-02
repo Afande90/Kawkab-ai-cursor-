@@ -1,26 +1,26 @@
 package app.kawkab.design.device
 
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
-import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.performSemanticsAction
-import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.sp
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.kawkab.design.KnotworkRoborazziOptions
 import app.kawkab.design.a11y.FixedKnotworkA11y
 import app.kawkab.design.a11y.LocalKnotworkA11y
 import app.kawkab.design.theme.KnotworkTheme
 import com.github.takahirom.roborazzi.captureRoboImage
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -106,7 +106,7 @@ class PocketDeviceSnapshotTest {
         compose.onNodeWithText("GROWTH").assertIsDisplayed()
         val panel = compose.onNodeWithTag("lcd_panel").getUnclippedBoundsInRoot()
         val bottom = compose.onNodeWithTag("lcd_bottom").getUnclippedBoundsInRoot()
-        assertEquals("LCD height", 400f, panel.height.value, 0.5f)
+        assertEquals("LCD height", 400f, panel.bottom.value - panel.top.value, 0.5f)
         assertEquals("final block is pinned to the LCD bottom", panel.bottom.value - 16f, bottom.bottom.value, 0.5f)
         if (state.page == DevicePage.CALLING) assertCalling(panel.right.value, panel.bottom.value)
         compose.onRoot().captureRoboImage(
@@ -126,8 +126,8 @@ class PocketDeviceSnapshotTest {
         assertEquals(panelRight - 16f, digit.right.value, 0.5f)
         assertEquals(panelBottom - 16f, progress.bottom.value, 0.5f)
         assertTrue("hint must be outside the LCD", hint.top.value > panelBottom)
-        assertEquals(124f, key.width.value, 0.5f)
-        assertEquals(124f, key.height.value, 0.5f)
+        assertEquals(124f, key.right.value - key.left.value, 0.5f)
+        assertEquals(124f, key.bottom.value - key.top.value, 0.5f)
         assertEquals(8f, shadow.top.value - key.top.value, 0.5f)
         assertStyle("calling_heard", 22f)
         assertStyle("calling_title", 46f)
@@ -135,7 +135,9 @@ class PocketDeviceSnapshotTest {
         assertStyle("calling_number", 22f)
         assertStyle("calling_progress", 26f)
         val layouts = mutableListOf<TextLayoutResult>()
-        compose.onNodeWithTag("countdown_digit").performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+        compose.onNodeWithTag("countdown_digit").performSemanticsAction(SemanticsActions.GetTextLayoutResult) {
+            it(layouts)
+        }
         assertEquals(150.sp, layouts.single().layoutInput.style.fontSize)
         assertEquals(127.5.sp, layouts.single().layoutInput.style.lineHeight)
     }
@@ -145,5 +147,4 @@ class PocketDeviceSnapshotTest {
         compose.onNodeWithTag(tag).performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
         assertEquals(size.sp, layouts.single().layoutInput.style.fontSize)
     }
-
 }
