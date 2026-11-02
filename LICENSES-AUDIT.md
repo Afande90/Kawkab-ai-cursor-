@@ -449,3 +449,12 @@ The image loader (`io.coil-kt.coil3:coil-compose:3.6.3`) is a direct dependency 
 | VT323 / IBM Plex Mono / Noto Kufi Arabic | SIL OFL 1.1 | personal and commercial; attribution; reserved names | google/fonts ofl directories; third_party/fonts | yes |
 
 | CAMPPlus speaker verification ONNX | Apache-2.0 | personal/commercial; attribution | echo-hello/speech_campplus_sv_zh_en_16k-common_advanced-onnx, 1a64735d2ab8c9b005101d5b0deff78c148248c0; third_party/speaker/LICENSE | yes, 27 MB |
+
+## Owner reset decision readout (2 November 2026)
+
+| Item | Licence | Use | Source | Personal use |
+| --- | --- | --- | --- | --- |
+| Jev-Style 0.8B Decision v3 GGUF | Apache-2.0, publisher model metadata | Optional pinned owner download; no bundled weights or hosted requests | https://huggingface.co/chaoliangUNSW/Jev-Style-0.8B-Decision-v3-GGUF | yes |
+| llama.cpp C API at b29c606e28a01b1bc8c1351026a0fa6e616bf6c4 | MIT | Build-time headers matching existing Llamatik libraries | https://github.com/ggml-org/llama.cpp | yes |
+
+Nothing Glyph Developer Kit: **not bundled**. The public repository and supplied AAR contain no licence declaration verified in this workspace. Physical Glyph mirroring is not claimed implemented or licence-cleared.

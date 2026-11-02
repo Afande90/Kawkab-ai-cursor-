@@ -16,8 +16,8 @@ def main():
     parser.add_argument('aar', type=pathlib.Path, help='The resolved com.llamatik:core-android:2.0.0 AAR')
     args = parser.parse_args()
     import hashlib
-    expected = '6793224e40f3968037827fe2f91d2621c120b074'
-    if hashlib.sha1(args.aar.read_bytes()).hexdigest() != expected:
+    expected = '34d7d0dca9b9b4810ef871cd923f8017eb9713d47b2a7569b0359b7a9ac700c1'
+    if hashlib.sha256(args.aar.read_bytes()).hexdigest() != expected:
         raise ValueError('The runtime AAR does not match the pinned Llamatik artifact')
     target = ROOT / 'app/src/main/cpp/decision/prepared'
     (target / 'include').mkdir(parents=True, exist_ok=True)
@@ -27,7 +27,7 @@ def main():
     with zipfile.ZipFile(args.aar) as archive:
         for abi in ('arm64-v8a', 'x86_64'):
             (target / abi).mkdir(exist_ok=True)
-            for name in ('libllama.so', 'libggml-base.so'):
+            for name in ('libllama.so', 'libggml.so', 'libggml-base.so'):
                 (target / abi / name).write_bytes(archive.read(f'jni/{abi}/{name}'))
     print(target)
 

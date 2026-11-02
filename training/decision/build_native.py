@@ -34,7 +34,7 @@ def main():
             output = temporary / abi
             subprocess.run(['cmake', '-S', str(ROOT / 'app/src/main/cpp/decision'), '-B', str(output),
                             f'-DCMAKE_TOOLCHAIN_FILE={toolchain}', f'-DANDROID_ABI={abi}',
-                            '-DANDROID_PLATFORM=android-34', '-DANDROID_STL=c++_shared',
+                            '-DANDROID_PLATFORM=android-34', '-DANDROID_STL=c++_static',
                             '-DCMAKE_BUILD_TYPE=Release'], check=True)
             subprocess.run(['cmake', '--build', str(output), '--parallel', '2'], check=True)
             target = ROOT / 'app/src/main/jniLibs' / abi

@@ -73,3 +73,6 @@ VT323, IBM Plex Mono and Noto Kufi Arabic are bundled from google/fonts under SI
 ## Owner speaker verification
 
 The 3D-Speaker CAMPPlus ONNX export is Apache-2.0, pinned at echo-hello/speech_campplus_sv_zh_en_16k-common_advanced-onnx commit 1a64735d2ab8c9b005101d5b0deff78c148248c0. The bundled speaker model SHA-256 is 945bcefe95672434d6ecf4c45bd0464d7e82be77d55985d0ec2f3253638110e1. Upstream license is retained in third_party/speaker/LICENSE. No speech recordings are bundled with it.
+
+- Jev-Style 0.8B Decision v3 (Apache-2.0): optional, owner-started public model download. Verdict protocol reference; no upstream runtime source copied. Exact revision, hash and unmeasured gates: `training/decision/README.md`. No hosted inference.
+- llama.cpp (MIT): matching public C API headers are prepared at build time against the exact submodule commit of the existing Llamatik 2.0.0 runtime. No second runtime is compiled.
