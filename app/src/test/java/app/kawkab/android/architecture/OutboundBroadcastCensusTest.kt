@@ -15,6 +15,11 @@ import org.junit.Test
  * caller — answering a request parsed before the switch was ever read — skipped the
  * switch. A second `sendBroadcast` would be a second path around both rules; this
  * test makes it a decision instead of an accident.
+ *
+ * **The wake word's two (M1.8).** The wake word runs in its own process so a native crash cannot
+ * close the app. `WakeWordService` and `WakeRelayReceiver` talk across that boundary with
+ * broadcasts that never leave the app: an explicit component, or `setPackage` to this package
+ * with a not-exported receiver. No caller chooses any part of them.
  */
 class OutboundBroadcastCensusTest {
 
@@ -22,7 +27,7 @@ class OutboundBroadcastCensusTest {
     fun `given the production sources then only the callback sender sends a broadcast`() {
         val senders = ProductionSources.code.filterValues { BROADCAST_API.containsMatchIn(it) }.keys
 
-        assertEquals(setOf(CALLBACK_SENDER), senders)
+        assertEquals(setOf(CALLBACK_SENDER) + WAKE_PROCESS, senders)
     }
 
     @Test
@@ -38,6 +43,12 @@ class OutboundBroadcastCensusTest {
 
     private companion object {
         const val CALLBACK_SENDER = "main/java/app/kawkab/android/data/services/ExternalAutomationCallbackSender.kt"
+
+        /** In-app broadcasts between the app and the wake process (M1.8). */
+        val WAKE_PROCESS = setOf(
+            "main/java/app/kawkab/android/voice/WakeRelayReceiver.kt",
+            "main/java/app/kawkab/android/voice/WakeWordService.kt",
+        )
 
         /** Any `send…Broadcast…(` call. */
         val BROADCAST_API = Regex("""\bsend\w*Broadcast\w*\s*\(""")

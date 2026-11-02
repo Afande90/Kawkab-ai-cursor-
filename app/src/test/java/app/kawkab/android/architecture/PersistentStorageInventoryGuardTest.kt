@@ -420,6 +420,34 @@ class PersistentStorageInventoryGuardTest {
         ),
 
         /**
+         * The on-device crash log (`CrashLog`, task 33): the last five crashes as class names and
+         * stack frames, without messages, plus when the app last started. The domain-wide
+         * `sharedpref` rule keeps it out of backups; the owner copies it from About himself.
+         */
+        CRASH_LOG(
+            domain = "sharedpref",
+            plaintextPath = null,
+            erasedBy = null,
+            kept = "five stack traces without messages, for the owner to copy; not user content",
+            archive = emptyList(),
+            notArchived = "crashes of this install on this phone",
+        ),
+
+        /**
+         * Which contact the owner meant by a name (`AndroidContactAliases`, task 34b): a name and
+         * the chosen contact's name and number, shown and deletable on the Growth screen. Contact
+         * data, so the domain-wide `sharedpref` rule keeps it out of backups; a new phone learns again.
+         */
+        CONTACT_ALIASES(
+            domain = "sharedpref",
+            plaintextPath = null,
+            erasedBy = null,
+            kept = "names the owner picked a contact for; deletable one by one on the Growth screen",
+            archive = emptyList(),
+            notArchived = "learned contact choices of this phone; a new phone learns them again",
+        ),
+
+        /**
          * The hands activity log, one JSON-lines file. Readable, so it is excluded by name.
          * The recovery wipe is the locked-database escape and does not delete it.
          */
@@ -495,6 +523,8 @@ class PersistentStorageInventoryGuardTest {
             "/di/SafetyModule.kt" to "ACTIVITY_LOG",
             "/voice/WakeWordSwitch.kt" to "VOICE_SWITCHES",
             "/voice/VoiceConfirmSwitch.kt" to "VOICE_SWITCHES",
+            "/crash/CrashLog.kt" to "CRASH_LOG",
+            "/hands/ContactAliasStore.kt" to "CONTACT_ALIASES",
         )
     }
 }

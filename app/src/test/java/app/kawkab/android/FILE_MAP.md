@@ -288,6 +288,8 @@ Only Kotlin files appear inside the generated blocks.
     - `RepositoryLinksTest.kt` - Unit tests for `RepositoryLinks`.
     - `SettingsDefaultsTest.kt` - Pins the numeric values exposed by `SettingsDefaults` so a silent edit to a default value is caught at test time rather than at runtime by an end user.
     - `TimeAndIdConstantsTest.kt` - Pins the time-unit and notification-id constants exposed by `TimeAndIdConstants`.
+  - `crash/` - Tests of the crash log rules and the safe-mode start (tasks 32 and 33).
+    - `CrashRulesTest.kt` - Tasks 32 and 33: the crash log keeps frames without messages, five at most, and decides safe mode.
   - `engine/` - Tests for the graph execution engine and its supporting abstractions.
     - `AutoProviderTest.kt` - Unit tests for `AutoProvider` — what a node set to "auto" runs on.
     - `ChatHistoryWindowPlannerTest.kt` - Unit tests for `ChatHistoryWindowPlanner` — the pure planner that decides how a session's chat history is split into a summarised prefix and a verbatim live window.
@@ -439,6 +441,7 @@ Only Kotlin files appear inside the generated blocks.
     - `HandsSafetyTest.kt` - Tap guard, denylist, activity log, macro replay, and habit detection.
     - `LazyScreenCheckTest.kt` - Task 23d: the screen text is read lazily and throttled, and the full denylist check still runs immediately before every action.
     - `M1GateTest.kt` - Milestone gates for outbound confirmation, the three denylist layers, and the activity log.
+    - `OutboundCountdownTest.kt` - Owner's vision rules 1 and 3: which outbound actions announce and run after 3 s.
   - `services/` - Tests for the domain service interfaces and their pure helpers.
     - `ChatHistoryCompressionCoordinatorTest.kt` - Unit tests for `ChatHistoryCompressionCoordinator`.
     - `CleartextPolicyTest.kt` - Unit tests for `CleartextPolicy` — the rule that replaced the hand-written IP list in `network_security_config.xml`.
@@ -619,6 +622,7 @@ Only Kotlin files appear inside the generated blocks.
   - `CallFlowTest.kt` - Task 23j: contact matching, the pending choice, the grant route and the dialer fallback.
   - `ContactQuestionTest.kt` - Task 29: contact choices are read aloud as a short numbered list of names.
   - `LocalActionsTest.kt` - Task 23i: local actions do not ask, can be undone for 10 seconds, and read times properly.
+  - `RememberedContactTest.kt` - Task 34b and vision rule 2: a pick is remembered and never asked again for that name.
 - `i18n/` - Arabic string-key coverage for the app and catalog resources.
   - `ArabicStringKeysTest.kt` - Fails when a default `strings.xml` key has no Arabic resource (spec §0.6).
   - `BrandNameTest.kt` - Fails when a user-visible string or a preset pipeline name says Knotwork.
