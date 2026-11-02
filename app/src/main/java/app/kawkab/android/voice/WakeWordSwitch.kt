@@ -1,10 +1,13 @@
 package app.kawkab.android.voice
 
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.os.BatteryManager
 import androidx.core.content.edit
 import app.kawkab.android.domain.voice.WakeStats
+import app.kawkab.android.domain.voice.WakeListeningConfig
+import app.kawkab.android.domain.voice.WakeListeningMode
 
 /**
  * The wake word's on/off setting and its counters (task 27). Kept on this phone only, outside
@@ -18,6 +21,51 @@ object WakeWordSwitch {
     private const val WAKES = "wakes"
     private const val CHARGED = "charged"
     private const val FAILURE = "failure"
+    private const val MODE = "listening_mode"
+    private const val SLEEP = "sleep_enabled"
+    private const val SLEEP_START = "sleep_start"
+    private const val SLEEP_END = "sleep_end"
+
+    /** SMART is the default; setup must still enroll the owner before enabling capture. */
+    fun config(context: Context): WakeListeningConfig {
+        val p = prefs(context)
+        val mode = runCatching { WakeListeningMode.valueOf(p.getString(MODE, null).orEmpty()) }
+            .getOrDefault(WakeListeningMode.SMART)
+        val defaults = WakeListeningConfig()
+        return WakeListeningConfig(
+            mode, p.getBoolean(SLEEP, false),
+            p.getInt(SLEEP_START, defaults.sleepStartMinute).coerceIn(0, 1439),
+            p.getInt(SLEEP_END, defaults.sleepEndMinute).coerceIn(0, 1439),
+        )
+    }
+
+    /** Persist on the app process and send a complete snapshot to the isolated wake process. */
+    fun configure(context: Context, config: WakeListeningConfig) {
+        prefs(context).edit {
+            putString(MODE, config.mode.name)
+            putBoolean(SLEEP, config.sleepEnabled)
+            putInt(SLEEP_START, config.sleepStartMinute)
+            putInt(SLEEP_END, config.sleepEndMinute)
+        }
+        set(context, config.mode != WakeListeningMode.OFF)
+    }
+
+    /** Preferences are cached per process; startup intents carry current settings explicitly. */
+    internal fun attachConfig(context: Context, intent: Intent): Intent = config(context).let { value ->
+        intent.putExtra(MODE, value.mode.name).putExtra(SLEEP, value.sleepEnabled)
+            .putExtra(SLEEP_START, value.sleepStartMinute).putExtra(SLEEP_END, value.sleepEndMinute)
+    }
+
+    /** Reads the app process snapshot, without relying on stale cross-process preferences. */
+    internal fun readConfig(context: Context, intent: Intent?): WakeListeningConfig {
+        if (intent == null || !intent.hasExtra(MODE)) return config(context)
+        val fallback = WakeListeningConfig()
+        val mode = runCatching { WakeListeningMode.valueOf(intent.getStringExtra(MODE).orEmpty()) }
+            .getOrDefault(WakeListeningMode.SMART)
+        return WakeListeningConfig(mode, intent.getBooleanExtra(SLEEP, false),
+            intent.getIntExtra(SLEEP_START, fallback.sleepStartMinute).coerceIn(0, 1439),
+            intent.getIntExtra(SLEEP_END, fallback.sleepEndMinute).coerceIn(0, 1439))
+    }
 
     /** @return Whether the owner turned the wake word on. */
     fun isEnabled(context: Context): Boolean = prefs(context).getBoolean(ENABLED, false)
@@ -31,10 +79,13 @@ object WakeWordSwitch {
      */
     fun set(context: Context, on: Boolean) {
         val battery = batteryPercent(context)
+        val wasEnabled = isEnabled(context)
         prefs(context).edit {
             putBoolean(ENABLED, on)
-            if (on) {
-                remove(FAILURE)
+            if (!on) putString(MODE, WakeListeningMode.OFF.name)
+            if (on && config(context).mode == WakeListeningMode.OFF) putString(MODE, WakeListeningMode.SMART.name)
+            if (on) remove(FAILURE)
+            if (on && !wasEnabled) {
                 putLong(STARTED_AT, System.currentTimeMillis())
                 putInt(START_BATTERY, battery)
                 putInt(WAKES, 0)
@@ -52,6 +103,7 @@ object WakeWordSwitch {
     fun failed(context: Context, reason: String) {
         prefs(context).edit {
             putBoolean(ENABLED, false)
+            putString(MODE, WakeListeningMode.OFF.name)
             putString(FAILURE, reason)
         }
     }

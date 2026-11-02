@@ -14,11 +14,10 @@ import android.content.IntentFilter
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
-import android.media.AudioFormat
 import android.media.AudioManager
-import android.media.AudioRecord
-import android.media.MediaRecorder
 import android.media.ToneGenerator
+import android.os.Handler
+import android.os.Looper
 import android.os.Binder
 import android.os.IBinder
 import android.os.SystemClock
@@ -27,6 +26,8 @@ import androidx.core.content.ContextCompat
 import app.kawkab.android.R
 import app.kawkab.android.crash.CrashLog
 import app.kawkab.android.domain.constants.NotificationIds
+import app.kawkab.android.domain.voice.WakeListeningMode
+import app.kawkab.android.domain.voice.WakePauseReason
 import app.kawkab.android.domain.voice.WakeGate
 import app.kawkab.android.domain.voice.WakeWord
 import app.kawkab.android.presentation.notifications.lockScreenVersion
@@ -54,6 +55,10 @@ import java.util.concurrent.atomic.AtomicBoolean
 class WakeWordService : Service() {
     private val running = AtomicBoolean(false)
     private var worker: Thread? = null
+    private lateinit var capture: WakeMicSession
+    private lateinit var usage: WakeMicUsage
+    private lateinit var monitor: WakeListeningMonitor
+    private var currentPause: WakePauseReason? = null
 
     // A binder only so the app process can watch this process die (M1.8); nothing is called on it.
     override fun onBind(intent: Intent?): IBinder = Binder()
@@ -64,11 +69,21 @@ class WakeWordService : Service() {
                 ACTION_PAUSE -> paused.set(true)
                 ACTION_RESUME -> paused.set(false)
             }
+            monitor.refresh()
         }
     }
 
     override fun onCreate() {
         super.onCreate()
+        usage = WakeMicUsage(this)
+        capture = WakeMicSession({ WakeAudioInput.open(this) ?: error("Microphone unavailable") }, usage::record)
+        monitor = WakeListeningMonitor(this, paused::get) { reason ->
+            currentPause = reason
+            capture.setAllowed(reason == null)
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+                getSystemService(NotificationManager::class.java)?.notify(NotificationIds.WAKE_WORD_LISTENING, notification())
+            }
+        }
         val filter = IntentFilter().apply {
             addAction(ACTION_PAUSE)
             addAction(ACTION_RESUME)
@@ -81,11 +96,18 @@ class WakeWordService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
-        startForeground(
-            NotificationIds.WAKE_WORD_LISTENING,
-            notification(),
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE,
-        )
+        val config = WakeWordSwitch.readConfig(this, intent)
+        try {
+            startForeground(NotificationIds.WAKE_WORD_LISTENING, notification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
+            if (config.mode == WakeListeningMode.OFF) {
+                stopSelf()
+                return START_NOT_STICKY
+            }
+            monitor.configure(config)
+        } catch (error: Exception) {
+            failed(error)
+            return START_NOT_STICKY
+        }
         if (running.compareAndSet(false, true)) {
             worker = Thread(::listen, "kawkab-wake").apply {
                 priority = Thread.NORM_PRIORITY - 1
@@ -97,8 +119,10 @@ class WakeWordService : Service() {
     }
 
     override fun onDestroy() {
-        runCatching { unregisterReceiver(control) }
         running.set(false)
+        capture.close()
+        monitor.close()
+        runCatching { unregisterReceiver(control) }
         worker?.join(JOIN_MS)
         worker = null
         super.onDestroy()
@@ -106,88 +130,59 @@ class WakeWordService : Service() {
 
     private fun listen() {
         val gate = WakeGate()
-        val spotter = runCatching { WakeSpotter(assets) }.getOrElse {
-            // Never take the app down: turn the wake word off and say why (task 32).
-            Timber.w(it, "Wake models did not load")
-            WakeRelayReceiver.send(this, WakeRelayReceiver.ACTION_FAILED, it.javaClass.simpleName.ifBlank { "error" })
-            running.set(false)
-            stopSelf()
-            return
-        }
-        spotter.use {
-            var record: AudioRecord? = null
-            val owner = OwnerVoice(this)
-            val personal = PersonalWakeDetector(this)
-            var personalTick = 0
-            val recent = FloatArray(OWNER_WINDOW_SAMPLES)
-            var cursor = 0
-            val pcm = ShortArray(WakeWord.FRAME_SAMPLES)
-            val frame = FloatArray(WakeWord.FRAME_SAMPLES)
+        var frames: WakeSpeechFrames? = null
+        var previous: WakeCapture? = null
+        var checkpoint = SystemClock.elapsedRealtime()
+        try {
             while (running.get()) {
-                if (paused.get()) {
-                    record?.release()
-                    record = null
-                    SystemClock.sleep(PAUSE_POLL_MS)
-                    continue
+                if (previous != null && !capture.isCurrent(previous)) {
+                    frames?.reset()
+                    previous = null
+                    usage.flush()
                 }
-                val mic = record ?: openMic()?.also {
-                    record = it
-                    spotter.reset()
-                } ?: run {
-                    SystemClock.sleep(PAUSE_POLL_MS)
-                    null
-                } ?: continue
-                if (mic.read(pcm, 0, pcm.size) != pcm.size) continue
-                for (i in pcm.indices) {
-                    frame[i] = pcm[i] / PCM_SCALE
-                    recent[cursor] = frame[i]
-                    cursor = (cursor + 1) % recent.size
+                val elapsed = SystemClock.elapsedRealtime()
+                if (elapsed - checkpoint >= USAGE_CHECKPOINT_MS) {
+                    capture.checkpoint()
+                    usage.flush()
+                    checkpoint = elapsed
                 }
-                val secondOpinion = spotter.feed(frame)
-                personalTick = (personalTick + 1) % PERSONAL_FRAME_INTERVAL
-                val sample = if (personalTick == 0 || secondOpinion) {
-                    FloatArray(recent.size) { recent[(cursor + it) % recent.size] }
-                } else {
-                    null
+                val mic = capture.acquireOrWait(USAGE_CHECKPOINT_MS) ?: continue
+                val processor = frames ?: WakeSpeechFrames(assets, this).also { frames = it }
+                if (previous !== mic) {
+                    processor.reset()
+                    previous = mic
                 }
-                val keyword = secondOpinion || (sample != null && personal.hit(sample))
-                if (keyword &&
-                    owner.enrolled() &&
-                    sample != null &&
-                    owner.accepts(sample) &&
-                    gate.hit(SystemClock.elapsedRealtime(), paused.get())
-                ) {
-                    mic.release()
-                    record = null
+                if (!capture.isCurrent(mic)) continue
+                val hit = processor.read(mic) { capture.isCurrent(mic) }
+                if (hit && capture.isCurrent(mic) && gate.hit(SystemClock.elapsedRealtime(), paused.get())) {
+                    capture.setAllowed(false)
                     woke()
                 }
             }
-            record?.release()
+        } catch (error: Exception) {
+            if (running.get()) failed(error)
+        } catch (error: LinkageError) {
+            if (running.get()) failed(error)
+        } finally {
+            capture.close()
+            try {
+                frames?.close()
+            } finally {
+                usage.flush()
+            }
         }
     }
 
-    private fun openMic(): AudioRecord? = runCatching {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) !=
-            PackageManager.PERMISSION_GRANTED
-        ) {
-            return null
-        }
-        val min = AudioRecord.getMinBufferSize(
-            WakeWord.SAMPLE_RATE,
-            AudioFormat.CHANNEL_IN_MONO,
-            AudioFormat.ENCODING_PCM_16BIT,
-        )
-        AudioRecord(
-            MediaRecorder.AudioSource.VOICE_RECOGNITION,
-            WakeWord.SAMPLE_RATE,
-            AudioFormat.CHANNEL_IN_MONO,
-            AudioFormat.ENCODING_PCM_16BIT,
-            maxOf(min, WakeWord.FRAME_SAMPLES * BUFFER_FRAMES * 2),
-        ).takeIf { it.state == AudioRecord.STATE_INITIALIZED }?.apply { startRecording() }
-    }.getOrNull()
+    private fun failed(error: Throwable) {
+        Timber.w("Wake listening stopped (%s)", error.javaClass.simpleName)
+        WakeRelayReceiver.send(this, WakeRelayReceiver.ACTION_FAILED, error.javaClass.simpleName.ifBlank { "error" })
+        running.set(false)
+        stopSelf()
+    }
 
     private fun woke() {
         paused.set(true)
+        Handler(Looper.getMainLooper()).post { monitor.refresh() }
         runCatching {
             ToneGenerator(AudioManager.STREAM_NOTIFICATION, TONE_VOLUME).apply {
                 startTone(ToneGenerator.TONE_PROP_BEEP, TONE_MS)
@@ -210,7 +205,7 @@ class WakeWordService : Service() {
         return NotificationCompat.Builder(this, CHANNEL)
             .setSmallIcon(R.drawable.ic_stat_agent)
             .setContentTitle(getString(R.string.wake_notification_title))
-            .setContentText(getString(R.string.wake_notification_body))
+            .setContentText(currentPause?.let { "Paused: ${it.label}" } ?: getString(R.string.wake_notification_body))
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setContentIntent(openApp())
@@ -234,17 +229,13 @@ class WakeWordService : Service() {
 
     /** Starting, stopping and pausing from the app and the panel. */
     companion object {
-        private const val OWNER_WINDOW_SAMPLES = 48_000
-        private const val PERSONAL_FRAME_INTERVAL = 8
 
         /** Panel argument: opened by the wake word, so conversation mode starts at once. */
         const val EXTRA_WAKE: String = "app.kawkab.android.WAKE"
 
         private const val ACTION_PAUSE = "app.kawkab.android.WAKE_PAUSE"
         private const val ACTION_RESUME = "app.kawkab.android.WAKE_RESUME"
-        private const val PCM_SCALE = 32_768f
-        private const val BUFFER_FRAMES = 8
-        private const val PAUSE_POLL_MS = 200L
+        private const val USAGE_CHECKPOINT_MS = 60_000L
         private const val JOIN_MS = 1_000L
         private const val TONE_VOLUME = 80
         private const val TONE_MS = 150
@@ -272,7 +263,7 @@ class WakeWordService : Service() {
          */
         fun start(context: Context) {
             if (!micGranted(context)) return
-            runCatching { ContextCompat.startForegroundService(context, Intent(context, WakeWordService::class.java)) }
+            runCatching { ContextCompat.startForegroundService(context, WakeWordSwitch.attachConfig(context, Intent(context, WakeWordService::class.java))) }
                 .onSuccess { watch(context.applicationContext) }
                 .onFailure { WakeWordSwitch.failed(context, it.javaClass.simpleName.ifBlank { "error" }) }
         }

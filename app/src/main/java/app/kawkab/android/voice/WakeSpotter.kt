@@ -59,6 +59,10 @@ class WakeSpotter(assets: AssetManager) : AutoCloseable {
     private var stream: OnlineStream = spotter.createStream("")
     private val window = SpeechWindow()
 
+    /** True only inside a VAD speech window, including bounded pre-roll and hangover. */
+    var speechSegment: Boolean = false
+        private set
+
     /**
      * @param frame [WakeWord.FRAME_SAMPLES] samples in -1..1.
      * @return `true` when the frame completes "Kawkab".
@@ -68,7 +72,9 @@ class WakeSpotter(assets: AssetManager) : AutoCloseable {
         val speech = vad.isSpeechDetected()
         while (!vad.empty()) vad.pop()
         var heard = false
-        for (chunk in window.feed(frame, speech)) {
+        val chunks = window.feed(frame, speech)
+        speechSegment = chunks.isNotEmpty()
+        for (chunk in chunks) {
             stream.acceptWaveform(chunk, WakeWord.SAMPLE_RATE)
             while (spotter.isReady(stream)) {
                 spotter.decode(stream)
@@ -84,6 +90,7 @@ class WakeSpotter(assets: AssetManager) : AutoCloseable {
     /** Forgets the audio so far, for example after a wake. */
     fun reset() {
         window.reset()
+        speechSegment = false
         vad.reset()
         stream.release()
         stream = spotter.createStream("")
