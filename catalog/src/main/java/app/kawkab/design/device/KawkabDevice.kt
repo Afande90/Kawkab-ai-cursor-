@@ -40,6 +40,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
@@ -357,7 +358,8 @@ private fun ColumnScope.CallingDisplay(state: DeviceState) {
     Column(Modifier.fillMaxWidth().testTag("lcd_bottom"), horizontalAlignment = Alignment.End) {
         LcdLine(
             state.seconds.toString(),
-            Modifier.testTag("countdown_digit"),
+            // Single-line Text otherwise keeps the full font height despite lineHeight.
+            Modifier.testTag("countdown_digit").height(with(LocalDensity.current) { CALL_DIGIT_LINE_SP.sp.toDp() }),
             size = CALL_DIGIT_SP.sp,
             lineHeight = CALL_DIGIT_LINE_SP.sp,
         )
