@@ -114,6 +114,8 @@ fun PhoneAccessScreen(onDone: () -> Unit, requestPermission: String? = null) {
                         permissionLauncher.launch(MissingPermission.RECORD_AUDIO)
                     }
                 }
+                item == PhoneAccessItem.ASSISTANT && on ->
+                    openSafely(context, AssistantRoleRequest.powerButtonSettings(context))
                 else -> AssistantRoleRequest.create(context)?.let(roleLauncher::launch)
                     ?: openSafely(context, AssistantRoleRequest.settingsFallback(context))
             }

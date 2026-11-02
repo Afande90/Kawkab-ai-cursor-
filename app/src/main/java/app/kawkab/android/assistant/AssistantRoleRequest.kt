@@ -43,6 +43,20 @@ object AssistantRoleRequest {
         return Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
 
+    /** Opens a power-button gesture page when the phone exports one, else the assistant settings. */
+    fun powerButtonSettings(context: Context): Intent {
+        val screens = listOf(
+            "com.android.settings.Settings\$LongPressPowerButtonActivity",
+            "com.android.settings.Settings\$PowerMenuSettingsActivity",
+            "com.android.settings.Settings\$GestureSettingsActivity",
+        )
+        return screens.firstNotNullOfOrNull { screen ->
+            val intent = Intent().setClassName("com.android.settings", screen)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            intent.takeIf { it.resolveActivityInfo(context.packageManager, 0)?.exported == true }
+        } ?: settingsFallback(context)
+    }
+
     /**
      * The default-assistant steps in the owner's language.
      *
