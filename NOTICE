@@ -323,3 +323,7 @@ https://github.com/microsoft/onnxruntime
 Whisper feature convention and independent fixture reference
 Transformers v4.57.1 audio utilities, Apache-2.0. Android extractor is first-party.
 https://github.com/huggingface/transformers
+
+patchelf 0.18.0 (build tool only, not included in the APK)
+Copyright NixOS contributors. GPL-3.0.
+https://github.com/NixOS/patchelf/tree/0.18.0
