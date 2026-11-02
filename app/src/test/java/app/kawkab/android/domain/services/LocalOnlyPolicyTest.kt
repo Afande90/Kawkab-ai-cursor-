@@ -15,18 +15,19 @@ import org.junit.Test
 class LocalOnlyPolicyTest {
 
     @Test
-    fun `given loopback and private addresses under either scheme when judged then they are local`() {
+    fun `only loopback addresses stay on this phone`() {
         listOf(
             "http://localhost:11434",
             "https://localhost:11434",
             "http://127.0.0.1:11434",
-            "https://10.0.0.7:11434/api",
-            "http://172.16.0.1:11434",
-            "https://172.31.255.254",
-            "http://192.168.1.42:11434",
-            "HTTPS://192.168.1.42:11434",
-            "https://user:pw@192.168.1.42:11434",
+            "https://[::1]:11434",
         ).forEach { url -> assertTrue("$url should be local", LocalOnlyPolicy.isLocalEndpoint(url)) }
+    }
+
+    @Test
+    fun `a private LAN is still outside the phone`() {
+        listOf("https://10.0.0.7:11434", "http://172.16.0.1", "https://192.168.1.42")
+            .forEach { assertFalse(it, LocalOnlyPolicy.isLocalEndpoint(it)) }
     }
 
     @Test
@@ -61,7 +62,6 @@ class LocalOnlyPolicyTest {
         // than parsed: the documented rule is localhost plus private IPv4 in plain decimal.
         listOf(
             "https://100.100.1.1:11434",
-            "https://[::1]:11434",
             "https://[fd00::1]:11434",
             "https://010.0.0.1",
             "https://0x7f.0.0.1",

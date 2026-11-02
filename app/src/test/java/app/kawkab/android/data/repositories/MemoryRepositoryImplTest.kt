@@ -183,9 +183,9 @@ class MemoryRepositoryImplTest {
     }
 
     @Test
-    fun `compactMemory calls dao deleteOldestMemories`() = kotlinx.coroutines.test.runTest {
+    fun `automatic memory pruning cannot delete owner facts`() = kotlinx.coroutines.test.runTest {
         repository.compactMemory(500)
-        io.mockk.coVerify(exactly = 1) { memoryDao.deleteOldestMemories(500) }
+        io.mockk.coVerify(exactly = 0) { memoryDao.deleteOldestMemories(any()) }
     }
 
     @Test

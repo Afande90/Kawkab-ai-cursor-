@@ -130,7 +130,7 @@ class ModelNetworkGateTest {
             localOnlyMode.value = true
 
             assertNull(gate.endpointRefusal("$APPROVED_LAN_ORIGIN/api"))
-            assertNull(gate.endpointRefusal("https://192.168.1.42:11434"))
+            assertNotNull(gate.endpointRefusal("https://192.168.1.42:11434"))
         }
 
     @Test
