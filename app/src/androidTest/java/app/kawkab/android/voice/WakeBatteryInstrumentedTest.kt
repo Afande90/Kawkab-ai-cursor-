@@ -26,7 +26,7 @@ class WakeBatteryInstrumentedTest {
         val context = instrumentation.targetContext
         instrumentation.uiAutomation.grantRuntimePermission(context.packageName, Manifest.permission.RECORD_AUDIO)
         compose.setContent { Text("Wake microphone lifecycle test") }
-        val audio = context.getSystemService(AudioManager::class.java)
+        val audio = requireNotNull(context.getSystemService(AudioManager::class.java))
         val config = WakeListeningConfig(sleepEnabled = true)
         val ready = WakeListeningState(batteryPercent = 80)
         val cases = listOf(
