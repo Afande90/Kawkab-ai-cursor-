@@ -51,7 +51,7 @@ class ModelNetworkGateTest {
         assertNull(open.refusal("https://api.groq.com/openai/v1/chat/completions"))
         assertNotNull(open.refusal("http://10.0.0.9:11434/api/chat"))
         assertNotNull(restricted.refusal("https://api.groq.com/openai/v1/chat/completions"))
-        assertNull(restricted.refusal("$APPROVED_LAN_ORIGIN/v1/chat/completions"))
+        assertNotNull(restricted.refusal("$APPROVED_LAN_ORIGIN/v1/chat/completions"))
     }
 
     @Test
@@ -119,8 +119,8 @@ class ModelNetworkGateTest {
             val refusal = gate.endpointRefusal("http://10.0.0.9:11434")
 
             assertTrue(
-                "expected a cleartext refusal, got $refusal",
-                refusal is CloudClientUnavailability.CleartextRefused,
+                "expected an off-phone refusal, got $refusal",
+                refusal is CloudClientUnavailability.EndpointNotLocal,
             )
         }
 
@@ -129,7 +129,8 @@ class ModelNetworkGateTest {
         runTest {
             localOnlyMode.value = true
 
-            assertNull(gate.endpointRefusal("$APPROVED_LAN_ORIGIN/api"))
+            assertNotNull(gate.endpointRefusal("$APPROVED_LAN_ORIGIN/api"))
+            assertNull(gate.endpointRefusal("https://127.0.0.1:11434/api"))
             assertNotNull(gate.endpointRefusal("https://192.168.1.42:11434"))
         }
 

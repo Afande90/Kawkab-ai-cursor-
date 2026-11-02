@@ -28,7 +28,15 @@ class LocalOnlyPolicyParserAgreementTest {
                 // Ktor refuses to build the URL, so no connection is opened at all.
                 return@mapNotNull null
             }
-            if (ktorHost.equals(policyHost, ignoreCase = true)) null else "$url → policy=$policyHost ktor=$ktorHost"
+            if (ktorHost.removePrefix("[").removeSuffix("]").equals(
+                    policyHost?.removePrefix("[")?.removeSuffix("]"),
+                    ignoreCase = true,
+                )
+            ) {
+                null
+            } else {
+                "$url → policy=$policyHost ktor=$ktorHost"
+            }
         }
         assertEquals(emptyList<String>(), disagreements)
     }

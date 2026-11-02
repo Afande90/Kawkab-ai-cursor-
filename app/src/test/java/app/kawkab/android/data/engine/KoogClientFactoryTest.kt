@@ -96,11 +96,11 @@ class KoogClientFactoryTest {
     }
 
     @Test
-    fun `Ollama is still reachable in local-only mode`() = runTest {
+    fun `LAN Ollama is outside the phone in local-only mode`() = runTest {
         every { settingsRepository.blockNetworkFromLocalModel } returns MutableStateFlow(true)
         coEvery { apiKeyRepository.getBaseUrl(CloudProvider.OLLAMA) } returns flowOf("http://192.168.1.42:11434")
         every { settingsRepository.approvedCleartextOrigins } returns flowOf(setOf("http://192.168.1.42:11434"))
-        assertNotNull(factory.createClient(CloudProvider.OLLAMA))
+        assertNull(factory.createClient(CloudProvider.OLLAMA))
     }
 
     @Test
@@ -129,7 +129,7 @@ class KoogClientFactoryTest {
     fun `given local-only mode on and a private IP over https when createClient(OLLAMA) then returns executor`() =
         runTest {
             givenLocalOnlyOllama(url = "https://192.168.1.42:11434")
-            assertNotNull(factory.createClient(CloudProvider.OLLAMA))
+            assertNull(factory.createClient(CloudProvider.OLLAMA))
         }
 
     @Test

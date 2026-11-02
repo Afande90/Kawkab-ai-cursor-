@@ -44,7 +44,7 @@ class EndpointRuleTest {
     @Test
     fun `given an unencrypted private address not approved when judged then approval is what it needs`() {
         assertEquals(
-            AddressRefusal.CleartextNeedsApproval("http://192.168.1.20:8000"),
+            AddressRefusal.HostNotLocal("192.168.1.20"),
             refusal("http://192.168.1.20:8000/v1", localOnly = true),
         )
     }
@@ -53,9 +53,13 @@ class EndpointRuleTest {
     fun `given addresses the rules allow when judged then nothing is refused`() {
         assertNull(refusal("https://api.groq.com/openai/v1"))
         assertNull(refusal("http://192.168.1.20:8000/v1", approved = setOf("http://192.168.1.20:8000")))
-        assertNull(
+        assertEquals(
+            AddressRefusal.HostNotLocal("192.168.1.20"),
             refusal("http://192.168.1.20:8000/v1", approved = setOf("http://192.168.1.20:8000"), localOnly = true),
         )
-        assertNull(refusal("https://192.168.1.20:8443/v1", localOnly = true))
+        assertEquals(
+            AddressRefusal.HostNotLocal("192.168.1.20"),
+            refusal("https://192.168.1.20:8443/v1", localOnly = true),
+        )
     }
 }

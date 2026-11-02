@@ -18,9 +18,9 @@ class MemoryHistoryRulesTest {
         assertTrue(MemoryHistoryRules.needsExplicitChange("My job is teaching", "My job is design"))
         assertFalse(MemoryHistoryRules.needsExplicitChange("I like tea", "I prefer coffee"))
     }
+
     @Test fun `forgetting follows derived summaries and never deletes another source`() {
         val graph = mapOf(3L to listOf(1L, 2L), 4L to listOf(3L), 5L to listOf(2L))
         org.junit.Assert.assertEquals(setOf(1L, 3L, 4L), MemoryHistoryRules.derivedIds(1L, graph))
     }
-
 }

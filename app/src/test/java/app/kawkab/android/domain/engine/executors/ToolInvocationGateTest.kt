@@ -567,6 +567,7 @@ class ToolInvocationGateTest {
      */
     @Test
     fun `typed approval cannot delete but fresh verified spoken yes can`() = runTest {
+        app.kawkab.android.domain.voice.SpokenOwnerAnswer.record("yes") // belongs to an earlier question
         val fixture = Fixture(ToolApprovalPolicy.NeverPrompt, ToolRisk.OUTBOUND, null, tool = "delete_file")
         val job = launch { fixture.dispatch() }
         runCurrent()
@@ -599,8 +600,14 @@ class ToolInvocationGateTest {
     fun `conversation intent cannot be overridden by a generated phone tool`() = runTest {
         val intents = app.kawkab.android.domain.decision.DecisionIntents()
         intents.remember(SESSION_ID, mayAct = false)
-        val fixture = Fixture(ToolApprovalPolicy.NeverPrompt, ToolRisk.LOCAL, null,
-            tool = "set_alarm", interactive = true, intents = intents)
+        val fixture = Fixture(
+            ToolApprovalPolicy.NeverPrompt,
+            ToolRisk.LOCAL,
+            null,
+            tool = "set_alarm",
+            interactive = true,
+            intents = intents,
+        )
         val outputs = fixture.dispatch()
         assertEquals(0, fixture.executions)
         assertTrue(outputs.lastResult().error.orEmpty().contains("conversation"))
@@ -615,7 +622,8 @@ class ToolInvocationGateTest {
         liveWindowMs: Flow<Long> = flowOf(100L),
         private val tool: String = TOOL,
         interactive: Boolean = false,
-        intents: app.kawkab.android.domain.decision.DecisionIntents = app.kawkab.android.domain.decision.DecisionIntents(),
+        intents: app.kawkab.android.domain.decision.DecisionIntents =
+            app.kawkab.android.domain.decision.DecisionIntents(),
     ) {
         val toolRepository: ToolRepository = mockk(relaxed = true)
         val pendingInteractionRepository: PendingInteractionRepository = mockk(relaxed = true)

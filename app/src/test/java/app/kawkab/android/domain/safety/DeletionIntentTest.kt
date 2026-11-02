@@ -12,6 +12,7 @@ class DeletionIntentTest {
         assertTrue(DeletionIntent.target("Confirm", "app:id/delete_button"))
         assertFalse(DeletionIntent.target("Send", "app:id/send"))
     }
+
     @Test fun `a temporary permit is scoped to the synchronous verified action`() {
         assertFalse(DeletionConsent.allowed())
         DeletionConsent.withOwnerConsent(true) { assertTrue(DeletionConsent.allowed()) }

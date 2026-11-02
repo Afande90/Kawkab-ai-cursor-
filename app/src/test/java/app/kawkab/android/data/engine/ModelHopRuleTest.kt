@@ -1,5 +1,6 @@
 package app.kawkab.android.data.engine
 
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -51,8 +52,9 @@ class ModelHopRuleTest {
 
     @Test
     fun `given the restriction on and a local address when judged then it may be sent`() {
-        assertNull(restricted.refusal("http://192.168.1.20:8000/v1/chat/completions"))
-        assertNull(restricted.refusal("https://192.168.1.21/v1/chat/completions"))
+        assertNotNull(restricted.refusal("http://192.168.1.20:8000/v1/chat/completions"))
+        assertNull(restricted.refusal("https://127.0.0.1:8000/v1/chat/completions"))
+        assertNotNull(restricted.refusal("https://192.168.1.21/v1/chat/completions"))
     }
 
     @Test
