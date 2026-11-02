@@ -67,6 +67,7 @@ Only Kotlin files appear inside the generated blocks.
     - `navigation/` - Compose tests for navigation, routes and deep links.
       - `AppShellNavigationTest.kt` - Tests for `AppShellScaffold` + nav-graph wiring.
       - `NavigationContractTest.kt` - Compose-level tests for the two navigation contracts this task established.
+      - `PocketNavigationTestHost.kt` - Real device keys and shell over a minimal graph with production route ownership.
     - `onboarding/` - Compose tests for the onboarding flow.
       - `OnboardingScreenDownloadGateTest.kt` - Pins the LiteRT model step CTA gate.
       - `OnboardingScreenPagerTest.kt` - Covers the 4-step pager wiring on the Onboarding surface: the Welcome step renders the brand title + Continue CTA, the primary CTA on each step forwards to the matching ViewModel call, and the top-bar Skip CTA invokes `OnboardingViewModel.skipOnboarding` plus the screen's `onCompleted` lambda.
@@ -115,5 +116,6 @@ Only Kotlin files appear inside the generated blocks.
   - `Tier1FastPathStateTest.kt` - Tier 1 check that a planned message is the row the stub messenger stored.
   - `Tier1StubEngineTest.kt` - Tier 1 emulator harness (spec §12.1).
 - `voice/` - Wake-word tests on the device with injected audio (task 27).
+  - `WakeAndSmartTurnInstrumentedTest.kt` - Real JNI coexistence regression: both versioned ORT bindings must work in one app process.
   - `WakeSpotterInstrumentedTest.kt` - Task 27, Tier 1 with injected audio: the real VAD and spotter from `assets/wake/` on the emulator.
 <!-- /AUTO-GEN:FILE_MAP -->
