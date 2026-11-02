@@ -77,8 +77,9 @@ interface MemoryRepository {
      * Finds the most semantically similar memories to a given query embedding
      * using cosine similarity.
      *
-     * **The whole table is scanned on every call — there is no recency
-     * window.** A chunk's age must never decide whether it is *visible* to
+     * **All current memories are scanned on every call — there is no recency
+     * window.** Rows marked `status:past` remain available as history, but their
+     * replacement summaries take their place in ordinary retrieval. A chunk's age must never decide whether it is *visible* to
      * retrieval (that would silently expire long-term facts); recency only
      * adds an ordering bonus to already-found candidates, and that bonus lives
      * in [app.kawkab.android.domain.services.MemoryReranker] — it is added
