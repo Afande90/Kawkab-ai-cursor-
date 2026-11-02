@@ -24,7 +24,7 @@ object DeletionConsent {
     private val permitted = ThreadLocal.withInitial { false }
 
     /** True only while a context carrying consumed owner evidence executes a synchronous tap. */
-    fun allowed(): Boolean = permitted.get()
+    fun allowed(): Boolean = permitted.get() == true
 
     /** The gate, not model arguments, supplies the context boolean. It is always cleared on return. */
     fun <T> withOwnerConsent(verified: Boolean, action: () -> T): T {
