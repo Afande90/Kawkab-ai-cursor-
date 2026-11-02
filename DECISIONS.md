@@ -528,3 +528,8 @@ All Arabic resource overrides now carry the default English copy, including Engl
 ## 2026-11-02 — reset rule 4: shared Pocket LCD foundation
 
 KawkabDevice renders F1–F8 from one immutable state, with the exact body/panel/bezel/LED colours, 124 dp talk/STOP key, tactile HOME/SHOTS/GROWTH keys, grille dots, bundled fonts, reduced-motion cursor and Arabic speech text direction. Product data is separate from preview fixtures: the live UI never invents 86% accuracy. All eight Compose screenshot cases passed after recording their goldens, with catalog ktlintCheck, detekt and app compliance. App owner-voice policy and conversation tests also passed in the same invocation (BUILD SUCCESSFUL, 1m 37s). App routing and device controls are integrated in the next commit.
+
+
+## 2026-11-02 — exact F4 correction and bottom-anchored LCDs
+
+The calling view now uses the owner's exact 22/46/32/22 sp top stack, 6 dp grouping, right-aligned 150 sp digit with 127.5 sp line height, nine-block 26 sp progress bar, 400 dp panel, external 13 sp hint, and 124 dp dark STOP key with an 8 dp black shadow. All eight views pin their final block to the LCD bottom. Screenshot tests assert panel height, bottom and right edges, actual text-layout font sizes/line height, heard words, progress text, hint position, key diameter and shadow offset. All eight screenshots and nine owner/wake unit cases passed, along with app/catalog ktlintCheck, detekt and source compliance (BUILD SUCCESSFUL, 2m 2s).
