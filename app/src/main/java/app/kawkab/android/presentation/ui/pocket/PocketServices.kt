@@ -9,6 +9,9 @@ import dagger.hilt.components.SingletonComponent
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 interface PocketServices {
+    /** Ambiguous installed apps use spoken choices shared with the system assistant. */
+    fun apps(): app.kawkab.android.hands.AppChoice
+
     /** Speech completion starts the full three-second cancel window. */
     fun gate(): app.kawkab.android.domain.engine.executors.ToolInvocationGate
 

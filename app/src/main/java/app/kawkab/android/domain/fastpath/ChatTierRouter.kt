@@ -16,6 +16,8 @@ import app.kawkab.android.domain.models.ToolRisk
 import app.kawkab.android.domain.prompt.ChatTranscript
 import app.kawkab.android.domain.repositories.ChatRepository
 import app.kawkab.android.domain.voice.VoiceAnswers
+import app.kawkab.android.hands.AppChoice
+import app.kawkab.android.hands.AppChoiceRules
 import app.kawkab.android.hands.ContactAnswer
 import app.kawkab.android.hands.ContactBook
 import app.kawkab.android.hands.ContactChoice
@@ -128,6 +130,7 @@ class HandsChatTierRouter @Inject constructor(
     private val localUndo: LocalUndo? = null,
     private val contacts: ContactBook? = null,
     private val judge: TypedJudge = TypedJudge.NONE,
+    private val apps: AppChoice? = null,
 ) : ChatTierRouter {
     private val picks: MutableSet<String> = java.util.Collections.synchronizedSet(mutableSetOf())
 
@@ -136,12 +139,11 @@ class HandsChatTierRouter @Inject constructor(
         // chip tap completes it instead of going to free chat (task 23j). A new command replaces it.
         CommandFastPath.parse(text)?.let { parsed ->
             choice.clear()
+            apps?.clear()
             return parsed
         }
-        pendingAnswer(text)?.let { return it }
-        spokenUndo(text)?.let { return it }
-        val saved = skills.replay(text.trim()) ?: return null
-        return PlannedCommand(saved.tool, saved.args)
+        return pendingAnswer(text) ?: pendingAppAnswer(text) ?: spokenUndo(text)
+            ?: skills.replay(text.trim())?.let { PlannedCommand(it.tool, it.args) }
     }
 
     /**
@@ -167,6 +169,18 @@ class HandsChatTierRouter @Inject constructor(
             ContactAnswer.NotPending -> null
         }
 
+    private fun pendingAppAnswer(text: String): PlannedCommand? {
+        val pending = apps?.state?.value ?: return null
+        if (VoiceAnswers.answer(text) == VoiceAnswers.Answer.NO) {
+            apps.clear()
+            return PlannedCommand(REPLY, mapOf(REPLY_TEXT to CANCELLED))
+        }
+        val selected = apps.answer(text)
+        if (selected == null) return PlannedCommand(REPLY, mapOf(REPLY_TEXT to AppChoiceRules.question(pending)))
+        picks += text
+        return PlannedCommand("open_app", mapOf("name" to selected))
+    }
+
     override fun recipe(text: String, hasImage: Boolean): TierTwoRecipe? = TierTwoRecipes.match(text, hasImage)
 
     override suspend fun runCommand(
@@ -182,7 +196,14 @@ class HandsChatTierRouter @Inject constructor(
             onState(AgentOrchestratorState.Completed(reply))
             return
         }
-        val resolved = resolveContact(text, command)
+        val app = resolveApp(text, command)
+        if (app == null) {
+            val question = apps?.state?.value?.let(AppChoiceRules::question) ?: "Which installed app do you mean?"
+            save(sessionId, Role.AGENT, question, relayed = true, attachment = null)
+            onState(AgentOrchestratorState.Completed(question))
+            return
+        }
+        val resolved = resolveContact(text, app)
         if (resolved == null) {
             val question = choice.state.value?.let { pending ->
                 ContactChoice.question(
@@ -207,6 +228,13 @@ class HandsChatTierRouter @Inject constructor(
         if (outcome != null && outcome.error == null && !wasPick) {
             skills.remember(text, command.tool, command.args)
         }
+    }
+
+    private suspend fun resolveApp(text: String, command: PlannedCommand): PlannedCommand? {
+        val resolver = apps ?: return command
+        if (command.tool != "open_app") return command
+        val selected = resolver.resolve(command.args["name"].orEmpty(), text) ?: return null
+        return command.copy(args = command.args + ("name" to selected))
     }
 
     private suspend fun resolveContact(text: String, command: PlannedCommand): PlannedCommand? {
@@ -436,7 +464,7 @@ class HandsChatTierRouter @Inject constructor(
         const val REPLY: String = "kawkab_reply"
         const val REPLY_TEXT: String = "text"
         const val CANCELLED: String = "Cancelled."
-        const val PICK_AGAIN: String = "Tap one of the names below, or say cancel."
+        const val PICK_AGAIN: String = "Say the number or the name, or say cancel."
         const val SAID_UNDO: String = "said or typed undo"
         const val TOO_LATE: String = "Too late to undo; it has been more than 10 seconds."
         const val SKILL: String = "SKILL"

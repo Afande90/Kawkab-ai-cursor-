@@ -16,6 +16,10 @@ import dagger.hilt.components.SingletonComponent
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class ChatTierModule {
+    /** Spoken app choices persist locally and appear on Growth. */
+    @Binds
+    abstract fun bindAppChoice(impl: app.kawkab.android.hands.AndroidAppChoice): app.kawkab.android.hands.AppChoice
+
     /** Real verdict logits, with a conservative spoken-question fallback. */
     @Binds
     abstract fun bindTypedJudge(impl: AndroidTypedJudge): TypedJudge

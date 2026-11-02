@@ -85,6 +85,10 @@ fun PocketHomeScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val apps =
+        remember { dagger.hilt.android.EntryPointAccessors.fromApplication(context, PocketServices::class.java).apps() }
+    val pendingApp by apps.state.collectAsState()
+    val appNames by apps.learned.collectAsState()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val pendingContact by viewModel.pendingContact.collectAsState()
     val growth: GrowthViewModel = hiltViewModel()
@@ -132,6 +136,8 @@ fun PocketHomeScreen(
                     owner.forget()
                     enrolled = false
                     page = DevicePage.ENROLL
+                } else if (forgetting.startsWith("app:")) {
+                    apps.forget(forgetting.removePrefix("app:"))
                 } else if (forgetting.startsWith("shot:")) {
                     filing.forget(forgetting.removePrefix("shot:"))
                     categories = filing.all()
@@ -320,6 +326,9 @@ fun PocketHomeScreen(
             }
         }
     }
+    LaunchedEffect(pendingApp) {
+        pendingApp?.let { conversation().ask(app.kawkab.android.hands.AppChoiceRules.question(it)) }
+    }
     LaunchedEffect(pendingContact) {
         pendingContact?.let {
             conversation().ask(
@@ -333,7 +342,14 @@ fun PocketHomeScreen(
             )
         }
     }
-    LaunchedEffect(lastReply) { if (pendingContact == null && pending == null) driver?.replied(lastReply) }
+    LaunchedEffect(lastReply) {
+        if (pendingContact == null &&
+            pendingApp == null &&
+            pending == null
+        ) {
+            driver?.replied(lastReply)
+        }
+    }
     var now by remember { mutableStateOf(System.currentTimeMillis()) }
     LaunchedEffect(pending?.requestId) {
         while (pending?.runsAtMs !=
@@ -351,13 +367,13 @@ fun PocketHomeScreen(
     val shownPage = when {
         menu != null -> DevicePage.TALK
         pending?.runsAtMs != null -> DevicePage.CALLING
-        pendingContact != null -> DevicePage.WHICH
+        pendingContact != null || pendingApp != null -> DevicePage.WHICH
         phase == ConversationLoop.Phase.LISTENING -> DevicePage.LISTENING
         else -> page
     }
     val signal = when {
         pending?.runsAtMs != null -> DeviceSignal.ACTING
-        pendingContact != null || pending != null -> DeviceSignal.ASKING
+        pendingContact != null || pendingApp != null || pending != null -> DeviceSignal.ASKING
         phase == ConversationLoop.Phase.LISTENING -> DeviceSignal.LISTENING
         phase == ConversationLoop.Phase.SPEAKING -> DeviceSignal.SPEAKING
         recording -> DeviceSignal.LISTENING
@@ -381,9 +397,9 @@ fun PocketHomeScreen(
         }.orEmpty(),
         name =
         args["name"] ?: args["spoken"] ?: args["contact"]
-            ?: pendingContact?.args?.get(ContactChoice.SPOKEN).orEmpty(),
+            ?: pendingContact?.args?.get(ContactChoice.SPOKEN) ?: pendingApp?.spoken.orEmpty(),
         number = args["number"] ?: args["contact"].orEmpty(), usual = args["spoken"]?.let { it in aliases } == true,
-        choices = pendingContact?.choices?.map { it.name }.orEmpty(),
+        choices = pendingContact?.choices?.map { it.name } ?: pendingApp?.options?.map { it.label }.orEmpty(),
         seconds = (((pending?.runsAtMs ?: now) - now + SECOND_MS - 1) / SECOND_MS).toInt().coerceIn(
             0,
             COUNTDOWN_SECONDS,
@@ -465,7 +481,14 @@ fun PocketHomeScreen(
                         DeviceKey("MY VOICE", onClick = {
                             menu = null
                             page = DevicePage.ENROLL
-                            enroll()
+                            if (enrolled) {
+                                forget = "voice"
+                                conversation().ask(
+                                    "Delete your current voice profile before enrolling again? Say yes or cancel.",
+                                )
+                            } else {
+                                enroll()
+                            }
                         })
                         DeviceKey(
                             if (WakeWordSwitch.isEnabled(
@@ -486,29 +509,43 @@ fun PocketHomeScreen(
                             conversation().ask("Delete your voice recordings? Say yes or cancel.")
                         })
                     }
-                    "PHONE ACCESS" -> AndroidPhoneAccess.lines(context).filter {
-                        it.item !=
-                            PhoneAccessItem.VOICE_CONFIRM
-                    }.forEach { line ->
-                        DeviceKey("${line.item.name.replace('_', ' ')}: ${if (line.on) "ON" else "OFF"}", onClick = {
-                            val permission = PhoneAccessStatus.permission(line.item)
-                            if (permission != null) {
-                                microphone.launch(permission)
-                            } else {
-                                settings.launch(
-                                    when (line.item) {
-                                        PhoneAccessItem.ACCESSIBILITY -> AndroidPhoneAccess.accessibilitySettings()
-                                        PhoneAccessItem.BATTERY -> AndroidPhoneAccess.batterySettings(context)
-                                        PhoneAccessItem.ASSISTANT -> AssistantRoleRequest.create(context)
-                                            ?: AssistantRoleRequest.powerButtonSettings(context)
-                                        else -> Intent(
-                                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                                            android.net.Uri.parse("package:${context.packageName}"),
-                                        )
-                                    },
-                                )
-                            }
+                    "PHONE ACCESS" -> {
+                        val smsOn = ContextCompat.checkSelfPermission(context, Manifest.permission.SEND_SMS) ==
+                            PackageManager.PERMISSION_GRANTED
+                        DeviceKey("TEXT MESSAGES: ${if (smsOn) "ON" else "OFF"}", onClick = {
+                            microphone.launch(Manifest.permission.SEND_SMS)
                         })
+                        AndroidPhoneAccess.lines(context).filter {
+                            it.item !=
+                                PhoneAccessItem.VOICE_CONFIRM
+                        }.forEach { line ->
+                            DeviceKey(
+                                "${line.item.name.replace(
+                                    '_',
+                                    ' ',
+                                )}: ${if (line.on) "ON" else "OFF"}",
+                                onClick = {
+                                    val permission = PhoneAccessStatus.permission(line.item)
+                                    if (permission != null) {
+                                        microphone.launch(permission)
+                                    } else {
+                                        settings.launch(
+                                            when (line.item) {
+                                                PhoneAccessItem.ACCESSIBILITY ->
+                                                    AndroidPhoneAccess.accessibilitySettings()
+                                                PhoneAccessItem.BATTERY -> AndroidPhoneAccess.batterySettings(context)
+                                                PhoneAccessItem.ASSISTANT -> AssistantRoleRequest.create(context)
+                                                    ?: AssistantRoleRequest.powerButtonSettings(context)
+                                                else -> Intent(
+                                                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                                    android.net.Uri.parse("package:${context.packageName}"),
+                                                )
+                                            },
+                                        )
+                                    }
+                                },
+                            )
+                        }
                     }
                     "MODELS" -> {
                         LcdLine(
