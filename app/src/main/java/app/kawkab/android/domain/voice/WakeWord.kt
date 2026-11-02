@@ -95,8 +95,11 @@ class SpeechWindow(
             hangover -= 1
             return listOf(frame)
         }
-        preRoll.addLast(frame)
-        while (preRoll.size > preRollFrames) preRoll.removeFirst()
+        if (preRollFrames > 0) {
+            val buffered = if (preRoll.size < preRollFrames) FloatArray(frame.size) else preRoll.removeFirst()
+            frame.copyInto(buffered)
+            preRoll.addLast(buffered)
+        }
         return emptyList()
     }
 
