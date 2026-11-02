@@ -71,6 +71,11 @@ class ToolInvocationGateTest {
         runCurrent()
         val id = fixture.liveRequestId()
         assertFalse(fixture.gate.resumeWithApproval(SESSION_ID, id, isApproved = true))
+        advanceTimeBy(5_000) // A long spoken announcement must not spend the cancel window.
+        runCurrent()
+        assertEquals(0, fixture.executions)
+        assertTrue(fixture.gate.announcementFinished(SESSION_ID, id))
+        runCurrent()
         advanceTimeBy(2_999)
         runCurrent()
         assertEquals(0, fixture.executions)
@@ -573,8 +578,11 @@ class ToolInvocationGateTest {
         runCurrent()
         assertEquals(1, fixture.executions)
         coVerify {
-            fixture.toolRepository.executeTool("delete_file", ARGS,
-                match { it.spokenDeletionConsent })
+            fixture.toolRepository.executeTool(
+                "delete_file",
+                ARGS,
+                match { it.spokenDeletionConsent },
+            )
         }
         job.cancel()
     }
