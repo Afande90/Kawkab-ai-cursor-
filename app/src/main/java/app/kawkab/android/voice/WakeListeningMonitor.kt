@@ -43,7 +43,9 @@ class WakeListeningMonitor(
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == Intent.ACTION_BATTERY_CHANGED) battery(intent)
             refresh()
-            if (intent.action in setOf(ACTION_SLEEP_BOUNDARY, Intent.ACTION_TIME_CHANGED, Intent.ACTION_TIMEZONE_CHANGED)) {
+            if (intent.action in
+                setOf(ACTION_SLEEP_BOUNDARY, Intent.ACTION_TIME_CHANGED, Intent.ACTION_TIMEZONE_CHANGED)
+            ) {
                 scheduleBoundary()
             }
         }
@@ -130,16 +132,27 @@ class WakeListeningMonitor(
                 date.atTime(minute / MINUTES_PER_HOUR, minute % MINUTES_PER_HOUR).atZone(now.zone)
             }
         }.filter { it.isAfter(now) }.minBy { it.toInstant() }
-        val intent = PendingIntent.getBroadcast(context, 0, Intent(ACTION_SLEEP_BOUNDARY).setPackage(context.packageName),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val intent = PendingIntent.getBroadcast(
+            context,
+            0,
+            Intent(ACTION_SLEEP_BOUNDARY).setPackage(context.packageName),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
         context.getSystemService(AlarmManager::class.java)?.setAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP, next.toInstant().toEpochMilli(), intent,
+            AlarmManager.RTC_WAKEUP,
+            next.toInstant().toEpochMilli(),
+            intent,
         )
     }
 
     private fun cancelBoundary() {
-        val intent = PendingIntent.getBroadcast(context, 0, Intent(ACTION_SLEEP_BOUNDARY).setPackage(context.packageName),
-            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE) ?: return
+        val intent =
+            PendingIntent.getBroadcast(
+                context,
+                0,
+                Intent(ACTION_SLEEP_BOUNDARY).setPackage(context.packageName),
+                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE,
+            ) ?: return
         context.getSystemService(AlarmManager::class.java)?.cancel(intent)
     }
 
