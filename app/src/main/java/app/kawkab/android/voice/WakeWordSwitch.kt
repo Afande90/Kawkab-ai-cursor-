@@ -29,8 +29,12 @@ object WakeWordSwitch {
     /** SMART is the default; setup must still enroll the owner before enabling capture. */
     fun config(context: Context): WakeListeningConfig {
         val p = prefs(context)
-        val mode = runCatching { WakeListeningMode.valueOf(p.getString(MODE, null).orEmpty()) }
-            .getOrDefault(WakeListeningMode.SMART)
+        val fallback = if (p.contains(ENABLED) && !p.getBoolean(ENABLED, false)) {
+            WakeListeningMode.OFF
+        } else {
+            WakeListeningMode.SMART
+        }
+        val mode = runCatching { WakeListeningMode.valueOf(p.getString(MODE, null).orEmpty()) }.getOrDefault(fallback)
         val defaults = WakeListeningConfig()
         return WakeListeningConfig(
             mode,
