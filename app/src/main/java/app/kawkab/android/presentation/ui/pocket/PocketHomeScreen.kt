@@ -459,6 +459,7 @@ fun PocketHomeScreen(
         name =
         args["name"] ?: args["spoken"] ?: args["contact"]
             ?: pendingContact?.args?.get(ContactChoice.SPOKEN) ?: pendingApp?.spoken.orEmpty(),
+        actionLabel = if (pending?.toolName == "call_phone") "CALLING" else "ACTING",
         number = args["number"] ?: args["contact"].orEmpty(), usual = args["spoken"]?.let { it in aliases } == true,
         choices = pendingContact?.choices?.map { it.name } ?: pendingApp?.options?.map { it.label }.orEmpty(),
         seconds = (((pending?.runsAtMs ?: now) - now + SECOND_MS - 1) / SECOND_MS).toInt().coerceIn(

@@ -284,6 +284,7 @@ class KawkabAssistantSession(
         if (state.runsAtMs != null) {
             device.value = device.value.copy(
                 page = DevicePage.CALLING,
+                actionLabel = if (state.toolName == "call_phone") "CALLING" else "ACTING",
                 signal = DeviceSignal.ACTING,
                 name = args["name"] ?: args["spoken"] ?: args["contact"].orEmpty(),
                 number = args["number"] ?: args["contact"].orEmpty(),

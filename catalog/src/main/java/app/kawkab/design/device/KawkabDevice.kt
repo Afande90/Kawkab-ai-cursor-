@@ -346,16 +346,30 @@ private fun ColumnScope.CallingDisplay(state: DeviceState) {
         size = CALL_DETAIL_SP.sp,
     )
     Column(verticalArrangement = Arrangement.spacedBy(CALL_STACK_GAP_DP.dp)) {
-        LcdLine("CALLING", Modifier.testTag("calling_title"), size = CALL_TITLE_SP.sp)
+        LcdLine(state.actionLabel, Modifier.testTag("calling_title"), size = CALL_TITLE_SP.sp)
         LcdLine(
-            state.name.uppercase(Locale.ROOT),
+            (
+                if (state.actionLabel ==
+                    "CALLING"
+                ) {
+                    state.name
+                } else {
+                    state.name.ifBlank { state.heard }
+                }
+                ).uppercase(Locale.ROOT),
             Modifier.testTag("calling_name"),
             spoken = true,
             size = CALL_NAME_SP.sp,
         )
         val ending = state.number.filter { it.isDigit() }.takeLast(PHONE_LAST_DIGITS)
         LcdLine(
-            "MOB ..$ending${if (state.usual) "  (YOUR USUAL)" else ""}",
+            if (state.actionLabel ==
+                "CALLING"
+            ) {
+                "MOB ..$ending${if (state.usual) "  (YOUR USUAL)" else ""}"
+            } else {
+                "SAY STOP TO CANCEL"
+            },
             Modifier.testTag("calling_number"),
             size = CALL_DETAIL_SP.sp,
         )

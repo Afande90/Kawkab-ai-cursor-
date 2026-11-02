@@ -116,12 +116,15 @@ class ToolInvocationGate @Inject constructor(
     ): Boolean = undecided &&
         needsApproval &&
         !DeletionIntent.requiresYes(tool, arguments) &&
-        OutboundCountdown.applies(
-            tool = tool,
-            risk = risk,
-            interactive = interactiveSessions.isInteractive(sessionId),
-            askedToConfirm = mustAnswer,
-        )
+        (
+            OutboundCountdown.applies(
+                tool = tool,
+                risk = risk,
+                interactive = interactiveSessions.isInteractive(sessionId),
+                askedToConfirm = mustAnswer,
+            ) ||
+                judgedCountdown(risk, sessionId)
+            )
 
     /**
      * Vision rule 1: announce the call or message and run it after [OutboundCountdown.WINDOW_MS]
@@ -435,7 +438,8 @@ class ToolInvocationGate @Inject constructor(
                 (parkedAnswer.risk == risk && !DeletionIntent.requiresYes(resolvedToolName, resolvedToolArgs))
         }
         val askAgain = parkedAnswer != null && appliedDecision == null
-        val needsApproval = approvalRequired(askAgain, alwaysConfirm, risk, sessionId)
+        val needsApproval =
+            approvalRequired(askAgain, alwaysConfirm, risk, sessionId)
         var spokenDeletionConsent = false
         var isApproved = true
         val countdown = countdownApplies(
@@ -641,8 +645,17 @@ class ToolInvocationGate @Inject constructor(
     private fun intentAllowsAction(session: String, risk: ToolRisk): Boolean =
         risk == ToolRisk.READ_ONLY || !interactiveSessions.isInteractive(session) || intents.mayAct(session)
 
+    private fun judgedCountdown(risk: ToolRisk, sessionId: String): Boolean =
+        interactiveSessions.isInteractive(sessionId) &&
+            risk in setOf(ToolRisk.LOCAL, ToolRisk.SENSITIVE, ToolRisk.OUTBOUND) &&
+            decisions.automatic(sessionId)
+
     private suspend fun approvalRequired(askAgain: Boolean, always: Boolean, risk: ToolRisk, session: String): Boolean =
-        if (interactiveSessions.isInteractive(session) && risk !in setOf(ToolRisk.OUTBOUND, ToolRisk.DESTRUCTIVE)) {
+        if (judgedCountdown(risk, session)) {
+            true
+        } else if (interactiveSessions.isInteractive(session) &&
+            risk !in setOf(ToolRisk.OUTBOUND, ToolRisk.DESTRUCTIVE)
+        ) {
             false
         } else {
             askAgain || always || toolSettings.toolApprovalPolicy.first().requiresApproval(risk)

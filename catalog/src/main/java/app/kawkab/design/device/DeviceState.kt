@@ -22,6 +22,7 @@ data class DeviceState(
     val reply: String = "",
     val result: String = "",
     val name: String = "",
+    val actionLabel: String = "CALLING",
     val number: String = "",
     val usual: Boolean = false,
     val choices: List<String> = emptyList(),

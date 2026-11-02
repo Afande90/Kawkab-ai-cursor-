@@ -44,6 +44,9 @@ interface DecisionAudit {
     /** False means storage failed; automatic action must ask instead. */
     fun decision(record: DecisionRecord): Boolean
 
+    /** Whether this owner turn contains an automatic model selection needing a cancel window. */
+    fun automatic(sessionId: String): Boolean = false
+
     /** The actual gate observation, including denial, failure and cancellation. */
     fun outcome(sessionId: String, tool: String, observation: String, error: String? = null)
 
@@ -62,6 +65,7 @@ interface DecisionAudit {
 class FileDecisionAudit(private val file: File, private val clock: () -> Long = System::currentTimeMillis) :
     DecisionAudit {
     private val pending = linkedMapOf<String, MutableList<String>>()
+    private val autoSessions = mutableSetOf<String>()
 
     @Synchronized
     override fun begin(sessionId: String, input: String) {
@@ -91,6 +95,7 @@ class FileDecisionAudit(private val file: File, private val clock: () -> Long = 
             ) {
                 finish(pending.keys.first(), "trace_limit", JSONObject())
             }
+            if (record.result is DecisionResult.Chosen) autoSessions += sessionId
             val ids = pending.getOrPut(sessionId) { mutableListOf() }
             ids += id
             if (ids.size > MAX_PENDING) {
@@ -104,8 +109,11 @@ class FileDecisionAudit(private val file: File, private val clock: () -> Long = 
     }
 
     @Synchronized
+    override fun automatic(sessionId: String): Boolean = sessionId in autoSessions
+
+    @Synchronized
     override fun outcome(sessionId: String, tool: String, observation: String, error: String?) {
-        val ids = pending.remove(sessionId).orEmpty()
+        val ids = pending[sessionId].orEmpty()
         append(
             JSONObject().put("kind", "tool_outcome").put("session", sessionId)
                 .put("decision_ids", JSONArray(ids)).put("tool", tool).put("observation", observation)
@@ -114,6 +122,7 @@ class FileDecisionAudit(private val file: File, private val clock: () -> Long = 
     }
 
     private fun finish(sessionId: String, status: String, details: JSONObject) {
+        autoSessions -= sessionId
         for (id in pending.remove(sessionId).orEmpty()) {
             append(
                 JSONObject().put(
