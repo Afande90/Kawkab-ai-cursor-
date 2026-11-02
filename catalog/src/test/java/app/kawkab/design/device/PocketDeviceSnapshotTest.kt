@@ -123,6 +123,8 @@ class PocketDeviceSnapshotTest {
         val hint = compose.onNodeWithTag("calling_hint").getUnclippedBoundsInRoot()
         val key = compose.onNodeWithTag("talk_key").getUnclippedBoundsInRoot()
         val shadow = compose.onNodeWithTag("talk_shadow").getUnclippedBoundsInRoot()
+        assertEquals(127.5f, digit.bottom.value - digit.top.value, 0.5f)
+        assertEquals(digit.bottom.value, progress.top.value, 0.5f)
         assertEquals(panelRight - 16f, digit.right.value, 0.5f)
         assertEquals(panelBottom - 16f, progress.bottom.value, 0.5f)
         assertTrue("hint must be outside the LCD", hint.top.value > panelBottom)
