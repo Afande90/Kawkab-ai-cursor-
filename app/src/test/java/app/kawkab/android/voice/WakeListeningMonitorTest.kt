@@ -1,5 +1,6 @@
 package app.kawkab.android.voice
 
+import android.app.AlarmManager
 import android.content.Context
 import android.content.Intent
 import android.hardware.Sensor
@@ -21,6 +22,16 @@ import org.robolectric.shadows.ShadowSensor
 /** Real Android battery broadcasts and audio-mode callbacks reach the capture policy. */
 @RunWith(RobolectricTestRunner::class)
 class WakeListeningMonitorTest {
+    @Test fun `optional sleep hours arm a wakeup boundary and closing cancels it`() {
+        val context = RuntimeEnvironment.getApplication()
+        val alarms = context.getSystemService(AlarmManager::class.java)
+        val monitor = WakeListeningMonitor(context, { false }, {})
+        monitor.configure(WakeListeningConfig(sleepEnabled = true))
+        assertEquals(AlarmManager.RTC_WAKEUP, shadowOf(alarms).nextScheduledAlarm.type)
+        monitor.close()
+        assertNull(shadowOf(alarms).nextScheduledAlarm)
+    }
+
     @Test fun `battery broadcasts pause and charging resumes without opening the app`() {
         val context = RuntimeEnvironment.getApplication()
         var reason: WakePauseReason? = null
