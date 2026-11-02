@@ -68,7 +68,7 @@ class WakeWordService : Service() {
                 ACTION_PAUSE -> paused.set(true)
                 ACTION_RESUME -> paused.set(false)
             }
-            monitor.refresh()
+            monitor.refresh(force = true)
         }
     }
 
@@ -189,7 +189,7 @@ class WakeWordService : Service() {
 
     private fun woke() {
         paused.set(true)
-        Handler(Looper.getMainLooper()).post { monitor.refresh() }
+        Handler(Looper.getMainLooper()).post { monitor.refresh(force = true) }
         runCatching {
             ToneGenerator(AudioManager.STREAM_NOTIFICATION, TONE_VOLUME).apply {
                 startTone(ToneGenerator.TONE_PROP_BEEP, TONE_MS)

@@ -82,14 +82,14 @@ class WakeListeningMonitor(
                 sensors?.getDefaultSensor(Sensor.TYPE_GRAVITY) ?: sensors?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
             gravity?.let { sensors?.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL, SENSOR_BATCH_US) }
         }
-        refresh()
+        refresh(force = true)
         scheduleBoundary()
     }
 
     /** Refresh on conversation handoff or a system time/power event. */
-    fun refresh() {
+    fun refresh(force: Boolean = false) {
         val reason = WakeListeningPolicy.pauseReason(config, state.copy(conversation = conversation()), LocalTime.now())
-        if (!delivered || reason != previous) {
+        if (force || !delivered || reason != previous) {
             delivered = true
             previous = reason
             changed(reason)
