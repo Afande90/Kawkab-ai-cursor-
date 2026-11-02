@@ -11,7 +11,7 @@ class ContactQuestionTest {
         val question = ContactChoice.question("Abdalla", 2, listOf("Abdalla Mubadala", "Abdalla Osman"))
         assertEquals(
             "2 contacts match 'Abdalla'. Which one? 1, Abdalla Mubadala. 2, Abdalla Osman. " +
-                "Say the number or the name, tap one, or say cancel.",
+                "Say the number or the name. I will remember. Say cancel to stop.",
             question,
         )
         assertFalse(question.any { it.isDigit() && it !in "12" })
