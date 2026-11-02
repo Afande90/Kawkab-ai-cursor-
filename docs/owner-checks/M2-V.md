@@ -1,5 +1,7 @@
 # Owner vision reset: local continuation, 2 November 2026
 
+Rules 4, 8 and 9 in this historical report are superseded by [the M2-V2 continuation](M2-V2.md), including the owner-selected 0.85 policy and enabled SDK/model integration.
+
 The owner forbids remote writes for this continuation. No push, tag or publication is part of the handoff. The work is supplied as `kawkab-m2v.bundle`, based on `origin/main` at b5797b49aec119fc9dc8fd19008bcdb1ba0fe7b5. Earlier release-write failures are historical and are not a reason to stop development.
 
 ## What is implemented

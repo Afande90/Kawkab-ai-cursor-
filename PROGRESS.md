@@ -2,7 +2,19 @@
 
 Dates are calendar dates in Asia/Dubai. The owner asked for commits on `main` and no pull requests, so each task records its commit instead of a pull-request link.
 
-## M2-V local continuation — 2 Nov 2026 (current)
+## M2-V2 continuation — 2 Nov 2026 (current)
+
+Synced exactly as instructed: fetched origin and reset to `origin/main` at `8757a5ee`. No push, tag, publication or project-settings change was attempted. The owner will tag the release. Delivery is the incremental `kawkab-m2v2.bundle` from that base.
+
+All three requested runtime changes are implemented. Foreground Phone (3a) Glyph output uses the official SDK fetched and checksum-verified by Gradle, not a committed AAR. Jev automatic choices use the owner-selected 0.85 boundary without a certificate gate, with private decision/outcome evidence and a full spoken cancel window for model-selected phone actions. CPU smart-turn is packaged by a pinned build-time model download; failures or more than 150 ms automatically use 700 ms silence. See [M2-V2.md](docs/owner-checks/M2-V2.md) for the exact behavior, pins, tests and handset checks.
+
+Per-item local checks passed: Glyph policy tests plus Android lint/static/compliance (5m55s); Jev policy/audit/router/gate/storage tests plus Android lint/static/compliance (6m27s), followed by the model-selected-local-action window and all eight screenshot goldens with lint/static/compliance (7m38s); smart-turn's 24 targeted tests, Android lint/static/compliance, native-library merging and supply-chain pin guard (11m3s). No baseline or fixed test tolerance was expanded. Three independently frozen 80x800 feature references also reproduce to their recorded hashes. Host-only CPU inference confirms the tensor contract; it is not a phone timing or accuracy claim.
+
+Final combined handoff verification passed (BUILD SUCCESSFUL, 2m16s, 90 tasks): selected Glyph/Jev/gate/smart-turn regressions, all eight screenshot goldens, instrumented-test Kotlin compilation, file maps, KDoc, documentation links and size-suppression inventory.
+
+The handset itself and CI for these unpublished local commits are unmeasured. Phone (3a) has white Glyph hardware, so physical breathing/attention patterns mirror the LCD's green/amber states; it cannot emit RGB colours. Earlier write-block, Glyph, certificate and smart-turn status below is historical and superseded by this owner instruction and implementation.
+
+## M2-V local continuation — 2 Nov 2026 (historical)
 
 This entry supersedes the older release-write gate below. The owner pushed the earlier work and explicitly forbids further pushes, tags or publication. Development continued locally from `origin/main` at `b5797b49`. No remote write was attempted in this continuation. The delivery is a Git bundle, not a newly published APK or a claimed green CI run.
 

@@ -61,6 +61,7 @@ Only Kotlin files appear inside the generated blocks.
     - `SqlCipherDatabaseSnapshotter.kt` - `DatabaseSnapshotter` on SQLCipher's `sqlcipher_export()`.
     - `StagedDatabasePreparer.kt` - Makes a staged database ready to replace the app's own.
   - `decision/` - Typed model verdicts, calibrated confidence and act-or-ask routing.
+    - `AndroidDecisionAudit.kt` - Decision inputs, confidence and actual outcomes remain in private no-backup storage.
     - `AndroidTypedJudge.kt` - The exact installed GGUF and a model-specific final-test certificate are both mandatory.
   - `engine/` - Core LLM and inference engines.
     - `AndroidDeviceMemory.kt` - Reads total RAM from `ActivityManager`.
@@ -457,6 +458,7 @@ Only Kotlin files appear inside the generated blocks.
   - `crash/` - Pure rules of the crash log: frames without messages, the last five, safe mode.
     - `CrashRecord.kt` - One crash in the on-device crash log (task 33).
   - `decision/` - Typed model verdicts, calibrated confidence and act-or-ask routing.
+    - `DecisionAudit.kt` - Private local decision evidence, never telemetry.
     - `DecisionCoordinator.kt` - Two explicit verdict calls keep generated speech out of action selection.
     - `DecisionPolicy.kt` - Jev verdict-slot logit differences become calibrated typed choices, never generated JSON.
     - `TypedJudge.kt` - Decisions are structured separately from anything spoken by the language model.
@@ -957,9 +959,14 @@ Only Kotlin files appear inside the generated blocks.
   - `voice/` - Conversation mode as a pure loop: listen, send, speak, listen again, with barge-in.
     - `ConversationLoop.kt` - Conversation mode (task 23l): listen, send what was said, speak the reply, listen again, until the owner taps stop.
     - `OwnerVoicePolicy.kt` - Speaker verification policy, independent of Android and model-generated confidence.
+    - `SmartTurnBudget.kt` - Bounds preprocessing plus inference, without ever blocking the recorder or UI thread.
+    - `SmartTurnFeatures.kt` - Whisper-tiny's 80x800 Slaney log-mel input, matched to the frozen upstream NumPy reference.
     - `VoiceAnswers.kt` - Short spoken answers in a hands-free conversation (task 29): "undo" after a local action, and "yes" or "no" to a confirmation card.
     - `WakeFeatures.kt` - Duration-normalized Goertzel log-spectral features; identical to the local CPU training pipeline.
     - `WakeWord.kt` - The wake word "Kawkab" / "كوكب" (task 27).
+- `glyph/` - Foreground Nothing Glyph lifecycle, device-state patterns and countdown progress.
+  - `GlyphMirror.kt` - Shares the physical controller between the main window and the power-button surface.
+  - `GlyphMirrorPolicy.kt` - The foreground device surface is the sole source of physical Glyph activity.
 - `hands/` - Phone actions ported from OpenDroid: alias phrases, macro recording, habit detection, and the intent calls for the five core commands.
   - `AliasResolver.kt` - Maps a short phrase to one action hint.
   - `AndroidAppChoice.kt` - App identities come from PackageManager; the judge can only pick an installed allowlisted option.
@@ -1274,6 +1281,7 @@ Only Kotlin files appear inside the generated blocks.
       - `TriggersUiState.kt` - Triggers UI state: `triggers`, `pipelines` (for the binding picker + bound-name lookup), `openMenuTriggerId`, `healthInputs` (per-trigger journal facts for the list badge), `detailTriggerId` + `detailJournal` (the open detail surface and its journal; `null` journal = loading), `editor: TriggerEditorDraft?`, `deleteTarget: TriggerDeleteTarget?`. `TriggerEditorDraft` holds the editable fields + per-condition params and resolves to a domain `TriggerCondition` (with the 15-min interval floor + `canSave` validation); `fromTrigger` round-trips an existing trigger (preset-vs-custom interval inference).
       - `TriggersViewModel.kt` - Triggers ViewModel. Injects `TriggerRepository` + `PipelineRepository` + `SaveTriggerUseCase` + `SyncTriggersUseCase` + `ObserveTriggerHealthInputsUseCase` + `ObserveTriggerJournalUseCase`. Observes triggers + pipelines + health inputs; a second `flatMapLatest` collector follows the open detail trigger's journal. Drives the detail surface (`onRowClick`→`openDetail`, `closeDetail`, `editFromDetail`), the editor lifecycle + per-field setters, the inline `toggleEnabled`, and the delete flow (which also closes the detail when its trigger is deleted). Re-syncs the background runtime after every save / enable-toggle / delete so runtime mutations take effect immediately.
 - `voice/` - Offline speech recognition and text-to-speech, and the driver that runs conversation mode with them.
+  - `AudioTurnEnd.kt` - Silero observes capture on its own thread; semantic checks run separately so capture never waits 150 ms.
   - `ConversationDriver.kt` - Runs `ConversationLoop` with Android's offline recognizer and voice (task 23l).
   - `JevRuntime.kt` - Verdict-slot readout using Llamatik's exact native runtime, separate from generated speech.
   - `OfflineSpeech.kt` - Android's speech recognizer, offline only (tasks 23c and 23l).
@@ -1281,6 +1289,7 @@ Only Kotlin files appear inside the generated blocks.
   - `OwnerAudioPipe.kt` - One PCM stream feeds both Android's offline recognizer and the speaker verifier.
   - `OwnerVoice.kt` - Offline sherpa-onnx speaker verification.
   - `PersonalWakeDetector.kt` - Learned generic head plus the owner's ten few-shot keyword templates; sherpa remains a second opinion.
+  - `SmartTurnCpu.kt` - Cached CPU-only smart-turn-v3.2 session; the asset is downloaded and verified by Gradle.
   - `VoiceConfirmSwitch.kt` - The owner's "Confirm by voice" setting (task 29, spec §0.4.3).
   - `WakeHealth.kt` - Whether the wake process died in native code since the wake word was last turned on (M1.8).
   - `WakeRelayReceiver.kt` - The app-process side of the wake word (M1.8).

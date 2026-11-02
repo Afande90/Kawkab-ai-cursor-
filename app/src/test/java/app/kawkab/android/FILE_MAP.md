@@ -294,6 +294,7 @@ Only Kotlin files appear inside the generated blocks.
   - `decision/` - Regression tests for typed model verdicts, calibrated confidence and act-or-ask routing.
     - `DecisionCoordinatorTest.kt` - Classification and permission to act are separate structured decisions.
     - `DecisionPolicyTest.kt` - A confident number alone is never a certificate of action precision.
+    - `FileDecisionAuditTest.kt` - Decisions and actual gate outcomes are joined locally, including denials and follow-ups.
   - `engine/` - Tests for the graph execution engine and its supporting abstractions.
     - `AutoProviderTest.kt` - Unit tests for `AutoProvider` — what a node set to "auto" runs on.
     - `ChatHistoryWindowPlannerTest.kt` - Unit tests for `ChatHistoryWindowPlanner` — the pure planner that decides how a session's chat history is split into a summarised prefix and a verbatim live window.
@@ -622,11 +623,15 @@ Only Kotlin files appear inside the generated blocks.
     - `ConversationFollowUpTest.kt` - Task 28: after a spoken reply Kawkab listens for a follow-up; silence then ends the talk.
     - `ConversationLoopTest.kt` - Task 23l: listen, send, speak, listen again; tap stops; speaking over the reply stops it.
     - `OwnerVoicePolicyTest.kt` - Owner voice is mandatory; missing, silent, invalid and different speakers cannot authorize commands.
+    - `SmartTurnBudgetTest.kt` - Load errors, invalid scores and late native work cannot override the 700 ms fallback.
+    - `SmartTurnFeaturesTest.kt` - Every bin is compared to the independent frozen NumPy/Whisper reference, including padding and trimming.
     - `VoiceAnswersTest.kt` - Task 29 and spec §0.4.3: what a spoken answer may do.
     - `WakeFeaturesTest.kt` - Portable wake features must handle silence and separate different sounds without a model.
     - `WakeWordTest.kt` - Task 27: the wake word's gate, speech window, counters and keyword file.
 - `editor/` - Guard over the browser pipeline editor: its context configuration must still mirror the domain sources.
   - `BrowserEditorContextConfigGuardTest.kt` - Drift guard for the browser pipeline editor's hand-maintained `defaultContextConfig(typeId)` JS function in `pipeline-editor.html`.
+- `glyph/` - Foreground Nothing Glyph lifecycle, device-state patterns and countdown progress.
+  - `GlyphMirrorPolicyTest.kt` - Physical output must stop when hidden and track the same cancellation progress as the LCD.
 - `hands/` - Tests for stored app maps: replay without a model, check the screen, and stop for an outbound tap.
   - `AppChoiceRulesTest.kt` - An ambiguous app label cannot silently pick the first installed app.
   - `AppMapReplayTest.kt` - Stored app maps replay without a model, check the screen, and still stop for an outbound tap.
@@ -805,4 +810,6 @@ Only Kotlin files appear inside the generated blocks.
       - `TriggersViewModelTest.kt` - Unit tests for `TriggersViewModel`.
 - `store/` - Tests over the store-listing metadata — the limits Google Play enforces after a release, not before.
   - `StoreMetadataTest.kt` - Guards the store metadata under `fastlane/metadata/android/`, which is the single source both Google Play and F-Droid read.
+- `voice/` - Android offline recognizer requests and semantic endpoint integration tests.
+  - `OfflineSpeechRequestTest.kt` - Android must leave segment completion to the PCM endpoint, with the documented silence fallback.
 <!-- /AUTO-GEN:FILE_MAP -->
