@@ -47,11 +47,11 @@ object CrashRules {
      * A native tombstone or ANR trace cut to its backtrace lines, without memory maps or registers.
      *
      * @param raw The text Android kept.
-     * @return At most [MAX_FRAMES] lines that name a frame, an abort message or a signal.
+     * @return At most [MAX_FRAMES] lines that name a frame or a signal; abort messages can contain personal content.
      */
     fun nativeTrace(raw: String): String = raw.lineSequence()
         .map { it.trim() }
-        .filter { line -> line.startsWith("#") || line.startsWith("signal") || line.startsWith("Abort message") }
+        .filter { line -> line.startsWith("#") || line.startsWith("signal") }
         .take(MAX_FRAMES)
         .joinToString("\n")
 
