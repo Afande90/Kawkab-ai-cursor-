@@ -295,3 +295,5 @@ restriction, subject to the conditions of the MIT License; the above copyright n
 permission notice shall be included in all copies or substantial portions of the Software.
 
 Pocket LCD fonts: VT323 (Peter Hull), IBM Plex Mono (IBM), Noto Kufi Arabic (The Noto Project). Bundled under SIL Open Font License 1.1; licences in third_party/fonts.
+
+Owner speaker verification uses 3D-Speaker CAMPPlus, Apache-2.0. The ONNX export is from echo-hello/speech_campplus_sv_zh_en_16k-common_advanced-onnx, pinned commit 1a64735d2ab8c9b005101d5b0deff78c148248c0. License: third_party/speaker/LICENSE.

@@ -20,7 +20,6 @@ import app.kawkab.android.presentation.state.ChatEntryRequestRelay
 import app.kawkab.android.presentation.ui.about.AboutScreen
 import app.kawkab.android.presentation.ui.automation.ExternalAutomationJournalScreen
 import app.kawkab.android.presentation.ui.chat.archive.ChatArchiveScreen
-import app.kawkab.android.presentation.ui.chat.home.ChatHomeScreen
 import app.kawkab.android.presentation.ui.chat.home.ChatHomeViewModel
 import app.kawkab.android.presentation.ui.discover.DiscoverDetailScreen
 import app.kawkab.android.presentation.ui.discover.DiscoverScreen
@@ -39,6 +38,7 @@ import app.kawkab.android.presentation.ui.orchestrator.PipelineLibraryScreen
 import app.kawkab.android.presentation.ui.orchestrator.presets.PipelinePresetsManagerScreen
 import app.kawkab.android.presentation.ui.phoneaccess.PhoneAccessScreen
 import app.kawkab.android.presentation.ui.pipeline.editor.PipelineEditorScreen
+import app.kawkab.android.presentation.ui.pocket.PocketHomeScreen
 import app.kawkab.android.presentation.ui.prompts.PromptLibraryScreen
 import app.kawkab.android.presentation.ui.settings.AboutSettingsScreen
 import app.kawkab.android.presentation.ui.settings.BackgroundSettingsScreen
@@ -195,14 +195,9 @@ fun AppNavGraph(
                     }
                 }
             }
-            ChatHomeScreen(
+            PocketHomeScreen(
                 viewModel = chatHomeViewModel,
-                onOpenSettings = { navController.navigate(NavRoutes.SETTINGS) },
-                onOpenModels = { navController.navigate(NavRoutes.MODELS) },
-                onOpenArchive = { navController.navigate(NavRoutes.CHAT_ARCHIVE) },
-                onOpenRunLimits = { navController.navigate(NavRoutes.SETTINGS_PIPELINES_RUN_LIMITS) },
-                onOpenGenerationSettings = { navController.navigate(NavRoutes.SETTINGS_GENERATION) },
-                onOpenPhoneAccess = { navController.navigate(NavRoutes.phoneAccessRoute()) },
+                onAdvanced = { navController.navigateToTab(NavRoutes.MORE) },
             )
             // Over the chat, the first time it opens after a restore: what is left to do, or *Restored*. Hosted
             // here rather than in ChatHomeScreen, which the instrumented tests draw without Hilt.

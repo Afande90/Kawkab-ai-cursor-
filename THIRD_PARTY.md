@@ -69,3 +69,7 @@ Drawflow 0.0.60 is inlined in `pipeline-editor.html` under the MIT licence. The 
 ## Pocket LCD fonts
 
 VT323, IBM Plex Mono and Noto Kufi Arabic are bundled from google/fonts under SIL OFL 1.1. Licence copies are in third_party/fonts. No fonts are fetched at runtime.
+
+## Owner speaker verification
+
+The 3D-Speaker CAMPPlus ONNX export is Apache-2.0, pinned at echo-hello/speech_campplus_sv_zh_en_16k-common_advanced-onnx commit 1a64735d2ab8c9b005101d5b0deff78c148248c0. The bundled speaker model SHA-256 is 945bcefe95672434d6ecf4c45bd0464d7e82be77d55985d0ec2f3253638110e1. Upstream license is retained in third_party/speaker/LICENSE. No speech recordings are bundled with it.

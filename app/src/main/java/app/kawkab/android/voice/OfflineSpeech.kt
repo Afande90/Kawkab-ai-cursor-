@@ -2,12 +2,17 @@ package app.kawkab.android.voice
 
 import android.content.Context
 import android.content.Intent
+import android.media.AudioFormat
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import app.kawkab.android.domain.voice.ConversationLoop
+import app.kawkab.android.domain.voice.SpokenOwnerAnswer
 import java.util.Locale
+import java.util.concurrent.Executors
 
 /**
  * Android's speech recognizer, offline only (tasks 23c and 23l). Audio never goes to a cloud
@@ -18,6 +23,9 @@ import java.util.Locale
  */
 class OfflineSpeech(private val context: Context) {
     private var recognizer: SpeechRecognizer? = null
+    private var audio: OwnerAudioPipe? = null
+    private val main = Handler(Looper.getMainLooper())
+    private var generation = 0
 
     /** What one listen produced. */
     interface Listener {
@@ -45,21 +53,69 @@ class OfflineSpeech(private val context: Context) {
      */
     fun listen(languageTag: String, listener: Listener) {
         stop()
-        if (!available()) {
+        WakeWordService.pause(context)
+        if (!available() || !OwnerVoice(context).enrolled()) {
             listener.onNothing(SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE)
             return
         }
         val created = SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
         recognizer = created
-        created.setRecognitionListener(Bridge(listener))
-        runCatching { created.startListening(request(languageTag)) }
-            .onFailure { listener.onNothing(SpeechRecognizer.ERROR_CLIENT) }
+        val current = generation
+        runCatching {
+            val pipe = OwnerAudioPipe(context)
+            audio = pipe
+            created.setRecognitionListener(
+                Bridge(object : Listener {
+                    override fun onSpeechStart() = Unit
+                    override fun onNothing(code: Int) {
+                        if (current == generation) listener.onNothing(code)
+                    }
+                    override fun onPartialText(text: String) {
+                        // A partial cancel also needs an owner match. No model runs on the UI thread.
+                        verifyOwner(pipe.samples(), current) {
+                            listener.onSpeechStart()
+                            listener.onPartialText(text)
+                        }
+                    }
+                    override fun onText(text: String) {
+                        val samples = pipe.samples()
+                        runCatching { pipe.close() }
+                        audio = null
+                        verifyOwner(samples, current) {
+                            SpokenOwnerAnswer.record(text)
+                            listener.onText(text)
+                        }
+                    }
+                }),
+            )
+            val intent = request(languageTag).apply {
+                putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE, pipe.source)
+                putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_CHANNEL_COUNT, 1)
+                putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_ENCODING, AudioFormat.ENCODING_PCM_16BIT)
+                putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_SAMPLING_RATE, OwnerAudioPipe.RATE)
+            }
+            created.startListening(intent)
+            pipe.start()
+        }.onFailure { listener.onNothing(SpeechRecognizer.ERROR_AUDIO) }
     }
 
     /** Stops listening and releases the recognizer. */
     fun stop() {
+        generation += 1
+        audio?.let { runCatching { it.close() } }
+        audio = null
         recognizer?.destroy()
         recognizer = null
+        WakeWordService.resume(context)
+    }
+
+    private fun verifyOwner(samples: FloatArray, current: Int, accepted: () -> Unit) {
+        verifier.execute {
+            if (current == generation && OwnerVoice(context).accepts(samples)) {
+                main.post { if (current == generation) accepted() }
+            }
+            // A different speaker produces no transcript, no action and no reply.
+        }
     }
 
     private class Bridge(private val listener: Listener) : RecognitionListener {
@@ -82,6 +138,8 @@ class OfflineSpeech(private val context: Context) {
 
     /** Language choice and the request. */
     companion object {
+        private val verifier = Executors.newSingleThreadExecutor()
+
         /** Sudanese Arabic first, then Arabic, then English. */
         val LANGUAGES: List<String> = listOf("ar-SD", "ar", "en-US")
 

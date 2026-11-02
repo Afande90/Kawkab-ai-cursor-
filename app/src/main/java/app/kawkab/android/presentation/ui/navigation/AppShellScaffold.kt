@@ -102,7 +102,7 @@ fun AppShellScaffold(
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute: String? = navBackStackEntry?.destination?.route
-    val showBottomNav = shouldShowBottomNav(currentRoute)
+    val showBottomNav = shouldShowBottomNav(currentRoute) && currentRoute != NavRoutes.CHAT_TAB
     val activity = LocalActivity.current
 
     // The whole stack, not just its top. `NavController.currentBackStack` is

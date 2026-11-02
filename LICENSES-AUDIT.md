@@ -447,3 +447,5 @@ The image loader (`io.coil-kt.coil3:coil-compose:3.6.3`) is a direct dependency 
 
 
 | VT323 / IBM Plex Mono / Noto Kufi Arabic | SIL OFL 1.1 | personal and commercial; attribution; reserved names | google/fonts ofl directories; third_party/fonts | yes |
+
+| CAMPPlus speaker verification ONNX | Apache-2.0 | personal/commercial; attribution | echo-hello/speech_campplus_sv_zh_en_16k-common_advanced-onnx, 1a64735d2ab8c9b005101d5b0deff78c148248c0; third_party/speaker/LICENSE | yes, 27 MB |
