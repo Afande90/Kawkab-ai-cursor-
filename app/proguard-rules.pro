@@ -184,3 +184,6 @@
 
 # Official Glyph SDK binds Nothing OS through its AIDL service.
 -keep class com.nothing.** { *; }
+
+# ONNX Runtime Java fields and entry points are accessed by its native bridge.
+-keep class ai.onnxruntime.** { *; }

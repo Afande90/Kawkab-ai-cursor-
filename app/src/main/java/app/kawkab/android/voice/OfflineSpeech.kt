@@ -51,7 +51,9 @@ class OfflineSpeech(private val context: Context) {
      * @param languageTag For example "ar-SD" or "en-US".
      * @param listener Receives the result.
      */
-    fun listen(languageTag: String, listener: Listener) {
+    fun listen(languageTag: String, listener: Listener) = listenOnce(languageTag, listener, segmented = true)
+
+    private fun listenOnce(languageTag: String, listener: Listener, segmented: Boolean) {
         stop()
         WakeWordService.pause(context)
         if (!available() || !OwnerVoice(context).enrolled()) {
@@ -62,13 +64,22 @@ class OfflineSpeech(private val context: Context) {
         recognizer = created
         val current = generation
         runCatching {
-            val pipe = OwnerAudioPipe(context)
+            val pipe = OwnerAudioPipe(context, SmartTurnCpu.forSession(context)) {
+                main.post { if (current == generation) runCatching { created.stopListening() } }
+            }
             audio = pipe
             created.setRecognitionListener(
                 Bridge(object : Listener {
                     override fun onSpeechStart() = Unit
                     override fun onNothing(code: Int) {
-                        if (current == generation) listener.onNothing(code)
+                        if (current == generation) {
+                            if (segmented && code == SpeechRecognizer.ERROR_CLIENT) {
+                                // Some offline providers cannot expose segmented external-audio sessions.
+                                listenOnce(languageTag, listener, segmented = false)
+                            } else {
+                                listener.onNothing(code)
+                            }
+                        }
                     }
                     override fun onPartialText(text: String) {
                         // A partial cancel also needs an owner match. No model runs on the UI thread.
@@ -88,7 +99,7 @@ class OfflineSpeech(private val context: Context) {
                     }
                 }),
             )
-            val intent = request(languageTag).apply {
+            val intent = request(languageTag, controlledEndpoint = segmented).apply {
                 putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE, pipe.source)
                 putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_CHANNEL_COUNT, 1)
                 putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_ENCODING, AudioFormat.ENCODING_PCM_16BIT)
@@ -119,26 +130,42 @@ class OfflineSpeech(private val context: Context) {
     }
 
     private class Bridge(private val listener: Listener) : RecognitionListener {
+        private val segments = mutableListOf<String>()
+        private var delivered = false
         override fun onReadyForSpeech(params: Bundle?) = Unit
         override fun onBeginningOfSpeech() = listener.onSpeechStart()
         override fun onRmsChanged(rmsdB: Float) = Unit
         override fun onBufferReceived(buffer: ByteArray?) = Unit
         override fun onEndOfSpeech() = Unit
-        override fun onError(error: Int) = listener.onNothing(error)
+        override fun onError(error: Int) {
+            if (delivered) return
+            delivered = true
+            listener.onNothing(error)
+        }
         override fun onPartialResults(partialResults: Bundle?) {
             partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
                 ?.let(listener::onPartialText)
         }
         override fun onEvent(eventType: Int, params: Bundle?) = Unit
+        override fun onSegmentResults(segmentResults: Bundle) {
+            val text = segmentResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
+            if (!text.isNullOrBlank() && segments.lastOrNull() != text) segments += text
+        }
+        override fun onEndOfSegmentedSession() = deliver(segments.joinToString(" "))
         override fun onResults(results: Bundle?) {
-            val text = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
-            if (text.isNullOrBlank()) listener.onNothing(SpeechRecognizer.ERROR_NO_MATCH) else listener.onText(text)
+            deliver(results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull().orEmpty())
+        }
+        private fun deliver(text: String) {
+            if (delivered) return
+            delivered = true
+            if (text.isBlank()) listener.onNothing(SpeechRecognizer.ERROR_NO_MATCH) else listener.onText(text)
         }
     }
 
     /** Language choice and the request. */
     companion object {
         private val verifier = Executors.newSingleThreadExecutor()
+        private const val CONTROLLED_TURN_MS = 15_000L
 
         /** Sudanese Arabic first, then Arabic, then English. */
         val LANGUAGES: List<String> = listOf("ar-SD", "ar", "en-US")
@@ -155,23 +182,33 @@ class OfflineSpeech(private val context: Context) {
          * The recognizer request: offline, the given language, one final result.
          *
          * @param languageTag The language.
+         * @param controlledEndpoint The PCM endpoint owns EOF; Android may emit segments but not actions.
          * @return The intent.
          */
-        fun request(languageTag: String): Intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, languageTag)
-            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
-            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
-            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-            // End of turn after about 700 ms of silence (task 28). Recognizers may round it.
-            putExtra(
-                RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS,
-                ConversationLoop.END_OF_TURN_SILENCE_MS,
-            )
-            putExtra(
-                RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS,
-                ConversationLoop.END_OF_TURN_SILENCE_MS,
-            )
-        }
+        fun request(languageTag: String, controlledEndpoint: Boolean = false): Intent =
+            Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, languageTag)
+                putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
+                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+                putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+                // The semantic endpoint closes the PCM pipe. The long Android timeout prevents an
+                // internal 700 ms segment from dispatching a premature action; segments are buffered.
+                if (controlledEndpoint) {
+                    putExtra(
+                        RecognizerIntent.EXTRA_SEGMENTED_SESSION,
+                        RecognizerIntent.EXTRA_AUDIO_SOURCE,
+                    )
+                }
+                val silence = if (controlledEndpoint) CONTROLLED_TURN_MS else ConversationLoop.END_OF_TURN_SILENCE_MS
+                putExtra(
+                    RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS,
+                    silence,
+                )
+                putExtra(
+                    RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS,
+                    silence,
+                )
+            }
     }
 }

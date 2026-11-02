@@ -28,6 +28,7 @@ mockk = "1.14.11"
 litertlm = "0.17.1"
 llamatik = "2.0.0"
 sherpaOnnx = "v1.13.8"
+onnxRuntime = "1.28.0"
 mediapipe = "1.0.0"
 # Not a direct dependency: a floor under MediaPipe's own protobuf-javalite (4.26.1
 # in tasks-core 1.0.0), which sits inside CVE-2024-7254. Applied as a constraint in
@@ -79,6 +80,7 @@ mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 mockk-android = { group = "io.mockk", name = "mockk-android", version.ref = "mockk" }
 litertlm = { group = "com.google.ai.edge.litertlm", name = "litertlm-android", version.ref = "litertlm" }
 llamatik = { group = "com.llamatik", name = "core", version.ref = "llamatik" }
+onnx-runtime = { module = "com.microsoft.onnxruntime:onnxruntime-android", version.ref = "onnxRuntime" }
 sherpa-onnx = { group = "com.github.k2-fsa.sherpa-onnx", name = "sherpa-onnx", version.ref = "sherpaOnnx" }
 mediapipe-tasks-text = { group = "com.google.mediapipe", name = "tasks-text", version.ref = "mediapipe" }
 protobuf-javalite = { group = "com.google.protobuf", name = "protobuf-javalite", version.ref = "protobufJavalite" }

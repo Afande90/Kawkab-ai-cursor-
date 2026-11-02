@@ -11,6 +11,7 @@
          <trust group="gradle" name="gradle" file="gradle-.*-src[.]zip" regex="true"/>
       </trusted-artifacts>
       <trusted-keys>
+         <trusted-key id="369E771178C41DE26253F280E96373C25092C07A" group="com.microsoft.onnxruntime" name="onnxruntime-android" version="1.28.0"/>
          <trusted-key id="03C123038C20AAE9E286C857479D601F3A7B5C1A" group="com.github.ajalt.clikt"/>
          <trusted-key id="04543577D6A9CC626239C50C7ECBD740FF06AEB5">
             <trusting group="com.sun.istack"/>
@@ -882,6 +883,14 @@
          </artifact>
          <artifact name="core-release.aar">
             <pgp value="46D3C7797C3CC9E4045027174C64A1BC4F3669FE"/>
+         </artifact>
+      </component>
+      <component group="com.microsoft.onnxruntime" name="onnxruntime-android" version="1.28.0">
+         <artifact name="onnxruntime-android-1.28.0.aar">
+            <sha256 value="f351a0638696f54b35184290dbc001d66daae17281ad0b548d2c70347d53b8a9" origin="Verified Maven Central artifact"/>
+         </artifact>
+         <artifact name="onnxruntime-android-1.28.0.pom">
+            <sha256 value="0e575ec392a5ab9220924db266214459ae8912fec2427cf826c650b70f6a2947" origin="Verified Maven Central metadata"/>
          </artifact>
       </component>
       <component group="com.sun.activation" name="all" version="1.2.1">

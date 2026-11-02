@@ -442,6 +442,7 @@ android {
     // `debug` assets as well — the debug APK carries ~1.9 MB of schema JSON,
     // the release APK none.
     sourceSets {
+        getByName("main").assets.srcDir(layout.buildDirectory.dir("generated/turnAssets").get().asFile)
         getByName("androidTest").assets.srcDir("$projectDir/schemas")
         getByName("debug").assets.srcDir("$projectDir/schemas")
     }
@@ -479,6 +480,9 @@ android {
             // API libraries are for other languages.
             excludes += "**/libsherpa-onnx-c-api.so"
             excludes += "**/libsherpa-onnx-cxx-api.so"
+            // Both pinned libraries use ORT C API 28 (1.28.0 Java bridge / 1.28.2 sherpa).
+            // Either shared runtime serves both bridges; package exactly one copy per ABI.
+            pickFirsts += "**/libonnxruntime.so"
             // Native libraries are stored compressed (task 27). Stored uncompressed they were 134 MB
             // of the 150 MB APK limit, and onnxruntime adds 27 MB more. Android extracts them at
             // install; the download is about half the size.
@@ -2175,7 +2179,16 @@ val downloadGlyphSdk by tasks.registering(DownloadPinnedArtifact::class) {
     outputFile.set(layout.buildDirectory.file("downloaded/glyph-matrix-sdk-2.0.aar"))
 }
 
-tasks.named("preBuild") { dependsOn(downloadGlyphSdk) }
+val downloadSmartTurnModel by tasks.registering(DownloadPinnedArtifact::class) {
+    url.set(
+        "https://huggingface.co/pipecat-ai/smart-turn-v3/resolve/" +
+            "f766f81d3cfdf7737ac64aad813d91bbfd56bf93/smart-turn-v3.2-cpu.onnx",
+    )
+    sha256.set("2bb026316b14a660486a75b1733cd3fbab8c2fd0314dc9af7be49f8cca967e4f")
+    outputFile.set(layout.buildDirectory.file("generated/turnAssets/voice/smart-turn-v3.2-cpu.onnx"))
+}
+
+tasks.named("preBuild") { dependsOn(downloadGlyphSdk, downloadSmartTurnModel) }
 
 dependencies {
     // Design-system module — `KnotworkTheme` (currently a `MaterialTheme`
@@ -2230,6 +2243,7 @@ dependencies {
     implementation(libs.litertlm)
     implementation(libs.llamatik)
     // Wake word (task 27): keyword spotting and Silero VAD on onnxruntime.
+    implementation(libs.onnx.runtime)
     implementation(libs.sherpa.onnx)
     implementation(files(downloadGlyphSdk.flatMap { it.outputFile }).builtBy(downloadGlyphSdk))
 
