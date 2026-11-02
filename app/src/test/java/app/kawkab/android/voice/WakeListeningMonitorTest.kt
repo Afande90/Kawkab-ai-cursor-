@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.hardware.Sensor
 import android.hardware.SensorEvent
-import org.robolectric.shadows.ShadowSensor
 import android.media.AudioManager
 import android.os.BatteryManager
 import app.kawkab.android.domain.voice.WakeListeningConfig
@@ -18,6 +17,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
+import org.robolectric.shadows.ShadowSensor
 
 /** Real Android battery broadcasts and audio-mode callbacks reach the capture policy. */
 @RunWith(RobolectricTestRunner::class)
@@ -86,13 +86,19 @@ class WakeListeningMonitorTest {
     }
 
     private fun healthyBattery(context: Context) {
-        context.sendBroadcast(Intent(Intent.ACTION_BATTERY_CHANGED).putExtra(BatteryManager.EXTRA_LEVEL, 80)
-            .putExtra(BatteryManager.EXTRA_SCALE, 100).putExtra(BatteryManager.EXTRA_STATUS, BatteryManager.BATTERY_STATUS_DISCHARGING))
+        context.sendBroadcast(
+            Intent(Intent.ACTION_BATTERY_CHANGED).putExtra(BatteryManager.EXTRA_LEVEL, 80)
+                .putExtra(
+                    BatteryManager.EXTRA_SCALE,
+                    100,
+                ).putExtra(BatteryManager.EXTRA_STATUS, BatteryManager.BATTERY_STATUS_DISCHARGING),
+        )
         shadowOf(android.os.Looper.getMainLooper()).idle()
     }
 
-    private fun event(sensor: Sensor): SensorEvent = SensorEvent::class.java.getDeclaredConstructor(Int::class.javaPrimitiveType)
-        .apply { isAccessible = true }.newInstance(3).also { it.sensor = sensor }
+    private fun event(sensor: Sensor): SensorEvent =
+        SensorEvent::class.java.getDeclaredConstructor(Int::class.javaPrimitiveType)
+            .apply { isAccessible = true }.newInstance(3).also { it.sensor = sensor }
 
     @Test fun `audio mode pauses cellular and communication calls without a phone-state permission`() {
         val context = RuntimeEnvironment.getApplication<Application>()
