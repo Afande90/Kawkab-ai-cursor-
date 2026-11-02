@@ -406,6 +406,10 @@ would. Kawkab never checks on its own.
 | Set an alarm | Ask the clock to set an alarm or a timer you confirmed | Granted with the install. It does not read existing alarms |
 | Ignore battery optimisation | Let a request finish while the screen is off | Asked from Phone access, during setup and in Settings. The system still asks you to allow it |
 
+Wake listening defaults to **SMART** after owner enrollment: Silero VAD gates keyword and speaker work. SMART pauses wake capture when proximity is covered, the phone is face down, or battery is below 20% without charging. ONLY WHILE CHARGING adds the power requirement; ALWAYS explicitly overrides those smart heuristics. Calls (including communication audio modes), active conversations and optional sleep hours pause every enabled mode. OFF stops the wake service. Optional sleep boundaries use an inexact wake-up alarm so the existing service can re-evaluate while idle; Android may defer its delivery, and no exact-alarm permission is requested. Pauses stop and release the recorder; they do not retain a silently recording microphone. No extra phone-state permission or call identity is used.
+
+Settings → Voice contains the listening modes, optional local sleep times, and a daily wake-microphone log. The log stores only microphone-open milliseconds per local date under Android's private `noBackupFilesDir`, including silence, never audio or transcripts. It is excluded from backups and uploads, survives mode changes and service restarts, and is retained for battery comparisons. Actual capture time is checkpointed once per minute and on orderly pause/shutdown; an abrupt process kill can lose at most the current checkpoint interval. These are wake-service minutes, not an estimate of battery percentage or other apps' microphone use.
+
 The Wi-Fi network name obtained under the location permission is used on the
 device to decide whether a trigger fires, and never leaves it. Background
 location is **not** requested.
