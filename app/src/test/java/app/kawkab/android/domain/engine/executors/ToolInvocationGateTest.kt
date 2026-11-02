@@ -59,6 +59,27 @@ import org.junit.Test
 class ToolInvocationGateTest {
 
     @Test
+    fun `cancelling a live dispatch propagates cancellation and records its outcome`() = runTest {
+        val fixture = Fixture(
+            ToolApprovalPolicy.NeverPrompt,
+            ToolRisk.LOCAL,
+            null,
+            runId = null,
+            tool = "set_alarm",
+            interactive = true,
+            judged = true,
+        )
+        val job = launch { fixture.dispatch() }
+        runCurrent()
+        assertEquals(0, fixture.executions)
+        job.cancel()
+        job.join()
+        assertTrue(job.isCancelled)
+        assertEquals(0, fixture.executions)
+        verify { fixture.decisions.outcome(SESSION_ID, "set_alarm", "cancelled", null) }
+    }
+
+    @Test
     fun `Jev selected local actions wait three seconds after speech and record the outcome`() = runTest {
         val fixture = Fixture(
             ToolApprovalPolicy.NeverPrompt,
