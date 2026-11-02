@@ -31,11 +31,15 @@ class AndroidTypedJudge @Inject constructor(
     private val lock = Mutex()
 
     override suspend fun ready(): Boolean = withContext(Dispatchers.IO) {
-        runCatching {
-            if (tasks.globalState.value.isBusy || !JevRuntime.available) return@runCatching false
-            val model = models.findByFileName(FILE_NAME) ?: return@runCatching false
+        try {
+            if (tasks.globalState.value.isBusy || !JevRuntime.available) return@withContext false
+            val model = models.findByFileName(FILE_NAME) ?: return@withContext false
             models.currentFileHash(model.path) == SHA256
-        }.getOrDefault(false)
+        } catch (cancel: CancellationException) {
+            throw cancel
+        } catch (_: Exception) {
+            false
+        }
     }
 
     override fun begin(sessionId: String, input: String) = audit.begin(sessionId, input)

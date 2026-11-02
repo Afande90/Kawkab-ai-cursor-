@@ -66,6 +66,7 @@ import app.kawkab.design.device.DeviceSignal
 import app.kawkab.design.device.DeviceState
 import app.kawkab.design.device.KawkabDevice
 import app.kawkab.design.device.LcdLine
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -324,9 +325,9 @@ fun PocketHomeScreen(
             WakeWordSwitch.set(context, true)
             page = DevicePage.IDLE
             notice = "Your voice is ready. Only you can wake me."
-        } catch (
-            _: Exception,
-        ) {
+        } catch (cancel: CancellationException) {
+            throw cancel
+        } catch (_: Exception) {
             notice = "I could not enroll that voice. Use a quiet room and try again."
         } finally {
             recording = false
