@@ -2,12 +2,12 @@ package app.kawkab.design.i18n
 
 import android.content.res.Configuration
 import androidx.compose.runtime.CompositionLocalProvider
-import app.kawkab.design.theme.KnotworkTheme
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.kawkab.design.theme.KnotworkTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -30,7 +30,10 @@ class ArabicLayoutDirectionTest {
             val configuration = Configuration(LocalConfiguration.current)
             configuration.setLocale(Locale.forLanguageTag("ar"))
             configuration.setLayoutDirection(Locale.forLanguageTag("ar"))
-            CompositionLocalProvider(LocalConfiguration provides configuration, LocalLayoutDirection provides LayoutDirection.Rtl) {
+            CompositionLocalProvider(
+                LocalConfiguration provides configuration,
+                LocalLayoutDirection provides LayoutDirection.Rtl,
+            ) {
                 KnotworkTheme {
                     assertEquals(LayoutDirection.Ltr, LocalLayoutDirection.current)
                 }
