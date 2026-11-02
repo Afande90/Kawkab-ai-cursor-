@@ -16,5 +16,7 @@ class SpeechWakeGate(private val personal: (FloatArray) -> Boolean, private val 
         return (keyword || personal(speech)) && speaker(speech)
     }
 
-    private companion object { const val PERSONAL_FRAME_INTERVAL = 8 }
+    private companion object {
+        const val PERSONAL_FRAME_INTERVAL = 8
+    }
 }

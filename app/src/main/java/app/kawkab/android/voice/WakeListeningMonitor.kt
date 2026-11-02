@@ -23,7 +23,8 @@ class WakeListeningMonitor(
     private val context: Context,
     private val conversation: () -> Boolean,
     private val changed: (WakePauseReason?) -> Unit,
-) : SensorEventListener, AutoCloseable {
+) : SensorEventListener,
+    AutoCloseable {
     private val sensors = context.getSystemService(SensorManager::class.java)
     private val audio = context.getSystemService(AudioManager::class.java)
     private var state = WakeListeningState()
@@ -60,10 +61,16 @@ class WakeListeningMonitor(
         sensors?.unregisterListener(this)
         state = state.copy(covered = false, faceDown = false)
         if (value.mode != WakeListeningMode.ALWAYS && value.mode != WakeListeningMode.OFF) {
-            (sensors?.getDefaultSensor(Sensor.TYPE_PROXIMITY, true) ?: sensors?.getDefaultSensor(Sensor.TYPE_PROXIMITY))?.let {
+            (
+                sensors?.getDefaultSensor(
+                    Sensor.TYPE_PROXIMITY,
+                    true,
+                ) ?: sensors?.getDefaultSensor(Sensor.TYPE_PROXIMITY)
+                )?.let {
                 sensors.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
             }
-            val gravity = sensors?.getDefaultSensor(Sensor.TYPE_GRAVITY) ?: sensors?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+            val gravity =
+                sensors?.getDefaultSensor(Sensor.TYPE_GRAVITY) ?: sensors?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
             gravity?.let { sensors?.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL, SENSOR_BATCH_US) }
         }
         refresh()
@@ -81,9 +88,14 @@ class WakeListeningMonitor(
 
     override fun onSensorChanged(event: SensorEvent) {
         state = when (event.sensor.type) {
-            Sensor.TYPE_PROXIMITY -> state.copy(covered = event.values[0] < minOf(PROXIMITY_CM, event.sensor.maximumRange))
-            Sensor.TYPE_GRAVITY, Sensor.TYPE_ACCELEROMETER -> state.copy(faceDown =
-                if (state.faceDown) event.values[2] < FACE_UP_Z else event.values[2] < FACE_DOWN_Z)
+            Sensor.TYPE_PROXIMITY -> state.copy(
+                covered =
+                event.values[0] < minOf(PROXIMITY_CM, event.sensor.maximumRange),
+            )
+            Sensor.TYPE_GRAVITY, Sensor.TYPE_ACCELEROMETER -> state.copy(
+                faceDown =
+                if (state.faceDown) event.values[2] < FACE_UP_Z else event.values[2] < FACE_DOWN_Z,
+            )
             else -> state
         }
         refresh()
@@ -104,8 +116,10 @@ class WakeListeningMonitor(
         val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0)
         val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, 100).coerceAtLeast(1)
         val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, BatteryManager.BATTERY_STATUS_UNKNOWN)
-        state = state.copy(batteryPercent = (level.toLong() * 100 / scale).toInt().coerceIn(0, 100),
-            charging = status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL)
+        state = state.copy(
+            batteryPercent = (level.toLong() * 100 / scale).toInt().coerceIn(0, 100),
+            charging = status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL,
+        )
     }
 
     private companion object {

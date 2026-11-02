@@ -16,20 +16,19 @@ import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.media.AudioManager
 import android.media.ToneGenerator
-import android.os.Handler
-import android.os.Looper
 import android.os.Binder
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.os.SystemClock
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import app.kawkab.android.R
 import app.kawkab.android.crash.CrashLog
 import app.kawkab.android.domain.constants.NotificationIds
+import app.kawkab.android.domain.voice.WakeGate
 import app.kawkab.android.domain.voice.WakeListeningMode
 import app.kawkab.android.domain.voice.WakePauseReason
-import app.kawkab.android.domain.voice.WakeGate
-import app.kawkab.android.domain.voice.WakeWord
 import app.kawkab.android.presentation.notifications.lockScreenVersion
 import app.kawkab.android.presentation.ui.MainActivity
 import timber.log.Timber
@@ -80,8 +79,12 @@ class WakeWordService : Service() {
         monitor = WakeListeningMonitor(this, paused::get) { reason ->
             currentPause = reason
             capture.setAllowed(reason == null)
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
-                getSystemService(NotificationManager::class.java)?.notify(NotificationIds.WAKE_WORD_LISTENING, notification())
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
+                PackageManager.PERMISSION_GRANTED
+            ) {
+                getSystemService(
+                    NotificationManager::class.java,
+                )?.notify(NotificationIds.WAKE_WORD_LISTENING, notification())
             }
         }
         val filter = IntentFilter().apply {
@@ -98,7 +101,11 @@ class WakeWordService : Service() {
         }
         val config = WakeWordSwitch.readConfig(this, intent)
         try {
-            startForeground(NotificationIds.WAKE_WORD_LISTENING, notification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
+            startForeground(
+                NotificationIds.WAKE_WORD_LISTENING,
+                notification(),
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE,
+            )
             if (config.mode == WakeListeningMode.OFF) {
                 stopSelf()
                 return START_NOT_STICKY
@@ -263,7 +270,12 @@ class WakeWordService : Service() {
          */
         fun start(context: Context) {
             if (!micGranted(context)) return
-            runCatching { ContextCompat.startForegroundService(context, WakeWordSwitch.attachConfig(context, Intent(context, WakeWordService::class.java))) }
+            runCatching {
+                ContextCompat.startForegroundService(
+                    context,
+                    WakeWordSwitch.attachConfig(context, Intent(context, WakeWordService::class.java)),
+                )
+            }
                 .onSuccess { watch(context.applicationContext) }
                 .onFailure { WakeWordSwitch.failed(context, it.javaClass.simpleName.ifBlank { "error" }) }
         }

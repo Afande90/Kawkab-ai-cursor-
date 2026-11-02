@@ -17,13 +17,25 @@ object WakeAudioInput {
 
     /** Open only on the wake worker, after policy permits listening. */
     fun open(context: Context): WakeCapture? {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) return null
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            return null
+        }
         var record: AudioRecord? = null
         return try {
-            val minimum = AudioRecord.getMinBufferSize(WakeWord.SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
-            val audio = AudioRecord(MediaRecorder.AudioSource.VOICE_RECOGNITION, WakeWord.SAMPLE_RATE,
-                AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT,
-                maxOf(minimum, WakeWord.FRAME_SAMPLES * BUFFER_FRAMES * BYTES_PER_SAMPLE))
+            val minimum = AudioRecord.getMinBufferSize(
+                WakeWord.SAMPLE_RATE,
+                AudioFormat.CHANNEL_IN_MONO,
+                AudioFormat.ENCODING_PCM_16BIT,
+            )
+            val audio = AudioRecord(
+                MediaRecorder.AudioSource.VOICE_RECOGNITION,
+                WakeWord.SAMPLE_RATE,
+                AudioFormat.CHANNEL_IN_MONO,
+                AudioFormat.ENCODING_PCM_16BIT,
+                maxOf(minimum, WakeWord.FRAME_SAMPLES * BUFFER_FRAMES * BYTES_PER_SAMPLE),
+            )
             record = audio
             check(audio.state == AudioRecord.STATE_INITIALIZED)
             audio.startRecording()

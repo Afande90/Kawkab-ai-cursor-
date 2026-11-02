@@ -5,9 +5,9 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.os.BatteryManager
 import androidx.core.content.edit
-import app.kawkab.android.domain.voice.WakeStats
 import app.kawkab.android.domain.voice.WakeListeningConfig
 import app.kawkab.android.domain.voice.WakeListeningMode
+import app.kawkab.android.domain.voice.WakeStats
 
 /**
  * The wake word's on/off setting and its counters (task 27). Kept on this phone only, outside
@@ -33,21 +33,22 @@ object WakeWordSwitch {
             .getOrDefault(WakeListeningMode.SMART)
         val defaults = WakeListeningConfig()
         return WakeListeningConfig(
-            mode, p.getBoolean(SLEEP, false),
+            mode,
+            p.getBoolean(SLEEP, false),
             p.getInt(SLEEP_START, defaults.sleepStartMinute).coerceIn(0, 1439),
             p.getInt(SLEEP_END, defaults.sleepEndMinute).coerceIn(0, 1439),
         )
     }
 
     /** Persist on the app process and send a complete snapshot to the isolated wake process. */
-    fun configure(context: Context, config: WakeListeningConfig) {
+    fun configure(context: Context, config: WakeListeningConfig, activate: Boolean = true) {
         prefs(context).edit {
             putString(MODE, config.mode.name)
             putBoolean(SLEEP, config.sleepEnabled)
             putInt(SLEEP_START, config.sleepStartMinute)
             putInt(SLEEP_END, config.sleepEndMinute)
         }
-        set(context, config.mode != WakeListeningMode.OFF)
+        if (activate) set(context, config.mode != WakeListeningMode.OFF)
     }
 
     /** Preferences are cached per process; startup intents carry current settings explicitly. */
@@ -62,9 +63,12 @@ object WakeWordSwitch {
         val fallback = WakeListeningConfig()
         val mode = runCatching { WakeListeningMode.valueOf(intent.getStringExtra(MODE).orEmpty()) }
             .getOrDefault(WakeListeningMode.SMART)
-        return WakeListeningConfig(mode, intent.getBooleanExtra(SLEEP, false),
+        return WakeListeningConfig(
+            mode,
+            intent.getBooleanExtra(SLEEP, false),
             intent.getIntExtra(SLEEP_START, fallback.sleepStartMinute).coerceIn(0, 1439),
-            intent.getIntExtra(SLEEP_END, fallback.sleepEndMinute).coerceIn(0, 1439))
+            intent.getIntExtra(SLEEP_END, fallback.sleepEndMinute).coerceIn(0, 1439),
+        )
     }
 
     /** @return Whether the owner turned the wake word on. */

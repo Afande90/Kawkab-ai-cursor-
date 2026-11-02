@@ -36,7 +36,7 @@ fun PocketListeningSettings(enrolled: Boolean) {
     fun update(value: WakeListeningConfig) {
         config = value
         // A sleep edit before enrollment must not enable capture.
-        if (enrolled || value.mode == WakeListeningMode.OFF) WakeWordSwitch.configure(context, value)
+        WakeWordSwitch.configure(context, value, activate = enrolled || value.mode == WakeListeningMode.OFF)
     }
     LifecycleResumeEffect(Unit) {
         config = WakeWordSwitch.config(context)
@@ -64,12 +64,36 @@ fun PocketListeningSettings(enrolled: Boolean) {
     })
     if (config.sleepEnabled) {
         DeviceKey("FROM ${clock(config.sleepStartMinute)}", onClick = {
-            TimePickerDialog(context, { _, hour, minute -> update(config.copy(sleepStartMinute = hour * MINUTES_PER_HOUR + minute)) },
-                config.sleepStartMinute / MINUTES_PER_HOUR, config.sleepStartMinute % MINUTES_PER_HOUR, true).show()
+            TimePickerDialog(
+                context,
+                { _, hour, minute ->
+                    update(
+                        config.copy(
+                            sleepStartMinute =
+                            hour * MINUTES_PER_HOUR + minute,
+                        ),
+                    )
+                },
+                config.sleepStartMinute / MINUTES_PER_HOUR,
+                config.sleepStartMinute % MINUTES_PER_HOUR,
+                true,
+            ).show()
         })
         DeviceKey("UNTIL ${clock(config.sleepEndMinute)}", onClick = {
-            TimePickerDialog(context, { _, hour, minute -> update(config.copy(sleepEndMinute = hour * MINUTES_PER_HOUR + minute)) },
-                config.sleepEndMinute / MINUTES_PER_HOUR, config.sleepEndMinute % MINUTES_PER_HOUR, true).show()
+            TimePickerDialog(
+                context,
+                { _, hour, minute ->
+                    update(
+                        config.copy(
+                            sleepEndMinute =
+                            hour * MINUTES_PER_HOUR + minute,
+                        ),
+                    )
+                },
+                config.sleepEndMinute / MINUTES_PER_HOUR,
+                config.sleepEndMinute % MINUTES_PER_HOUR,
+                true,
+            ).show()
         })
     }
     LcdLine("MIC TODAY: ${minutes(days[LocalDate.now()] ?: 0)} MIN")
@@ -89,5 +113,10 @@ fun PocketListeningSettings(enrolled: Boolean) {
 private const val MINUTES_PER_HOUR = 60
 private const val REFRESH_MS = 60_000L
 private const val MS_PER_MINUTE = 60_000.0
-private fun clock(minute: Int): String = String.format(Locale.ROOT, "%02d:%02d", minute / MINUTES_PER_HOUR, minute % MINUTES_PER_HOUR)
+private fun clock(minute: Int): String = String.format(
+    Locale.ROOT,
+    "%02d:%02d",
+    minute / MINUTES_PER_HOUR,
+    minute % MINUTES_PER_HOUR,
+)
 private fun minutes(millis: Long): String = String.format(Locale.ROOT, "%.1f", millis / MS_PER_MINUTE)

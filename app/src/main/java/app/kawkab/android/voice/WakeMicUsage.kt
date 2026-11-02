@@ -21,9 +21,11 @@ class WakeMicUsage(context: Context) {
     fun flush() {
         val snapshot = synchronized(this) { pending.toMap() }
         snapshot.forEach { (day, amount) ->
-            if (add(day, amount)) synchronized(this) {
-                val remaining = (pending[day] ?: 0) - amount
-                if (remaining > 0) pending[day] = remaining else pending.remove(day)
+            if (add(day, amount)) {
+                synchronized(this) {
+                    val remaining = (pending[day] ?: 0) - amount
+                    if (remaining > 0) pending[day] = remaining else pending.remove(day)
+                }
             }
         }
     }

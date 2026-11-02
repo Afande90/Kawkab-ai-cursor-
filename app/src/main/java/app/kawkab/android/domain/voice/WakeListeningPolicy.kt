@@ -4,7 +4,10 @@ import java.time.LocalTime
 
 /** Owner-selected wake service modes; SMART is the battery-saving default. */
 enum class WakeListeningMode(val label: String) {
-    ALWAYS("ALWAYS"), SMART("SMART"), CHARGING("ONLY WHILE CHARGING"), OFF("OFF"),
+    ALWAYS("ALWAYS"),
+    SMART("SMART"),
+    CHARGING("ONLY WHILE CHARGING"),
+    OFF("OFF"),
 }
 
 /** Optional local sleep schedule. Equal endpoints mean no scheduled pause. */
@@ -18,7 +21,9 @@ data class WakeListeningConfig(
         require(sleepStartMinute in 0 until MINUTES_PER_DAY && sleepEndMinute in 0 until MINUTES_PER_DAY)
     }
 
-    private companion object { const val MINUTES_PER_DAY = 24 * 60 }
+    private companion object {
+        const val MINUTES_PER_DAY = 24 * 60
+    }
 }
 
 /** Only device state is needed; no call identity or audio content is recorded. */
@@ -33,8 +38,14 @@ data class WakeListeningState(
 
 /** Visible reasons for releasing, rather than merely ignoring, microphone capture. */
 enum class WakePauseReason(val label: String) {
-    OFF("OFF"), CONVERSATION("CONVERSATION"), CALL("CALL IN PROGRESS"), SLEEP("SLEEP HOURS"),
-    NOT_CHARGING("WAITING FOR CHARGING"), COVERED("PROXIMITY COVERED"), FACE_DOWN("FACE DOWN"), LOW_BATTERY("BATTERY UNDER 20%"),
+    OFF("OFF"),
+    CONVERSATION("CONVERSATION"),
+    CALL("CALL IN PROGRESS"),
+    SLEEP("SLEEP HOURS"),
+    NOT_CHARGING("WAITING FOR CHARGING"),
+    COVERED("PROXIMITY COVERED"),
+    FACE_DOWN("FACE DOWN"),
+    LOW_BATTERY("BATTERY UNDER 20%"),
 }
 
 /** Pure policy shared by device monitoring and deterministic tests. */
