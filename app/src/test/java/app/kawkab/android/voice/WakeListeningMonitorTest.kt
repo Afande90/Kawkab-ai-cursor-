@@ -26,7 +26,10 @@ class WakeListeningMonitorTest {
         val context = RuntimeEnvironment.getApplication()
         var changes = 0
         var reason: WakePauseReason? = null
-        WakeListeningMonitor(context, { false }, { changes++; reason = it }).use { monitor ->
+        WakeListeningMonitor(context, { false }, {
+            changes++
+            reason = it
+        }).use { monitor ->
             monitor.configure(WakeListeningConfig(mode = WakeListeningMode.ALWAYS))
             val initial = changes
             monitor.refresh()
