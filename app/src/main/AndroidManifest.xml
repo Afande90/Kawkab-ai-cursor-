@@ -311,7 +311,13 @@
         <service
             android:name=".voice.WakeWordService"
             android:exported="false"
-            android:foregroundServiceType="microphone" />
+            android:foregroundServiceType="microphone"
+            android:process=":wake" />
+
+        <!-- M1.8: the wake process tells the app about a wake, a failure or Stop. -->
+        <receiver
+            android:name=".voice.WakeRelayReceiver"
+            android:exported="false" />
 
         <service
             android:name=".data.services.AgentForegroundService"

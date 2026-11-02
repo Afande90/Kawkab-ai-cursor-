@@ -28,12 +28,20 @@ class SendSmsExecutor @Inject constructor(
         val body = ToolArgs.text(json, "body")
         if (body.isBlank()) return "Error: missing message body."
         var failure = ""
-        val number = ContactLookup.numberOrNull(
+        // A name the owner already chose a contact for goes straight to that contact (task 34b).
+        val number = choice.remembered(spoken)?.also { choice.lastResolved = it }?.phone ?: ContactLookup.numberOrNull(
             spoken = spoken,
             book = contacts,
             lastResolved = choice.lastResolved,
             // Several matches wait as chips; the call or text stays pending until a pick (task 23j).
-            onChoices = { choice.offer(TOOL_NAME, mapOf("body" to body), it, System.currentTimeMillis()) },
+            onChoices = {
+                choice.offer(
+                    TOOL_NAME,
+                    mapOf("body" to body, ContactChoice.SPOKEN to spoken),
+                    it,
+                    System.currentTimeMillis(),
+                )
+            },
             onResolved = { choice.lastResolved = it },
         ) { failure = it } ?: return failure
         return runner.run(

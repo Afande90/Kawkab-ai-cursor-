@@ -64,4 +64,13 @@
     <string name="voice_confirm_warning_body">A TV, a video or a recording near the phone could say “yes” for you and send a message or place a call. Turn this on only if you accept that. It works only while the phone is unlocked.</string>
     <string name="voice_confirm_warning_enable">Turn on</string>
     <string name="voice_confirm_warning_cancel">Keep tapping</string>
+    <!-- Task 32: startup notices. -->
+    <string name="startup_safe_mode">Kawkab closed right after it last started, so this start is in safe mode: the wake word and screen reading are off until the next start. Settings → About → Copy crash report.</string>
+    <string name="startup_wake_failed">Wake word couldn’t start: %1$s. It is off; turn it on again in Phone access.</string>
+    <!-- Vision rule 1: announce, then act after 3 s unless stopped. -->
+    <string name="announce_call">Calling %1$s</string>
+    <string name="announce_send">Texting %1$s: %2$s</string>
+    <string name="announce_generic">Doing it now</string>
+    <string name="countdown_line">%1$s · %2$d</string>
+    <string name="countdown_stop">STOP</string>
 </resources>

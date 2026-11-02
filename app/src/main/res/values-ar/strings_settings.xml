@@ -428,4 +428,7 @@
     <string name="about_update_failed">تعذّر الوصول إلى GitHub. حاول لاحقًا.</string>
     <string name="about_update_available">%1$s جاهزة. اضغط لتنزيلها.</string>
     <string name="about_update_download_cta">تنزيل %1$s</string>
+    <!-- Task 33: crash report. -->
+    <string name="about_crash_report_cta">Copy crash report</string>
+    <string name="about_crash_report_copied">Crash report copied. Paste it to your reviewer.</string>
 </resources>

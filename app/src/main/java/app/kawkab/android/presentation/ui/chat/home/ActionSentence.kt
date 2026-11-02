@@ -49,6 +49,24 @@ internal object ActionSentence {
     }
 
     /**
+     * What Kawkab says before an announced call or message runs (vision rule 1): "Calling Ahmad",
+     * "Texting Omar: I'm late".
+     *
+     * @param tool The tool about to run.
+     * @param args Its arguments.
+     * @return The sentence.
+     */
+    fun announcement(tool: String, args: Map<String, String>): UiText {
+        val who = args["contact"].orEmpty()
+        return when (tool) {
+            "call_phone" -> UiText.Resource(R.string.announce_call, listOf(who))
+            "send_sms", "send_message", "macro_send" ->
+                UiText.Resource(R.string.announce_send, listOf(who, args["body"].orEmpty()))
+            else -> of(tool, args) ?: UiText.Resource(R.string.announce_generic)
+        }
+    }
+
+    /**
      * @param tool The tool asking.
      * @return The primary button label, or `null` for the default.
      */

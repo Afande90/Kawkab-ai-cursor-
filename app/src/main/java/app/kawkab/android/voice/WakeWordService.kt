@@ -6,8 +6,12 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.BroadcastReceiver
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.media.AudioFormat
@@ -15,13 +19,13 @@ import android.media.AudioManager
 import android.media.AudioRecord
 import android.media.MediaRecorder
 import android.media.ToneGenerator
-import android.os.Bundle
+import android.os.Binder
 import android.os.IBinder
 import android.os.SystemClock
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import app.kawkab.android.R
-import app.kawkab.android.assistant.KawkabVoiceInteractionService
+import app.kawkab.android.crash.CrashLog
 import app.kawkab.android.domain.constants.NotificationIds
 import app.kawkab.android.domain.voice.WakeGate
 import app.kawkab.android.domain.voice.WakeWord
@@ -40,20 +44,40 @@ import java.util.concurrent.atomic.AtomicBoolean
  *
  * Android allows a microphone service to start only while Kawkab is in front, so after a
  * restart it starts again the next time the owner opens the app ([startIfEnabled]).
+ *
+ * It runs in its own process (`:wake`, M1.8). onnxruntime's native start-up crashed with SIGSEGV
+ * on the release build; a native crash cannot be caught, so the process boundary is what keeps
+ * the app alive. The app reads Android's record of that crash and turns the wake word off with a
+ * notice instead of starting it again. Talk with the app goes through [WakeRelayReceiver] and
+ * package-only broadcasts, because the two processes share no memory.
  */
 class WakeWordService : Service() {
     private val running = AtomicBoolean(false)
     private var worker: Thread? = null
 
-    override fun onBind(intent: Intent?): IBinder? = null
+    // A binder only so the app process can watch this process die (M1.8); nothing is called on it.
+    override fun onBind(intent: Intent?): IBinder = Binder()
+
+    private val control = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            when (intent.action) {
+                ACTION_PAUSE -> paused.set(true)
+                ACTION_RESUME -> paused.set(false)
+            }
+        }
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        val filter = IntentFilter().apply {
+            addAction(ACTION_PAUSE)
+            addAction(ACTION_RESUME)
+        }
+        ContextCompat.registerReceiver(this, control, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
+    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_STOP) {
-            WakeWordSwitch.set(this, false)
-            stopSelf()
-            return START_NOT_STICKY
-        }
-        if (!micGranted(this)) {
+        if (!micGranted(this) || WakeHealth.nativeCrashedSinceEnabled(this)) {
             stopSelf()
             return START_NOT_STICKY
         }
@@ -68,10 +92,12 @@ class WakeWordService : Service() {
                 start()
             }
         }
-        return START_STICKY
+        // Not sticky: after a crash Android must not restart it in a loop; the app restarts it.
+        return START_NOT_STICKY
     }
 
     override fun onDestroy() {
+        runCatching { unregisterReceiver(control) }
         running.set(false)
         worker?.join(JOIN_MS)
         worker = null
@@ -81,7 +107,9 @@ class WakeWordService : Service() {
     private fun listen() {
         val gate = WakeGate()
         val spotter = runCatching { WakeSpotter(assets) }.getOrElse {
+            // Never take the app down: turn the wake word off and say why (task 32).
             Timber.w(it, "Wake models did not load")
+            WakeRelayReceiver.send(this, WakeRelayReceiver.ACTION_FAILED, it.javaClass.simpleName.ifBlank { "error" })
             running.set(false)
             stopSelf()
             return
@@ -137,8 +165,6 @@ class WakeWordService : Service() {
     }.getOrNull()
 
     private fun woke() {
-        WakeWordSwitch.countWake(this)
-        if (WakeWordSwitch.isCharging(this)) WakeWordSwitch.noteCharging(this)
         paused.set(true)
         runCatching {
             ToneGenerator(AudioManager.STREAM_NOTIFICATION, TONE_VOLUME).apply {
@@ -147,22 +173,16 @@ class WakeWordService : Service() {
                 release()
             }
         }
-        val args = Bundle().apply { putBoolean(EXTRA_WAKE, true) }
-        if (!KawkabVoiceInteractionService.showPanel(args)) {
-            // Not the assistant: Android does not let a background service open a screen, so a
-            // notification asks for one tap instead.
-            notify(tapToTalk())
-            SystemClock.sleep(NO_PANEL_RESUME_MS)
-            paused.set(false)
-        }
+        // The app process opens the panel (or the tap-to-talk notification) and resumes listening.
+        WakeRelayReceiver.send(this, WakeRelayReceiver.ACTION_WOKE)
     }
 
     private fun notification(): Notification {
         channel()
-        val stop = PendingIntent.getService(
+        val stop = PendingIntent.getBroadcast(
             this,
             0,
-            Intent(this, WakeWordService::class.java).setAction(ACTION_STOP),
+            Intent(this, WakeRelayReceiver::class.java).setAction(WakeRelayReceiver.ACTION_STOP),
             PendingIntent.FLAG_IMMUTABLE,
         )
         return NotificationCompat.Builder(this, CHANNEL)
@@ -177,30 +197,12 @@ class WakeWordService : Service() {
             .build()
     }
 
-    private fun tapToTalk(): Notification = NotificationCompat.Builder(this, CHANNEL)
-        .setSmallIcon(R.drawable.ic_stat_agent)
-        .setContentTitle(getString(R.string.wake_heard_title))
-        .setContentText(getString(R.string.wake_heard_body))
-        .setAutoCancel(true)
-        .setTimeoutAfter(HEARD_TIMEOUT_MS)
-        .setContentIntent(openApp())
-        .lockScreenVersion(this, CHANNEL, R.drawable.ic_stat_agent, getString(R.string.wake_heard_title))
-        .build()
-
     private fun openApp(): PendingIntent = PendingIntent.getActivity(
         this,
         0,
         Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
         PendingIntent.FLAG_IMMUTABLE,
     )
-
-    private fun notify(notification: Notification) {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
-            PackageManager.PERMISSION_GRANTED
-        ) {
-            getSystemService(NotificationManager::class.java)?.notify(NotificationIds.WAKE_WORD_HEARD, notification)
-        }
-    }
 
     private fun channel() {
         getSystemService(NotificationManager::class.java)?.createNotificationChannel(
@@ -213,24 +215,29 @@ class WakeWordService : Service() {
         /** Panel argument: opened by the wake word, so conversation mode starts at once. */
         const val EXTRA_WAKE: String = "app.kawkab.android.WAKE"
 
-        private const val ACTION_STOP = "app.kawkab.android.WAKE_STOP"
-        private const val CHANNEL = "wake_word"
+        private const val ACTION_PAUSE = "app.kawkab.android.WAKE_PAUSE"
+        private const val ACTION_RESUME = "app.kawkab.android.WAKE_RESUME"
         private const val PCM_SCALE = 32_768f
         private const val BUFFER_FRAMES = 8
         private const val PAUSE_POLL_MS = 200L
         private const val JOIN_MS = 1_000L
         private const val TONE_VOLUME = 80
         private const val TONE_MS = 150
-        private const val NO_PANEL_RESUME_MS = 3_000L
-        private const val HEARD_TIMEOUT_MS = 30_000L
 
         private val paused = AtomicBoolean(false)
 
-        /** The panel holds the microphone: stop listening for the wake word. */
-        fun pause() = paused.set(true)
+        /** The channel of the listening notification; the relay posts its notice on it too. */
+        const val CHANNEL: String = "wake_word"
 
-        /** The panel closed: listen for the wake word again. */
-        fun resume() = paused.set(false)
+        /** The panel holds the microphone: stop listening for the wake word (any process). */
+        fun pause(context: Context) = control(context, ACTION_PAUSE)
+
+        /** The panel closed: listen for the wake word again (any process). */
+        fun resume(context: Context) = control(context, ACTION_RESUME)
+
+        private fun control(context: Context, action: String) {
+            context.sendBroadcast(Intent(action).setPackage(context.packageName))
+        }
 
         /**
          * Starts listening. Does nothing without the microphone permission or when Android
@@ -240,12 +247,39 @@ class WakeWordService : Service() {
          */
         fun start(context: Context) {
             if (!micGranted(context)) return
-            paused.set(false)
             runCatching { ContextCompat.startForegroundService(context, Intent(context, WakeWordService::class.java)) }
+                .onSuccess { watch(context.applicationContext) }
+                .onFailure { WakeWordSwitch.failed(context, it.javaClass.simpleName.ifBlank { "error" }) }
+        }
+
+        @Volatile
+        private var watching: ServiceConnection? = null
+
+        /**
+         * Binds without creating, so the app hears at once when the wake process dies while the
+         * wake word is on, and turns it off with the reason (M1.8).
+         */
+        private fun watch(app: Context) {
+            if (watching != null) return
+            val connection = object : ServiceConnection {
+                override fun onServiceConnected(name: ComponentName?, service: IBinder?) = Unit
+                override fun onServiceDisconnected(name: ComponentName?) {
+                    if (WakeWordSwitch.isEnabled(app)) WakeWordSwitch.failed(app, WakeHealth.NATIVE_CRASH)
+                }
+                override fun onBindingDied(name: ComponentName?) {
+                    app.unbindService(this)
+                    watching = null
+                }
+            }
+            if (app.bindService(Intent(app, WakeWordService::class.java), connection, 0)) watching = connection
         }
 
         /** @param context Any context. */
         fun stop(context: Context) {
+            watching?.let { connection ->
+                runCatching { context.applicationContext.unbindService(connection) }
+                watching = null
+            }
             context.stopService(Intent(context, WakeWordService::class.java))
         }
 
@@ -256,7 +290,14 @@ class WakeWordService : Service() {
          * @param context Any context.
          */
         fun startIfEnabled(context: Context) {
-            if (WakeWordSwitch.isEnabled(context)) start(context)
+            // A safe-mode start leaves the wake word off for this run (task 32).
+            if (CrashLog.safeMode || !WakeWordSwitch.isEnabled(context)) return
+            // Its process died in native code since it was turned on: off, with the reason (M1.8).
+            if (WakeHealth.nativeCrashedSinceEnabled(context)) {
+                WakeWordSwitch.failed(context, WakeHealth.NATIVE_CRASH)
+                return
+            }
+            start(context)
         }
 
         private fun micGranted(context: Context): Boolean =

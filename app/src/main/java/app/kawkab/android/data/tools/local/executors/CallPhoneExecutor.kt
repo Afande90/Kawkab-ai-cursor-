@@ -26,12 +26,15 @@ class CallPhoneExecutor @Inject constructor(
         val json = ToolArgs.parse(arguments) ?: return "Error: arguments are not a JSON object."
         val spoken = ToolArgs.text(json, "contact")
         var failure = ""
-        val number = ContactLookup.numberOrNull(
+        // A name the owner already chose a contact for goes straight to that contact (task 34b).
+        val number = choice.remembered(spoken)?.also { choice.lastResolved = it }?.phone ?: ContactLookup.numberOrNull(
             spoken = spoken,
             book = contacts,
             lastResolved = choice.lastResolved,
             // Several matches wait as chips; the call or text stays pending until a pick (task 23j).
-            onChoices = { choice.offer(TOOL_NAME, emptyMap(), it, System.currentTimeMillis()) },
+            onChoices = {
+                choice.offer(TOOL_NAME, mapOf(ContactChoice.SPOKEN to spoken), it, System.currentTimeMillis())
+            },
             onResolved = { choice.lastResolved = it },
         ) { failure = it } ?: return failure
         return runner.run(

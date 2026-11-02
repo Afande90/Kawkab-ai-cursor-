@@ -3,6 +3,7 @@ package app.kawkab.android
 import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import app.kawkab.android.crash.CrashLog
 import app.kawkab.android.data.backup.PendingRestoreApplier
 import app.kawkab.android.data.backup.RestoreLayout
 import app.kawkab.android.data.logging.CrashlyticsTimberTree
@@ -71,6 +72,8 @@ class App :
     override fun onCreate() {
         // A restore the user confirmed replaces the database and the files before anything can open them:
         // the dependencies are built in super.onCreate().
+        // First of all: read how earlier runs ended and decide on a safe-mode start (tasks 32 and 33).
+        CrashLog.start(this)
         val restoreFailure = applyCommittedRestore()
         super.onCreate()
         // A restart passes through a short-lived process that runs this class too; it must not read the

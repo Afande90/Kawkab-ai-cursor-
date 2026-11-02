@@ -1,6 +1,9 @@
 package app.kawkab.android.presentation.ui.about
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Intent
+import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -12,6 +15,7 @@ import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import app.kawkab.android.BuildConfig
 import app.kawkab.android.R
+import app.kawkab.android.crash.CrashLog
 import app.kawkab.android.domain.constants.DocumentationLinks
 import app.kawkab.android.domain.constants.RepositoryLinks
 import app.kawkab.design.screens.about.AboutCallbacks
@@ -65,6 +69,7 @@ fun AboutScreen(
         sectionDocumentation = stringResource(R.string.about_section_documentation),
         documentationBody = stringResource(R.string.about_documentation_body),
         documentationCta = stringResource(R.string.help_title),
+        crashReportCta = stringResource(R.string.about_crash_report_cta),
         updateCta = available?.let { stringResource(R.string.about_update_download_cta, it.tag) }
             ?: stringResource(R.string.about_update_cta),
     )
@@ -85,6 +90,11 @@ fun AboutScreen(
                 }
             },
             onOpenDocumentation = onNavigateToHelp,
+            onCopyCrashReport = {
+                val clipboard = context.getSystemService(ClipboardManager::class.java)
+                clipboard?.setPrimaryClip(ClipData.newPlainText("Kawkab crash report", CrashLog.report(context)))
+                Toast.makeText(context, R.string.about_crash_report_copied, Toast.LENGTH_SHORT).show()
+            },
             onCheckForUpdates = {
                 if (available == null) {
                     updates.check()

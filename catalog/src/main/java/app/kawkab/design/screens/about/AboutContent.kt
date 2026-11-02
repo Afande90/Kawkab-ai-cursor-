@@ -66,7 +66,12 @@ fun AboutContent(
         ) {
             item(key = "hero") { Hero(state = state) }
             item(key = "version") {
-                VersionCard(state = state, strings = strings, onCheckForUpdates = callbacks.onCheckForUpdates)
+                VersionCard(
+                    state = state,
+                    strings = strings,
+                    onCheckForUpdates = callbacks.onCheckForUpdates,
+                    onCopyCrashReport = callbacks.onCopyCrashReport,
+                )
             }
             // Above the licence and the credits on purpose. For a user who
             // arrived from a store listing with no room for a URL, this card is
@@ -143,7 +148,12 @@ private fun Hero(state: AboutViewState) {
 }
 
 @Composable
-private fun VersionCard(state: AboutViewState, strings: AboutStrings, onCheckForUpdates: (() -> Unit)?) {
+private fun VersionCard(
+    state: AboutViewState,
+    strings: AboutStrings,
+    onCheckForUpdates: (() -> Unit)?,
+    onCopyCrashReport: (() -> Unit)?,
+) {
     // All About cards share the same template:
     //  - `LabelSm` section header (uppercase, muted)
     //  - `BodyBase` primary value
@@ -172,6 +182,14 @@ private fun VersionCard(state: AboutViewState, strings: AboutStrings, onCheckFor
             KnotworkSecondaryButton(
                 text = strings.updateCta,
                 onClick = onCheckForUpdates,
+                size = app.kawkab.design.components.buttons.KnotworkButtonSize.Sm,
+            )
+        }
+        // Copies text only; nothing is uploaded (task 33).
+        if (onCopyCrashReport != null) {
+            KnotworkSecondaryButton(
+                text = strings.crashReportCta,
+                onClick = onCopyCrashReport,
                 size = app.kawkab.design.components.buttons.KnotworkButtonSize.Sm,
             )
         }

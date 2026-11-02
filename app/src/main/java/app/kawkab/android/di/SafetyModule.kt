@@ -1,16 +1,22 @@
 package app.kawkab.android.di
 
 import android.content.Context
+import app.kawkab.android.assistant.AssistantPanelVisibility
+import app.kawkab.android.domain.assistant.AssistantCommandRunner
 import app.kawkab.android.domain.safety.ActionDenylist
 import app.kawkab.android.domain.safety.ActionRunner
 import app.kawkab.android.domain.safety.ActivityLog
 import app.kawkab.android.domain.safety.FileActivityLog
+import app.kawkab.android.domain.safety.InteractiveSessions
 import app.kawkab.android.domain.safety.OutboundTapGuard
 import app.kawkab.android.domain.safety.ScreenWatch
+import app.kawkab.android.hands.AndroidContactAliases
 import app.kawkab.android.hands.AndroidContactBook
 import app.kawkab.android.hands.AndroidPhoneHands
+import app.kawkab.android.hands.ContactAliasStore
 import app.kawkab.android.hands.ContactBook
 import app.kawkab.android.hands.PhoneHands
+import app.kawkab.android.presentation.state.ActiveSessionTracker
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -37,6 +43,10 @@ abstract class SafetyModule {
     @Singleton
     abstract fun bindPhoneHands(impl: AndroidPhoneHands): PhoneHands
 
+    @Binds
+    @Singleton
+    abstract fun bindContactAliases(impl: AndroidContactAliases): ContactAliasStore
+
     companion object {
         /** Patterns shipped in the APK, the same list as `safety/outbound_patterns.txt`. */
         @Provides
@@ -53,6 +63,15 @@ abstract class SafetyModule {
             val text = context.assets.open("safety/package_denylist.txt").bufferedReader().readText()
             return ActionDenylist.fromText(text)
         }
+
+        /** The open chat and the assistant panel are the sessions the owner hears announcements in. */
+        @Provides
+        @Singleton
+        fun provideInteractiveSessions(tracker: ActiveSessionTracker): InteractiveSessions =
+            InteractiveSessions { sessionId ->
+                sessionId == tracker.activeSessionId.value ||
+                    (sessionId == AssistantCommandRunner.SESSION_ID && AssistantPanelVisibility.shown)
+            }
 
         /** Private JSON-lines log under the app files directory. */
         @Provides

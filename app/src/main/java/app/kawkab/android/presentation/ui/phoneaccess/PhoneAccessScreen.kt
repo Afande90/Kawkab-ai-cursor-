@@ -177,6 +177,7 @@ private fun micOn(lines: List<PhoneAccessLine>): Boolean =
 private fun wakeNote(on: Boolean): String {
     val context = LocalContext.current
     val stats = WakeWordSwitch.stats(context)
+    WakeWordSwitch.failure(context)?.let { return stringResource(R.string.startup_wake_failed, it) }
     if (!on || stats == null) return stringResource(R.string.wake_note_off)
     val now = System.currentTimeMillis()
     val perHour = stats.wakesPerHour(now)

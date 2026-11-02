@@ -412,4 +412,7 @@
     <string name="about_update_failed">Could not reach GitHub. Try again later.</string>
     <string name="about_update_available">%1$s is ready. Tap to download it.</string>
     <string name="about_update_download_cta">Download %1$s</string>
+    <!-- Task 33: crash report. -->
+    <string name="about_crash_report_cta">Copy crash report</string>
+    <string name="about_crash_report_copied">Crash report copied. Paste it to your reviewer.</string>
 </resources>

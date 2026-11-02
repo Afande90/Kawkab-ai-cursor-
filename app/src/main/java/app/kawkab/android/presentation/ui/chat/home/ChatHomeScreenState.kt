@@ -342,6 +342,7 @@ data class HitlPending(
     val risk: ToolRisk,
     val requestId: String,
     val context: ApprovalRequestContext? = null,
+    val runsAtMs: Long? = null,
 )
 
 /**

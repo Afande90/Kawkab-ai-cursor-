@@ -17,6 +17,7 @@ object WakeWordSwitch {
     private const val START_BATTERY = "start_battery"
     private const val WAKES = "wakes"
     private const val CHARGED = "charged"
+    private const val FAILURE = "failure"
 
     /** @return Whether the owner turned the wake word on. */
     fun isEnabled(context: Context): Boolean = prefs(context).getBoolean(ENABLED, false)
@@ -33,6 +34,7 @@ object WakeWordSwitch {
         prefs(context).edit {
             putBoolean(ENABLED, on)
             if (on) {
+                remove(FAILURE)
                 putLong(STARTED_AT, System.currentTimeMillis())
                 putInt(START_BATTERY, battery)
                 putInt(WAKES, 0)
@@ -41,6 +43,21 @@ object WakeWordSwitch {
         }
         if (on) WakeWordService.start(context) else WakeWordService.stop(context)
     }
+
+    /**
+     * The wake word could not start: it is turned off and the reason is kept for the notice (task 32).
+     *
+     * @param reason A short cause, such as the error's class name.
+     */
+    fun failed(context: Context, reason: String) {
+        prefs(context).edit {
+            putBoolean(ENABLED, false)
+            putString(FAILURE, reason)
+        }
+    }
+
+    /** @return Why the wake word last failed to start, or `null`. Cleared when it is turned on again. */
+    fun failure(context: Context): String? = prefs(context).getString(FAILURE, null)
 
     /** Counts one wake. */
     fun countWake(context: Context) {

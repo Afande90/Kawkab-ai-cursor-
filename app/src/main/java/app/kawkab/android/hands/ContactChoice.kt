@@ -45,7 +45,10 @@ sealed interface ContactAnswer {
  * follow-up such as "the mubadala", "the second one", or a chip tap completes it.
  */
 @Singleton
-class ContactChoice @Inject constructor() {
+class ContactChoice @Inject constructor(private val aliases: ContactAliasStore) {
+    /** Without remembered names, for tests and previews. */
+    constructor() : this(ContactAliasStore.NONE)
+
     private val pending = MutableStateFlow<PendingContact?>(null)
 
     /** The choice waiting for the owner, or `null`. Drives the chips. */
@@ -66,6 +69,12 @@ class ContactChoice @Inject constructor() {
     fun offer(tool: String, args: Map<String, String>, choices: List<ContactMatch>, nowMs: Long) {
         pending.value = PendingContact(tool, args, choices.take(ContactMatcher.MAX_CHOICES), nowMs)
     }
+
+    /**
+     * @param spoken A name the owner said.
+     * @return The contact he picked for it before, or `null`.
+     */
+    fun remembered(spoken: String): ContactMatch? = aliases.get(spoken)
 
     /** Drops the pending choice. */
     fun clear() {
@@ -96,6 +105,8 @@ class ContactChoice @Inject constructor() {
             ?: return ContactAnswer.Unclear
         clear()
         lastResolved = picked
+        // Never ask again for this name (task 34b, vision rule 2).
+        current.args[SPOKEN]?.let { spoken -> aliases.remember(spoken, picked) }
         return ContactAnswer.Picked(current.tool, current.args + ("contact" to picked.phone), picked)
     }
 
@@ -118,6 +129,9 @@ class ContactChoice @Inject constructor() {
 
     /** Timing and the words that cancel or count. */
     companion object {
+        /** The argument that carries the name the owner said, kept so a pick can be remembered. */
+        const val SPOKEN: String = "spoken"
+
         /** A pending choice expires after two minutes. */
         const val TIMEOUT_MS: Long = 120_000L
 

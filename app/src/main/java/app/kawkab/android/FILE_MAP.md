@@ -19,6 +19,7 @@ Only Kotlin files appear inside the generated blocks.
 - `assistant/` - The digital-assistant panel: a power-button long-press opens Kawkab over the current app, and a tap still gates every hands command.
   - `AskKawkabTileService.kt` - The "Ask Kawkab" Quick Settings tile (task 23k): a fallback that works even when the power button is set to the power menu.
   - `AssistantEntry.kt` - One way in to Kawkab that always works (task 23k): the assistant panel over the current app when Kawkab holds the assistant role, otherwise a new chat in the app.
+  - `AssistantPanelVisibility.kt` - Whether the assistant panel is on screen, for the announce-and-act rule (vision rule 1).
   - `AssistantRoleRequest.kt` - Builds the system intent that asks the owner to make Kawkab the digital assistant.
   - `AssistScreenNodes.kt` - Reads an assistant-API screen into the plain screen tree.
   - `KawkabAssistantSession.kt` - The panel a long-press of the power button opens over the current app.
@@ -26,6 +27,8 @@ Only Kotlin files appear inside the generated blocks.
   - `KawkabRecognitionService.kt` - Satisfies the assistant service contract without sending speech off the phone.
   - `KawkabVoiceInteractionService.kt` - Registers Kawkab as a digital assistant.
   - `VoiceStart.kt` - When the assistant panel starts listening by itself (task 23l).
+- `crash/` - The on-device crash log and the safe-mode start (tasks 32 and 33).
+  - `CrashLog.kt` - The on-device crash log and the safe-mode start (tasks 32 and 33).
 - `data/` - Data layer encompassing local, remote, and repository implementations.
   - `audio/` - Voice-input capture.
     - `AudioRecorderImpl.kt` - `AudioRecorder` backed by platform `AudioRecord`: captures 16 kHz mono 16-bit PCM into a WAV inside `AudioCaptureStore`, ticks elapsed seconds into `RecordingState`, and auto-stops at the limit. Mic opened only after the composer permission gate (`@SuppressLint("MissingPermission")`). Excluded from Kover (Android-bound).
@@ -448,6 +451,8 @@ Only Kotlin files appear inside the generated blocks.
     - `SettingsDefaults.kt` - Default values for every user-tunable preference (sampling params, timeouts, pipeline-step bounds, Ollama context window). Single source of truth shared by `SettingsManager`, `SettingsViewModel`, and the visual orchestrator.
     - `TimeAndIdConstants.kt` - Cross-module numeric constants for time-unit conversion (`MS_PER_SECOND`, `MS_PER_MINUTE`) and the notification-id partition range shared by approval-publish/receive paths.
     - `TransientCacheDirectory.kt` - Every directory the app creates under its cache to pass a file to another app, or to take one from it — and the one retention rule all of them share.
+  - `crash/` - Pure rules of the crash log: frames without messages, the last five, safe mode.
+    - `CrashRecord.kt` - One crash in the on-device crash log (task 33).
   - `engine/` - Engine interfaces and abstractions.
     - `AutoProvider.kt` - What a node set to `"auto"` runs on: the first provider of `ORDER` with a saved API key.
     - `ChatHistoryWindowPlanner.kt` - Pure, clock-free planner that decides, per node execution, how a session's chat history splits into a summarised prefix (`ChatHistoryView.earlierSummary`) and a verbatim live window; bounds the over-budget history to the last N messages and flags graceful truncation when no summary is ready. Hosts the shared `CHARS_PER_TOKEN` token estimate.
@@ -743,6 +748,7 @@ Only Kotlin files appear inside the generated blocks.
     - `ActionRunner.kt` - The only way a hands action runs.
     - `ActivityLog.kt` - The on-device activity log.
     - `DenylistStore.kt` - The editable package denylist.
+    - `OutboundCountdown.kt` - The owner's vision rule 1 (2 Nov 2026): a call or a message the owner asked for in person is announced ("Calling Abdalla Mubadala") and runs after a 3-second cancel window.
     - `OutboundTapGuard.kt` - Decides whether a tap target looks outbound from `safety/outbound_patterns.txt`.
   - `services/` - Domain-level services.
     - `AgentWorkspace.kt` - Domain interface for the agent's jailed file sandbox (`resolve` / `readText` / `writeText` / `editText` / `delete` / `list`, plus the Files-screen surface `usage` / `readTextPreview` / `importBytes` / `exportTo` / `stageForShare`); the single trust boundary for agent file I/O (path containment + size quotas + text-only agent surface; byte-faithful stream import/export for the user-facing screen). Operations return typed `WorkspaceResult`/`WorkspaceError` instead of throwing. Data-layer impl: `AgentWorkspaceImpl`.
@@ -948,6 +954,7 @@ Only Kotlin files appear inside the generated blocks.
   - `AndroidPhoneHands.kt` - Intent and accessibility implementation of `PhoneHands`.
   - `AppMapReplay.kt` - Replays a stored macro and checks the screen after every step.
   - `BundledAppMaps.kt` - Stored maps for Phone, Messages, Clock, Calendar, WhatsApp and Gmail.
+  - `ContactAliasStore.kt` - Which contact the owner meant by a name (task 34b, vision rule 2).
   - `ContactChip.kt` - How a contact choice reads on a chip: the name, the last four digits and the phone label, never the whole number (task 23j).
   - `ContactChoice.kt` - Holds the pending choice and the last contact a command resolved to.
   - `ContactMatcher.kt` - Matches a spoken name against the phone book (task 23j).
@@ -1037,8 +1044,10 @@ Only Kotlin files appear inside the generated blocks.
         - `ConversationButton.kt` - Conversation mode (task 23l): tap once to talk; Kawkab listens offline, sends what was said, speaks the reply with an offline voice, and listens again.
         - `Dictation.kt` - The composer mic before the M4 voice stack (task 23c): Android's recognizer, offline only, and the transcript goes into the input box so the owner can correct it before sending.
         - `LocalUndoChip.kt` - The Undo chip shown for 10 seconds after a local action (task 23i).
+        - `OutboundCountdownBar.kt` - An announced call or message (vision rule 1): "Calling Abdalla Mubadala · 3" with STOP.
         - `ReportResponseDialog.kt` - Stateless dialog collecting a flag against a model-authored message (category chips + note), plus `contentReportIssueUrl` — the prefilled `issues/new` URL, truncated to a browser-safe length after percent-encoding. No delivery of its own: the screen offers clipboard or issue tracker.
         - `RunDisplay.kt` - How the run strip writes a run: numbers grouped and rounded for reading — seeds and windows in groups, temperatures as recorded, durations as a person estimates them — with, beside it in this file, the projection of a run's description onto the strip and the rule for when a check asks first.
+        - `StartupNotice.kt` - Says when something did not start (task 32): a safe-mode start after a crash, or a wake word that failed and was turned off.
         - `TurnWatchdog.kt` - Ends a chat turn that has shown no progress for `timeoutMs` (tasks 23h and 23j).
         - `TurnWatchdogConfig.kt` - How long a chat turn may show no progress before it ends with an error (tasks 23h and 23j).
         - `VerificationProgress.kt` - Folds the check's events into what its sheet shows: rows fill in place as calls are repeated, nothing reorders, and an interrupted check leaves the visits it never reached as "not checked".
@@ -1249,6 +1258,8 @@ Only Kotlin files appear inside the generated blocks.
   - `OfflineSpeech.kt` - Android's speech recognizer, offline only (tasks 23c and 23l).
   - `OfflineVoice.kt` - Android text-to-speech with offline voices, in the reply's language (task 23l).
   - `VoiceConfirmSwitch.kt` - The owner's "Confirm by voice" setting (task 29, spec §0.4.3).
+  - `WakeHealth.kt` - Whether the wake process died in native code since the wake word was last turned on (M1.8).
+  - `WakeRelayReceiver.kt` - The app-process side of the wake word (M1.8).
   - `WakeSpotter.kt` - Silero VAD in front of the sherpa-onnx keyword spotter (task 27).
   - `WakeWordService.kt` - Listens for "Kawkab" in a foreground service with a visible notification (task 27, spec §7).
   - `WakeWordSwitch.kt` - The wake word's on/off setting and its counters (task 27).

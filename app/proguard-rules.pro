@@ -168,3 +168,13 @@
 -keep class * extends androidx.room.RoomDatabase { *; }
 -keep class androidx.room.** { *; }
 -dontwarn androidx.room.paging.**
+
+# sherpa-onnx (task 27, M1.8 launch crash). Its JNI library reads the config objects' fields
+# (KeywordSpotterConfig, VadModelConfig, FeatureConfig, ...) by name with GetFieldID and calls
+# back into its result classes. Once R8 renamed those fields the first native call failed and
+# took the process down. The AAR ships no consumer rules, so keep the whole package as is.
+-keep class com.k2fsa.sherpa.onnx.** { *; }
+
+# Llamatik (llama.cpp runtime). Its native bridge is reached the same way; its consumer rules
+# only silence warnings, so keep its classes and members by name too.
+-keep class com.llamatik.** { *; }

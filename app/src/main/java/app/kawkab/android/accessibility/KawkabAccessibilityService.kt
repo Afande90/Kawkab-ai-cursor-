@@ -7,6 +7,7 @@ import android.os.SystemClock
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import app.kawkab.android.assistant.AssistantEntry
+import app.kawkab.android.crash.CrashLog
 import app.kawkab.android.domain.safety.ActionDenylist
 import app.kawkab.android.domain.safety.ActivityLog
 import app.kawkab.android.domain.safety.ActivityLogEntry
@@ -72,7 +73,8 @@ class KawkabAccessibilityService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        if (event == null) return
+        // A safe-mode start does no accessibility work this run (task 32).
+        if (event == null || CrashLog.safeMode) return
         val packageName = event.packageName?.toString().orEmpty()
         lastSecure = event.isAccessibilityDataSensitive
         val previous = screenWatch.latest

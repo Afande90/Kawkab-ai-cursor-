@@ -678,6 +678,12 @@ fun ChatHomeScreen(
                 onGranted = viewModel::retryLastUserTurn,
             )
         }
+        StartupNotice(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .windowInsetsPadding(WindowInsets.statusBars)
+                .padding(top = 112.dp),
+        )
         PhoneAccessBanner(
             onOpen = onOpenPhoneAccess,
             // Below the top bar, which sits under the status bar: without the inset the banner
@@ -697,6 +703,17 @@ fun ChatHomeScreen(
                 .align(Alignment.BottomStart)
                 .padding(start = 16.dp, bottom = 112.dp),
         )
+        // Read with a safe cast: a screen test's relaxed view model hands back a stand-in object.
+        val countdownRaw: Any? = (screenState as Any?).let { (it as? ChatHomeScreenState)?.pending?.tool }
+        (countdownRaw as? HitlPending)?.takeIf { it.runsAtMs != null }?.let { pending ->
+            OutboundCountdownBar(
+                pending = pending,
+                onStop = viewModel.hitl::rejectTool,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 112.dp),
+            )
+        }
         viewModel.localUndo?.let { undo ->
             LocalUndoChip(
                 undo = undo,

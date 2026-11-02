@@ -42,6 +42,7 @@ data class AboutViewState(
  * One-shot callbacks consumed by `AboutContent`.
  *
  * @property onCheckForUpdates The owner's tap on the update button (task 25c). `null` hides it.
+ * @property onCopyCrashReport Copies the on-device crash report (task 33). `null` hides it.
  */
 class AboutCallbacks(
     val onBack: () -> Unit = {},
@@ -49,6 +50,7 @@ class AboutCallbacks(
     val onOpenPrivacyPolicy: () -> Unit = {},
     val onOpenDocumentation: () -> Unit = {},
     val onCheckForUpdates: (() -> Unit)? = null,
+    val onCopyCrashReport: (() -> Unit)? = null,
 )
 
 /** Convenience factory returning a no-op callback bundle. */
@@ -68,4 +70,5 @@ data class AboutStrings(
     val documentationBody: String = "Troubleshooting, FAQ and the guides.",
     val documentationCta: String = "Help",
     val updateCta: String = "Check for updates",
+    val crashReportCta: String = "Copy crash report",
 )

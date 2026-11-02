@@ -298,10 +298,16 @@ class ChatHomeHitlDelegate(
                         risk = approval.risk,
                         requestId = approval.requestId,
                         context = approval.context,
+                        runsAtMs = approval.runsAtMs,
                     ),
                 ),
                 composer = it.composer.copy(typedConfirm = ""),
-                visual = ChatHomeUiState.HitlConfirm(approval.risk.toCatalogRisk()),
+                // An announced call or message shows the countdown with STOP, not the card (vision rule 1).
+                visual = if (approval.runsAtMs != null) {
+                    ChatHomeUiState.Generating()
+                } else {
+                    ChatHomeUiState.HitlConfirm(approval.risk.toCatalogRisk())
+                },
             )
         }
     }

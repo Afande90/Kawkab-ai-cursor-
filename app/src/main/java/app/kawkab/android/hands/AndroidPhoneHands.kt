@@ -1,11 +1,14 @@
 package app.kawkab.android.hands
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Bundle
 import android.provider.AlarmClock
 import android.provider.CalendarContract
+import android.telecom.TelecomManager
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import app.kawkab.android.accessibility.KawkabAccessibilityService
@@ -36,7 +39,30 @@ class AndroidPhoneHands @Inject constructor(
         if (CallFallback.usesDialer(MissingPermission.CALL_PHONE in grantedNow())) {
             return start(Intent(Intent.ACTION_DIAL, uri.toUri()), CallFallback.DIALER_OPENED)
         }
-        return start(Intent(Intent.ACTION_CALL, uri.toUri()), "Called $number.")
+        return placeThroughTelecom(number) ?: start(Intent(Intent.ACTION_CALL, uri.toUri()), "Called $number.")
+    }
+
+    /**
+     * Places the call through the phone's own call service, so no app chooser appears and no other
+     * app that handles `tel:` (Zoom and the like) can take it (task 34b).
+     *
+     * @return The result, or `null` when the call service is unavailable and the intent is used.
+     */
+    private fun placeThroughTelecom(number: String): String? {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CALL_PHONE) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            return null
+        }
+        val telecom = context.getSystemService(TelecomManager::class.java) ?: return null
+        val uri = Uri.fromParts("tel", number, null)
+        denylist.inspectIntent(null, uri.toString())?.let { return "Blocked (${it.layer}): ${it.why}" }
+        return try {
+            telecom.placeCall(uri, Bundle())
+            "Called $number."
+        } catch (_: SecurityException) {
+            null
+        }
     }
 
     override fun composeSms(number: String, body: String): String {

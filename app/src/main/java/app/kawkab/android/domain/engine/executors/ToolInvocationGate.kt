@@ -17,6 +17,8 @@ import app.kawkab.android.domain.repositories.ChatRepository
 import app.kawkab.android.domain.repositories.PendingInteractionRepository
 import app.kawkab.android.domain.repositories.ToolRepository
 import app.kawkab.android.domain.repositories.ToolSettings
+import app.kawkab.android.domain.safety.InteractiveSessions
+import app.kawkab.android.domain.safety.OutboundCountdown
 import app.kawkab.android.domain.services.ApprovalNotifier
 import app.kawkab.android.domain.usecases.RecordTriggerHitlEventUseCase
 import app.kawkab.android.domain.usecases.ResolveApprovalRequestContextUseCase
@@ -26,6 +28,7 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -90,9 +93,59 @@ class ToolInvocationGate @Inject constructor(
     private val pendingInteractionRepository: PendingInteractionRepository,
     private val recordTriggerHitlEvent: RecordTriggerHitlEventUseCase,
     private val resolveRequestContext: ResolveApprovalRequestContextUseCase,
+    private val interactiveSessions: InteractiveSessions = InteractiveSessions.NONE,
 ) {
 
     private val activeApprovalDeferreds = ConcurrentHashMap<String, PendingApprovalHolder>()
+
+    private fun countdownApplies(
+        undecided: Boolean,
+        needsApproval: Boolean,
+        tool: String,
+        risk: ToolRisk,
+        sessionId: String,
+        mustAnswer: Boolean,
+    ): Boolean = undecided &&
+        needsApproval &&
+        OutboundCountdown.applies(
+            tool = tool,
+            risk = risk,
+            interactive = interactiveSessions.isInteractive(sessionId),
+            askedToConfirm = mustAnswer,
+        )
+
+    /**
+     * Vision rule 1: announce the call or message and run it after [OutboundCountdown.WINDOW_MS]
+     * unless the owner cancels (STOP, or "stop" by voice, answers the request with a denial).
+     *
+     * @return `true` when the window passed without a cancel.
+     */
+    private suspend fun FlowCollector<NodeOutput>.announcedCountdown(
+        sessionId: String,
+        tool: String,
+        args: String,
+        risk: ToolRisk,
+        runId: String?,
+    ): Boolean {
+        val requestId = UUID.randomUUID().toString()
+        val request = AgentOrchestratorState.WaitingForApproval(
+            toolName = tool,
+            arguments = args,
+            risk = risk,
+            requestId = requestId,
+            context = resolveRequestContext(runId),
+            runsAtMs = System.currentTimeMillis() + OutboundCountdown.WINDOW_MS,
+        )
+        val deferred = CompletableDeferred<Boolean>()
+        val holder = PendingApprovalHolder(deferred, request)
+        activeApprovalDeferreds[sessionId] = holder
+        emit(NodeOutput.State(request))
+        return try {
+            withTimeoutOrNull(OutboundCountdown.WINDOW_MS) { deferred.await() } ?: true
+        } finally {
+            activeApprovalDeferreds.remove(sessionId, holder)
+        }
+    }
 
     /**
      * Pairs the suspension primitive of one pending approval with the request
@@ -290,8 +343,18 @@ class ToolInvocationGate @Inject constructor(
         val needsApproval =
             askAgain || alwaysConfirm || toolSettings.toolApprovalPolicy.first().requiresApproval(risk)
         var isApproved = true
+        val countdown = countdownApplies(
+            undecided = appliedDecision == null,
+            needsApproval = needsApproval,
+            tool = resolvedToolName,
+            risk = risk,
+            sessionId = sessionId,
+            mustAnswer = askAgain or alwaysConfirm,
+        )
 
-        if (appliedDecision != null) {
+        if (countdown) {
+            isApproved = announcedCountdown(sessionId, resolvedToolName, resolvedToolArgs, risk, runId)
+        } else if (appliedDecision != null) {
             // A resumed run carries the user's one-shot decision for this exact
             // request snapshot — apply it without raising a new gate, and apply
             // it whatever the policy says now. The policy and the risk are re-read

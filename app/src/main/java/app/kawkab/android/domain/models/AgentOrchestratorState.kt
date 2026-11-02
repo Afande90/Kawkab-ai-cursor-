@@ -60,6 +60,9 @@ sealed interface AgentOrchestratorState {
      *   where it came from — shown next to the call so the user can tell whether
      *   the call matches it. `null` when there is nothing to show: a run that is not
      *   persisted, a record without a prompt, or a lookup that failed.
+     * @property runsAtMs Set for an announced call or message (vision rule 1): it runs at this
+     *   time unless cancelled, so surfaces show a countdown and STOP instead of Approve. `null`
+     *   when it waits for an answer.
      */
     data class WaitingForApproval(
         val toolName: String,
@@ -67,6 +70,7 @@ sealed interface AgentOrchestratorState {
         val risk: ToolRisk,
         val requestId: String,
         val context: ApprovalRequestContext? = null,
+        val runsAtMs: Long? = null,
     ) : AgentOrchestratorState
 
     /**

@@ -14,6 +14,7 @@ import android.widget.LinearLayout
 import android.widget.Switch
 import android.widget.TextView
 import androidx.core.graphics.toColorInt
+import androidx.core.view.isVisible
 import app.kawkab.android.R
 import app.kawkab.android.domain.assistant.AssistantCommandRunner
 import app.kawkab.android.domain.assistant.AssistantModelRelease
@@ -84,7 +85,8 @@ class KawkabAssistantSession(
         super.onShow(args, showFlags)
         release.shown()
         // The panel holds the microphone now; the wake word listens again when it closes (task 27).
-        WakeWordService.pause()
+        WakeWordService.pause(appContext)
+        AssistantPanelVisibility.shown = true
         // A long-press of power, the assist gesture or the wake word starts conversation mode at once.
         val woke = args?.getBoolean(WakeWordService.EXTRA_WAKE) == true
         if ((woke || VoiceStart.fromGesture(showFlags)) && hasMicrophone()) conversation().tap()
@@ -93,7 +95,8 @@ class KawkabAssistantSession(
     override fun onHide() {
         conversation?.release()
         conversation = null
-        WakeWordService.resume()
+        WakeWordService.resume(appContext)
+        AssistantPanelVisibility.shown = false
         release.hidden()
         super.onHide()
     }
@@ -101,10 +104,13 @@ class KawkabAssistantSession(
     private var conversation: ConversationDriver? = null
     private var pendingTool: String = ""
 
-    private fun cardSentence(state: AgentOrchestratorState.WaitingForApproval): String =
-        ActionSentence.of(state.toolName, ActionSentence.arguments(state.arguments))
-            ?.let { appContext.resolve(it) }
+    private fun cardSentence(state: AgentOrchestratorState.WaitingForApproval): String {
+        val args = ActionSentence.arguments(state.arguments)
+        // An announced call says what it is doing and runs unless stopped (vision rule 1).
+        if (state.runsAtMs != null) return appContext.resolve(ActionSentence.announcement(state.toolName, args))
+        return ActionSentence.of(state.toolName, args)?.let { appContext.resolve(it) }
             ?: appContext.getString(R.string.assistant_needs_you)
+    }
 
     /** A spoken answer to the waiting card, judged by the safety rule of spec §0.4.3 (task 29). */
     private fun answerCard(heard: String) {
@@ -119,7 +125,9 @@ class KawkabAssistantSession(
             VoiceAnswers.Decision.APPROVE, VoiceAnswers.Decision.DENY -> uiScope.launch {
                 runner.answerByVoice(requestId, decision == VoiceAnswers.Decision.APPROVE, heard, pendingTool)
             }
-            VoiceAnswers.Decision.NEED_TAP -> status.text = appContext.getString(R.string.assistant_voice_needs_tap)
+            VoiceAnswers.Decision.NEED_TAP -> if (approve.isVisible) {
+                status.text = appContext.getString(R.string.assistant_voice_needs_tap)
+            }
         }
     }
 
@@ -265,13 +273,17 @@ class KawkabAssistantSession(
                 // The card is read aloud (task 29). A spoken yes counts only when the owner turned
                 // on "Confirm by voice" and the phone is on and unlocked; otherwise it waits for a tap.
                 pendingTool = state.toolName
+                val announced = state.runsAtMs != null
                 conversation?.waitsForTap(
                     sentence = cardSentence(state),
-                    voiceMayAnswer = VoiceConfirmSwitch.isEnabled(appContext),
+                    // During an announced countdown "stop" is always heard; otherwise only with the setting.
+                    voiceMayAnswer = announced || VoiceConfirmSwitch.isEnabled(appContext),
                 )
                 pendingRequestId = state.requestId
-                status.text = appContext.getString(R.string.assistant_needs_you)
-                approve.visibility = View.VISIBLE
+                status.text = if (announced) cardSentence(state) else appContext.getString(R.string.assistant_needs_you)
+                // Announced: no Approve, only STOP; it runs by itself after 3 s.
+                approve.visibility = if (announced) View.GONE else View.VISIBLE
+                deny.text = appContext.getString(if (announced) R.string.countdown_stop else R.string.assistant_deny)
                 deny.visibility = View.VISIBLE
                 grant.visibility = View.GONE
             }
