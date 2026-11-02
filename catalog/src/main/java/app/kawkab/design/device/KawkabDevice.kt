@@ -34,9 +34,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.innerShadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.PlatformTextStyle
@@ -44,6 +46,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextDirection
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -90,6 +93,14 @@ fun KawkabDevice(
             Column(
                 Modifier.fillMaxSize().clip(RoundedCornerShape(LCD_RADIUS_DP.dp)).background(Color(PANEL_ARGB))
                     .border(2.dp, Ink.copy(alpha = EDGE_ALPHA), RoundedCornerShape(LCD_RADIUS_DP.dp))
+                    .innerShadow(
+                        RoundedCornerShape(LCD_RADIUS_DP.dp),
+                        Shadow(
+                            radius = KEY_SHADOW_DP.dp,
+                            color = Ink.copy(alpha = EDGE_ALPHA),
+                            offset = DpOffset(2.dp, 2.dp),
+                        ),
+                    )
                     .testTag("lcd_panel").pointerInput(state.page, onLcdTap) {
                         detectTapGestures { if (state.page == DevicePage.CALLING) onTalk() else onLcdTap() }
                     }.padding(LCD_PADDING_DP.dp).testTag("lcd_${state.page.name}"),
@@ -234,7 +245,21 @@ fun DeviceKey(label: String, pressed: Boolean = false, onClick: () -> Unit, modi
             Modifier.fillMaxSize().clip(RoundedCornerShape(KEY_RADIUS_DP.dp))
                 .background(
                     Color(if (pressed) KEY_PRESSED_ARGB else KEY_ARGB),
-                ).clickable(onClick = onClick).padding(LCD_RADIUS_DP.dp),
+                ).then(
+                    if (pressed) {
+                        Modifier.innerShadow(
+                            RoundedCornerShape(KEY_RADIUS_DP.dp),
+                            Shadow(
+                                radius = KEY_SHADOW_DP.dp,
+                                color = Ink.copy(alpha = EDGE_ALPHA),
+                                offset = DpOffset(2.dp, 2.dp),
+                            ),
+                        )
+                    } else {
+                        Modifier
+                    },
+                )
+                .clickable(onClick = onClick).padding(LCD_RADIUS_DP.dp),
             Alignment.Center,
         ) {
             Text(label, color = Ink, fontFamily = HeaderFont, fontSize = HEADER_SP.sp)
