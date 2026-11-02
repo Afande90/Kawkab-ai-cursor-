@@ -1,0 +1,24 @@
+{"id": "d000", "split": "calibration", "kind": "contact", "state": "Call Salma, my dentist.", "question": "Which contact does the owner mean?", "options": ["Salma dentist", "Salma neighbour"], "label": "Salma dentist"}
+{"id": "d001", "split": "calibration", "kind": "contact", "state": "اتصل بمريم الطبيبة", "question": "Which contact does the owner mean?", "options": ["مريم طبيبة", "مريم العمل"], "label": "مريم طبيبة"}
+{"id": "d002", "split": "calibration", "kind": "app", "state": "Open maps in the app I chose: Organic Maps.", "question": "Which app should open?", "options": ["Organic Maps", "OsmAnd"], "label": "Organic Maps"}
+{"id": "d003", "split": "calibration", "kind": "app", "state": "افتح الصور في تطبيق المعرض", "question": "Which app should open?", "options": ["Gallery", "Camera"], "label": "Gallery"}
+{"id": "d004", "split": "calibration", "kind": "command_or_chat", "state": "Set a timer for twelve minutes.", "question": "Is this a command or conversation?", "options": ["command", "chat"], "label": "command"}
+{"id": "d005", "split": "calibration", "kind": "command_or_chat", "state": "How do timers work?", "question": "Is this a command or conversation?", "options": ["command", "chat"], "label": "chat"}
+{"id": "d006", "split": "calibration", "kind": "act_or_ask", "state": "Call Nadir. Two contacts have exactly that name. No previous choice is known.", "question": "Act now or ask one question?", "options": ["act", "ask"], "label": "ask"}
+{"id": "d007", "split": "calibration", "kind": "act_or_ask", "state": "Set an alarm for 07:30. The time and permission are known.", "question": "Act now or ask one question?", "options": ["act", "ask"], "label": "act"}
+{"id": "d008", "split": "threshold", "kind": "contact", "state": "Text Rania from work.", "question": "Which contact does the owner mean?", "options": ["Rania family", "Rania work"], "label": "Rania work"}
+{"id": "d009", "split": "threshold", "kind": "contact", "state": "كلم حاتم أخوي", "question": "Which contact does the owner mean?", "options": ["حاتم العمل", "حاتم أخي"], "label": "حاتم أخي"}
+{"id": "d010", "split": "threshold", "kind": "app", "state": "Use Signal to message my friend.", "question": "Which app should open?", "options": ["SMS", "Signal"], "label": "Signal"}
+{"id": "d011", "split": "threshold", "kind": "app", "state": "افتح الخرائط في OsmAnd", "question": "Which app should open?", "options": ["Organic Maps", "OsmAnd"], "label": "OsmAnd"}
+{"id": "d012", "split": "threshold", "kind": "command_or_chat", "state": "Call Hassan now.", "question": "Is this a command or conversation?", "options": ["command", "chat"], "label": "command"}
+{"id": "d013", "split": "threshold", "kind": "command_or_chat", "state": "Did you enjoy that story?", "question": "Is this a command or conversation?", "options": ["command", "chat"], "label": "chat"}
+{"id": "d014", "split": "threshold", "kind": "act_or_ask", "state": "Send a message to Layla. The owner has not said what the message is.", "question": "Act now or ask one question?", "options": ["act", "ask"], "label": "ask"}
+{"id": "d015", "split": "threshold", "kind": "act_or_ask", "state": "Open the single installed calculator application.", "question": "Act now or ask one question?", "options": ["act", "ask"], "label": "act"}
+{"id": "d016", "split": "test", "kind": "contact", "state": "اتصل بعباس الزميل", "question": "Which contact does the owner mean?", "options": ["عباس الزميل", "عباس الجار"], "label": "عباس الزميل"}
+{"id": "d017", "split": "test", "kind": "contact", "state": "Call my uncle Fadil.", "question": "Which contact does the owner mean?", "options": ["Fadil uncle", "Fadil colleague"], "label": "Fadil uncle"}
+{"id": "d018", "split": "test", "kind": "app", "state": "Send it using WhatsApp, as I said.", "question": "Which app should open?", "options": ["Signal", "WhatsApp"], "label": "WhatsApp"}
+{"id": "d019", "split": "test", "kind": "app", "state": "شغل المنبه في تطبيق الساعة", "question": "Which app should open?", "options": ["Clock", "Calendar"], "label": "Clock"}
+{"id": "d020", "split": "test", "kind": "command_or_chat", "state": "اضبط مؤقت خمس دقايق", "question": "Is this a command or conversation?", "options": ["command", "chat"], "label": "command"}
+{"id": "d021", "split": "test", "kind": "command_or_chat", "state": "ما الفرق بين المنبه والمؤقت؟", "question": "Is this a command or conversation?", "options": ["command", "chat"], "label": "chat"}
+{"id": "d022", "split": "test", "kind": "act_or_ask", "state": "Call Amira. Work and home numbers are equally plausible and no preference is stored.", "question": "Act now or ask one question?", "options": ["act", "ask"], "label": "ask"}
+{"id": "d023", "split": "test", "kind": "act_or_ask", "state": "Set a timer for 90 seconds; no information is missing.", "question": "Act now or ask one question?", "options": ["act", "ask"], "label": "act"}
