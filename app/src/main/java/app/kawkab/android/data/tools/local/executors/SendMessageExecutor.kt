@@ -36,7 +36,7 @@ class SendMessageExecutor @Inject constructor(private val hands: PhoneHands, pri
 
         /** When to send inside a messaging app. */
         const val DESCRIPTION: String =
-            "Sends a message inside an installed app by opening it and tapping send. Outbound. Always waits for a tap."
+            "Sends a message inside an installed app by opening it and tapping send. Outbound. Announce the action, then allow three seconds to cancel."
 
         /** JSON arguments. */
         val PARAMETERS: String = """

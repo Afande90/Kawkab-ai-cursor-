@@ -16,6 +16,7 @@ class OfflineVoice(context: Context) {
     private var ready = false
     private var initialized = false
     private var pendingSpeech: (() -> Unit)? = null
+    private var speechRun = 0L
     private var onDone: (() -> Unit)? = null
 
     @Volatile
@@ -72,10 +73,11 @@ class OfflineVoice(context: Context) {
         }
         tts.voice = offline
         val sentences = SpokenSentences.split(text).ifEmpty { listOf(text) }
-        lastUtterance = "$UTTERANCE-${sentences.lastIndex}"
+        val utterance = "$UTTERANCE-${++speechRun}"
+        lastUtterance = "$utterance-${sentences.lastIndex}"
         sentences.forEachIndexed { index, sentence ->
             val mode = if (index == 0) TextToSpeech.QUEUE_FLUSH else TextToSpeech.QUEUE_ADD
-            tts.speak(sentence, mode, null, "$UTTERANCE-$index")
+            tts.speak(sentence, mode, null, "$utterance-$index")
         }
     }
 

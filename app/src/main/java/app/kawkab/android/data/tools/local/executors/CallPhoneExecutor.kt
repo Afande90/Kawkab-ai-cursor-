@@ -53,7 +53,7 @@ class CallPhoneExecutor @Inject constructor(
 
         /** When to place a call. */
         const val DESCRIPTION: String =
-            "Places a phone call to a contact or number. This is outbound and always waits for a tap. " +
+            "Places a phone call to a contact or number. Announce the action, then allow three seconds to cancel. " +
                 "It uses the phone app. It does not send a message."
 
         /** JSON arguments. */

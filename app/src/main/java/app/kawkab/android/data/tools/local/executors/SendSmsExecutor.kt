@@ -12,7 +12,7 @@ import app.kawkab.android.hands.ToolArgs
 import javax.inject.Inject
 
 /**
- * Opens the SMS app with the message filled in and taps send. There is no SEND_SMS permission.
+ * Opens the SMS app with the message filled in and taps send. Requires the Android SMS permission.
  */
 class SendSmsExecutor @Inject constructor(
     private val hands: PhoneHands,
@@ -60,7 +60,7 @@ class SendSmsExecutor @Inject constructor(
 
         /** When to send a text message. */
         const val DESCRIPTION: String =
-            "Sends an SMS by opening the message app and tapping send. Outbound. Always waits for a tap."
+            "Sends an SMS by opening the message app and tapping send. Outbound. Announce the action, then allow three seconds to cancel."
 
         /** JSON arguments. */
         val PARAMETERS: String = """

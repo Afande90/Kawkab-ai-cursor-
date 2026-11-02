@@ -36,7 +36,7 @@ class SubmitTapExecutor @Inject constructor(private val hands: PhoneHands, priva
         /** When to tap a control on screen. */
         const val DESCRIPTION: String =
             "Taps a control by its label or view id. Outbound, because a tap can submit, send, pay, or share. " +
-                "Always waits for a tap on the confirmation card."
+                "Announce the action, then allow three seconds to cancel."
 
         /** JSON arguments. */
         val PARAMETERS: String = """

@@ -9,6 +9,8 @@ import android.os.Bundle
 import android.provider.AlarmClock
 import android.provider.CalendarContract
 import android.telecom.TelecomManager
+import android.telephony.SmsManager
+import android.telephony.SubscriptionManager
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import app.kawkab.android.accessibility.KawkabAccessibilityService
@@ -24,7 +26,7 @@ import javax.inject.Singleton
 /**
  * Intent and accessibility implementation of [PhoneHands].
  * Calls use Telecom, with a default-dialer-only fallback, after the announced cancel window.
- * Messages use ACTION_SENDTO. There is no SEND_SMS permission.
+ * Messages use Android SMS after an explicit system permission grant.
  */
 @Singleton
 class AndroidPhoneHands @Inject constructor(
@@ -69,13 +71,23 @@ class AndroidPhoneHands @Inject constructor(
     }
 
     override fun composeSms(number: String, body: String): String {
-        val intent = Intent(Intent.ACTION_SENDTO, "smsto:${Uri.encode(number)}".toUri()).apply {
-            putExtra("sms_body", body)
+        MissingPermission.card("send_sms", grantedNow(), number)?.let { return it.sentence() }
+        denylist.inspectIntent(null, "smsto:$number")?.let { return "Blocked (${it.layer}): ${it.why}" }
+        val subscription = SubscriptionManager.getDefaultSmsSubscriptionId()
+        if (subscription < 0) return "Choose a default SMS SIM in Android settings, then try again."
+        val manager = context.getSystemService(SmsManager::class.java)?.createForSubscriptionId(subscription)
+            ?: return "SMS is unavailable on this phone."
+        return try {
+            val parts = manager.divideMessage(body)
+            if (parts.size == 1) {
+                manager.sendTextMessage(number, null, body, null, null)
+            } else {
+                manager.sendMultipartTextMessage(number, null, parts, null, null)
+            }
+            "SMS submitted to Android for $number. Delivery is confirmed by your mobile network."
+        } catch (_: Exception) {
+            "I could not send that SMS. Check your SIM and phone access settings."
         }
-        val opened = start(intent, "Opened the message to $number.")
-        if (opened.startsWith("Blocked")) return opened
-        val tapped = KawkabAccessibilityService.tapSend(confirmed = true)
-        return if (tapped) "Sent the message to $number." else "$opened The send control was not on screen yet."
     }
 
     override fun sendInApp(packageName: String, body: String): String {
@@ -151,6 +163,7 @@ class AndroidPhoneHands @Inject constructor(
 
     private fun grantedNow(): Set<String> = listOf(
         MissingPermission.CALL_PHONE,
+        MissingPermission.SEND_SMS,
         MissingPermission.READ_CONTACTS,
         MissingPermission.WRITE_CALENDAR,
     ).filter { name ->

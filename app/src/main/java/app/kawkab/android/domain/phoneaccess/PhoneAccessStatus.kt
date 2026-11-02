@@ -124,6 +124,9 @@ object MissingPermission {
     /** Runtime permission for placing a call. */
     const val CALL_PHONE: String = "android.permission.CALL_PHONE"
 
+    /** Runtime permission for direct SMS after the announced cancel window. */
+    const val SEND_SMS: String = "android.permission.SEND_SMS"
+
     /** Runtime permission for reading contacts. */
     const val READ_CONTACTS: String = "android.permission.READ_CONTACTS"
 
@@ -145,7 +148,7 @@ object MissingPermission {
     fun card(tool: String, granted: Set<String>, spoken: String? = null): MissingPermissionCard? {
         val required = when (tool) {
             "call_phone" -> if (isNumber(spoken)) listOf(CALL_PHONE) else listOf(CALL_PHONE, READ_CONTACTS)
-            "send_sms" -> if (isNumber(spoken)) emptyList() else listOf(READ_CONTACTS)
+            "send_sms" -> if (isNumber(spoken)) listOf(SEND_SMS) else listOf(SEND_SMS, READ_CONTACTS)
             "add_calendar_event" -> listOf(WRITE_CALENDAR)
             else -> return null
         }
@@ -158,7 +161,7 @@ object MissingPermission {
      */
     fun permissionIn(text: String): String? {
         if (!text.startsWith(PREFIX)) return null
-        return listOf(CALL_PHONE, READ_CONTACTS, WRITE_CALENDAR, POST_NOTIFICATIONS, RECORD_AUDIO)
+        return listOf(CALL_PHONE, SEND_SMS, READ_CONTACTS, WRITE_CALENDAR, POST_NOTIFICATIONS, RECORD_AUDIO)
             .firstOrNull { name -> text.contains(name) }
     }
 

@@ -39,7 +39,7 @@ class MacroSendExecutor @Inject constructor(
 
         /** When to replay a macro that may send. */
         const val DESCRIPTION: String =
-            "Replays a recorded macro. Outbound, because a step can send or call. Always waits for a tap."
+            "Replays a recorded macro. Outbound, because a step can send or call. Announce the action, then allow three seconds to cancel."
 
         /** JSON arguments. */
         val PARAMETERS: String = """
