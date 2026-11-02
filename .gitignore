@@ -69,3 +69,7 @@ fastlane/test_output/
 # value, and it was already shipping a stale product name in `.name`. Nothing
 # in it is needed to build or run the project.
 /.idea/
+
+# Local handoff and Python caches.
+/kawkab-m2v.bundle
+__pycache__/

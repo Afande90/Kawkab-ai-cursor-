@@ -116,6 +116,11 @@ class WakeWordService : Service() {
         }
         spotter.use {
             var record: AudioRecord? = null
+            val owner = OwnerVoice(this)
+            val personal = PersonalWakeDetector(this)
+            var personalTick = 0
+            val recent = FloatArray(OWNER_WINDOW_SAMPLES)
+            var cursor = 0
             val pcm = ShortArray(WakeWord.FRAME_SAMPLES)
             val frame = FloatArray(WakeWord.FRAME_SAMPLES)
             while (running.get()) {
@@ -133,8 +138,25 @@ class WakeWordService : Service() {
                     null
                 } ?: continue
                 if (mic.read(pcm, 0, pcm.size) != pcm.size) continue
-                for (i in pcm.indices) frame[i] = pcm[i] / PCM_SCALE
-                if (spotter.feed(frame) && gate.hit(SystemClock.elapsedRealtime(), paused.get())) {
+                for (i in pcm.indices) {
+                    frame[i] = pcm[i] / PCM_SCALE
+                    recent[cursor] = frame[i]
+                    cursor = (cursor + 1) % recent.size
+                }
+                val secondOpinion = spotter.feed(frame)
+                personalTick = (personalTick + 1) % PERSONAL_FRAME_INTERVAL
+                val sample = if (personalTick == 0 || secondOpinion) {
+                    FloatArray(recent.size) { recent[(cursor + it) % recent.size] }
+                } else {
+                    null
+                }
+                val keyword = secondOpinion || (sample != null && personal.hit(sample))
+                if (keyword &&
+                    owner.enrolled() &&
+                    sample != null &&
+                    owner.accepts(sample) &&
+                    gate.hit(SystemClock.elapsedRealtime(), paused.get())
+                ) {
                     mic.release()
                     record = null
                     woke()
@@ -212,6 +234,9 @@ class WakeWordService : Service() {
 
     /** Starting, stopping and pausing from the app and the panel. */
     companion object {
+        private const val OWNER_WINDOW_SAMPLES = 48_000
+        private const val PERSONAL_FRAME_INTERVAL = 8
+
         /** Panel argument: opened by the wake word, so conversation mode starts at once. */
         const val EXTRA_WAKE: String = "app.kawkab.android.WAKE"
 

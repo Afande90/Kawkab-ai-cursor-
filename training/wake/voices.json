@@ -2,16 +2,65 @@
   "version": 1,
   "sample_rate": 16000,
   "training_voices": [
-    {"id": "espeak-en-us-m1", "engine": "espeak-ng", "voice": "en-us+m1", "language": "en"},
-    {"id": "espeak-en-gb-f2", "engine": "espeak-ng", "voice": "en-gb+f2", "language": "en"},
-    {"id": "espeak-ar-m2", "engine": "espeak-ng", "voice": "ar+m2", "language": "ar"},
-    {"id": "espeak-ar-f3", "engine": "espeak-ng", "voice": "ar+f3", "language": "ar"}
+    {
+      "id": "espeak-en-us-m1",
+      "engine": "espeak-ng",
+      "voice": "en-us+m1",
+      "language": "en"
+    },
+    {
+      "id": "espeak-en-gb-f2",
+      "engine": "espeak-ng",
+      "voice": "en-gb+f2",
+      "language": "en"
+    },
+    {
+      "id": "espeak-ar-m2",
+      "engine": "espeak-ng",
+      "voice": "ar+m2",
+      "language": "ar"
+    },
+    {
+      "id": "espeak-ar-f3",
+      "engine": "espeak-ng",
+      "voice": "ar+f3",
+      "language": "ar"
+    }
   ],
-  "required_local_voice": {"language": "ar-SD", "format": "piper", "must_have_verified_personal_use_license": true},
-  "negative_words": ["Kawab", "Karkab", "Kawkaba", "Kebab", "كوكبة", "كباب", "كواب", "كركب"],
-  "snr_db": [5, 10, 15, 20, 25],
-  "speed": [110, 140, 170, 200],
+  "required_local_voice": {
+    "language": "ar-SD",
+    "format": "piper",
+    "must_have_verified_personal_use_license": true
+  },
+  "negative_words": [
+    "Kawab",
+    "Karkab",
+    "Kawkaba",
+    "Kebab",
+    "كوكبة",
+    "كباب",
+    "كواب",
+    "كركب"
+  ],
+  "snr_db": [
+    5,
+    10,
+    15,
+    20,
+    25
+  ],
+  "speed": [
+    110,
+    140,
+    170,
+    200
+  ],
   "seed": 20261102,
   "frozen_evaluation": "evals/wake-word/v1/manifest.jsonl",
-  "gate": {"recall_min": 0.90, "false_wakes_per_hour_max": 0.10, "real_negative_hours_min": 10.0}
+  "gate": {
+    "recall_min": 0.9,
+    "false_wakes_per_hour_max": 0.1,
+    "real_negative_hours_min": 10.0
+  },
+  "frozen_eval_sha256": "2d4cfdc07c850a006a31894c223006d78da6d31fa7274f80410859a13b7d6bf2"
 }
