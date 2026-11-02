@@ -53,6 +53,16 @@ class FileDecisionAuditTest {
         assertFalse(FileDecisionAudit(File(parent, "log.jsonl")).decision(record("first")))
     }
 
+    @Test fun automaticSelectionKeepsItsCancelWindowAcrossReadOnlySteps() {
+        val audit = FileDecisionAudit(File(temporary.root, "log.jsonl"))
+        audit.decision(record("first"))
+        assertTrue(audit.automatic("first"))
+        audit.outcome("first", "read_screen", "Read")
+        assertTrue(audit.automatic("first"))
+        audit.begin("first", "new request")
+        assertFalse(audit.automatic("first"))
+    }
+
     private fun record(session: String): DecisionRecord = DecisionRecord(
         session,
         "call Abdalla",

@@ -1,5 +1,6 @@
 package app.kawkab.android.domain.engine.executors
 
+import app.kawkab.android.domain.decision.DecisionAudit
 import app.kawkab.android.domain.models.AgentOrchestratorState
 import app.kawkab.android.domain.models.ApprovalRequestContext
 import app.kawkab.android.domain.models.ApprovalRequestSource
@@ -56,6 +57,27 @@ import org.junit.Test
  * about again rather than handed to a quiet policy.
  */
 class ToolInvocationGateTest {
+
+    @Test
+    fun `Jev selected local actions wait three seconds after speech and record the outcome`() = runTest {
+        val fixture = Fixture(
+            ToolApprovalPolicy.NeverPrompt, ToolRisk.LOCAL, null,
+            runId = null, tool = "set_alarm", interactive = true, judged = true,
+        )
+        val job = launch { fixture.dispatch() }
+        runCurrent()
+        assertEquals(0, fixture.executions)
+        assertTrue(fixture.gate.announcementFinished(SESSION_ID, fixture.liveRequestId()))
+        runCurrent()
+        advanceTimeBy(2_999)
+        runCurrent()
+        assertEquals(0, fixture.executions)
+        advanceTimeBy(1)
+        runCurrent()
+        job.join()
+        assertEquals(1, fixture.executions)
+        verify { fixture.decisions.outcome(SESSION_ID, "set_alarm", "executed", null) }
+    }
 
     @Test
     fun `countdown runs once only after the full three seconds and yes cannot shorten it`() = runTest {
@@ -622,9 +644,11 @@ class ToolInvocationGateTest {
         liveWindowMs: Flow<Long> = flowOf(100L),
         private val tool: String = TOOL,
         interactive: Boolean = false,
+        judged: Boolean = false,
         intents: app.kawkab.android.domain.decision.DecisionIntents =
             app.kawkab.android.domain.decision.DecisionIntents(),
     ) {
+        val decisions: DecisionAudit = mockk(relaxed = true)
         val toolRepository: ToolRepository = mockk(relaxed = true)
         val pendingInteractionRepository: PendingInteractionRepository = mockk(relaxed = true)
         val recordTriggerHitlEvent: RecordTriggerHitlEventUseCase = mockk(relaxed = true)
@@ -639,6 +663,7 @@ class ToolInvocationGateTest {
         val gate: ToolInvocationGate
 
         init {
+            every { decisions.automatic(SESSION_ID) } returns judged
             coEvery { toolRepository.getRisk(tool, ARGS) } returns risk
             coEvery { toolRepository.executeTool(tool, ARGS, any()) } answers {
                 executions++
@@ -659,6 +684,7 @@ class ToolInvocationGateTest {
                 resolveRequestContext = resolveRequestContext,
                 interactiveSessions = InteractiveSessions { interactive },
                 intents = intents,
+                decisions = decisions,
             )
         }
 
