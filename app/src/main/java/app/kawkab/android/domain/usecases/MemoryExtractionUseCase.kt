@@ -7,6 +7,7 @@ import app.kawkab.android.domain.engine.structured.EngineStructuredInferenceClie
 import app.kawkab.android.domain.engine.structured.GateResult
 import app.kawkab.android.domain.engine.structured.RepairListener
 import app.kawkab.android.domain.engine.structured.StructuredOutputGate
+import app.kawkab.android.domain.memory.MemoryHistoryRules
 import app.kawkab.android.domain.models.ChatMessage
 import app.kawkab.android.domain.models.MemorySource
 import app.kawkab.android.domain.models.Result
@@ -206,7 +207,18 @@ class MemoryExtractionUseCase @Inject constructor(
             is GateResult.Success -> result.value.mapNotNull { dto ->
                 val type = dto.type.trim().lowercase()
                 val text = dto.text.trim()
-                if (text.isNotEmpty() && type in VALID_FACT_TYPES) ExtractedFact(type = type, text = text) else null
+                if (text.isNotEmpty() &&
+                    type in VALID_FACT_TYPES
+                ) {
+                    ExtractedFact(
+                        type = type,
+                        text = text,
+                        status =
+                        dto.status.takeIf { it in FACT_STATUSES } ?: "unsure",
+                    )
+                } else {
+                    null
+                }
             }
             is GateResult.Failed -> {
                 // Repairs exhausted — honour the best-effort contract and drop the
@@ -267,11 +279,12 @@ class MemoryExtractionUseCase @Inject constructor(
                 continue
             }
             // Persist the fact type as a tag so the Memory surface can render it.
-            val tags = listOf(fact.type)
+            val tags =
+                listOf(fact.type) + if (fact.status == "current") emptyList() else listOf("status:${fact.status}")
             val candidate = memoryHistoryRepository.findSupersedeCandidate(embedding)
             memorySearchStatsTracker.record(listOfNotNull(candidate?.second))
             val stored = candidate?.takeIf { it.second >= NEAR_DUPLICATE }?.first
-            when (if (stored == null) SupersedeVerdict.DIFFERENT else verdictFor(stored.text, fact.text)) {
+            when (factVerdict(fact, stored)) {
                 SupersedeVerdict.SAME -> {
                     counts = counts.copy(skippedDuplicates = counts.skippedDuplicates + 1)
                 }
@@ -293,7 +306,24 @@ class MemoryExtractionUseCase @Inject constructor(
                         counts = counts.copy(saved = counts.saved + 1)
                     }
                 }
-                SupersedeVerdict.DIFFERENT, SupersedeVerdict.UNDECIDED -> {
+                SupersedeVerdict.UNDECIDED -> {
+                    val reviewTags = tags + listOf("status:unsure", "review")
+                    stored?.let { target ->
+                        memoryRepository.setMemoryTags(
+                            target.id,
+                            target.tags.filterNot { it.startsWith("status:") } +
+                                listOf("status:unsure", "review"),
+                        )
+                    }
+                    memoryRepository.saveMemory(
+                        text = fact.text,
+                        embedding = embedding,
+                        source = source,
+                        tags = reviewTags,
+                    )
+                    counts = counts.copy(saved = counts.saved + 1)
+                }
+                SupersedeVerdict.DIFFERENT -> {
                     memoryRepository.saveMemory(text = fact.text, embedding = embedding, source = source, tags = tags)
                     counts = counts.copy(saved = counts.saved + 1)
                 }
@@ -301,6 +331,15 @@ class MemoryExtractionUseCase @Inject constructor(
             acceptedEmbeddings += embedding
         }
         return counts
+    }
+
+    private suspend fun factVerdict(
+        fact: ExtractedFact,
+        stored: app.kawkab.android.domain.models.MemoryChunk?,
+    ): SupersedeVerdict = when {
+        stored == null || fact.status == "past" -> SupersedeVerdict.DIFFERENT
+        fact.status == "unsure" -> SupersedeVerdict.UNDECIDED
+        else -> verdictFor(stored.text, fact.text)
     }
 
     /**
@@ -316,7 +355,15 @@ class MemoryExtractionUseCase @Inject constructor(
         if (stored.normalisedFact() == incoming.normalisedFact()) {
             SupersedeVerdict.SAME
         } else {
-            supersedeJudge.judge(stored = stored, incoming = incoming)
+            val verdict = supersedeJudge.judge(stored = stored, incoming = incoming)
+            if (verdict == SupersedeVerdict.UPDATE &&
+                MemoryHistoryRules.needsExplicitChange(stored, incoming) &&
+                !MemoryHistoryRules.explicitChange(stored, incoming)
+            ) {
+                SupersedeVerdict.UNDECIDED
+            } else {
+                verdict
+            }
         }
 
     /** Lower-cased, whitespace-collapsed text without a closing full stop. */
@@ -328,7 +375,7 @@ class MemoryExtractionUseCase @Inject constructor(
      * One parsed extraction fact: its [type] (a [VALID_FACT_TYPES] member,
      * persisted as a tag) and its durable [text].
      */
-    private data class ExtractedFact(val type: String, val text: String)
+    private data class ExtractedFact(val type: String, val text: String, val status: String)
 
     /**
      * Wire shape of one fact in the model's JSON-array reply, deserialized by the
@@ -337,11 +384,12 @@ class MemoryExtractionUseCase @Inject constructor(
      * the [VALID_FACT_TYPES] / non-blank filter in [extractFacts] rather than
      * failing the whole array.
      *
+     * @property status Current, past or unsure; absent legacy values are current.
      * @property type Raw fact category as emitted by the model.
      * @property text Raw fact text as emitted by the model.
      */
     @Serializable
-    private data class ExtractedFactDto(val type: String = "", val text: String = "")
+    private data class ExtractedFactDto(val type: String = "", val text: String = "", val status: String = "current")
 
     /** Maps a [Role] to the speaker label used inside the extraction prompt. */
     private fun Role.label(): String = when (this) {
@@ -375,6 +423,8 @@ class MemoryExtractionUseCase @Inject constructor(
         const val METRICS_KEY = "MEMORY_EXTRACTION"
 
         /** Recognised fact categories emitted by the extraction prompt. */
+        private val FACT_STATUSES = setOf("current", "past", "unsure")
+
         val VALID_FACT_TYPES = setOf("preference", "event", "relation")
 
         /** The near-duplicate threshold, at which a stored chunk becomes a candidate. */

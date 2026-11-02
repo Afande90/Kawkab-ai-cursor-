@@ -475,11 +475,18 @@ object DefaultPrompts {
             - "event": something that happened or will happen at a specific time.
             - "relation": a relationship to a person, place, or thing.
 
-            Normalise relative dates (e.g. "tomorrow") to absolute dates using
+            Preserve current, past and unsure wording. A possible or uncertain statement
+            is not a current fact. Keep explicit change words (sold, moved, no longer,
+            بعت, اتنقلت, ما عاد); never turn a hypothetical change into an actual change.
+            Record a fact's date ONLY when the user stated a date. The conversation's
+            storage timestamp is not the date when the fact became true.
+
+            Normalise relative dates stated by the user (e.g. "tomorrow") to absolute dates using
             today's date above.
 
             Respond with STRICTLY valid JSON and NOTHING else: a JSON array of
-            objects with exactly the keys "type" and "text". If there are no
+            objects with exactly the keys "type", "text" and "status". Status is one of
+            "current", "past", "unsure". If there are no
             durable facts to remember, respond with an empty array: [].
 
             Example:
