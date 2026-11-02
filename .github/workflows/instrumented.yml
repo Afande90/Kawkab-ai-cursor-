@@ -255,6 +255,29 @@ jobs:
             esac
           } >> "$GITHUB_STEP_SUMMARY"
 
+      # Print each failing test and its first lines into the job log, so the
+      # cause is readable without downloading the report artifact.
+      - name: Print failing tests
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          import glob, xml.etree.ElementTree as ET
+          n = 0
+          for f in glob.glob("app/build/outputs/androidTest-results/**/*.xml", recursive=True):
+              try:
+                  root = ET.parse(f).getroot()
+              except Exception:
+                  continue
+              for tc in root.iter("testcase"):
+                  for bad in list(tc.findall("failure")) + list(tc.findall("error")):
+                      n += 1
+                      text = (bad.text or bad.get("message") or "").strip().splitlines()
+                      print(f"::error::FAILED {tc.get('classname')}.{tc.get('name')}")
+                      print("\n".join(text[:12]))
+                      print("-" * 60)
+          print(f"{n} failing test(s)")
+          PY
+
       - name: Upload instrumented test report
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

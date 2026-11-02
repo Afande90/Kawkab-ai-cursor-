@@ -397,6 +397,7 @@ would. Kawkab never checks on its own.
 | Approximate and precise location | Only to match a Wi-Fi trigger against specific network names — Android ties Wi-Fi identity to location | Asked only if you scope a Wi-Fi trigger to named networks |
 | Foreground service, wake lock | Keeping a model download or a running pipeline alive while the screen is off | Used only while such work is running |
 | Run at boot | Re-arming your scheduled triggers after a restart, so an automation you set up does not silently stop | Declared by the scheduling library; used only if you created a trigger |
+| Phone calls, send SMS | Placing a call or sending a text you asked for by voice or text, after the spoken 3-second cancel window | Asked the first time you ask Kawkab to call or text |
 | Execute app functions | Calling tool functions that other apps on the device expose | Declared, but Android grants it only to privileged system apps — on a normal install it is never granted and nothing uses it |
 | Phone | Place a call you confirmed with a tap | Asked when a call is placed. The call log is not read |
 | Contacts | Turn a name you said into a number for a confirmed call or message | Asked when a call or message needs a contact. The list stays on the phone |
@@ -488,9 +489,11 @@ Suspected vulnerabilities should go through the private channel described in
 Kawkab can read the screen and tap controls through an accessibility service.
 That service stays on the phone. Screen text is not uploaded.
 
-A tap whose label matches `safety/outbound_patterns.txt` waits for a confirmation
-tap. Calls use the phone app after that same confirmation. Text messages open
-the message app. Kawkab does not hold the SMS-sending permission.
+Before a call or a text message, Kawkab says what it is about to do and waits
+three seconds; saying "stop" or tapping STOP cancels it. Calls go through the
+phone's own dialer. Text messages are sent from the default SIM with the
+SMS-sending permission, only after that announcement and only to the contact
+you named by voice or text.
 
 Kawkab refuses to act inside the packages in `safety/package_denylist.txt`
 (banks, wallets, authenticators, password managers, and Settings security
