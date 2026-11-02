@@ -39,7 +39,10 @@ class AndroidPhoneHands @Inject constructor(
         if (CallFallback.usesDialer(MissingPermission.CALL_PHONE in grantedNow())) {
             return start(Intent(Intent.ACTION_DIAL, uri.toUri()), CallFallback.DIALER_OPENED)
         }
-        return placeThroughTelecom(number) ?: start(Intent(Intent.ACTION_CALL, uri.toUri()), "Called $number.")
+        placeThroughTelecom(number)?.let { return it }
+        val dialer = context.getSystemService(TelecomManager::class.java)?.defaultDialerPackage
+            ?: return "No default Phone app is set. Choose one in Android settings and try again."
+        return start(Intent(Intent.ACTION_CALL, uri.toUri()).setPackage(dialer), "Called $number.")
     }
 
     /**

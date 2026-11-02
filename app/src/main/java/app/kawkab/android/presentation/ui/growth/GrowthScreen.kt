@@ -23,6 +23,7 @@ import app.kawkab.android.R
 @Composable
 fun GrowthScreen(onBack: () -> Unit, viewModel: GrowthViewModel = hiltViewModel()) {
     val skills by viewModel.skills.collectAsState()
+    val aliases by viewModel.aliases.collectAsState()
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -32,7 +33,13 @@ fun GrowthScreen(onBack: () -> Unit, viewModel: GrowthViewModel = hiltViewModel(
         TextButton(onClick = onBack) { Text(stringResource(R.string.growth_back)) }
         Text(stringResource(R.string.growth_title))
         Text(stringResource(R.string.growth_body))
-        if (skills.isEmpty()) {
+        aliases.forEach { (name, contact) ->
+            Text("$name: ${contact.name}")
+            TextButton(onClick = { viewModel.forgetContact(name) }) {
+                Text(stringResource(R.string.growth_delete))
+            }
+        }
+        if (skills.isEmpty() && aliases.isEmpty()) {
             Text(stringResource(R.string.growth_empty))
         }
         skills.forEach { skill ->
