@@ -15,13 +15,13 @@ import org.robolectric.RuntimeEnvironment
 @RunWith(RobolectricTestRunner::class)
 class WakeListeningConfigTest {
     @Test fun `smart is selected by default but setup has not yet enabled the microphone`() {
-        val context = RuntimeEnvironment.getApplication<android.app.Application>()
+        val context = RuntimeEnvironment.getApplication()
         assertEquals(WakeListeningMode.SMART, WakeWordSwitch.config(context).mode)
         assertFalse(WakeWordSwitch.isEnabled(context))
     }
 
     @Test fun `sleep hours can be saved before enrollment without enabling capture`() {
-        val context = RuntimeEnvironment.getApplication<android.app.Application>()
+        val context = RuntimeEnvironment.getApplication()
         val config = WakeListeningConfig(sleepEnabled = true)
         WakeWordSwitch.configure(context, config, activate = false)
         assertEquals(config, WakeWordSwitch.config(context))
@@ -29,7 +29,7 @@ class WakeListeningConfigTest {
     }
 
     @Test fun `updating listening mode preserves wake counts and sends current sleep hours`() {
-        val context = RuntimeEnvironment.getApplication<android.app.Application>()
+        val context = RuntimeEnvironment.getApplication()
         WakeWordSwitch.set(context, true)
         WakeWordSwitch.countWake(context)
         val config = WakeListeningConfig(WakeListeningMode.CHARGING, true, 23 * 60, 6 * 60)

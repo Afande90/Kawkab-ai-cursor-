@@ -12,7 +12,7 @@ import java.time.LocalDate
 @RunWith(RobolectricTestRunner::class)
 class WakeMicUsageTest {
     @Test fun `flushing preserves each date and restarting does not reset or double count`() {
-        val context = RuntimeEnvironment.getApplication<android.app.Application>()
+        val context = RuntimeEnvironment.getApplication()
         val day = LocalDate.parse("2026-11-02")
         val store = WakeMicUsage(context)
         store.record(mapOf(day to 60_000L, day.plusDays(1) to 30_000L))

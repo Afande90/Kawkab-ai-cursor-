@@ -1,6 +1,5 @@
 package app.kawkab.android.voice
 
-import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.hardware.Sensor
@@ -23,7 +22,7 @@ import org.robolectric.shadows.ShadowSensor
 @RunWith(RobolectricTestRunner::class)
 class WakeListeningMonitorTest {
     @Test fun `battery broadcasts pause and charging resumes without opening the app`() {
-        val context = RuntimeEnvironment.getApplication<Application>()
+        val context = RuntimeEnvironment.getApplication()
         var reason: WakePauseReason? = null
         WakeListeningMonitor(context, { false }, { reason = it }).use { monitor ->
             monitor.configure(WakeListeningConfig())
@@ -49,7 +48,7 @@ class WakeListeningMonitorTest {
     }
 
     @Test fun `covering and uncovering the proximity sensor changes capture policy`() {
-        val context = RuntimeEnvironment.getApplication<Application>()
+        val context = RuntimeEnvironment.getApplication()
         var reason: WakePauseReason? = null
         WakeListeningMonitor(context, { false }, { reason = it }).use { monitor ->
             monitor.configure(WakeListeningConfig())
@@ -67,7 +66,7 @@ class WakeListeningMonitorTest {
     }
 
     @Test fun `face down pauses and hysteresis prevents orientation chatter before face up resumes`() {
-        val context = RuntimeEnvironment.getApplication<Application>()
+        val context = RuntimeEnvironment.getApplication()
         var reason: WakePauseReason? = null
         WakeListeningMonitor(context, { false }, { reason = it }).use { monitor ->
             monitor.configure(WakeListeningConfig())
@@ -101,7 +100,7 @@ class WakeListeningMonitorTest {
             .apply { isAccessible = true }.newInstance(3).also { it.sensor = sensor }
 
     @Test fun `audio mode pauses cellular and communication calls without a phone-state permission`() {
-        val context = RuntimeEnvironment.getApplication<Application>()
+        val context = RuntimeEnvironment.getApplication()
         val audio = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         var reason: WakePauseReason? = null
         WakeListeningMonitor(context, { false }, { reason = it }).use { monitor ->
