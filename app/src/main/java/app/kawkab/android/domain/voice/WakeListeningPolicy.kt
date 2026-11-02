@@ -8,10 +8,13 @@ import java.time.LocalTime
 enum class WakeListeningMode(val label: String) {
     /** Explicit override of proximity, orientation and low-battery heuristics. */
     ALWAYS("ALWAYS"),
+
     /** Apply all automatic battery and sensor pauses. */
     SMART("SMART"),
+
     /** Require charging as well as the smart conditions. */
     CHARGING("ONLY WHILE CHARGING"),
+
     /** Stop the wake service and release its microphone. */
     OFF("OFF"),
 }
@@ -62,18 +65,25 @@ data class WakeListeningState(
 enum class WakePauseReason(val label: String) {
     /** The owner disabled wake listening. */
     OFF("OFF"),
+
     /** A foreground conversation owns the microphone. */
     CONVERSATION("CONVERSATION"),
+
     /** The device is handling ringing or call audio. */
     CALL("CALL IN PROGRESS"),
+
     /** The current local time falls inside the optional sleep window. */
     SLEEP("SLEEP HOURS"),
+
     /** The charging-only mode is waiting for external power. */
     NOT_CHARGING("WAITING FOR CHARGING"),
+
     /** The proximity sensor is covered. */
     COVERED("PROXIMITY COVERED"),
+
     /** The screen points downward. */
     FACE_DOWN("FACE DOWN"),
+
     /** Battery is below twenty percent and is not charging. */
     LOW_BATTERY("BATTERY UNDER 20%"),
 }
