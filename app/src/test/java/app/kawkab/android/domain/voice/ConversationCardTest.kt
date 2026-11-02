@@ -14,6 +14,27 @@ class ConversationCardTest {
     }
 
     @Test
+    fun `countdown silence and unrelated speech keep listening, then stop cancels`() {
+        val loop = waitingLoop()
+        loop.waitsForTap("Calling Abdalla Mubadala", cancelOnly = true)
+        loop.spoken()
+        assertEquals(Step.Listen, loop.silence())
+        assertEquals(Step.Listen, loop.heard("yes"))
+        assertEquals(Step.Listen, loop.heard("hello"))
+        assertEquals(Step.Answer("stop"), loop.heard("stop"))
+    }
+
+    @Test
+    fun `the result ends countdown listening and is spoken`() {
+        val loop = waitingLoop()
+        loop.waitsForTap("Calling Abdalla Mubadala", cancelOnly = true)
+        loop.spoken()
+        assertTrue(loop.replied("Called Abdalla Mubadala.") is Step.Speak)
+        assertEquals(Step.Listen, loop.spoken())
+        assertTrue(loop.followingUp)
+    }
+
+    @Test
     fun `stop is accepted while the announcement is still speaking`() {
         val loop = waitingLoop()
         loop.waitsForTap("Calling Abdalla Mubadala", voiceMayAnswer = true)

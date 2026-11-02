@@ -15,6 +15,7 @@ import app.kawkab.android.domain.repositories.PendingInteractionRepository
 import app.kawkab.android.domain.repositories.SettingsRepository
 import app.kawkab.android.domain.repositories.ToolRepository
 import app.kawkab.android.domain.services.ApprovalNotifier
+import app.kawkab.android.domain.safety.InteractiveSessions
 import app.kawkab.android.domain.usecases.ApprovalRequestContextFixtures
 import app.kawkab.android.domain.usecases.RecordTriggerHitlEventUseCase
 import app.kawkab.android.domain.usecases.ResolveApprovalRequestContextUseCase
@@ -30,6 +31,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -54,6 +56,41 @@ import org.junit.Test
  * about again rather than handed to a quiet policy.
  */
 class ToolInvocationGateTest {
+
+    @Test
+    fun `countdown runs once only after the full three seconds and yes cannot shorten it`() = runTest {
+        val fixture = Fixture(
+            ToolApprovalPolicy.SensitiveOrDestructive, ToolRisk.OUTBOUND, null,
+            runId = null, tool = "call_phone", interactive = true,
+        )
+        val job = launch { fixture.dispatch() }
+        runCurrent()
+        val id = fixture.liveRequestId()
+        assertFalse(fixture.gate.resumeWithApproval(SESSION_ID, id, isApproved = true))
+        advanceTimeBy(2_999)
+        runCurrent()
+        assertEquals(0, fixture.executions)
+        advanceTimeBy(1)
+        runCurrent()
+        job.join()
+        assertEquals(1, fixture.executions)
+    }
+
+    @Test
+    fun `stop during the countdown prevents the action`() = runTest {
+        val fixture = Fixture(
+            ToolApprovalPolicy.SensitiveOrDestructive, ToolRisk.OUTBOUND, null,
+            runId = null, tool = "call_phone", interactive = true,
+        )
+        val job = launch { fixture.dispatch() }
+        runCurrent()
+        advanceTimeBy(2_000)
+        assertTrue(fixture.gate.resumeWithApproval(SESSION_ID, fixture.liveRequestId(), isApproved = false))
+        job.join()
+        advanceTimeBy(3_000)
+        runCurrent()
+        assertEquals(0, fixture.executions)
+    }
 
     @Test
     fun `given a DESTRUCTIVE call denied then policy set to NeverPrompt when resumed then it does not run`() = runTest {
@@ -522,6 +559,8 @@ class ToolInvocationGateTest {
         blockDestructive: Boolean = false,
         private val runId: String? = RUN_ID,
         liveWindowMs: Flow<Long> = flowOf(100L),
+        private val tool: String = TOOL,
+        interactive: Boolean = false,
     ) {
         val toolRepository: ToolRepository = mockk(relaxed = true)
         val pendingInteractionRepository: PendingInteractionRepository = mockk(relaxed = true)
@@ -537,8 +576,8 @@ class ToolInvocationGateTest {
         val gate: ToolInvocationGate
 
         init {
-            coEvery { toolRepository.getRisk(TOOL, ARGS) } returns risk
-            coEvery { toolRepository.executeTool(TOOL, ARGS, any()) } answers {
+            coEvery { toolRepository.getRisk(tool, ARGS) } returns risk
+            coEvery { toolRepository.executeTool(tool, ARGS, any()) } answers {
                 executions++
                 "executed"
             }
@@ -555,6 +594,7 @@ class ToolInvocationGateTest {
                 pendingInteractionRepository = pendingInteractionRepository,
                 recordTriggerHitlEvent = recordTriggerHitlEvent,
                 resolveRequestContext = resolveRequestContext,
+                interactiveSessions = InteractiveSessions { interactive },
             )
         }
 
@@ -570,7 +610,7 @@ class ToolInvocationGateTest {
                     nodeId = "node-1",
                     sessionId = SESSION_ID,
                     runId = runId,
-                    resolvedToolName = TOOL,
+                    resolvedToolName = tool,
                     resolvedToolArgs = ARGS,
                     alwaysConfirm = false,
                 )
@@ -585,7 +625,7 @@ class ToolInvocationGateTest {
                 nodeId = "node-1",
                 sessionId = SESSION_ID,
                 runId = runId,
-                resolvedToolName = TOOL,
+                resolvedToolName = tool,
                 resolvedToolArgs = ARGS,
                 alwaysConfirm = alwaysConfirm,
             )
