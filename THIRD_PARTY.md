@@ -87,7 +87,7 @@ Nothing Glyph Developer Kit 2.0: official SDK, personal-use only under the owner
 
 smart-turn-v3.2-cpu.onnx: Daily/Pipecat, BSD-2-Clause. HF revision f766f81d3cfdf7737ac64aad813d91bbfd56bf93, SHA-256 2bb026316b14a660486a75b1733cd3fbab8c2fd0314dc9af7be49f8cca967e4f, 8,679,182 bytes. Gradle downloads the public model at build time and packages it for offline CPU inference. The licence is retained in third_party/smart-turn/LICENSE. No owner audio is downloaded or uploaded.
 
-ONNX Runtime Android 1.28.0 (MIT) adds the Java CPU bridge. The existing sherpa library uses ORT C API 28, as does the new bridge. A single shared runtime is packaged per ABI. Public publisher key 369E771178C41DE26253F280E96373C25092C07A was verified against the Maven Central AAR/POM signatures and is trusted only for this exact module/version; artifact SHA-256 values are also pinned. No private signing key is stored.
+ONNX Runtime Android 1.28.0 (MIT) adds the Java CPU bridge. The existing sherpa core is retained byte for byte; the Java core is isolated under a distinct SONAME because their ELF symbol versions differ. Public publisher key 369E771178C41DE26253F280E96373C25092C07A was verified against the Maven Central AAR/POM signatures and is trusted only for this exact module/version; artifact SHA-256 values are also pinned. No private signing key is stored.
 
 The first-party Whisper-compatible feature extractor follows the published 8-second smart-turn input convention. Its complete 80x800 outputs are checked against independent frozen Transformers v4.57.1/NumPy references (Apache-2.0 reference utilities). These are mathematical synthetic signals, not owner audio or an accuracy claim.
 
