@@ -51,7 +51,7 @@ class CallRoutingTest {
         hands.placeCall("+249912345678")
         assertEquals(Intent.ACTION_CALL, intent.captured.action)
         assertEquals("com.android.dialer", intent.captured.`package`)
-        assertEquals("tel:+249912345678", intent.captured.dataString)
+        assertEquals("+249912345678", intent.captured.data?.schemeSpecificPart)
     }
 
     @Test

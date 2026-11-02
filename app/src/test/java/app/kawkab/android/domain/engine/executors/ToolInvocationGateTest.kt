@@ -14,8 +14,8 @@ import app.kawkab.android.domain.models.TriggerHitlResolution
 import app.kawkab.android.domain.repositories.PendingInteractionRepository
 import app.kawkab.android.domain.repositories.SettingsRepository
 import app.kawkab.android.domain.repositories.ToolRepository
-import app.kawkab.android.domain.services.ApprovalNotifier
 import app.kawkab.android.domain.safety.InteractiveSessions
+import app.kawkab.android.domain.services.ApprovalNotifier
 import app.kawkab.android.domain.usecases.ApprovalRequestContextFixtures
 import app.kawkab.android.domain.usecases.RecordTriggerHitlEventUseCase
 import app.kawkab.android.domain.usecases.ResolveApprovalRequestContextUseCase
@@ -60,8 +60,12 @@ class ToolInvocationGateTest {
     @Test
     fun `countdown runs once only after the full three seconds and yes cannot shorten it`() = runTest {
         val fixture = Fixture(
-            ToolApprovalPolicy.SensitiveOrDestructive, ToolRisk.OUTBOUND, null,
-            runId = null, tool = "call_phone", interactive = true,
+            ToolApprovalPolicy.SensitiveOrDestructive,
+            ToolRisk.OUTBOUND,
+            null,
+            runId = null,
+            tool = "call_phone",
+            interactive = true,
         )
         val job = launch { fixture.dispatch() }
         runCurrent()
@@ -79,8 +83,12 @@ class ToolInvocationGateTest {
     @Test
     fun `stop during the countdown prevents the action`() = runTest {
         val fixture = Fixture(
-            ToolApprovalPolicy.SensitiveOrDestructive, ToolRisk.OUTBOUND, null,
-            runId = null, tool = "call_phone", interactive = true,
+            ToolApprovalPolicy.SensitiveOrDestructive,
+            ToolRisk.OUTBOUND,
+            null,
+            runId = null,
+            tool = "call_phone",
+            interactive = true,
         )
         val job = launch { fixture.dispatch() }
         runCurrent()

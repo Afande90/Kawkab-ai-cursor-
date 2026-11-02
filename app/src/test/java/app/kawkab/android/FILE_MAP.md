@@ -620,6 +620,7 @@ Only Kotlin files appear inside the generated blocks.
 - `hands/` - Tests for stored app maps: replay without a model, check the screen, and stop for an outbound tap.
   - `AppMapReplayTest.kt` - Stored app maps replay without a model, check the screen, and still stop for an outbound tap.
   - `CallFlowTest.kt` - Task 23j: contact matching, the pending choice, the grant route and the dialer fallback.
+  - `CallRoutingTest.kt` - Calls must use the phone service, with a default-dialer-only fallback.
   - `ContactQuestionTest.kt` - Task 29: contact choices are read aloud as a short numbered list of names.
   - `LocalActionsTest.kt` - Task 23i: local actions do not ask, can be undone for 10 seconds, and read times properly.
   - `RememberedContactTest.kt` - Task 34b and vision rule 2: a pick is remembered and never asked again for that name.
