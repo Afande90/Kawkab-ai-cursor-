@@ -356,6 +356,9 @@ class HttpRequestExecutor internal constructor(
         if (url.scheme != "https" && !HttpRequestPolicy.isLoopbackOrPrivateHost(host)) {
             return "only https is allowed for '$host' (cleartext is permitted for local addresses only)."
         }
+        if (!app.kawkab.android.domain.services.LocalOnlyPolicy.isLocalEndpoint(url.toString())) {
+            return "everything stays on this phone; remote HTTP targets are disabled."
+        }
         return null
     }
 

@@ -78,16 +78,11 @@ class NetworkSettingsStore @Inject constructor(private val dataStore: DataStore<
         }
     }
 
-    override val blockNetworkFromLocalModel: Flow<Boolean> = dataStore.preferencesOrEmpty()
-        .map { preferences ->
-            preferences[Keys.BLOCK_NETWORK_FROM_LOCAL_MODEL]
-                ?: SettingsDefaults.BLOCK_NETWORK_FROM_LOCAL_MODEL_DEFAULT
-        }
+    // Owner reset rule 3 is binding even when a restored legacy preference says false.
+    override val blockNetworkFromLocalModel: Flow<Boolean> = dataStore.preferencesOrEmpty().map { true }
 
     override suspend fun setBlockNetworkFromLocalModel(blocked: Boolean) {
-        dataStore.edit { preferences ->
-            preferences[Keys.BLOCK_NETWORK_FROM_LOCAL_MODEL] = blocked
-        }
+        dataStore.edit { preferences -> preferences[Keys.BLOCK_NETWORK_FROM_LOCAL_MODEL] = true }
     }
 
     /**

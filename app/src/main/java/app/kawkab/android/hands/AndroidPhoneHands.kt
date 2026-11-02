@@ -15,6 +15,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import app.kawkab.android.accessibility.KawkabAccessibilityService
 import app.kawkab.android.domain.phoneaccess.MissingPermission
+import app.kawkab.android.domain.phoneaccess.MissingPermissionCard
 import app.kawkab.android.domain.safety.ActionDenylist
 import app.kawkab.android.domain.text.ClockText
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -71,13 +72,17 @@ class AndroidPhoneHands @Inject constructor(
     }
 
     override fun composeSms(number: String, body: String): String {
-        MissingPermission.card("send_sms", grantedNow(), number)?.let { return it.sentence() }
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.SEND_SMS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            return MissingPermissionCard(MissingPermission.SEND_SMS, "send_sms").sentence()
+        }
         denylist.inspectIntent(null, "smsto:$number")?.let { return "Blocked (${it.layer}): ${it.why}" }
-        val subscription = SubscriptionManager.getDefaultSmsSubscriptionId()
-        if (subscription < 0) return "Choose a default SMS SIM in Android settings, then try again."
-        val manager = context.getSystemService(SmsManager::class.java)?.createForSubscriptionId(subscription)
-            ?: return "SMS is unavailable on this phone."
         return try {
+            val subscription = SubscriptionManager.getDefaultSmsSubscriptionId()
+            if (subscription < 0) return "Choose a default SMS SIM in Android settings, then try again."
+            val manager = context.getSystemService(SmsManager::class.java)?.createForSubscriptionId(subscription)
+                ?: return "SMS is unavailable on this phone."
             val parts = manager.divideMessage(body)
             if (parts.size == 1) {
                 manager.sendTextMessage(number, null, body, null, null)

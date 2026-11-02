@@ -561,7 +561,7 @@ object SettingsDefaults {
      * reachable; the user opts in to gate every cloud call (on-device + Ollama
      * only) when they want a strict no-egress posture.
      */
-    const val BLOCK_NETWORK_FROM_LOCAL_MODEL_DEFAULT: Boolean = false
+    const val BLOCK_NETWORK_FROM_LOCAL_MODEL_DEFAULT: Boolean = true
 
     /**
      * Default number of recent memory chunks rendered by the `$MEMORY_SUMMARY`

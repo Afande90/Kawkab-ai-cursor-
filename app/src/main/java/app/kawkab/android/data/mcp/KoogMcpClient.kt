@@ -18,6 +18,8 @@ import app.kawkab.android.domain.repositories.NetworkActivityTracker
 import app.kawkab.android.domain.repositories.ToolSettings
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.api.Send
+import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.sse.SSE
 import io.ktor.http.HttpHeaders
@@ -162,6 +164,9 @@ class KoogMcpClient(
      * a partially-swapped connection.
      */
     override suspend fun connect(config: McpServerConfig) {
+        require(app.kawkab.android.domain.services.LocalOnlyPolicy.isLocalEndpoint(config.url)) {
+            "Everything stays on this phone. Only loopback tool servers are supported."
+        }
         // Outbound HTTP traffic is about to start — surface it to the privacy indicator
         // *before* the network handshake so the timestamp reflects intent even if the
         // call fails downstream.
@@ -185,6 +190,7 @@ class KoogMcpClient(
                 // Installing it unconditionally lets either branch reuse the same
                 // HttpClient without juggling `client.config { install(SSE) }` calls.
                 val client = HttpClient {
+                    install(phoneTransport)
                     install(SSE)
                     // Socket floor, deliberately set ABOVE our own call deadline
                     // ([toolCallTimeoutMs]) so the two never race: the engine Koog
@@ -500,6 +506,16 @@ class KoogMcpClient(
 
     /** Header-composition + auth helpers shared across instances. */
     companion object {
+        // Also covers a new endpoint advertised by an SSE tool server, not just HTTP redirects.
+        private val phoneTransport = createClientPlugin("KawkabPhoneTools") {
+            on(Send) { request ->
+                require(app.kawkab.android.domain.services.LocalOnlyPolicy.isLocalEndpoint(request.url.buildString())) {
+                    "Everything stays on this phone. A remote tool request was refused."
+                }
+                proceed(request)
+            }
+        }
+
         /**
          * Default deadline for one tool round-trip. Matches the 60 s the
          * project already requires of cloud LLM calls (`api-conventions.md`):
