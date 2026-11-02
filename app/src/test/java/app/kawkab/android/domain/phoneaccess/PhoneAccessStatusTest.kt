@@ -52,10 +52,10 @@ class PhoneAccessStatusTest {
     @Test
     fun messageAndCalendarCardsStayQuietWhenTheGrantIsPresent() {
         assertEquals(
-            MissingPermission.READ_CONTACTS,
+            MissingPermission.SEND_SMS,
             MissingPermission.card("send_sms", emptySet(), "Ahmad")?.permission,
         )
-        assertNull(MissingPermission.card("send_sms", emptySet(), "0501234567"))
+        assertNull(MissingPermission.card("send_sms", setOf(MissingPermission.SEND_SMS), "0501234567"))
         assertEquals(
             MissingPermission.WRITE_CALENDAR,
             MissingPermission.card("add_calendar_event", emptySet())?.permission,

@@ -168,7 +168,9 @@ class ChatTierRouterTest {
         val states = mutableListOf<AgentOrchestratorState>()
         withChoice.runCommand("session", "what time is it", command, states::add)
 
-        assertTrue((states.last() as AgentOrchestratorState.Completed).finalResponse.contains("Say the number or the name"))
+        assertTrue(
+            (states.last() as AgentOrchestratorState.Completed).finalResponse.contains("Say the number or the name"),
+        )
         coVerify(exactly = 0) { gate.dispatch(any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
