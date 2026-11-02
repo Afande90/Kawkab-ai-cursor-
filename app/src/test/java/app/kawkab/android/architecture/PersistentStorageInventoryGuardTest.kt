@@ -457,6 +457,16 @@ class PersistentStorageInventoryGuardTest {
             notArchived = "Android noBackupFilesDir is excluded from platform backup and app archives",
         ),
 
+        /** Daily microphone-open milliseconds only; no audio, excluded from all backups. */
+        VOICE_USAGE(
+            domain = "root",
+            plaintextPath = null,
+            erasedBy = null,
+            kept = "daily microphone duration on this install, retained for battery comparisons",
+            archive = emptyList(),
+            notArchived = "Android noBackupFilesDir is excluded from platform backup and app archives",
+        ),
+
         /**
          * The hands activity log, one JSON-lines file. Readable, so it is excluded by name.
          * The recovery wipe is the locked-database escape and does not delete it.
@@ -538,6 +548,7 @@ class PersistentStorageInventoryGuardTest {
             "/data/backup/StagedDatabasePreparer.kt" to "RESTORE: the staged database, opened once through Room",
             "/di/SafetyModule.kt" to "ACTIVITY_LOG",
             "/voice/WakeWordSwitch.kt" to "VOICE_SWITCHES",
+            "/voice/WakeMicUsage.kt" to "VOICE_USAGE",
             "/voice/VoiceConfirmSwitch.kt" to "VOICE_SWITCHES",
             "/crash/CrashLog.kt" to "CRASH_LOG",
             "/hands/ContactAliasStore.kt" to "CONTACT_ALIASES",
