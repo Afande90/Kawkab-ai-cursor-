@@ -595,6 +595,17 @@ class ToolInvocationGateTest {
         assertTrue(outputs.lastResult().error.orEmpty().contains("on this phone"))
     }
 
+    @Test
+    fun `conversation intent cannot be overridden by a generated phone tool`() = runTest {
+        val intents = app.kawkab.android.domain.decision.DecisionIntents()
+        intents.remember(SESSION_ID, mayAct = false)
+        val fixture = Fixture(ToolApprovalPolicy.NeverPrompt, ToolRisk.LOCAL, null,
+            tool = "set_alarm", interactive = true, intents = intents)
+        val outputs = fixture.dispatch()
+        assertEquals(0, fixture.executions)
+        assertTrue(outputs.lastResult().error.orEmpty().contains("conversation"))
+    }
+
     private class Fixture(
         policy: ToolApprovalPolicy,
         risk: ToolRisk,
@@ -604,6 +615,7 @@ class ToolInvocationGateTest {
         liveWindowMs: Flow<Long> = flowOf(100L),
         private val tool: String = TOOL,
         interactive: Boolean = false,
+        intents: app.kawkab.android.domain.decision.DecisionIntents = app.kawkab.android.domain.decision.DecisionIntents(),
     ) {
         val toolRepository: ToolRepository = mockk(relaxed = true)
         val pendingInteractionRepository: PendingInteractionRepository = mockk(relaxed = true)
@@ -638,6 +650,7 @@ class ToolInvocationGateTest {
                 recordTriggerHitlEvent = recordTriggerHitlEvent,
                 resolveRequestContext = resolveRequestContext,
                 interactiveSessions = InteractiveSessions { interactive },
+                intents = intents,
             )
         }
 
