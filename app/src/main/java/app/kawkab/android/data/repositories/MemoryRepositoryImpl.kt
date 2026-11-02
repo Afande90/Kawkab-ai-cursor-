@@ -116,7 +116,8 @@ class MemoryRepositoryImpl @Inject constructor(
         }
 
     override suspend fun compactMemory(keepLimit: Int) = withContext(Dispatchers.IO) {
-        memoryDao.deleteOldestMemories(keepLimit)
+        // Owner reset rules 3 and 10: a size limit cannot silently erase personal facts.
+        Timber.tag("Memory").i("Automatic pruning skipped; Growth retains the owner deletion controls")
     }
 
     override suspend fun getCompactionCandidates(olderThanMillis: Long): List<MemoryChunk> =
@@ -131,7 +132,7 @@ class MemoryRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deleteMemory(id: Long) = withContext(Dispatchers.IO) {
-        memoryDao.deleteMemoryById(id)
+        memoryDao.deleteMemoryAndDerived(id)
     }
 
     override suspend fun updateMemory(id: Long, text: String, embedding: FloatArray) = withContext(Dispatchers.IO) {

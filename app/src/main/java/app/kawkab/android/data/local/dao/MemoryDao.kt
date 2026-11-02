@@ -5,8 +5,11 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import app.kawkab.android.data.local.TagsCsv
 import app.kawkab.android.data.local.models.MemoryChunkEntity
 import app.kawkab.android.data.local.models.MemoryPendingUpdateEntity
+import app.kawkab.android.domain.memory.MemoryHistoryRules
+import app.kawkab.android.domain.models.MemorySource
 import app.kawkab.android.domain.models.MemorySummary
 import kotlinx.coroutines.flow.Flow
 
@@ -159,12 +162,21 @@ interface MemoryDao {
     @Query("DELETE FROM memory_chunks WHERE id IN (:ids)")
     suspend fun deleteMemoriesByIds(ids: List<Long>)
 
+    /** Delete only the chosen fact and summaries derived from it, in one transaction. */
+    @Transaction
+    suspend fun deleteMemoryAndDerived(id: Long) {
+        val parents = getAllMemories().mapNotNull { row ->
+            (row.source as? MemorySource.Compaction)?.let { row.id to it.originalChunkIds }
+        }.toMap()
+        deleteMemoriesByIds(MemoryHistoryRules.derivedIds(id, parents).toList())
+    }
+
     /**
-     * Writes a consolidation summary and removes the chunks it replaces in a
+     * Writes a consolidation summary and marks its source chunks past in a
      * single transaction.
      *
-     * Compaction is the one path that *destroys* user data, so the write and
-     * the deletions must not be separable: a crash (or a failing statement)
+     * The owner reset forbids automatic deletion: originals stay as history.
+     * Summary and status changes must not be separable: a crash (or a failing statement)
      * between them would either duplicate the facts (summary saved, originals
      * kept) or lose them outright (originals deleted, summary missing). Room's
      * transaction gives the all-or-nothing guarantee the compaction contract
@@ -178,7 +190,10 @@ interface MemoryDao {
     @Transaction
     suspend fun replaceWithConsolidated(summary: MemoryChunkEntity, originalIds: List<Long>): Long {
         val insertedId = insertMemory(summary)
-        deleteMemoriesByIds(originalIds)
+        getAllMemories().filter { it.id in originalIds }.forEach { original ->
+            val tags = TagsCsv.decode(original.tagsCsv).filterNot { it.startsWith("status:") } + "status:past"
+            setMemoryTags(original.id, TagsCsv.encode(tags))
+        }
         return insertedId
     }
 
@@ -199,6 +214,7 @@ interface MemoryDao {
      */
     @Query(
         "SELECT * FROM memory_chunks WHERE isPinned = 0 AND timestamp < :olderThan " +
+            "AND tagsCsv NOT LIKE '%status:past%' " +
             "AND id NOT IN (SELECT updateChunkId FROM memory_pending_updates) ORDER BY timestamp DESC",
     )
     suspend fun getCompactionCandidates(olderThan: Long): List<MemoryChunkEntity>

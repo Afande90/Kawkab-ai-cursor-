@@ -21,6 +21,16 @@ object MemoryHistoryRules {
         changes.containsMatchIn(incoming.lowercase()) &&
         !uncertain.containsMatchIn(incoming.lowercase())
 
+    /** The selected fact and its derived descendants; other parents and unrelated facts stay. */
+    fun derivedIds(id: Long, parents: Map<Long, List<Long>>): Set<Long> {
+        val removed = mutableSetOf(id)
+        do {
+            val before = removed.size
+            parents.filterValues { sources -> sources.any { it in removed } }.keys.forEach { removed += it }
+        } while (removed.size != before)
+        return removed
+    }
+
     private fun contains(text: String, word: String): Boolean =
         Regex("(?<![\\p{L}])${Regex.escape(word)}(?![\\p{L}])", RegexOption.IGNORE_CASE).containsMatchIn(text)
 }

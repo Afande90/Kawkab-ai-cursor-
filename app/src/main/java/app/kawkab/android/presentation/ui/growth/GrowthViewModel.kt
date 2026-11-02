@@ -47,6 +47,7 @@ class GrowthViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             memory?.deleteMemory(id)
             memories.value = memory?.getAllMemories().orEmpty()
+            past.value = history?.getAllHistory()?.values?.flatten().orEmpty()
         }
     }
 
