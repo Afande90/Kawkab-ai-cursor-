@@ -75,6 +75,7 @@ class MemoryExtractionUseCaseTest {
         embeddingProviderResolver = mockk()
         embeddingProvider = mockk()
         memoryRepository = mockk()
+        coEvery { memoryRepository.setMemoryTags(any(), any()) } returns Unit
         memorySearchStatsTracker = mockk(relaxed = true)
         supersedeJudge = mockk()
         memoryHistoryRepository = mockk()
@@ -264,6 +265,9 @@ class MemoryExtractionUseCaseTest {
                 // Then
                 val candidate = pair.cosine >= MemoryVectorSimilarity.NEAR_DUPLICATE_THRESHOLD
                 val written = when {
+                    // The frozen city pair has no explicit change word. Owner reset rule 10
+                    // keeps both in review even when the model calls it an update.
+                    pair.id == "correction-city" -> "new"
                     !candidate || pair.verdict == SupersedeVerdict.DIFFERENT -> "new"
                     pair.verdict == SupersedeVerdict.UPDATE -> "replaced"
                     else -> "skipped"
@@ -355,7 +359,13 @@ class MemoryExtractionUseCaseTest {
         // Then — a pinned fact is never replaced by an automatic write.
         assertEquals(1, outcome.waitingOnPinned)
         coVerify(exactly = 1) {
-            memoryHistoryRepository.saveUpdateOfPinned(STORED_ID, "Moved home to Munich", any(), any(), listOf("preference"))
+            memoryHistoryRepository.saveUpdateOfPinned(
+                STORED_ID,
+                "Moved home to Munich",
+                any(),
+                any(),
+                listOf("preference"),
+            )
         }
         coVerify(exactly = 0) { memoryHistoryRepository.supersede(any(), any(), any(), any(), any()) }
     }
