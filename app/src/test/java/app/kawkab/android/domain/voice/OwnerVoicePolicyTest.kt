@@ -29,6 +29,24 @@ class OwnerVoicePolicyTest {
         assertTrue(OwnerVoicePolicy.enrollmentComplete(12))
     }
 
+    @Test fun trimKeepsTheSpokenPartOfALongNoisyClip() {
+        val clip = FloatArray(48_000) { if (it % 7 == 0) 0.001f else 0f }
+        for (i in 20_000 until 28_000) clip[i] = if (i % 2 == 0) 0.4f else -0.4f
+        val trimmed = OwnerVoicePolicy.trimSpeech(clip)
+        assertTrue(trimmed.size in 16_000 until 48_000)
+        assertTrue(OwnerVoicePolicy.usable(trimmed))
+        assertTrue(trimmed.count { it == 0.4f } == 4_000)
+    }
+
+    @Test fun enrollmentDropsTwoNoisyTakesButRejectsTwoVoices() {
+        val owner = List(10) { floatArrayOf(1f, 0.1f * (it % 3), 0f) }
+        val noisy = listOf(floatArrayOf(0f, 1f, 0f), floatArrayOf(0f, 0f, 1f))
+        val profile = OwnerVoicePolicy.enrollmentProfile(owner + noisy)
+        assertTrue(profile != null && OwnerVoicePolicy.matches(floatArrayOf(1f, 0.1f, 0f), profile))
+        val twoVoices = List(6) { floatArrayOf(1f, 0f, 0f) } + List(6) { floatArrayOf(0f, 1f, 0f) }
+        assertTrue(OwnerVoicePolicy.enrollmentProfile(twoVoices) == null)
+    }
+
     @Test fun aSpokenYesIsFreshAndSingleUse() {
         SpokenOwnerAnswer.record("yes", 100)
         assertTrue(SpokenOwnerAnswer.consumeYes(101))

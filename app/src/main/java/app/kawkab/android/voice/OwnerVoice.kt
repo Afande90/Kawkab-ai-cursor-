@@ -18,7 +18,8 @@ class OwnerVoice(private val context: Context) {
     fun enrolled(): Boolean = readProfile() != null
 
     /** Extracts a speaker embedding off the main thread; callers contain native failures. */
-    fun embedding(samples: FloatArray): FloatArray {
+    fun embedding(raw: FloatArray): FloatArray {
+        val samples = OwnerVoicePolicy.trimSpeech(raw)
         require(OwnerVoicePolicy.usable(samples)) { "Speak clearly for at least one second." }
         val extractor = SpeakerEmbeddingExtractor(
             context.assets,
@@ -49,14 +50,9 @@ class OwnerVoice(private val context: Context) {
     fun enroll(recordings: List<FloatArray>) {
         require(OwnerVoicePolicy.enrollmentComplete(recordings.size)) { "Record ten wake words and two sentences." }
         val vectors = recordings.map(::embedding)
-        val first = vectors.first()
-        require(vectors.all { OwnerVoicePolicy.matches(it, first) }) { "Use the same voice for every recording." }
-        val centroid = FloatArray(first.size) { i -> vectors.map { it[i] }.average().toFloat() }
-        require(
-            vectors.all {
-                OwnerVoicePolicy.matches(it, centroid)
-            },
-        ) { "Please redo the enrollment in a quiet place." }
+        val centroid = requireNotNull(OwnerVoicePolicy.enrollmentProfile(vectors)) {
+            "Those takes did not sound like one voice. Try again somewhere quiet."
+        }
         directory.mkdirs()
         recordings.forEachIndexed { i, pcm ->
             File(directory, "sample-$i.pcm").outputStream().use { output ->

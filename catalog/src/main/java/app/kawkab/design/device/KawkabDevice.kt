@@ -329,7 +329,7 @@ private fun ColumnScope.DeviceDisplay(state: DeviceState, onForget: (String) -> 
                     ) {
                         "${state.enrolled}/10"
                     } else {
-                        "SENTENCE ${state.enrolled - SENTENCE_OFFSET}/2"
+                        "SENTENCE ${(state.enrolled - SENTENCE_OFFSET).coerceAtMost(2)}/2"
                     },
                 )
                 LcdLine("ONLY YOU CAN WAKE ME")

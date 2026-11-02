@@ -308,19 +308,47 @@ fun PocketHomeScreen(
                 suspendCancellableCoroutine { continuation ->
                     voice.speak(prompt, ReplyLanguage.ENGLISH) { if (continuation.isActive) continuation.resume(Unit) }
                 }
-                val clip = withContext(Dispatchers.IO) {
-                    val pipe = OwnerAudioPipe(context)
-                    try {
-                        pipe.start()
-                        android.os.ParcelFileDescriptor.AutoCloseInputStream(pipe.source).use {
-                            it.readNBytes(ENROLLMENT_BYTES)
+                var clip: FloatArray? = null
+                var attempt = 0
+                while (clip == null) {
+                    attempt += 1
+                    val take = withContext(Dispatchers.IO) {
+                        val pipe = OwnerAudioPipe(context)
+                        try {
+                            pipe.start()
+                            android.os.ParcelFileDescriptor.AutoCloseInputStream(pipe.source).use {
+                                it.readNBytes(ENROLLMENT_BYTES)
+                            }
+                            pipe.samples()
+                        } finally {
+                            pipe.close()
                         }
-                        pipe.samples()
-                    } finally {
-                        pipe.close()
+                    }
+                    val heard = withContext(Dispatchers.Default) {
+                        try {
+                            owner.embedding(take)
+                            true
+                        } catch (cancel: CancellationException) {
+                            throw cancel
+                        } catch (missed: IllegalArgumentException) {
+                            if (attempt >= TAKE_ATTEMPTS) throw missed
+                            false
+                        } catch (missed: IllegalStateException) {
+                            if (attempt >= TAKE_ATTEMPTS) throw missed
+                            false
+                        }
+                    }
+                    if (heard) {
+                        clip = take
+                    } else {
+                        notice = "I didn't catch that. $prompt again."
+                        suspendCancellableCoroutine { continuation ->
+                            voice.speak(notice, ReplyLanguage.ENGLISH) {
+                                if (continuation.isActive) continuation.resume(Unit)
+                            }
+                        }
                     }
                 }
-                withContext(Dispatchers.Default) { owner.embedding(clip) }
                 clips += clip
                 enrollmentCount = index + 1
             }
@@ -335,8 +363,9 @@ fun PocketHomeScreen(
             notice = "Your voice is ready. Only you can wake me."
         } catch (cancel: CancellationException) {
             throw cancel
-        } catch (_: Exception) {
-            notice = "I could not enroll that voice. Use a quiet room and try again."
+        } catch (failure: Exception) {
+            notice = failure.message?.takeIf { it.isNotBlank() }
+                ?: "I could not enroll that voice. Use a quiet room and try again."
         } finally {
             recording = false
             app.kawkab.android.voice.WakeWordService.resume(context)
@@ -684,6 +713,7 @@ object PocketSettings {
 private const val ENROLLMENT_CLIPS = 12
 private const val WAKE_CLIPS = 10
 private const val ENROLLMENT_BYTES = 96_000
+private const val TAKE_ATTEMPTS = 3
 private const val COUNTDOWN_TICK_MS = 100L
 private const val SECOND_MS = 1_000L
 private const val GEMMA_URL =
