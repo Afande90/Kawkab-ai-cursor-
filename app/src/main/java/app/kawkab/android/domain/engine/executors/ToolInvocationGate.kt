@@ -22,6 +22,7 @@ import app.kawkab.android.domain.safety.OutboundCountdown
 import app.kawkab.android.domain.services.ApprovalNotifier
 import app.kawkab.android.domain.usecases.RecordTriggerHitlEventUseCase
 import app.kawkab.android.domain.usecases.ResolveApprovalRequestContextUseCase
+import app.kawkab.android.domain.voice.SpokenOwnerAnswer
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.TimeoutCancellationException
@@ -161,6 +162,7 @@ class ToolInvocationGate @Inject constructor(
     private data class PendingApprovalHolder(
         val deferred: CompletableDeferred<Boolean>,
         val request: AgentOrchestratorState.WaitingForApproval,
+        var spokenDeletionConsent: Boolean = false,
     )
 
     /**
@@ -189,6 +191,10 @@ class ToolInvocationGate @Inject constructor(
         val holder = activeApprovalDeferreds[sessionId]?.takeIf { it.request.requestId == requestId } ?: return false
         // A spoken yes or a stale Allow button must never shorten the cancel window.
         if (holder.request.runsAtMs != null && isApproved) return false
+        if (isApproved && holder.request.toolName == "delete_file") {
+            if (!SpokenOwnerAnswer.consumeYes()) return false
+            holder.spokenDeletionConsent = true
+        }
         if (!activeApprovalDeferreds.remove(sessionId, holder)) return false
         return holder.deferred.complete(isApproved)
     }
@@ -339,11 +345,12 @@ class ToolInvocationGate @Inject constructor(
         // whatever the policy says: a quiet policy never gets to settle a
         // question the user was already asked.
         val appliedDecision = parkedAnswer?.takeIf { it.sameCall }?.decision?.takeIf { decision ->
-            decision == PendingDecision.DENIED || parkedAnswer.risk == risk
+            decision == PendingDecision.DENIED || (parkedAnswer.risk == risk && resolvedToolName != "delete_file")
         }
         val askAgain = parkedAnswer != null && appliedDecision == null
         val needsApproval =
             askAgain || alwaysConfirm || toolSettings.toolApprovalPolicy.first().requiresApproval(risk)
+        var spokenDeletionConsent = false
         var isApproved = true
         val countdown = countdownApplies(
             undecided = appliedDecision == null,
@@ -462,6 +469,7 @@ class ToolInvocationGate @Inject constructor(
                 // Not after a park: the ongoing notification took its slot.
                 if (!parked) approvalNotifier.cancelApprovalNotification(requestId)
             }
+            spokenDeletionConsent = holder.spokenDeletionConsent
             // Reached only when the live phase settled with the user's
             // decision (the timeout path returns above), so the gate ends
             // without ever having parked.
@@ -510,7 +518,11 @@ class ToolInvocationGate @Inject constructor(
             toolRepository.executeTool(
                 resolvedToolName,
                 resolvedToolArgs,
-                ToolExecutionContext(sessionId = sessionId, gatedRisk = risk),
+                ToolExecutionContext(
+                    sessionId = sessionId,
+                    gatedRisk = risk,
+                    spokenDeletionConsent = spokenDeletionConsent,
+                ),
             )
         } catch (e: CancellationException) {
             // Preserve structured-concurrency cancellation: tool execution may suspend,

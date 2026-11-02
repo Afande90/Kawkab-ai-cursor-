@@ -11,6 +11,7 @@ package app.kawkab.android.domain.models
  * scheduled run back to the originating session) read them from a source the
  * model cannot spoof.
  *
+ * @property spokenDeletionConsent One-use owner audio evidence consumed by the gate, never a tool argument.
  * @property sessionId Id of the chat session whose pipeline run invoked the
  *   tool, or `null` when the invocation has no session affiliation (e.g.
  *   direct execution from a tool-detail debug surface).
@@ -22,7 +23,11 @@ package app.kawkab.android.domain.models
  *   reconnected in between can take the name over. `null` when the caller did
  *   not go through the gate (tests only — the gate is the one production caller).
  */
-data class ToolExecutionContext(val sessionId: String? = null, val gatedRisk: ToolRisk? = null) {
+data class ToolExecutionContext(
+    val sessionId: String? = null,
+    val gatedRisk: ToolRisk? = null,
+    val spokenDeletionConsent: Boolean = false,
+) {
     /** Well-known context instances. */
     companion object {
         /** Context carrying no environment information. */

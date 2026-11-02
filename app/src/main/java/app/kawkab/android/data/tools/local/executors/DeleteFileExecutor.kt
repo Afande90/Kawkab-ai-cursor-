@@ -13,7 +13,7 @@ import javax.inject.Inject
  *
  * Removes a single regular file from the workspace. Deletion is irreversible, so
  * the tool is classified DESTRUCTIVE: the Human-in-the-Loop gate always requires
- * an explicit, typed confirmation before this executor ever runs. Only regular
+ * an explicit, speaker-verified spoken yes before this executor ever runs. Only regular
  * files are deletable — a path that resolves to a directory (or to nothing) is
  * reported as not found rather than silently traversed.
  *
@@ -31,6 +31,7 @@ class DeleteFileExecutor @Inject constructor(private val workspace: AgentWorkspa
         val path = json.optString("path", "")
         if (path.isBlank()) return "Error: missing 'path' argument."
 
+        if (!context.spokenDeletionConsent) return "Error: deletion needs a fresh spoken yes from the owner."
         return when (val result = workspace.delete(path)) {
             is WorkspaceResult.Failure -> errorMessage(path, result.error)
             is WorkspaceResult.Success -> "Deleted '$path'."
