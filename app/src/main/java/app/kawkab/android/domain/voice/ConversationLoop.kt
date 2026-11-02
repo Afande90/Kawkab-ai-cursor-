@@ -71,6 +71,9 @@ class ConversationLoop(private val maxSilentRetries: Int = DEFAULT_SILENT_RETRIE
 
         /** Read it, then listen once for yes or no. */
         VOICE_ANSWER,
+
+        /** Keep hearing cancellation until the action finishes; no answer approves it. */
+        CANCEL_ONLY,
     }
 
     /** @return [Step.Listen], or [Step.Stop] when the loop was already running (the tap toggles). */
@@ -87,11 +90,20 @@ class ConversationLoop(private val maxSilentRetries: Int = DEFAULT_SILENT_RETRIE
 
     /** The recognizer heard [text]. */
     fun heard(text: String): Step {
+        // Cancellation must work during the spoken announcement, before TTS completes.
+        if (phase == Phase.SPEAKING && card != null && VoiceAnswers.answer(text) == VoiceAnswers.Answer.NO) {
+            card = null
+            phase = Phase.WAITING
+            return Step.Answer(text.trim())
+        }
         if (phase != Phase.LISTENING) return Step.None
         val trimmed = text.trim()
         if (trimmed.isEmpty()) return silence()
         silentRetries = 0
         followingUp = false
+        if (card == CardMode.CANCEL_ONLY && VoiceAnswers.answer(trimmed) != VoiceAnswers.Answer.NO) {
+            return Step.Listen
+        }
         if (card != null) {
             // The answer to a card: the card decides, then its result is spoken like a reply.
             card = null
@@ -105,6 +117,7 @@ class ConversationLoop(private val maxSilentRetries: Int = DEFAULT_SILENT_RETRIE
     /** The recognizer ended with nothing (silence or no match). */
     fun silence(): Step {
         if (phase != Phase.LISTENING) return Step.None
+        if (card == CardMode.CANCEL_ONLY) return Step.Listen
         if (card != null) {
             // No spoken answer: the card stays for a tap, and its result is still spoken.
             card = null
@@ -127,6 +140,10 @@ class ConversationLoop(private val maxSilentRetries: Int = DEFAULT_SILENT_RETRIE
 
     /** Kawkab answered [text]. */
     fun replied(text: String): Step {
+        if (card == CardMode.CANCEL_ONLY) {
+            card = null
+            phase = Phase.WAITING
+        }
         if (phase != Phase.WAITING) return Step.None
         if (text.isBlank()) {
             phase = Phase.LISTENING
@@ -146,7 +163,7 @@ class ConversationLoop(private val maxSilentRetries: Int = DEFAULT_SILENT_RETRIE
                 phase = Phase.WAITING
                 return Step.Stop
             }
-            CardMode.VOICE_ANSWER -> {
+            CardMode.VOICE_ANSWER, CardMode.CANCEL_ONLY -> {
                 phase = Phase.LISTENING
                 return Step.Listen
             }
@@ -171,17 +188,22 @@ class ConversationLoop(private val maxSilentRetries: Int = DEFAULT_SILENT_RETRIE
      * a sentence it stops listening until the tap, as before.
      *
      * @param sentence The card in plain words, or `null`.
+     * @param cancelOnly Keep listening only for cancellation during an automatic action window.
      * @param voiceMayAnswer Whether a spoken answer is listened for at all; the driver still
      *   applies [VoiceAnswers.decide], so a yes with the phone locked never sends.
      */
-    fun waitsForTap(sentence: String? = null, voiceMayAnswer: Boolean = false): Step {
+    fun waitsForTap(sentence: String? = null, voiceMayAnswer: Boolean = false, cancelOnly: Boolean = false): Step {
         if (phase == Phase.IDLE) return Step.None
         followingUp = false
         if (sentence.isNullOrBlank()) {
             phase = Phase.IDLE
             return Step.Stop
         }
-        card = if (voiceMayAnswer) CardMode.VOICE_ANSWER else CardMode.TAP_ONLY
+        card = when {
+            cancelOnly -> CardMode.CANCEL_ONLY
+            voiceMayAnswer -> CardMode.VOICE_ANSWER
+            else -> CardMode.TAP_ONLY
+        }
         phase = Phase.SPEAKING
         return Step.Speak(sentence, ReplyLanguage.of(sentence))
     }

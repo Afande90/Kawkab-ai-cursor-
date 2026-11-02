@@ -187,6 +187,8 @@ class ToolInvocationGate @Inject constructor(
      */
     fun resumeWithApproval(sessionId: String, requestId: String, isApproved: Boolean): Boolean {
         val holder = activeApprovalDeferreds[sessionId]?.takeIf { it.request.requestId == requestId } ?: return false
+        // A spoken yes or a stale Allow button must never shorten the cancel window.
+        if (holder.request.runsAtMs != null && isApproved) return false
         if (!activeApprovalDeferreds.remove(sessionId, holder)) return false
         return holder.deferred.complete(isApproved)
     }

@@ -3,6 +3,7 @@ package app.kawkab.android.voice
 import android.os.Handler
 import android.os.Looper
 import app.kawkab.android.domain.voice.ConversationLoop
+import app.kawkab.android.domain.voice.VoiceAnswers
 import java.util.Locale
 
 /**
@@ -40,6 +41,12 @@ class ConversationDriver(
     fun waitsForTap(sentence: String? = null, voiceMayAnswer: Boolean = false) =
         run(loop.waitsForTap(sentence, voiceMayAnswer))
 
+    /** Announces an action even when the command was typed; only cancellation is listened for. */
+    fun announce(sentence: String) {
+        if (loop.phase == ConversationLoop.Phase.IDLE) loop.tap()
+        run(loop.waitsForTap(sentence, voiceMayAnswer = true, cancelOnly = true))
+    }
+
     /** Stops and releases everything. */
     fun release() {
         main.removeCallbacks(followUpTimeout)
@@ -51,7 +58,11 @@ class ConversationDriver(
         when (step) {
             ConversationLoop.Step.Listen -> listen()
             is ConversationLoop.Step.Send -> send(step.text)
-            is ConversationLoop.Step.Answer -> answer(step.text)
+            is ConversationLoop.Step.Answer -> {
+                voice.stop()
+                speech.stop()
+                answer(step.text)
+            }
             is ConversationLoop.Step.Speak -> {
                 voice.speak(step.text, step.language) { main.post { run(loop.spoken()) } }
                 // Listening while speaking lets the owner talk over the reply (barge-in).
@@ -90,6 +101,10 @@ class ConversationDriver(
                 override fun onText(text: String) {
                     main.removeCallbacks(followUpTimeout)
                     run(loop.heard(text))
+                }
+
+                override fun onPartialText(text: String) {
+                    if (VoiceAnswers.answer(text) == VoiceAnswers.Answer.NO) run(loop.heard(text))
                 }
 
                 override fun onNothing(code: Int) {

@@ -274,11 +274,15 @@ class KawkabAssistantSession(
                 // on "Confirm by voice" and the phone is on and unlocked; otherwise it waits for a tap.
                 pendingTool = state.toolName
                 val announced = state.runsAtMs != null
-                conversation?.waitsForTap(
-                    sentence = cardSentence(state),
-                    // During an announced countdown "stop" is always heard; otherwise only with the setting.
-                    voiceMayAnswer = announced || VoiceConfirmSwitch.isEnabled(appContext),
-                )
+                pendingRequestId = state.requestId
+                if (announced && hasMicrophone()) {
+                    conversation().announce(cardSentence(state))
+                } else {
+                    conversation?.waitsForTap(
+                        sentence = cardSentence(state),
+                        voiceMayAnswer = VoiceConfirmSwitch.isEnabled(appContext),
+                    )
+                }
                 pendingRequestId = state.requestId
                 status.text = if (announced) cardSentence(state) else appContext.getString(R.string.assistant_needs_you)
                 // Announced: no Approve, only STOP; it runs by itself after 3 s.

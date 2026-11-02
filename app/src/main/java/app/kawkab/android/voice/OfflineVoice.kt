@@ -14,12 +14,16 @@ import java.util.Locale
  */
 class OfflineVoice(context: Context) {
     private var ready = false
+    private var initialized = false
+    private var pendingSpeech: (() -> Unit)? = null
     private var onDone: (() -> Unit)? = null
 
     @Volatile
     private var lastUtterance: String? = null
     private val tts: TextToSpeech = TextToSpeech(context.applicationContext) { status ->
+        initialized = true
         ready = status == TextToSpeech.SUCCESS
+        pendingSpeech?.also { pendingSpeech = null }?.invoke()
     }
 
     init {
@@ -48,6 +52,10 @@ class OfflineVoice(context: Context) {
      * @param done Called on the TTS thread when speech ends.
      */
     fun speak(text: String, language: ReplyLanguage, done: () -> Unit) {
+        if (!initialized) {
+            pendingSpeech = { speak(text, language, done) }
+            return
+        }
         onDone = done
         if (!ready) {
             done()
@@ -55,8 +63,14 @@ class OfflineVoice(context: Context) {
         }
         tts.language = localeFor(language)
         // Offline voices only: a network voice would send the reply off the phone.
-        tts.voices?.firstOrNull { it.locale.language == tts.language?.language && !it.isNetworkConnectionRequired }
-            ?.let { tts.voice = it }
+        val offline = tts.voices?.firstOrNull {
+            it.locale.language == tts.language?.language && !it.isNetworkConnectionRequired
+        }
+        if (offline == null) {
+            done()
+            return
+        }
+        tts.voice = offline
         val sentences = SpokenSentences.split(text).ifEmpty { listOf(text) }
         lastUtterance = "$UTTERANCE-${sentences.lastIndex}"
         sentences.forEachIndexed { index, sentence ->
@@ -67,6 +81,7 @@ class OfflineVoice(context: Context) {
 
     /** Stops speaking at once (barge-in or the stop tap). */
     fun stop() {
+        pendingSpeech = null
         onDone = null
         tts.stop()
     }

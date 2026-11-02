@@ -27,12 +27,15 @@ class OfflineSpeech(private val context: Context) {
         /** The final transcript. */
         fun onText(text: String)
 
+        /** A partial transcript, used to stop a countdown without waiting for end of speech. */
+        fun onPartialText(text: String) = Unit
+
         /** No speech, no match, or an error; [code] is a `SpeechRecognizer.ERROR_*` value. */
         fun onNothing(code: Int)
     }
 
     /** Whether any recognizer exists on this phone. */
-    fun available(): Boolean = SpeechRecognizer.isRecognitionAvailable(context)
+    fun available(): Boolean = SpeechRecognizer.isOnDeviceRecognitionAvailable(context)
 
     /**
      * Listens once.
@@ -42,14 +45,15 @@ class OfflineSpeech(private val context: Context) {
      */
     fun listen(languageTag: String, listener: Listener) {
         stop()
-        val created = if (SpeechRecognizer.isOnDeviceRecognitionAvailable(context)) {
-            SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
-        } else {
-            SpeechRecognizer.createSpeechRecognizer(context)
+        if (!available()) {
+            listener.onNothing(SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE)
+            return
         }
+        val created = SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
         recognizer = created
         created.setRecognitionListener(Bridge(listener))
-        created.startListening(request(languageTag))
+        runCatching { created.startListening(request(languageTag)) }
+            .onFailure { listener.onNothing(SpeechRecognizer.ERROR_CLIENT) }
     }
 
     /** Stops listening and releases the recognizer. */
@@ -65,7 +69,10 @@ class OfflineSpeech(private val context: Context) {
         override fun onBufferReceived(buffer: ByteArray?) = Unit
         override fun onEndOfSpeech() = Unit
         override fun onError(error: Int) = listener.onNothing(error)
-        override fun onPartialResults(partialResults: Bundle?) = Unit
+        override fun onPartialResults(partialResults: Bundle?) {
+            partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
+                ?.let(listener::onPartialText)
+        }
         override fun onEvent(eventType: Int, params: Bundle?) = Unit
         override fun onResults(results: Bundle?) {
             val text = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
@@ -97,6 +104,7 @@ class OfflineSpeech(private val context: Context) {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, languageTag)
             putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
             // End of turn after about 700 ms of silence (task 28). Recognizers may round it.
             putExtra(
                 RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS,
