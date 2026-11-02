@@ -206,6 +206,7 @@ class MainActivity : ComponentActivity() {
                 AppShellScaffold(
                     navController = navController,
                     transientMessageRelay = transientMessageRelay,
+                    chatEntryRequestRelay = chatEntryRequestRelay,
                 ) { innerPadding ->
                     AppNavGraph(
                         navController = navController,

@@ -3,6 +3,7 @@ package app.kawkab.android.presentation.ui.navigation
 import android.content.Intent
 import androidx.navigation.NavHostController
 import app.kawkab.android.presentation.state.ChatEntryRequestRelay
+import app.kawkab.design.device.DevicePage
 
 /**
  * Routes a `knotwork://` deep-link [Intent] into the app's single chat home.
@@ -36,6 +37,7 @@ internal fun NavHostController.navigateToDeepLink(intent: Intent, chatEntryRelay
     if (uri.scheme != NavRoutes.DEEP_LINK_SCHEME) return false
     when (uri.host) {
         "chat" -> {
+            chatEntryRelay.openPocket(DevicePage.IDLE)
             navigateToChatHome()
             // `knotwork://chat/<threadId>` switches sessions; bare `knotwork://chat`
             // just shows whatever is current.
@@ -44,6 +46,7 @@ internal fun NavHostController.navigateToDeepLink(intent: Intent, chatEntryRelay
                 ?.let { chatEntryRelay.openThread(it) }
         }
         "new-chat" -> {
+            chatEntryRelay.openPocket(DevicePage.IDLE)
             navigateToChatHome()
             chatEntryRelay.newChat()
         }

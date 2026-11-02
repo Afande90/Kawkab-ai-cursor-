@@ -42,6 +42,8 @@ import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
@@ -266,7 +268,7 @@ fun DeviceKey(label: String, onClick: () -> Unit, modifier: Modifier = Modifier,
                         Modifier
                     },
                 )
-                .clickable(onClick = onClick).padding(LCD_RADIUS_DP.dp),
+                .semantics { selected = pressed }.clickable(onClick = onClick).padding(LCD_RADIUS_DP.dp),
             Alignment.Center,
         ) {
             Text(label, color = Ink, fontFamily = HeaderFont, fontSize = HEADER_SP.sp)

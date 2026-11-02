@@ -1,5 +1,6 @@
 package app.kawkab.android.presentation.state
 
+import app.kawkab.design.device.DevicePage
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -46,6 +47,16 @@ sealed interface ChatEntryRequest {
  */
 @Singleton
 class ChatEntryRequestRelay @Inject constructor() {
+
+    private val pocketChannel = Channel<DevicePage>(capacity = Channel.CONFLATED)
+
+    /** Device page requested from an Advanced screen or a home deep link. */
+    val pocketPages: Flow<DevicePage> = pocketChannel.receiveAsFlow()
+
+    /** Return to one device page without stacking duplicate home destinations. */
+    fun openPocket(page: DevicePage) {
+        pocketChannel.trySend(page)
+    }
 
     private val channel = Channel<ChatEntryRequest>(capacity = Channel.CONFLATED)
     private val voiceChannel = Channel<String>(capacity = Channel.CONFLATED)

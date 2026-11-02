@@ -11,23 +11,15 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -35,27 +27,25 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.NavOptionsBuilder
 import androidx.navigation.compose.ComposeNavigator
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.get
+import app.kawkab.android.presentation.state.ChatEntryRequestRelay
 import app.kawkab.android.presentation.state.TransientMessageRelay
 import app.kawkab.design.components.misc.KnotworkSnackbarHost
+import app.kawkab.design.device.DeviceKey
+import app.kawkab.design.device.DevicePage
 import app.kawkab.design.theme.KnotworkTheme
-import app.kawkab.design.tokens.KnotworkIconSizes
-import app.kawkab.design.tokens.KnotworkTextStyles
 
 /**
  * Root scaffold for the post-splash, post-onboarding app surface.
  *
  * Owns three responsibilities:
  *
- *  1. **Bottom-nav chrome.** Renders the M3 [NavigationBar] with the four
- *     [TAB_DESTINATIONS] tabs. Visibility per route is
+ *  1. **Pocket navigation keys.** Advanced engine screens retain HOME, SHOTS
+ *     and GROWTH; the device home renders its own keys. Visibility per route is
  *     decided by [shouldShowBottomNav] (a pure function so it is
  *     unit-testable). Show/hide uses an [AnimatedVisibility] slide so the
  *     editor / onboarding entry doesn't snap the body.
@@ -98,6 +88,7 @@ import app.kawkab.design.tokens.KnotworkTextStyles
 fun AppShellScaffold(
     navController: NavHostController,
     transientMessageRelay: TransientMessageRelay,
+    chatEntryRequestRelay: ChatEntryRequestRelay? = null,
     content: @Composable (innerPadding: PaddingValues) -> Unit,
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -130,7 +121,6 @@ fun AppShellScaffold(
             stackRoutes = entries.mapNotNull { it.destination.route }
         }
     }
-    val owningTab: String? = owningTabRoute(stackRoutes)
 
     BackHandler(enabled = isTabRootStack(stackRoutes)) {
         activity?.finish()
@@ -200,62 +190,25 @@ fun AppShellScaffold(
                 enter = enter,
                 exit = exit,
             ) {
-                AppBottomNavigationBar(
-                    owningTabRoute = owningTab,
-                    onTabSelected = { tab -> navController.navigateToTab(tab.route) },
-                )
+                Row(Modifier.navigationBarsPadding()) {
+                    listOf("HOME" to DevicePage.IDLE, "SHOTS" to DevicePage.SHOTS, "GROWTH" to DevicePage.GROWTH)
+                        .forEach { (label, page) ->
+                            DeviceKey(
+                                label = label,
+                                onClick = {
+                                    chatEntryRequestRelay?.openPocket(page)
+                                    navController.navigateToTab(NavRoutes.CHAT_TAB)
+                                },
+                                modifier = Modifier.weight(1f),
+                                pressed = page == DevicePage.IDLE,
+                            )
+                        }
+                }
             }
         },
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {
             content(PaddingValues())
-        }
-    }
-}
-
-@Composable
-private fun AppBottomNavigationBar(owningTabRoute: String?, onTabSelected: (TabDestination) -> Unit) {
-    // Lower the default Material 3 highlight to a softer tonal pill matching
-    // the Knotwork design tokens: surface1 as the container, primaryContainer
-    // as the indicator tint, onPrimaryContainer for the selected glyph. The
-    // unselected icon and label stay on `onSurfaceMuted` so they read as
-    // secondary affordances rather than competing with the active tab.
-    // Spec §3.2: bg surface-2, 1 px top divider, nav glyph 22 dp, label Inter 11 sp
-    // (active 600 +0.2, idle 500).
-    Column {
-        HorizontalDivider(color = KnotworkTheme.extended.divider)
-        NavigationBar(containerColor = KnotworkTheme.extended.surface2) {
-            val itemColors = NavigationBarItemDefaults.colors(
-                selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                selectedTextColor = MaterialTheme.colorScheme.onSurface,
-                indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                unselectedIconColor = KnotworkTheme.extended.onSurfaceMuted,
-                unselectedTextColor = KnotworkTheme.extended.onSurfaceMuted,
-            )
-            TAB_DESTINATIONS.forEach { tab ->
-                val selected = owningTabRoute == tab.route
-                NavigationBarItem(
-                    selected = selected,
-                    onClick = { onTabSelected(tab) },
-                    icon = {
-                        Icon(
-                            imageVector = if (selected) tab.iconSelected else tab.iconUnselected,
-                            contentDescription = null,
-                            modifier = Modifier.size(KnotworkIconSizes.AppBar),
-                        )
-                    },
-                    label = {
-                        Text(
-                            text = stringResource(tab.labelRes),
-                            style = KnotworkTextStyles.LabelSm.copy(
-                                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
-                                letterSpacing = 0.2.sp,
-                            ),
-                        )
-                    },
-                    colors = itemColors,
-                )
-            }
         }
     }
 }

@@ -258,6 +258,14 @@ fun PocketHomeScreen(
                 .entries().voiceRequests.collect { conversation().handoff(it) }
         }
     }
+    LaunchedEffect(Unit) {
+        dagger.hilt.android.EntryPointAccessors.fromApplication(context, PocketServices::class.java)
+            .entries().pocketPages.collect { requested ->
+                viewModel.hitl.rejectTool()
+                menu = null
+                page = if (!enrolled && requested == DevicePage.IDLE) DevicePage.ENROLL else requested
+            }
+    }
     LaunchedEffect(conversationQuestion) {
         if (conversationQuestion.isNotBlank()) {
             conversation().ask(conversationQuestion)
