@@ -45,9 +45,18 @@ class WakeMicSessionTest {
 
     @Test fun `off charging-only and shutdown cannot reopen capture`() {
         var opens = 0
-        val session = WakeMicSession({ opens++; FakeCapture {} }, {}, { 0L }, { 0L }, { ZoneId.of("UTC") })
+        val session = WakeMicSession({
+            opens++
+            FakeCapture {}
+        }, {}, { 0L }, { 0L }, { ZoneId.of("UTC") })
         for (mode in listOf(WakeListeningMode.OFF, WakeListeningMode.CHARGING)) {
-            session.setAllowed(WakeListeningPolicy.pauseReason(WakeListeningConfig(mode), WakeListeningState(), LocalTime.NOON) == null)
+            session.setAllowed(
+                WakeListeningPolicy.pauseReason(
+                    WakeListeningConfig(mode),
+                    WakeListeningState(),
+                    LocalTime.NOON,
+                ) == null,
+            )
             assertNull(session.acquireOrWait(1))
         }
         session.close()
@@ -59,7 +68,10 @@ class WakeMicSessionTest {
     @Test fun `successful capture time is counted exactly once on release`() {
         var elapsed = 0L
         var recorded = 0L
-        val session = WakeMicSession({ FakeCapture {} }, { recorded += it.values.sum() }, { elapsed }, { elapsed }, { ZoneId.of("UTC") })
+        val session =
+            WakeMicSession({
+                FakeCapture {}
+            }, { recorded += it.values.sum() }, { elapsed }, { elapsed }, { ZoneId.of("UTC") })
         session.setAllowed(true)
         session.acquireOrWait(1)
         elapsed = 60_000

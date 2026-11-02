@@ -20,6 +20,14 @@ class WakeListeningConfigTest {
         assertFalse(WakeWordSwitch.isEnabled(context))
     }
 
+    @Test fun `sleep hours can be saved before enrollment without enabling capture`() {
+        val context = RuntimeEnvironment.getApplication<android.app.Application>()
+        val config = WakeListeningConfig(sleepEnabled = true)
+        WakeWordSwitch.configure(context, config, activate = false)
+        assertEquals(config, WakeWordSwitch.config(context))
+        assertFalse(WakeWordSwitch.isEnabled(context))
+    }
+
     @Test fun `updating listening mode preserves wake counts and sends current sleep hours`() {
         val context = RuntimeEnvironment.getApplication<android.app.Application>()
         WakeWordSwitch.set(context, true)

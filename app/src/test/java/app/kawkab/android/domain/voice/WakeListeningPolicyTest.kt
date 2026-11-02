@@ -35,7 +35,10 @@ class WakeListeningPolicyTest {
     @Test fun `calls pause every enabled mode and ending the call resumes`() {
         WakeListeningMode.entries.filter { it != WakeListeningMode.OFF }.forEach { mode ->
             val config = smart.copy(mode = mode)
-            assertEquals(WakePauseReason.CALL, WakeListeningPolicy.pauseReason(config, ready.copy(inCall = true, charging = true), noon))
+            assertEquals(
+                WakePauseReason.CALL,
+                WakeListeningPolicy.pauseReason(config, ready.copy(inCall = true, charging = true), noon),
+            )
             assertNull(WakeListeningPolicy.pauseReason(config, ready.copy(charging = true), noon))
         }
     }
@@ -64,14 +67,26 @@ class WakeListeningPolicyTest {
     }
 
     @Test fun `off always closes listening and conversations keep every other mode paused`() {
-        assertEquals(WakePauseReason.OFF, WakeListeningPolicy.pauseReason(smart.copy(mode = WakeListeningMode.OFF), ready, noon))
+        assertEquals(
+            WakePauseReason.OFF,
+            WakeListeningPolicy.pauseReason(smart.copy(mode = WakeListeningMode.OFF), ready, noon),
+        )
         assertEquals(WakePauseReason.CONVERSATION, reason(ready.copy(conversation = true)))
     }
 
     @Test fun `always overrides smart heuristics but respects optional sleep`() {
         val config = smart.copy(mode = WakeListeningMode.ALWAYS)
-        assertNull(WakeListeningPolicy.pauseReason(config, ready.copy(covered = true, faceDown = true, batteryPercent = 1), noon))
-        assertEquals(WakePauseReason.SLEEP, WakeListeningPolicy.pauseReason(config.copy(sleepEnabled = true), ready, LocalTime.MIDNIGHT))
+        assertNull(
+            WakeListeningPolicy.pauseReason(
+                config,
+                ready.copy(covered = true, faceDown = true, batteryPercent = 1),
+                noon,
+            ),
+        )
+        assertEquals(
+            WakePauseReason.SLEEP,
+            WakeListeningPolicy.pauseReason(config.copy(sleepEnabled = true), ready, LocalTime.MIDNIGHT),
+        )
     }
 
     private fun reason(state: WakeListeningState) = WakeListeningPolicy.pauseReason(smart, state, noon)

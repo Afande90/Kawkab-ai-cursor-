@@ -25,7 +25,14 @@ class MicUsageMeterTest {
     @Test fun `an open minute spanning midnight is split between the two dates`() {
         val meter = MicUsageMeter()
         meter.open(start, 0)
-        assertEquals(mapOf(LocalDate.parse("2026-11-02") to 30_000L, LocalDate.parse("2026-11-03") to 30_000L), meter.close(start + 60_000, 60_000, zone))
+        assertEquals(
+            mapOf(LocalDate.parse("2026-11-02") to 30_000L, LocalDate.parse("2026-11-03") to 30_000L),
+            meter.close(
+                start + 60_000,
+                60_000,
+                zone,
+            ),
+        )
     }
 
     @Test fun `wall clock changes cannot inflate microphone minutes`() {
@@ -41,6 +48,13 @@ class MicUsageMeterTest {
         val meter = MicUsageMeter()
         meter.open(beginning, 0)
         val day = 23 * 3_600_000L
-        assertEquals(mapOf(LocalDate.parse("2026-03-29") to day, LocalDate.parse("2026-03-30") to 60_000L), meter.close(beginning + day + 60_000, day + 60_000, local))
+        assertEquals(
+            mapOf(LocalDate.parse("2026-03-29") to day, LocalDate.parse("2026-03-30") to 60_000L),
+            meter.close(
+                beginning + day + 60_000,
+                day + 60_000,
+                local,
+            ),
+        )
     }
 }
