@@ -41,6 +41,12 @@ class ConversationDriver(
     fun waitsForTap(sentence: String? = null, voiceMayAnswer: Boolean = false) =
         run(loop.waitsForTap(sentence, voiceMayAnswer))
 
+    /** Reads a contact question and listens for its spoken answer, including after a typed command. */
+    fun ask(sentence: String) {
+        if (loop.phase == ConversationLoop.Phase.IDLE) loop.tap()
+        run(loop.waitsForTap(sentence, voiceMayAnswer = true))
+    }
+
     /** Announces an action even when the command was typed; only cancellation is listened for. */
     fun announce(sentence: String) {
         if (loop.phase == ConversationLoop.Phase.IDLE) loop.tap()

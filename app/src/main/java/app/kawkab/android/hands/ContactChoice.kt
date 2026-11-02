@@ -153,9 +153,9 @@ class ContactChoice @Inject constructor(private val aliases: ContactAliasStore) 
             val list = names.mapIndexed { index, name -> "${index + 1}, $name." }.joinToString(" ")
             val head = "$count contacts match '$spoken'. Which one?"
             return if (list.isEmpty()) {
-                "$head Tap a name below, or say cancel."
+                "$head Say the name or say cancel."
             } else {
-                "$head $list Say the number or the name, tap one, or say cancel."
+                "$head $list Say the number or the name. I will remember. Say cancel to stop."
             }
         }
 

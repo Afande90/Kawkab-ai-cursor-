@@ -30,14 +30,20 @@ import app.kawkab.design.screens.chat.ChatHomeVisualState
 
 /**
  * Conversation mode (task 23l): tap once to talk; Kawkab listens offline, sends what was said,
- * speaks the reply with an offline voice, and listens again. Tap again to stop. A tap card
- * stops the loop: voice never confirms an outbound action.
+ * speaks the reply with an offline voice, and listens again. Tap again to stop. Contact questions
+ * start a spoken answer turn automatically; action countdowns have their own cancel listener.
  *
  * @param viewState The chat, read for replies and cards.
  * @param send Sends a transcript as the owner's message.
+ * @param contactQuestion A pending numbered contact question to ask aloud.
  */
 @Composable
-fun ConversationButton(viewState: ChatHomeViewState, send: (String) -> Unit, modifier: Modifier = Modifier) {
+fun ConversationButton(
+    viewState: ChatHomeViewState,
+    send: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    contactQuestion: String? = null,
+) {
     val context = LocalContext.current
     var phase by remember { mutableStateOf(ConversationLoop.Phase.IDLE) }
     var driver by remember { mutableStateOf<ConversationDriver?>(null) }
@@ -46,13 +52,23 @@ fun ConversationButton(viewState: ChatHomeViewState, send: (String) -> Unit, mod
         voice = OfflineVoice(context),
         send = send,
         onPhase = { phase = it },
+        answer = send,
     ).also { driver = it }
     DisposableEffect(Unit) { onDispose { driver?.release() } }
     val mic = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) driver().tap()
     }
+    LaunchedEffect(contactQuestion) {
+        if (contactQuestion != null &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            driver().ask(contactQuestion)
+        }
+    }
     // A finished turn hands its reply to the loop; a card stops it.
     LaunchedEffect(viewState.visualState, viewState.messages.lastOrNull()?.id) {
+        if (contactQuestion != null) return@LaunchedEffect
         val current = driver ?: return@LaunchedEffect
         if (current.phase != ConversationLoop.Phase.WAITING) return@LaunchedEffect
         when (viewState.visualState) {

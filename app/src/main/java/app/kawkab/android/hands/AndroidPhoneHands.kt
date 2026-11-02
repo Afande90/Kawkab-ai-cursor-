@@ -23,7 +23,7 @@ import javax.inject.Singleton
 
 /**
  * Intent and accessibility implementation of [PhoneHands].
- * Calls use ACTION_CALL, which needs CALL_PHONE and only runs after the outbound tap.
+ * Calls use Telecom, with a default-dialer-only fallback, after the announced cancel window.
  * Messages use ACTION_SENDTO. There is no SEND_SMS permission.
  */
 @Singleton

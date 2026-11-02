@@ -67,7 +67,7 @@ import app.kawkab.android.R
 import app.kawkab.android.domain.report.ContentReport
 import app.kawkab.android.domain.report.ContentReportComposer
 import app.kawkab.android.domain.report.ContentReportReason
-import app.kawkab.android.hands.ContactChip
+import app.kawkab.android.hands.ContactChoice
 import app.kawkab.android.hands.PendingContact
 import app.kawkab.android.presentation.ui.chat.CHAT_EXPORT_MIME_JSON
 import app.kawkab.android.presentation.ui.chat.toShareChooser
@@ -693,8 +693,14 @@ fun ChatHomeScreen(
                 .windowInsetsPadding(WindowInsets.statusBars)
                 .padding(top = 64.dp),
         )
+        // Read with a safe cast: a screen test's relaxed view model hands back a stand-in object.
+        val pendingRaw: Any? = viewModel.pendingContact.collectAsState().value
+        val pendingContact = pendingRaw as? PendingContact
         ConversationButton(
             viewState = viewState,
+            contactQuestion = pendingContact?.let {
+                ContactChoice.question("that name", it.choices.size, it.choices.map { c -> c.name })
+            },
             send = { text ->
                 viewModel.onComposerValueChange(text)
                 viewModel.sendMessage()
@@ -723,17 +729,9 @@ fun ChatHomeScreen(
                     .padding(end = 16.dp, bottom = 112.dp),
             )
         }
-        // Read with a safe cast: a screen test's relaxed view model hands back a stand-in object.
-        val pendingRaw: Any? = viewModel.pendingContact.collectAsState().value
-        val pendingContact = pendingRaw as? PendingContact
         pendingContact?.let { pending ->
             ContactChoicePrompt(
                 choices = pending.choices,
-                onPick = { match ->
-                    // The chip text goes out as the owner's line; the router reads it as the pick.
-                    viewModel.onComposerValueChange(ContactChip.text(match))
-                    viewModel.sendMessage()
-                },
                 onCancel = {
                     viewModel.onComposerValueChange(CANCEL_WORD)
                     viewModel.sendMessage()
