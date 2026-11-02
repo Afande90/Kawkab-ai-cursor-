@@ -27,9 +27,9 @@ class WakeListeningMonitorTest {
         val alarms = context.getSystemService(AlarmManager::class.java)
         val monitor = WakeListeningMonitor(context, { false }, {})
         monitor.configure(WakeListeningConfig(sleepEnabled = true))
-        assertEquals(AlarmManager.RTC_WAKEUP, shadowOf(alarms).nextScheduledAlarm.type)
+        assertEquals(AlarmManager.RTC_WAKEUP, shadowOf(alarms).peekNextScheduledAlarm().type)
         monitor.close()
-        assertNull(shadowOf(alarms).nextScheduledAlarm)
+        assertNull(shadowOf(alarms).peekNextScheduledAlarm())
     }
 
     @Test fun `battery broadcasts pause and charging resumes without opening the app`() {

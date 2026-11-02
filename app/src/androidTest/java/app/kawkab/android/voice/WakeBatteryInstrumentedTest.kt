@@ -39,19 +39,30 @@ class WakeBatteryInstrumentedTest {
             Triple(config.copy(mode = WakeListeningMode.OFF), ready, LocalTime.NOON),
         )
         for ((settings, state, time) in cases) {
+            val before = audio.activeRecordingConfigurations.count {
+                it.clientAudioSource == MediaRecorder.AudioSource.VOICE_RECOGNITION
+            }
             WakeMicSession({ WakeAudioInput.open(context) }, {}).use { session ->
                 session.setAllowed(true)
                 assertNotNull("real microphone must open", session.acquireOrWait(1))
                 compose.waitUntil(timeoutMillis = WAIT_MS) {
-                    audio.activeRecordingConfigurations.any { it.clientAudioSource == MediaRecorder.AudioSource.VOICE_RECOGNITION }
+                    audio.activeRecordingConfigurations.any {
+                        it.clientAudioSource ==
+                            MediaRecorder.AudioSource.VOICE_RECOGNITION
+                    }
                 }
                 session.setAllowed(WakeListeningPolicy.pauseReason(settings, state, time) == null)
                 compose.waitUntil(timeoutMillis = WAIT_MS) {
-                    audio.activeRecordingConfigurations.none { it.clientAudioSource == MediaRecorder.AudioSource.VOICE_RECOGNITION }
+                    audio.activeRecordingConfigurations.none {
+                        it.clientAudioSource ==
+                            MediaRecorder.AudioSource.VOICE_RECOGNITION
+                    }
                 }
             }
         }
     }
 
-    private companion object { const val WAIT_MS = 5_000L }
+    private companion object {
+        const val WAIT_MS = 5_000L
+    }
 }
