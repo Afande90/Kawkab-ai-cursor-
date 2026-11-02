@@ -74,7 +74,12 @@ import kotlin.coroutines.resume
 
 /** The owner's product surface. The engine is reachable only through Settings → Advanced. */
 @Composable
-fun PocketHomeScreen(viewModel: ChatHomeViewModel, onAdvanced: () -> Unit) {
+fun PocketHomeScreen(
+    viewModel: ChatHomeViewModel,
+    onAdvanced: () -> Unit,
+    initialMenu: String? = null,
+    initialPage: DevicePage? = null,
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -82,12 +87,13 @@ fun PocketHomeScreen(viewModel: ChatHomeViewModel, onAdvanced: () -> Unit) {
     val growth: GrowthViewModel = hiltViewModel()
     val skills by growth.skills.collectAsState()
     val aliases by growth.aliases.collectAsState()
+    val memories by growth.memories.collectAsState()
     val models: ModelsViewModel = hiltViewModel()
     val modelState by models.uiState.collectAsState()
     val owner = remember { OwnerVoice(context) }
     var enrolled by remember { mutableStateOf(owner.enrolled()) }
-    var page by remember { mutableStateOf(if (enrolled) DevicePage.IDLE else DevicePage.ENROLL) }
-    var menu by remember { mutableStateOf<String?>(null) }
+    var page by remember { mutableStateOf(if (enrolled) initialPage ?: DevicePage.IDLE else DevicePage.ENROLL) }
+    var menu by remember { mutableStateOf(initialMenu) }
     var phase by remember { mutableStateOf(ConversationLoop.Phase.IDLE) }
     var heard by remember { mutableStateOf("") }
     var notice by remember { mutableStateOf("") }
@@ -116,6 +122,8 @@ fun PocketHomeScreen(viewModel: ChatHomeViewModel, onAdvanced: () -> Unit) {
                     owner.forget()
                     enrolled = false
                     page = DevicePage.ENROLL
+                } else if (forgetting.startsWith("memory:")) {
+                    growth.forgetMemory(forgetting.removePrefix("memory:").toLong())
                 } else if (forgetting.startsWith("alias:")) {
                     growth.forgetContact(forgetting.removePrefix("alias:"))
                 } else {
@@ -146,7 +154,9 @@ fun PocketHomeScreen(viewModel: ChatHomeViewModel, onAdvanced: () -> Unit) {
                     app.kawkab.android.domain.voice.VoiceAnswers.Answer.NO
                 ) {
                     viewModel.hitl.rejectTool()
-                } else if (SpokenOwnerAnswer.consumeYes()) {
+                } else if (app.kawkab.android.domain.voice.VoiceAnswers.answer(text) ==
+                    app.kawkab.android.domain.voice.VoiceAnswers.Answer.YES
+                ) {
                     viewModel.hitl.approveTool()
                 }
             } else {
@@ -301,8 +311,11 @@ fun PocketHomeScreen(viewModel: ChatHomeViewModel, onAdvanced: () -> Unit) {
         else -> DeviceSignal.STANDBY
     }
     val args = pending?.let { ActionSentence.arguments(it.arguments) }.orEmpty()
-    val learned = aliases.map { DeviceLearning("alias:${it.key}", "${it.key} means ${it.value.name}") } +
-        skills.map { DeviceLearning("skill:${it.key}", "${it.key} — ${it.successes} successes") }
+    LaunchedEffect(page) { if (page == DevicePage.GROWTH) growth.refresh() }
+    val learned =
+        memories.map { DeviceLearning("memory:${it.id}", it.text) } +
+            aliases.map { DeviceLearning("alias:${it.key}", "${it.key} means ${it.value.name}") } +
+            skills.map { DeviceLearning("skill:${it.key}", "${it.key} — ${it.successes} successes") }
     val device = DeviceState(
         page = shownPage, signal = signal,
         date = SimpleDateFormat("EEE dd MMM", Locale.ENGLISH).format(Date()),
@@ -325,18 +338,24 @@ fun PocketHomeScreen(viewModel: ChatHomeViewModel, onAdvanced: () -> Unit) {
     KawkabDevice(
         device,
         onHome = {
+            if (pending?.runsAtMs != null) viewModel.hitl.rejectTool()
             menu = null
             page = if (enrolled) DevicePage.IDLE else DevicePage.ENROLL
         },
         onShots = {
+            if (pending?.runsAtMs != null) viewModel.hitl.rejectTool()
             menu = null
             page = DevicePage.SHOTS
         },
         onGrowth = {
+            if (pending?.runsAtMs != null) viewModel.hitl.rejectTool()
             menu = null
             page = DevicePage.GROWTH
         },
-        onSettings = { menu = "SETTINGS" },
+        onSettings = {
+            if (pending?.runsAtMs != null) viewModel.hitl.rejectTool()
+            menu = "SETTINGS"
+        },
         onTalk = {
             if (pending?.runsAtMs != null) {
                 viewModel.hitl.rejectTool()

@@ -3,6 +3,7 @@ package app.kawkab.android.di
 import android.content.Context
 import app.kawkab.android.assistant.AssistantPanelVisibility
 import app.kawkab.android.domain.assistant.AssistantCommandRunner
+import app.kawkab.android.domain.harness.SkillPersistence
 import app.kawkab.android.domain.safety.ActionDenylist
 import app.kawkab.android.domain.safety.ActionRunner
 import app.kawkab.android.domain.safety.ActivityLog
@@ -13,6 +14,7 @@ import app.kawkab.android.domain.safety.ScreenWatch
 import app.kawkab.android.hands.AndroidContactAliases
 import app.kawkab.android.hands.AndroidContactBook
 import app.kawkab.android.hands.AndroidPhoneHands
+import app.kawkab.android.hands.AndroidSkillPersistence
 import app.kawkab.android.hands.ContactAliasStore
 import app.kawkab.android.hands.ContactBook
 import app.kawkab.android.hands.PhoneHands
@@ -46,6 +48,11 @@ abstract class SafetyModule {
     @Binds
     @Singleton
     abstract fun bindContactAliases(impl: AndroidContactAliases): ContactAliasStore
+
+    /** Local plans survive process death and stay off device backup. */
+    @Binds
+    @Singleton
+    abstract fun bindSkillPersistence(impl: AndroidSkillPersistence): SkillPersistence
 
     companion object {
         /** Patterns shipped in the APK, the same list as `safety/outbound_patterns.txt`. */

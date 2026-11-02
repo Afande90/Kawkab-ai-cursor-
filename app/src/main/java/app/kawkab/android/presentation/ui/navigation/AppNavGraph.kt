@@ -24,15 +24,12 @@ import app.kawkab.android.presentation.ui.chat.home.ChatHomeViewModel
 import app.kawkab.android.presentation.ui.discover.DiscoverDetailScreen
 import app.kawkab.android.presentation.ui.discover.DiscoverScreen
 import app.kawkab.android.presentation.ui.files.FilesScreen
-import app.kawkab.android.presentation.ui.growth.GrowthScreen
 import app.kawkab.android.presentation.ui.help.HelpReaderScreen
 import app.kawkab.android.presentation.ui.help.HelpScreen
 import app.kawkab.android.presentation.ui.memory.MemoryScreen
-import app.kawkab.android.presentation.ui.models.ModelsScreen
 import app.kawkab.android.presentation.ui.monitoring.MonitoringScreen
 import app.kawkab.android.presentation.ui.monitoring.MonitoringViewModel
 import app.kawkab.android.presentation.ui.more.MoreScreen
-import app.kawkab.android.presentation.ui.onboarding.OnboardingScreen
 import app.kawkab.android.presentation.ui.orchestrator.OrchestratorViewModel
 import app.kawkab.android.presentation.ui.orchestrator.PipelineLibraryScreen
 import app.kawkab.android.presentation.ui.orchestrator.presets.PipelinePresetsManagerScreen
@@ -47,7 +44,6 @@ import app.kawkab.android.presentation.ui.settings.MemorySettingsScreen
 import app.kawkab.android.presentation.ui.settings.ModelsSettingsScreen
 import app.kawkab.android.presentation.ui.settings.PipelinesSettingsScreen
 import app.kawkab.android.presentation.ui.settings.PrivacySettingsScreen
-import app.kawkab.android.presentation.ui.settings.SettingsHubScreen
 import app.kawkab.android.presentation.ui.settings.SettingsNavActions
 import app.kawkab.android.presentation.ui.settings.SettingsViewModel
 import app.kawkab.android.presentation.ui.settings.ToolsSettingsScreen
@@ -157,16 +153,9 @@ fun AppNavGraph(
         }
 
         composable(NavRoutes.ONBOARDING) {
-            OnboardingScreen(
-                onCompleted = {
-                    navController.navigate(NavRoutes.CHAT_TAB) {
-                        popUpTo(NavRoutes.ONBOARDING) { inclusive = true }
-                        launchSingleTop = true
-                    }
-                },
-                // Pushed over onboarding, so back from the reader returns to the step
-                // the user left, with its state intact.
-                onOpenDocument = { id -> navController.navigate(NavRoutes.helpDocumentRoute(id)) },
+            PocketHomeScreen(
+                viewModel = hiltViewModel(),
+                onAdvanced = { navController.navigateToTab(NavRoutes.MORE) },
             )
         }
 
@@ -327,10 +316,10 @@ fun AppNavGraph(
             FilesScreen(onBack = { navController.popBackStack() })
         }
         composable(NavRoutes.MODELS) {
-            ModelsScreen(
-                modifier = Modifier.fillMaxSize(),
-                onBack = { navController.popBackStack() },
-                onOpenDiscover = { navController.navigate(NavRoutes.DISCOVER) },
+            PocketHomeScreen(
+                viewModel = hiltViewModel(),
+                onAdvanced = { navController.navigateToTab(NavRoutes.MORE) },
+                initialMenu = "MODELS",
             )
         }
         composable(NavRoutes.DISCOVER) {
@@ -374,8 +363,12 @@ fun AppNavGraph(
         }
         navigation(startDestination = NavRoutes.SETTINGS_HUB, route = NavRoutes.SETTINGS) {
             val nav = settingsNavActions(navController)
-            composable(NavRoutes.SETTINGS_HUB) { entry ->
-                SettingsHubScreen(viewModel = settingsGraphViewModel(navController, entry), nav = nav)
+            composable(NavRoutes.SETTINGS_HUB) {
+                PocketHomeScreen(
+                    viewModel = hiltViewModel(),
+                    onAdvanced = { navController.navigateToTab(NavRoutes.MORE) },
+                    initialMenu = "SETTINGS",
+                )
             }
             composable(NavRoutes.SETTINGS_GENERATION) { entry ->
                 GenerationSettingsScreen(viewModel = settingsGraphViewModel(navController, entry), nav = nav)
@@ -485,7 +478,11 @@ fun AppNavGraph(
             )
         }
         composable(NavRoutes.GROWTH) {
-            GrowthScreen(onBack = { navController.popBackStack() })
+            PocketHomeScreen(
+                viewModel = hiltViewModel(),
+                onAdvanced = { navController.navigateToTab(NavRoutes.MORE) },
+                initialPage = app.kawkab.design.device.DevicePage.GROWTH,
+            )
         }
         composable(NavRoutes.CHAT_ARCHIVE) {
             ChatArchiveScreen(

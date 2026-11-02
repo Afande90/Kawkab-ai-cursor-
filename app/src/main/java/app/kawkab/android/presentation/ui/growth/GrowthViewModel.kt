@@ -1,13 +1,18 @@
 package app.kawkab.android.presentation.ui.growth
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import app.kawkab.android.domain.harness.CachedSkill
 import app.kawkab.android.domain.harness.SkillCache
+import app.kawkab.android.domain.models.MemoryChunk
+import app.kawkab.android.domain.repositories.MemoryRepository
 import app.kawkab.android.hands.ContactAliasStore
 import app.kawkab.android.hands.ContactMatch
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
@@ -17,7 +22,25 @@ import javax.inject.Inject
 class GrowthViewModel @Inject constructor(
     private val cache: SkillCache,
     private val contactAliases: ContactAliasStore = ContactAliasStore.NONE,
+    private val memory: MemoryRepository? = null,
 ) : ViewModel() {
+    /** Every learned fact is visible on Growth, including preserved historical statements. */
+    val memories = MutableStateFlow<List<MemoryChunk>>(emptyList())
+
+    /** Reload when Growth opens so idle extraction appears here. */
+    fun refresh() {
+        aliases.value = contactAliases.all()
+        viewModelScope.launch(Dispatchers.IO) { memories.value = memory?.getAllMemories().orEmpty() }
+    }
+
+    /** The device shell obtains a fresh spoken yes before this operation. */
+    fun forgetMemory(id: Long) {
+        viewModelScope.launch(Dispatchers.IO) {
+            memory?.deleteMemory(id)
+            memories.value = memory?.getAllMemories().orEmpty()
+        }
+    }
+
     /** Names the owner resolved, all visible and removable. */
     val aliases: MutableStateFlow<Map<String, ContactMatch>> = MutableStateFlow(contactAliases.all())
 
