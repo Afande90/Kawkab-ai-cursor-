@@ -204,14 +204,14 @@ fun PocketHomeScreen(
         page = DevicePage.TALK
         scope.launch {
             val services = dagger.hilt.android.EntryPointAccessors.fromApplication(context, PocketServices::class.java)
+            services.judge().begin(viewModel.state.value.thread.currentSessionId, input)
             val known = app.kawkab.android.domain.fastpath.CommandFastPath.parse(input) != null ||
                 pendingContact != null ||
                 pendingApp != null
             val choice = if (forced == null &&
-                !known &&
-                services.judge().ready()
+                !known
             ) {
-                services.decisions().route(input)
+                services.decisions().route(input, viewModel.state.value.thread.currentSessionId)
             } else {
                 null
             }

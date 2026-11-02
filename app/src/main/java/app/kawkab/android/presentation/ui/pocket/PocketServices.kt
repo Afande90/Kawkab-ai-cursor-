@@ -9,7 +9,7 @@ import dagger.hilt.components.SingletonComponent
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 interface PocketServices {
-    /** Optional calibrated command/chat and act/ask verdicts. */
+    /** Automatic command/chat and act/ask verdicts at the owner-selected confidence threshold. */
     fun judge(): app.kawkab.android.domain.decision.TypedJudge
 
     /** Typed coordinator, independent of the language model's spoken answer. */

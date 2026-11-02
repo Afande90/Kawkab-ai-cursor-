@@ -16,6 +16,12 @@ import dagger.hilt.components.SingletonComponent
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class ChatTierModule {
+    /** Decision inputs and real outcomes stay in private on-phone storage. */
+    @Binds
+    abstract fun bindDecisionAudit(
+        impl: app.kawkab.android.data.decision.AndroidDecisionAudit,
+    ): app.kawkab.android.domain.decision.DecisionAudit
+
     /** Spoken app choices persist locally and appear on Growth. */
     @Binds
     abstract fun bindAppChoice(impl: app.kawkab.android.hands.AndroidAppChoice): app.kawkab.android.hands.AppChoice

@@ -15,7 +15,7 @@ app/src/main/java/app/kawkab/android/data/local/dao/ChatDao.kt :: interface Chat
 app/src/main/java/app/kawkab/android/di/AppModule.kt :: object AppModule :: TooManyFunctions
 app/src/main/java/app/kawkab/android/di/DataModule.kt :: class DataModule :: TooManyFunctions
 app/src/main/java/app/kawkab/android/domain/engine/DefaultPipelineFactory.kt :: fun create :: LongMethod
-app/src/main/java/app/kawkab/android/domain/engine/executors/ToolInvocationGate.kt :: fun dispatch :: LongMethod
+app/src/main/java/app/kawkab/android/domain/engine/executors/ToolInvocationGate.kt :: fun dispatchObserved :: LongMethod
 app/src/main/java/app/kawkab/android/domain/models/PipelineGraph.kt :: fun validate :: CyclomaticComplexMethod
 app/src/main/java/app/kawkab/android/presentation/ui/chat/home/ChatHomeStateMapping.kt :: fun ChatHomeScreenState.toViewState :: LongMethod
 app/src/main/java/app/kawkab/android/presentation/ui/chat/home/ChatHomeViewModel.kt :: constructor :: LongParameterList

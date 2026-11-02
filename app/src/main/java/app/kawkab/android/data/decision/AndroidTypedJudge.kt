@@ -1,33 +1,32 @@
 package app.kawkab.android.data.decision
 
-import android.content.Context
-import app.kawkab.android.domain.decision.DecisionCalibration
+import app.kawkab.android.domain.decision.DecisionAudit
 import app.kawkab.android.domain.decision.DecisionPolicy
+import app.kawkab.android.domain.decision.DecisionRecord
 import app.kawkab.android.domain.decision.DecisionResult
+import app.kawkab.android.domain.decision.DecisionTrace
 import app.kawkab.android.domain.decision.TypedJudge
 import app.kawkab.android.domain.engine.LlmInferenceEngine
 import app.kawkab.android.domain.engine.TaskQueueManager
 import app.kawkab.android.domain.models.isBusy
 import app.kawkab.android.domain.repositories.LocalModelRepository
 import app.kawkab.android.voice.JevRuntime
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
-import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** The exact installed GGUF and a model-specific final-test certificate are both mandatory. */
+/** Automatic typed decisions at the owner-selected threshold, with private outcome evidence. */
 @Singleton
 class AndroidTypedJudge @Inject constructor(
-    @ApplicationContext private val context: Context,
     private val models: LocalModelRepository,
     private val language: LlmInferenceEngine,
     private val tasks: TaskQueueManager,
+    private val audit: DecisionAudit,
 ) : TypedJudge {
     private val lock = Mutex()
 
@@ -35,55 +34,66 @@ class AndroidTypedJudge @Inject constructor(
         runCatching {
             if (tasks.globalState.value.isBusy || !JevRuntime.available) return@runCatching false
             val model = models.findByFileName(FILE_NAME) ?: return@runCatching false
-            val certificate = JSONObject(File(context.noBackupFilesDir, "decision/calibration.json").readText())
-            models.currentFileHash(model.path) == SHA256 &&
-                certificate.optBoolean("production_ready") &&
-                certificate.optString("model_sha256") == SHA256
+            models.currentFileHash(model.path) == SHA256
         }.getOrDefault(false)
     }
+
+    override fun begin(sessionId: String, input: String) = audit.begin(sessionId, input)
 
     override suspend fun choose(state: String, question: String, options: List<String>): DecisionResult =
         withContext(Dispatchers.Default) {
             lock.withLock {
+                val started = System.nanoTime()
+                val sessionId = currentCoroutineContext()[DecisionTrace]?.sessionId
                 val ask = DecisionResult.Ask(question)
-                try {
-                    if (tasks.globalState.value.isBusy || !JevRuntime.available) return@withLock ask
-                    val model = models.findByFileName(FILE_NAME) ?: return@withLock ask
-                    if (models.currentFileHash(model.path) != SHA256) return@withLock ask
-                    val certificate = JSONObject(File(context.noBackupFilesDir, "decision/calibration.json").readText())
-                    // The bundled smoke fixtures test wiring; they cannot certify real phone precision.
-                    if (!certificate.optBoolean("production_ready") ||
-                        certificate.getString("model_sha256") != SHA256
+                var logits: DoubleArray? = null
+                var reason = "unavailable"
+                val result = try {
+                    val model = models.findByFileName(FILE_NAME)
+                    if (tasks.globalState.value.isBusy ||
+                        !JevRuntime.available ||
+                        model == null ||
+                        models.currentFileHash(model.path) != SHA256
                     ) {
-                        return@withLock ask
-                    }
-                    val calibration = DecisionCalibration(
-                        SHA256,
-                        certificate.getDouble("temperature"),
-                        certificate.getDouble("threshold"),
-                        certificate.getDouble("final_precision"),
-                        certificate.getInt("final_acted_count"),
-                    )
-                    language.close()
-                    try {
-                        val logits = JevRuntime.scores(model.path, state, question, options.toTypedArray())
-                        when (val result = DecisionPolicy.choose(options, logits, calibration)) {
-                            is DecisionResult.Chosen -> result
-                            is DecisionResult.Ask -> ask
+                        ask
+                    } else {
+                        language.close()
+                        try {
+                            logits = JevRuntime.scores(model.path, state, question, options.toTypedArray())
+                            reason = "model"
+                            when (val choice = DecisionPolicy.choose(options, logits)) {
+                                is DecisionResult.Chosen -> choice
+                                is DecisionResult.Ask -> ask
+                            }
+                        } finally {
+                            JevRuntime.release()
                         }
-                    } finally {
-                        JevRuntime.release()
                     }
                 } catch (cancel: CancellationException) {
+                    audit.decision(
+                        DecisionRecord(sessionId, state, question, options, logits, ask, "cancelled", elapsed(started)),
+                    )
                     throw cancel
+                } catch (_: LinkageError) {
+                    reason = "runtime_unavailable"
+                    ask
                 } catch (_: Exception) {
+                    reason = "inference_failed"
                     ask
                 }
+                val saved = audit.decision(
+                    DecisionRecord(sessionId, state, question, options, logits, result, reason, elapsed(started)),
+                )
+                if (saved) result else ask
             }
         }
 
+    private fun elapsed(started: Long): Long = (System.nanoTime() - started) / NANOS_PER_MS
+
     /** Pinned public, ungated, Apache-2.0 weights; downloaded only at the owner's request. */
     companion object {
+        private const val NANOS_PER_MS = 1_000_000L
+
         /** Internal file identity; hidden from ordinary Settings. */
         const val FILE_NAME = "Jev-Style-0.8B-Decision-v3-Q4_K_M.gguf"
 

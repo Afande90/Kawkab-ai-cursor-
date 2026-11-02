@@ -1,6 +1,7 @@
 package app.kawkab.android.domain.fastpath
 
 import app.kawkab.android.domain.decision.DecisionResult
+import app.kawkab.android.domain.decision.DecisionTrace
 import app.kawkab.android.domain.decision.TypedJudge
 import app.kawkab.android.domain.engine.LlmInferenceEngine
 import app.kawkab.android.domain.engine.executors.ToolInvocationGate
@@ -27,6 +28,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import javax.inject.Inject
 
@@ -196,14 +198,14 @@ class HandsChatTierRouter @Inject constructor(
             onState(AgentOrchestratorState.Completed(reply))
             return
         }
-        val app = resolveApp(text, command)
+        val app = withContext(DecisionTrace(sessionId)) { resolveApp(text, command) }
         if (app == null) {
             val question = apps?.state?.value?.let(AppChoiceRules::question) ?: "Which installed app do you mean?"
             save(sessionId, Role.AGENT, question, relayed = true, attachment = null)
             onState(AgentOrchestratorState.Completed(question))
             return
         }
-        val resolved = resolveContact(text, app)
+        val resolved = withContext(DecisionTrace(sessionId)) { resolveContact(text, app) }
         if (resolved == null) {
             val question = choice.state.value?.let { pending ->
                 ContactChoice.question(

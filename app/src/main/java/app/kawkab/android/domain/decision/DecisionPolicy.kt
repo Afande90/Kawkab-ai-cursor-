@@ -2,60 +2,50 @@ package app.kawkab.android.domain.decision
 
 import kotlin.math.exp
 
-/** Measurements from disjoint calibration, threshold-selection and final-test partitions.
- * @property modelSha256 Exact GGUF hash covered by the final test.
- * @property temperature Fitted only on calibration data.
- * @property threshold Selected before final testing.
- * @property finalPrecision Correct auto-actions divided by all final-test auto-actions.
- * @property finalActedCount Number of auto-actions in the final partition.
- */
-data class DecisionCalibration(
-    val modelSha256: String,
-    val temperature: Double,
-    val threshold: Double,
-    val finalPrecision: Double,
-    val finalActedCount: Int,
-)
-
 /** The language model's speech is never parsed into an action decision. */
 sealed interface DecisionResult {
-    /** Only an allowlisted option can be selected. The normal tool gate still applies.
-     * @property option Selected allowlisted label.
-     * @property probability Calibrated softmax probability.
+    /** An allowlisted option and its softmax confidence; the normal action gate still applies.
+     * @property option Selected allowlisted option.
+     * @property probability Softmax confidence, without claiming measured accuracy.
      */
     data class Chosen(val option: String, val probability: Double) : DecisionResult
 
-    /** Ask one short spoken question; no tool executes.
+    /** One short spoken question; no tool executes.
      * @property question Short clarification read by the voice loop.
      */
     data class Ask(val question: String) : DecisionResult
 }
 
-/** Jev verdict-slot logit differences become calibrated typed choices, never generated JSON. */
+/** Owner policy: confidence at least 0.85 acts; lower or malformed verdicts ask. */
 object DecisionPolicy {
-    private const val REQUIRED_PRECISION = 0.95
+    /** Fixed by the owner for this round; no final-test certificate is required. */
+    const val CONFIDENCE_THRESHOLD = 0.85
 
-    /** Missing or failed calibration, malformed output and ambiguity all ask. */
-    fun choose(options: List<String>, logits: DoubleArray, calibration: DecisionCalibration?): DecisionResult {
+    /** Stable option probabilities from actual verdict logits, without a precision-certificate gate. */
+    fun probabilities(logits: DoubleArray): DoubleArray? {
+        if (logits.size < 2 || logits.any { !it.isFinite() }) return null
+        val maximum = logits.max()
+        val weights = logits.map { exp(it - maximum) }
+        val total = weights.sum()
+        return weights.map { it / total }.toDoubleArray()
+    }
+
+    /** Confidence is not a measured accuracy claim. Outbound choices still wait three seconds. */
+    fun choose(options: List<String>, logits: DoubleArray): DecisionResult {
         val ask = DecisionResult.Ask("Which do you mean?")
         if (options.size < 2 ||
             options.distinct().size != options.size ||
-            logits.size != options.size ||
-            logits.any { !it.isFinite() } ||
-            calibration == null
+            options.any { it.isBlank() } ||
+            logits.size != options.size
         ) {
             return ask
         }
-        val validPrecision = calibration.finalPrecision.isFinite() &&
-            calibration.finalPrecision in REQUIRED_PRECISION..1.0 &&
-            calibration.finalActedCount > 0
-        val validTemperature = calibration.temperature.isFinite() && calibration.temperature > 0
-        val validThreshold = calibration.threshold.isFinite() && calibration.threshold in REQUIRED_PRECISION..1.0
-        if (!validPrecision || !validTemperature || !validThreshold) return ask
-        val maximum = logits.max()
-        val weights = logits.map { exp((it - maximum) / calibration.temperature) }
-        val index = weights.indices.maxBy { weights[it] }
-        val probability = weights[index] / weights.sum()
-        return if (probability >= calibration.threshold) DecisionResult.Chosen(options[index], probability) else ask
+        val probabilities = probabilities(logits) ?: return ask
+        val index = probabilities.indices.maxBy { probabilities[it] }
+        return if (probabilities[index] >= CONFIDENCE_THRESHOLD) {
+            DecisionResult.Chosen(options[index], probabilities[index])
+        } else {
+            ask
+        }
     }
 }

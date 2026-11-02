@@ -1,5 +1,6 @@
 package app.kawkab.android.domain.engine.executors
 
+import app.kawkab.android.domain.decision.DecisionAudit
 import app.kawkab.android.domain.models.AgentOrchestratorState
 import app.kawkab.android.domain.models.ApprovalRequestContext
 import app.kawkab.android.domain.models.ChatMessage
@@ -99,6 +100,7 @@ class ToolInvocationGate @Inject constructor(
     private val interactiveSessions: InteractiveSessions = InteractiveSessions.NONE,
     private val intents: app.kawkab.android.domain.decision.DecisionIntents =
         app.kawkab.android.domain.decision.DecisionIntents(),
+    private val decisions: DecisionAudit = DecisionAudit.NONE,
 ) {
 
     private val activeApprovalDeferreds = ConcurrentHashMap<String, PendingApprovalHolder>()
@@ -275,8 +277,41 @@ class ToolInvocationGate @Inject constructor(
      *   one. Deliberately without a default: every node type that dispatches
      *   tools must pass its switch, so a new caller cannot silently drop it.
      */
-    @Suppress("LongMethod", "NestedBlockDepth")
     suspend fun dispatch(
+        collector: FlowCollector<NodeOutput>,
+        nodeType: String,
+        nodeId: String,
+        sessionId: String,
+        runId: String?,
+        resolvedToolName: String,
+        resolvedToolArgs: String,
+        alwaysConfirm: Boolean,
+    ) {
+        val observed = FlowCollector<NodeOutput> { output ->
+            if (output is NodeOutput.Result) {
+                decisions.outcome(sessionId, resolvedToolName, output.result.outputText.orEmpty(), output.result.error)
+            }
+            collector.emit(output)
+        }
+        try {
+            dispatchObserved(
+                observed,
+                nodeType,
+                nodeId,
+                sessionId,
+                runId,
+                resolvedToolName,
+                resolvedToolArgs,
+                alwaysConfirm,
+            )
+        } catch (cancelled: CancellationException) {
+            decisions.outcome(sessionId, resolvedToolName, "cancelled")
+            throw cancelled
+        }
+    }
+
+    @Suppress("LongMethod", "NestedBlockDepth")
+    private suspend fun dispatchObserved(
         collector: FlowCollector<NodeOutput>,
         nodeType: String,
         nodeId: String,

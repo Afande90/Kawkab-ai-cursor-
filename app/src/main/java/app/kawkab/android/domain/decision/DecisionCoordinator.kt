@@ -1,5 +1,6 @@
 package app.kawkab.android.domain.decision
 
+import kotlinx.coroutines.withContext
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -7,17 +8,17 @@ import javax.inject.Singleton
 /** Two explicit verdict calls keep generated speech out of action selection. */
 class DecisionCoordinator @Inject constructor(private val judge: TypedJudge) {
     /** A high-confidence chat needs no action verdict; a command does. */
-    suspend fun route(text: String): DecisionResult {
+    suspend fun route(text: String, sessionId: String = ""): DecisionResult = withContext(DecisionTrace(sessionId)) {
         val kind = judge.choose(text, "Is this a command or conversation?", listOf("command", "chat"))
-        if (kind !is DecisionResult.Chosen) return DecisionResult.Ask(INTENT_QUESTION)
-        if (kind.option == "chat") return kind
-        if (kind.option != "command") return DecisionResult.Ask(INTENT_QUESTION)
+        if (kind !is DecisionResult.Chosen) return@withContext DecisionResult.Ask(INTENT_QUESTION)
+        if (kind.option == "chat") return@withContext kind
+        if (kind.option != "command") return@withContext DecisionResult.Ask(INTENT_QUESTION)
         val action = judge.choose(
             text,
             "Are the requested action and necessary details clear enough to act?",
             listOf("act", "ask"),
         )
-        return if (action is DecisionResult.Chosen && action.option == "act") {
+        if (action is DecisionResult.Chosen && action.option == "act") {
             action
         } else {
             DecisionResult.Ask("What details should I use for that action?")

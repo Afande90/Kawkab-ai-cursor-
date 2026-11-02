@@ -1,5 +1,6 @@
 package app.kawkab.android.domain.assistant
 
+import app.kawkab.android.domain.decision.DecisionAudit
 import app.kawkab.android.domain.fastpath.ChatTierRouter
 import app.kawkab.android.domain.fastpath.PlannedCommand
 import app.kawkab.android.domain.models.AgentOrchestratorState
@@ -25,6 +26,7 @@ class AssistantCommandRunner @Inject constructor(
     private val approvals: SubmitApprovalDecisionUseCase,
     private val log: ActivityLog,
     private val gate: app.kawkab.android.domain.engine.executors.ToolInvocationGate? = null,
+    private val decisions: DecisionAudit = DecisionAudit.NONE,
 ) {
     /**
      * Runs [command] for [text] and forwards each orchestrator state.
@@ -43,6 +45,7 @@ class AssistantCommandRunner @Inject constructor(
                 ),
             )
         }
+        decisions.begin(SESSION_ID, text)
         router.runCommand(SESSION_ID, text, command, onState)
     }
 
