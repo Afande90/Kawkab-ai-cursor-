@@ -165,6 +165,8 @@ def verify_frozen():
     config = json.loads((ROOT / "training/wake/voices.json").read_text())
     if digest(frozen / "SHA256SUMS") != config["frozen_eval_sha256"]:
         raise ValueError("Frozen checksum inventory changed")
+    if digest(frozen / "manifest.jsonl") != config["frozen_manifest_sha256"]:
+        raise ValueError("Frozen labels or splits changed")
     for line in (frozen / "SHA256SUMS").read_text().splitlines():
         expected, name = line.split(maxsplit=1)
         target = (frozen / name).resolve()
@@ -214,7 +216,27 @@ def evaluate(args):
     hard_negatives = [r for r in rows if r["split"] == "test" and r["kind"] != "positive"]
     hard_hits = sum(heard(read_audio(frozen / row["file"])) for row in hard_negatives)
     false = 0; seconds = 0.0
-    files = sorted(pathlib.Path(args.negatives).rglob("*.flac"))
+    directory = pathlib.Path(args.negatives)
+    manifest = directory / "corpus-manifest.json"
+    frozen_negative_hash = ROOT / "training/wake/negative-corpus.sha256"
+    if not frozen_negative_hash.is_file() or digest(manifest) != frozen_negative_hash.read_text().strip():
+        raise ValueError("Freeze the downloaded real-negative manifest hash before final evaluation")
+    subprocess.run(["git", "ls-files", "--error-unmatch", str(frozen_negative_hash)], cwd=ROOT,
+                   check=True, stdout=subprocess.DEVNULL)
+    subprocess.run(["git", "diff", "--exit-code", "HEAD", "--", str(frozen_negative_hash)], cwd=ROOT,
+                   check=True, stdout=subprocess.DEVNULL)
+    negative_rows = json.loads(manifest.read_text())
+    files = []
+    for row in negative_rows:
+        file = (directory / row["file"]).resolve()
+        if not file.is_relative_to(directory.resolve()) or digest(file) != row["sha256"]:
+            raise ValueError("Real negative recording changed")
+        if row["source"] not in {"https://www.openslr.org/resources/12/test-clean.tar.gz",
+                                  "https://www.openslr.org/resources/12/dev-clean.tar.gz"}:
+            raise ValueError("Unknown real negative corpus provenance")
+        files.append(file)
+    if len(files) != len(set(files)):
+        raise ValueError("Duplicate recordings cannot inflate negative hours")
     if not files: raise ValueError("Provide the licensed LibriSpeech test-clean and dev-clean corpus")
     for file in files:
         audio = read_audio(file); seconds += len(audio) / RATE

@@ -21,6 +21,8 @@ git commit -m 'data: freeze synthetic wake training inputs'
 python3 training/wake/pipeline.py train --manifest training/wake/data/manifest.jsonl --output /tmp/kws-trained.json
 python3 training/wake/pipeline.py calibrate --model /tmp/kws-trained.json --output /tmp/kws-calibrated.json
 python3 training/wake/fetch_negatives.py /local/librispeech
+git add training/wake/negative-corpus.sha256
+git commit -m 'data: freeze real wake negative corpus fingerprint'
 python3 training/wake/pipeline.py evaluate --model /tmp/kws-calibrated.json --negatives /local/librispeech --output /tmp/kws-report.json
 # Both mutations must exit nonzero:
 python3 training/wake/pipeline.py evaluate --model /tmp/kws-calibrated.json --negatives /local/librispeech --constant yes --output /tmp/kws-yes.json
