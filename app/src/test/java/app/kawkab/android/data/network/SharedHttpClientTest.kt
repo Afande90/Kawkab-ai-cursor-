@@ -12,6 +12,7 @@ import org.junit.Before
 import org.junit.Test
 import java.io.IOException
 import java.net.InetAddress
+import java.net.Proxy
 
 /**
  * The shared client's cleartext guard sees **every hop**, redirects included.
@@ -46,6 +47,7 @@ class SharedHttpClientTest {
 
     private fun client() = SharedHttpClient.build(CleartextGuardInterceptor(isPrivateHost = { it == "start.test" }))
         .newBuilder()
+        .proxy(Proxy.NO_PROXY)
         .dns(loopbackDns)
         .build()
 
