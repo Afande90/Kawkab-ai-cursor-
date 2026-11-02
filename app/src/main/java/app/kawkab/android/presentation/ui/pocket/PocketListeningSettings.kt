@@ -96,7 +96,7 @@ fun PocketListeningSettings(enrolled: Boolean) {
             ).show()
         })
     }
-    LcdLine("MIC TODAY: ${minutes(days[LocalDate.now()] ?: 0)} MIN")
+    LcdLine("WAKE MIC TODAY: ${minutes(days[LocalDate.now()] ?: 0)} MIN")
     DeviceKey("DAILY MIC LOG", onClick = {
         showLog = !showLog
         scope.launch { days = withContext(Dispatchers.IO) { usage.dailyMillis() } }
@@ -106,7 +106,7 @@ fun PocketListeningSettings(enrolled: Boolean) {
         days.toSortedMap(compareByDescending { it }).forEach { (date, millis) ->
             LcdLine("$date  ${minutes(millis)} MIN")
         }
-        LcdLine("COUNTS MIC OPEN, INCLUDING SILENCE")
+        LcdLine("WAKE CAPTURE, INCLUDING SILENCE")
     }
 }
 

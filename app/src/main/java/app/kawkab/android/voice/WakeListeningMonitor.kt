@@ -1,5 +1,7 @@
 package app.kawkab.android.voice
 
+import android.app.AlarmManager
+import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -17,6 +19,7 @@ import app.kawkab.android.domain.voice.WakeListeningPolicy
 import app.kawkab.android.domain.voice.WakeListeningState
 import app.kawkab.android.domain.voice.WakePauseReason
 import java.time.LocalTime
+import java.time.ZonedDateTime
 
 /** Low-rate sensors and system events control capture; no polling, phone-state permission or wake lock. */
 class WakeListeningMonitor(
@@ -40,6 +43,9 @@ class WakeListeningMonitor(
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == Intent.ACTION_BATTERY_CHANGED) battery(intent)
             refresh()
+            if (intent.action in setOf(ACTION_SLEEP_BOUNDARY, Intent.ACTION_TIME_CHANGED, Intent.ACTION_TIMEZONE_CHANGED)) {
+                scheduleBoundary()
+            }
         }
     }
 
@@ -48,6 +54,7 @@ class WakeListeningMonitor(
         config = value
         if (!registered) {
             val filter = IntentFilter().apply {
+                addAction(ACTION_SLEEP_BOUNDARY)
                 addAction(Intent.ACTION_BATTERY_CHANGED)
                 addAction(Intent.ACTION_TIME_TICK)
                 addAction(Intent.ACTION_TIME_CHANGED)
@@ -74,6 +81,7 @@ class WakeListeningMonitor(
             gravity?.let { sensors?.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL, SENSOR_BATCH_US) }
         }
         refresh()
+        scheduleBoundary()
     }
 
     /** Refresh on conversation handoff or a system time/power event. */
@@ -105,11 +113,34 @@ class WakeListeningMonitor(
 
     override fun close() {
         sensors?.unregisterListener(this)
+        cancelBoundary()
         if (registered) {
             context.unregisterReceiver(events)
             audio?.removeOnModeChangedListener(modeListener)
             registered = false
         }
+    }
+
+    private fun scheduleBoundary() {
+        cancelBoundary()
+        if (!config.sleepEnabled || config.sleepStartMinute == config.sleepEndMinute) return
+        val now = ZonedDateTime.now()
+        val next = listOf(config.sleepStartMinute, config.sleepEndMinute).flatMap { minute ->
+            listOf(now.toLocalDate(), now.toLocalDate().plusDays(1)).map { date ->
+                date.atTime(minute / MINUTES_PER_HOUR, minute % MINUTES_PER_HOUR).atZone(now.zone)
+            }
+        }.filter { it.isAfter(now) }.minBy { it.toInstant() }
+        val intent = PendingIntent.getBroadcast(context, 0, Intent(ACTION_SLEEP_BOUNDARY).setPackage(context.packageName),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        context.getSystemService(AlarmManager::class.java)?.setAndAllowWhileIdle(
+            AlarmManager.RTC_WAKEUP, next.toInstant().toEpochMilli(), intent,
+        )
+    }
+
+    private fun cancelBoundary() {
+        val intent = PendingIntent.getBroadcast(context, 0, Intent(ACTION_SLEEP_BOUNDARY).setPackage(context.packageName),
+            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE) ?: return
+        context.getSystemService(AlarmManager::class.java)?.cancel(intent)
     }
 
     private fun battery(intent: Intent) {
@@ -123,6 +154,8 @@ class WakeListeningMonitor(
     }
 
     private companion object {
+        const val ACTION_SLEEP_BOUNDARY = "app.kawkab.android.WAKE_SLEEP_BOUNDARY"
+        const val MINUTES_PER_HOUR = 60
         const val PROXIMITY_CM = 5f
         const val FACE_DOWN_Z = -7f
         const val FACE_UP_Z = -5f
