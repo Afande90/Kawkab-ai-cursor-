@@ -391,6 +391,7 @@ would. Kawkab never checks on its own.
 | Permission | Why | When |
 |---|---|---|
 | Internet, network state | Model downloads, and the opt-in cloud/MCP/tool paths above | Always declared; used only for the paths you configure |
+| Glyph lights (`com.nothing.ketchum.permission.ENABLE`) | Mirror listening, asking and countdown states on Nothing phones only; no audio or data leaves the phone | Only while Kawkab is in the foreground; lights turn off at idle or in the background. Other phones do nothing |
 | Notifications | Run progress, background-run results, confirmation prompts, model downloads and why one stopped | Asked on first run |
 | Microphone | Voice input you record for a message; processed on-device | Asked when you first record audio |
 | Microphone in the background | The wake word "Kawkab": a foreground service with a notification listens on the phone. Audio is never stored and never sent; the models ship in the app | Only after you turn on Wake word in Phone access; the notification's Stop turns it off |

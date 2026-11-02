@@ -38,6 +38,7 @@ uses-permission android.permission.SEND_SMS
 uses-permission android.permission.WAKE_LOCK
 uses-permission android.permission.WRITE_CALENDAR
 uses-permission com.android.alarm.permission.SET_ALARM
+uses-permission com.nothing.ketchum.permission.ENABLE
 
 # ── Declared by androidx.core for its non-exported dynamic receivers ─────────
 permission app.kawkab.android.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION protectionLevel=signature
