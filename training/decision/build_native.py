@@ -40,6 +40,12 @@ def main():
             target = ROOT / 'app/src/main/jniLibs' / abi
             target.mkdir(parents=True, exist_ok=True)
             shutil.copy2(output / 'libkawkab_decision.so', target / 'libkawkab_decision.so')
+            phone = ROOT / 'build/decision' / abi
+            phone.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(output / 'kawkab_jev_check', phone / 'kawkab_jev_check')
+            prepared = ROOT / 'app/src/main/cpp/decision/prepared' / abi
+            for library in prepared.glob('*.so'):
+                shutil.copy2(library, phone / library.name)
 
 if __name__ == '__main__':
     main()

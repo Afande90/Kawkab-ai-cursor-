@@ -27,7 +27,7 @@ def main():
     with zipfile.ZipFile(args.aar) as archive:
         for abi in ('arm64-v8a', 'x86_64'):
             (target / abi).mkdir(exist_ok=True)
-            for name in ('libllama.so', 'libggml.so', 'libggml-base.so'):
+            for name in ('libllama.so', 'libggml.so', 'libggml-cpu.so', 'libggml-base.so', 'libomp.so'):
                 (target / abi / name).write_bytes(archive.read(f'jni/{abi}/{name}'))
     print(target)
 
