@@ -55,7 +55,10 @@ class DeleteFileExecutorTest {
     fun `given existing file when execute then deletes and acknowledges`() = runTest {
         coEvery { workspace.delete(any()) } returns WorkspaceResult.Success(Unit)
 
-        val result = executor.execute("""{"path":"reports/old.md"}""", ToolExecutionContext(spokenDeletionConsent = true))
+        val result = executor.execute(
+            """{"path":"reports/old.md"}""",
+            ToolExecutionContext(spokenDeletionConsent = true),
+        )
 
         assertEquals("Deleted 'reports/old.md'.", result)
         coVerify { workspace.delete("reports/old.md") }
@@ -74,7 +77,10 @@ class DeleteFileExecutorTest {
     fun `given path-outside failure when execute then maps to readable error`() = runTest {
         coEvery { workspace.delete(any()) } returns WorkspaceResult.Failure(WorkspaceError.PathOutsideWorkspace)
 
-        val result = executor.execute("""{"path":"../../secrets"}""", ToolExecutionContext(spokenDeletionConsent = true))
+        val result = executor.execute(
+            """{"path":"../../secrets"}""",
+            ToolExecutionContext(spokenDeletionConsent = true),
+        )
 
         assertEquals("Error: path '../../secrets' is outside the workspace.", result)
     }

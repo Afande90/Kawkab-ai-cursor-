@@ -13,10 +13,12 @@ class WakeFeaturesTest {
         assertEquals(512, result.size)
         assertTrue(result.all { it.isFinite() && it == 0.0 })
     }
+
     @Test fun identicalUtterancesHaveIdenticalFeatures() {
         val tone = FloatArray(16000) { (sin(2 * PI * 330 * it / 16000) * 0.3).toFloat() }
         assertEquals(1.0, WakeFeatures.similarity(WakeFeatures.encode(tone), WakeFeatures.encode(tone)), 0.00001)
     }
+
     @Test fun differentSoundsDoNotMatchThePersonalTemplate() {
         fun tone(hz: Int) = FloatArray(16000) { (sin(2 * PI * hz * it / 16000) * 0.3).toFloat() }
         assertTrue(WakeFeatures.similarity(WakeFeatures.encode(tone(330)), WakeFeatures.encode(tone(2100))) < 0.8)

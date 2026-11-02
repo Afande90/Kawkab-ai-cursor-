@@ -10,7 +10,9 @@ class SkillPersistenceTest {
         var saved = emptyList<CachedSkill>()
         val store = object : SkillPersistence {
             override fun load(): List<CachedSkill> = saved
-            override fun save(skills: List<CachedSkill>) { saved = skills }
+            override fun save(skills: List<CachedSkill>) {
+                saved = skills
+            }
         }
         SkillCache(store).remember("alarm six", "set_alarm", mapOf("hour" to "6"))
         val restarted = SkillCache(store)

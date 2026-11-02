@@ -11,11 +11,25 @@ class DecisionPolicyTest {
         val failed = DecisionCalibration("model", 1.0, 0.9, 0.949, 100)
         assertTrue(DecisionPolicy.choose(listOf("act", "ask"), doubleArrayOf(20.0, 0.0), failed) is DecisionResult.Ask)
     }
+
     @Test fun `finite calibrated confident choices act while ambiguous choices ask`() {
         val calibrated = DecisionCalibration("model", 1.0, 0.95, 0.96, 100)
-        assertEquals("act", (DecisionPolicy.choose(listOf("act", "ask"), doubleArrayOf(9.0, 0.0), calibrated)
-            as DecisionResult.Chosen).option)
-        assertTrue(DecisionPolicy.choose(listOf("act", "ask"), doubleArrayOf(0.0, 0.0), calibrated) is DecisionResult.Ask)
-        assertTrue(DecisionPolicy.choose(listOf("act", "ask"), doubleArrayOf(Double.NaN, 0.0), calibrated) is DecisionResult.Ask)
+        assertEquals(
+            "act",
+            (
+                DecisionPolicy.choose(listOf("act", "ask"), doubleArrayOf(9.0, 0.0), calibrated)
+                    as DecisionResult.Chosen
+                ).option,
+        )
+        assertTrue(
+            DecisionPolicy.choose(listOf("act", "ask"), doubleArrayOf(0.0, 0.0), calibrated) is DecisionResult.Ask,
+        )
+        assertTrue(
+            DecisionPolicy.choose(
+                listOf("act", "ask"),
+                doubleArrayOf(Double.NaN, 0.0),
+                calibrated,
+            ) is DecisionResult.Ask,
+        )
     }
 }
