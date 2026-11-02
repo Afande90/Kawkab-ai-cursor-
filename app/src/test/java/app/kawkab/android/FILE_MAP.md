@@ -622,11 +622,14 @@ Only Kotlin files appear inside the generated blocks.
     - `ConversationCardTest.kt` - Task 29: a card is read aloud, then waits for a tap or listens once for an answer.
     - `ConversationFollowUpTest.kt` - Task 28: after a spoken reply Kawkab listens for a follow-up; silence then ends the talk.
     - `ConversationLoopTest.kt` - Task 23l: listen, send, speak, listen again; tap stops; speaking over the reply stops it.
+    - `MicUsageMeterTest.kt` - Mic accounting measures actual open intervals, including midnight and clock changes.
     - `OwnerVoicePolicyTest.kt` - Owner voice is mandatory; missing, silent, invalid and different speakers cannot authorize commands.
     - `SmartTurnBudgetTest.kt` - Load errors, invalid scores and late native work cannot override the 700 ms fallback.
     - `SmartTurnFeaturesTest.kt` - Every bin is compared to the independent frozen NumPy/Whisper reference, including padding and trimming.
+    - `SpeechWakeGateTest.kt` - Silence must never trigger feature extraction or speaker verification.
     - `VoiceAnswersTest.kt` - Task 29 and spec §0.4.3: what a spoken answer may do.
     - `WakeFeaturesTest.kt` - Portable wake features must handle silence and separate different sounds without a model.
+    - `WakeListeningPolicyTest.kt` - Each automatic pause and each listening mode is held to the owner's battery rules.
     - `WakeWordTest.kt` - Task 27: the wake word's gate, speech window, counters and keyword file.
 - `editor/` - Guard over the browser pipeline editor: its context configuration must still mirror the domain sources.
   - `BrowserEditorContextConfigGuardTest.kt` - Drift guard for the browser pipeline editor's hand-maintained `defaultContextConfig(typeId)` JS function in `pipeline-editor.html`.
@@ -812,4 +815,8 @@ Only Kotlin files appear inside the generated blocks.
   - `StoreMetadataTest.kt` - Guards the store metadata under `fastlane/metadata/android/`, which is the single source both Google Play and F-Droid read.
 - `voice/` - Android offline recognizer requests and semantic endpoint integration tests.
   - `OfflineSpeechRequestTest.kt` - Android must leave segment completion to the PCM endpoint, with the documented silence fallback.
+  - `WakeListeningConfigTest.kt` - Voice settings persist and cross the wake-process boundary as a complete immutable snapshot.
+  - `WakeListeningMonitorTest.kt` - Real Android battery broadcasts and audio-mode callbacks reach the capture policy.
+  - `WakeMicSessionTest.kt` - Every pause releases the capture resource, rather than leaving an ignored microphone open.
+  - `WakeMicUsageTest.kt` - Daily on-device aggregates survive a service restart and are visible across store instances.
 <!-- /AUTO-GEN:FILE_MAP -->

@@ -117,5 +117,6 @@ Only Kotlin files appear inside the generated blocks.
   - `Tier1StubEngineTest.kt` - Tier 1 emulator harness (spec §12.1).
 - `voice/` - Wake-word tests on the device with injected audio (task 27).
   - `WakeAndSmartTurnInstrumentedTest.kt` - Real JNI coexistence regression: both versioned ORT bindings must work in one app process.
+  - `WakeBatteryInstrumentedTest.kt` - A real recorder disappears from Android's active capture list for every wake pause rule.
   - `WakeSpotterInstrumentedTest.kt` - Task 27, Tier 1 with injected audio: the real VAD and spotter from `assets/wake/` on the emulator.
 <!-- /AUTO-GEN:FILE_MAP -->
