@@ -63,11 +63,12 @@ def check_disjoint(training, evaluation):
         raise ValueError("Training and frozen evaluation speakers overlap")
 
 
-def gates(hits, positives, false_wakes, hours):
+def gates(hits, positives, false_wakes, hours, voice_recalls=None):
     recall = hits / positives if positives else 0.0
     false_rate = false_wakes / hours if hours else float("inf")
     return {"recall": recall, "false_wakes_per_hour": false_rate, "negative_hours": hours,
-            "passed": recall >= 0.90 and false_rate <= 0.10 and hours >= 10.0}
+            "passed": recall >= 0.90 and false_rate <= 0.10 and hours >= 10.0
+            and all(value >= 0.90 for value in (voice_recalls or {}).values())}
 
 
 def synthesize(args):
@@ -245,7 +246,8 @@ def evaluate(args):
             if cooldown: cooldown -= 1; continue
             clip = audio[max(0, offset - RATE):offset + RATE]
             if heard(clip): false += 1; cooldown = 8
-    report = gates(hits, len(positives), false, seconds / 3600)
+    report = gates(hits, len(positives), false, seconds / 3600,
+                   {name: entry["recall"] for name, entry in per_voice.items()})
     report.update({"model_sha256": digest(args.model), "hits": hits, "positives": len(positives), "false_wakes": false,
                    "per_voice": per_voice, "hard_negative_wakes": hard_hits,
                    "hard_negatives": len(hard_negatives), "runtime": "CPU reference, not phone", "constant": args.constant,

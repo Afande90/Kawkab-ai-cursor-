@@ -30,7 +30,7 @@ python3 training/wake/pipeline.py evaluate --model /tmp/kws-calibrated.json --ne
 python3 training/wake/pipeline.py export --model /tmp/kws-calibrated.json --report /tmp/kws-report.json
 ```
 
-Training and temperature fitting use disjoint synthetic partitions. Threshold selection uses only v1 calibration; final scoring uses only v1 test and at least ten hours of real negative audio. The immutable v1 hash is pinned in the plan. Export refuses changed model bytes, constant predictors, missing negatives or failed gates. The thresholds remain recall ≥90% and ≤0.1 false wakes per hour. Record the per-language results, the model SHA and the reference-runtime label before committing exported weights. Then measure latency and battery on the actual phone.
+Training and temperature fitting use disjoint synthetic partitions. Threshold selection uses only v1 calibration; final scoring uses only v1 test and at least ten hours of real negative audio. The immutable v1 hash is pinned in the plan. Export refuses changed model bytes, constant predictors, missing negatives or failed gates. The thresholds remain recall ≥90% and ≤0.1 false wakes per hour. Every frozen test voice must also reach 90% recall, so the large English group cannot hide another 0/18 Arabic failure. Record the per-language results, the model SHA and the reference-runtime label before committing exported weights. Then measure latency and battery on the actual phone.
 
 ## What could not be run here
 
