@@ -61,6 +61,16 @@ class MemoryRepositoryImplTest {
     }
 
     @Test
+    fun `compacted sources remain in history but leave the active retrieval pool`() = kotlinx.coroutines.test.runTest {
+        val pinned = MemoryChunkEntity(1, "Owner preference", emb(1f, 0f), 1000L, isPinned = true)
+        val archived = MemoryChunkEntity(2, "Old source", emb(1f, 0f), 1000L, tagsCsv = "fact,status:past")
+        val summary = MemoryChunkEntity(3, "Summary", emb(0f, 1f), 2000L)
+        io.mockk.coEvery { memoryDao.getAllMemories() } returns listOf(pinned, archived, summary)
+        assertEquals(3, repository.getAllMemories().size)
+        assertEquals(listOf(1L, 3L), repository.findSimilarMemories(floatArrayOf(1f, 0f), null).map { it.first.id })
+    }
+
+    @Test
     fun `findSimilarMemories scans the full table and returns correct pairs`() = kotlinx.coroutines.test.runTest {
         val queryEmbedding = floatArrayOf(1f, 0f)
         val entity1 = MemoryChunkEntity(1, "Text 1", emb(1.0f, 0.0f), 1000L)

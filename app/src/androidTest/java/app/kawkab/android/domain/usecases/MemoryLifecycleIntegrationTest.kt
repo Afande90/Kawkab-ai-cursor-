@@ -278,12 +278,17 @@ class MemoryLifecycleIntegrationTest {
         val futureNow = System.currentTimeMillis() + 100L * TimeAndIdConstants.MS_PER_DAY
         val outcome = compactionUseCase(futureNow)
 
-        // The three fillers were merged into one summary; the pinned chunk and
-        // the new summary remain (3 fillers gone, 1 summary added → 2 total).
+        // Source rows remain as history; only the pinned preference and summary
+        // remain in the active retrieval pool. Compaction never silently deletes data.
         assertEquals(3, outcome.chunksConsolidated)
         assertEquals(1, outcome.chunksCreated)
         val remaining = repository.getAllMemories()
-        assertEquals(2, remaining.size)
+        assertEquals(5, remaining.size)
+        assertEquals(3, remaining.count { "status:past" in it.tags })
+        assertEquals(2, remaining.count { "status:past" !in it.tags })
+        val active = repository.findSimilarMemories(DARK_VEC, limit = null).map { it.first }
+        assertEquals(2, active.size)
+        assertTrue(active.none { "status:past" in it.tags })
         assertTrue(remaining.any { it.id == pinnedId && it.isPinned && it.text == "Prefers dark mode" })
 
         // The pinned preference is still retrievable after compaction.
