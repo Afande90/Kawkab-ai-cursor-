@@ -60,6 +60,11 @@ object GuardedTap {
      * Outbound targets need [confirmed]. Anything else may proceed.
      */
     fun decision(guard: OutboundTapGuard, target: TapTarget, confirmed: Boolean): TapDecision {
+        if (DeletionIntent.target("${target.text.orEmpty()} ${target.contentDescription.orEmpty()}", target.viewId) &&
+            !DeletionConsent.allowed()
+        ) {
+            return TapDecision.NEEDS_TAP
+        }
         val outbound = guard.matches(target.text, target.contentDescription, target.viewId)
         if (outbound && !confirmed) return TapDecision.NEEDS_TAP
         return TapDecision.ALLOW

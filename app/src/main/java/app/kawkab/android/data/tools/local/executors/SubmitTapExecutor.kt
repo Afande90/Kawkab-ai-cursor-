@@ -26,7 +26,11 @@ class SubmitTapExecutor @Inject constructor(private val hands: PhoneHands, priva
             risk = RegisteredTools.risk(TOOL_NAME),
             entryPoint = "tap",
             confirmed = true,
-        ) { hands.tap(text, viewId, confirmed = true) }
+        ) {
+            app.kawkab.android.domain.safety.DeletionConsent.withOwnerConsent(context.spokenDeletionConsent) {
+                hands.tap(text, viewId, confirmed = true)
+            }
+        }
     }
 
     companion object {

@@ -42,6 +42,11 @@ object SpokenOwnerAnswer {
         answer = text to nowMs
     }
 
+    /** A new deletion question invalidates every earlier answer, even within the freshness window. */
+    @Synchronized fun clear() {
+        answer = null
+    }
+
     /** Consumes an explicit spoken yes once; a stale yes cannot approve a later deletion. */
     @Synchronized fun consumeYes(nowMs: Long = System.currentTimeMillis()): Boolean {
         val previous = answer.also { answer = null } ?: return false
