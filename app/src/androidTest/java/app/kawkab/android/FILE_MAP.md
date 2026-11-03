@@ -92,6 +92,8 @@ Only Kotlin files appear inside the generated blocks.
         - `PipelineEditorOverflowMenuTest.kt` - Verifies the overflow `DropdownMenu` wiring on `PipelineEditorScreen`.
         - `PipelineEditorSearchTest.kt` - Covers the search bar that overlays the canvas when the user picks "Find node…" from the overflow menu.
         - `PipelineEditorValidationBarTest.kt` - Verifies the validation bar header banner, per-error rows, the Auto-fix action, and the per-row `Go` deep-link.
+    - `pocket/` - **No description** — replace this line by hand.
+      - `PocketWakeTestInstrumentedTest.kt` - The wake test explains its distance and target, and cannot start before owner enrollment.
     - `prompts/` - Compose tests for the prompt library.
       - `PromptLibraryScreenEditorTest.kt` - Covers the prompt editor `ModalBottomSheet` on the Prompt Library surface.
       - `PromptLibraryScreenListTest.kt` - Covers the Prompt Library list surface: prompts in the currently-selected category render with their name; the category `ScrollableTabRow` forwards selections to `PromptLibraryViewModel.selectCategory`; and the per-card Duplicate / Delete affordances + the FAB call into their matching VM hooks.
