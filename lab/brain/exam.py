@@ -1,8 +1,10 @@
 """Kawkab exam + Sudanese understanding for one GGUF served by llama-server. Prints and writes a JSON score."""
 import json, re, sys, time, concurrent.futures as cf, urllib.request
+from guard import guard
 
 URL = "http://127.0.0.1:8080/v1/chat/completions"
-SYSTEM = open(__file__.rsplit("/", 1)[0] + "/system_prompt.txt").read()
+import os
+SYSTEM = open(os.environ.get("KAWKAB_PROMPT") or __file__.rsplit("/", 1)[0] + "/system_prompt.txt").read()
 
 ALIASES = {
     "Abdalla Mubadala": [["abdall", "abdull", "عبدالله", "عبد الله"], ["mubadala", "مبادلة", "مباداله"]],
@@ -109,11 +111,13 @@ def main(label, exam_path, flores_path, out_path):
     def one(item):
         text, sec = ask([{"role": "system", "content": SYSTEM}, {"role": "user", "content": item["prompt"]}])
         out = parse(text)
-        return {"prompt": item["prompt"], "ok": grade(item, out), "raw": text.strip()[:300], "seconds": round(sec, 2)}
+        fixed = guard(item["prompt"], out)
+        return {"prompt": item["prompt"], "ok": grade(item, out), "ok_guarded": grade(item, fixed), "raw": text.strip()[:300],
+                "guarded": fixed, "seconds": round(sec, 2)}
 
     with cf.ThreadPoolExecutor(2) as ex:
         rows = list(ex.map(one, exam))
-    flores = [json.loads(l)["translation"] for l in open(flores_path)][:60]
+    flores = [] if flores_path == "-" else [json.loads(l)["translation"] for l in open(flores_path)][:60]
 
     def tr(p):
         text, _ = ask([{"role": "user", "content": "Rewrite this Sudanese Arabic sentence in Modern Standard Arabic. Output only the sentence.\n\n" + p["Sud"]}], 300)
@@ -123,12 +127,16 @@ def main(label, exam_path, flores_path, out_path):
         scores = list(ex.map(tr, flores))
     res = {"label": label, "exam_score": sum(r["ok"] for r in rows) / len(rows),
            "exam_median_seconds": sorted(r["seconds"] for r in rows)[len(rows) // 2],
-           "sudanese_chrf": sum(scores) / len(scores), "exam": rows}
+           "exam_score_guarded": sum(r["ok_guarded"] for r in rows) / len(rows),
+           "sudanese_chrf": sum(scores) / len(scores) if scores else None, "exam": rows}
     json.dump(res, open(out_path, "w"), ensure_ascii=False, indent=1)
-    print(label, "exam", round(res["exam_score"], 3), "median_s", res["exam_median_seconds"], "sudanese_chrF", round(res["sudanese_chrf"], 1))
+    print(label, "exam", round(res["exam_score"], 3), "guarded", round(res["exam_score_guarded"], 3), "median_s", res["exam_median_seconds"],
+          "sudanese_chrF", res["sudanese_chrf"] and round(res["sudanese_chrf"], 1))
     for r in rows:
-        if not r["ok"]:
-            print("  MISS:", r["prompt"], "=>", r["raw"].replace("\n", " ")[:200])
+        if not r["ok_guarded"]:
+            print("  MISS:", r["prompt"], "=>", r["raw"].replace("\n", " ")[:200], "| guarded:", json.dumps(r["guarded"], ensure_ascii=False))
+        elif not r["ok"]:
+            print("  FIXED BY GUARD:", r["prompt"])
 
 
 if __name__ == "__main__":

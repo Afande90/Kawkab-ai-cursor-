@@ -1,0 +1,51 @@
+# Owner experiment, round 4: does a deterministic action guard (lab/brain/guard.py) fix Gemma's mislabels
+# on a held-out exam it was never tuned on? Scores raw vs guarded, old prompt vs v2 prompt.
+name: Brain lab 4
+on:
+  push:
+    branches: [brain-lab]
+    paths: [lab/brain/guard.py, lab/brain/holdout_exam.json, lab/brain/system_prompt_v2.txt, .github/workflows/brain-lab-4.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Build llama.cpp
+        run: |
+          git clone --depth 1 https://github.com/ggml-org/llama.cpp
+          cmake -S llama.cpp -B llama.cpp/build -DLLAMA_CURL=OFF -DCMAKE_BUILD_TYPE=Release
+          cmake --build llama.cpp/build -j4 --target llama-server
+      - name: Download Gemma 4 E2B
+        run: |
+          pip install -q "huggingface_hub[cli]"
+          python -c "from huggingface_hub import hf_hub_download as d; import shutil; shutil.copyfile(d('unsloth/gemma-4-E2B-it-GGUF','gemma-4-E2B-it-Q4_K_M.gguf',local_dir='dl'),'m.gguf')"
+          rm -rf dl
+      - name: Score
+        run: |
+          llama.cpp/build/bin/llama-server -m m.gguf --jinja --reasoning-budget 0 -c 8192 -np 2 -t 4 --port 8080 > server.log 2>&1 &
+          for i in $(seq 180); do curl -sf localhost:8080/health && break; sleep 2; done
+          cd lab/brain
+          python exam.py v1-holdout holdout_exam.json - ../../r-v1-holdout.json
+          python exam.py v1-exam kawkab_exam.json - ../../r-v1-exam.json
+          KAWKAB_PROMPT=system_prompt_v2.txt python exam.py v2-holdout holdout_exam.json - ../../r-v2-holdout.json
+          KAWKAB_PROMPT=system_prompt_v2.txt python exam.py v2-exam kawkab_exam.json - ../../r-v2-exam.json
+      - name: Summary
+        run: |
+          python - <<'PY'
+          import json
+          rows=["| prompt | exam | raw | with guard | median s |","|---|---|---|---|---|"]
+          for k in ["v1-holdout","v1-exam","v2-holdout","v2-exam"]:
+              r=json.load(open(f"r-{k}.json")); p,e=k.split("-")
+              rows.append(f"| {p} | {'held-out 60 (never tuned on)' if e=='holdout' else 'original 147'} | {r['exam_score']:.1%} | {r['exam_score_guarded']:.1%} | {r['exam_median_seconds']} |")
+          open("RESULTS.md","w").write("\n".join(rows)+"\n")
+          print("\n".join(rows))
+          PY
+      - name: Publish
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: gh release create "brain-lab4-${{ github.run_number }}" RESULTS.md r-*.json --prerelease --target "$GITHUB_SHA" --title "Brain lab 4 - action guard" --notes-file RESULTS.md

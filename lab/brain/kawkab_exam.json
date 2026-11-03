@@ -46,9 +46,8 @@
  {
   "prompt": "text Abdalla I'll be there at 8",
   "expect": {
-   "action": "sms",
-   "contact": "Abdalla",
-   "text_contains": "8"
+   "action": "ask",
+   "why": "two contacts named Abdalla"
   }
  },
  {
