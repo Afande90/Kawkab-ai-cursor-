@@ -29,7 +29,7 @@ jobs:
           echo "LLAMA_COMMIT=$(git -C llama.cpp rev-parse --short HEAD)" >> $GITHUB_ENV
       - name: Python packages
         run: |
-          pip install -q torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -q torch torchvision --index-url https://download.pytorch.org/whl/cpu
           pip install -q -U transformers accelerate "huggingface_hub[cli]" numpy pillow
           pip install -q -e llama.cpp/gguf-py
       - name: Download Gemma 4 E2B (weights and BF16 GGUF) and Sudanese-Flores

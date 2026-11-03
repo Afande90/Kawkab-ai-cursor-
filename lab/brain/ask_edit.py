@@ -35,9 +35,8 @@ CLEAR = ["اتصل على عمر", "كلم أحمد هسي لو سمحت", "ring
          "رسل لأحمد الكلام داك: الاجتماع الساعة تسعة", "send Ali: see you"]
 assert len(UNCLEAR) == len(CLEAR) and not (set(UNCLEAR) | set(CLEAR)) & EXAM
 
-from transformers import AutoProcessor, AutoModelForImageTextToText
-proc = AutoProcessor.from_pretrained(HF_DIR)
-tok = proc.tokenizer if hasattr(proc, "tokenizer") else proc
+from transformers import AutoTokenizer, AutoModelForImageTextToText
+tok = AutoTokenizer.from_pretrained(HF_DIR)
 model = AutoModelForImageTextToText.from_pretrained(HF_DIR, torch_dtype=torch.bfloat16)
 model.eval()
 layers = {int(m.group(1)): mod for name, mod in model.named_modules()
