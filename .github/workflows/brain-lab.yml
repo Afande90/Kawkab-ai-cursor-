@@ -1,0 +1,75 @@
+# Owner experiment: rebuild the weight-edited Qwen3.5-0.8B (Weight-Space Programming, run p50c),
+# convert base and edited to Q4_K_M GGUF, A/B them on CPU and publish both files plus results.
+# Runs only on the brain-lab branch; nothing here ships in the app.
+name: Brain lab
+on:
+  push:
+    branches: [brain-lab]
+    paths: [lab/brain/**, .github/workflows/brain-lab.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build-and-bench:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    env:
+      REV: 2fc06364715b967f1860aea9cf38778875588b17
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Download Qwen3.5-0.8B (pinned revision)
+        run: |
+          pip install -q "huggingface_hub[cli]" numpy safetensors
+          python - <<'PY'
+          from huggingface_hub import snapshot_download
+          snapshot_download("Qwen/Qwen3.5-0.8B", revision="${{ env.REV }}", local_dir="base")
+          PY
+          ls -la base
+      - name: Rebuild the edited model (hash-checked)
+        run: |
+          f=$(ls base/*.safetensors | head -1); n=$(ls base/*.safetensors | wc -l); echo "files=$n $f"
+          cp -r base edited
+          python lab/brain/apply_edit.py "$f" lab/brain/edit-p50c "edited/$(basename $f)"
+      - name: Build llama.cpp
+        run: |
+          git clone --depth 1 https://github.com/ggml-org/llama.cpp
+          cmake -S llama.cpp -B llama.cpp/build -DLLAMA_CURL=OFF -DCMAKE_BUILD_TYPE=Release
+          cmake --build llama.cpp/build -j4 --target llama-server llama-quantize
+          pip install -q -r llama.cpp/requirements/requirements-convert_hf_to_gguf.txt
+          echo "LLAMA_COMMIT=$(git -C llama.cpp rev-parse --short HEAD)" >> $GITHUB_ENV
+      - name: Convert and quantize
+        run: |
+          for m in base edited; do
+            python llama.cpp/convert_hf_to_gguf.py $m --outtype bf16 --outfile $m.bf16.gguf
+            llama.cpp/build/bin/llama-quantize $m.bf16.gguf qwen35-0.8b-$m-Q4_K_M.gguf Q4_K_M
+          done
+          ls -la *.gguf
+      - name: Benchmark
+        run: |
+          for m in base edited; do
+            llama.cpp/build/bin/llama-server -m qwen35-0.8b-$m-Q4_K_M.gguf --jinja -c 16384 -np 4 -t 4 --port 8080 > server-$m.log 2>&1 &
+            pid=$!
+            for i in $(seq 120); do curl -sf localhost:8080/health && break; sleep 2; done
+            python lab/brain/bench.py $m lab/brain/gsm8k_sample.jsonl result-$m.json
+            kill $pid; sleep 3
+          done
+          python - <<'PY'
+          import json
+          b, e = (json.load(open(f"result-{m}.json")) for m in ("base", "edited"))
+          lines = ["| | base | edited |", "|---|---|---|"]
+          for k in ("nothink", "think"):
+              for f in ("accuracy", "hit_token_limit", "avg_tokens", "tokens_per_s"):
+                  lines.append(f"| {k} {f} | {b[k][f]:.3f} | {e[k][f]:.3f} |")
+          for sb, se in zip(b["samples"], e["samples"]):
+              lines += ["", f"**{sb['prompt']}**", "", f"- base ({sb['seconds']}s): {sb['reply'][:600]}", f"- edited ({se['seconds']}s): {se['reply'][:600]}"]
+          open("RESULTS.md", "w").write("\n".join(lines))
+          print("\n".join(lines))
+          PY
+      - name: Publish
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          tag=brain-lab-${{ github.run_number }}
+          gh release create $tag --prerelease --target ${{ github.sha }} --title "Brain lab: Qwen3.5-0.8B base vs weight-edited (llama.cpp ${LLAMA_COMMIT})" --notes-file RESULTS.md \
+            qwen35-0.8b-base-Q4_K_M.gguf qwen35-0.8b-edited-Q4_K_M.gguf RESULTS.md result-base.json result-edited.json
