@@ -824,5 +824,6 @@ Only Kotlin files appear inside the generated blocks.
   - `WakeListeningMonitorTest.kt` - Real Android battery broadcasts and audio-mode callbacks reach the capture policy.
   - `WakeMicSessionTest.kt` - Every pause releases the capture resource, rather than leaving an ignored microphone open.
   - `WakeMicUsageTest.kt` - Daily on-device aggregates survive a service restart and are visible across store instances.
+  - `WakePauseHandoffTest.kt` - The explicit test cannot acquire its mic until the service's pause callback has finished.
   - `WakeScoreLogTest.kt` - Private diagnostics survive restart, exclude audio, and tolerate concurrent process-style writers.
 <!-- /AUTO-GEN:FILE_MAP -->
