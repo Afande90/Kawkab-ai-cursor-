@@ -1,0 +1,160 @@
+# Owner experiment, round 8: J-space. Map Gemma 4 E2B's concept workspace with a Jacobian lens (lab/brain/jspace),
+# measure how much each round-6 fine-tune's update lands inside it, then re-run the round-6 merges with every update
+# projected OUT of J-space and judge them exactly as in round 6 (prompt v2, raw, holdout3 = outside judge).
+name: Brain lab 8
+on:
+  push:
+    branches: [brain-lab]
+    paths: [lab/brain/jspace/**, .github/workflows/brain-lab-8.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  fit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5]
+    steps:
+      - name: Free disk and add swap
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          sudo swapoff -a || true
+          sudo fallocate -l 30G /swap30 && sudo chmod 600 /swap30 && sudo mkswap /swap30 && sudo swapon /swap30
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Packages, base model, corpus
+        run: |
+          pip install -q torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -q -U transformers accelerate "huggingface_hub[cli]" safetensors sentencepiece protobuf pandas pyarrow
+          python - <<'PY'
+          from huggingface_hub import snapshot_download, hf_hub_download
+          import shutil
+          snapshot_download("google/gemma-4-E2B-it", local_dir="hf")
+          shutil.copyfile(hf_hub_download("CohereLabs/aya_dataset", "data/train-00000-of-00001.parquet", repo_type="dataset", local_dir="dl"), "aya.parquet")
+          PY
+      - name: Fit J-lens shard
+        run: python lab/brain/jspace/fit.py hf ${{ matrix.shard }} 6 jlens-${{ matrix.shard }}.pt 230
+      - uses: actions/upload-artifact@v4
+        with: { name: "jlens-${{ matrix.shard }}", path: "jlens-${{ matrix.shard }}.pt" }
+  analyse:
+    needs: fit
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - uses: actions/download-artifact@v4
+        with: { pattern: "jlens-*", path: shards, merge-multiple: true }
+      - name: Basis and diagnosis
+        run: |
+          pip install -q torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -q -U "huggingface_hub[cli]" requests numpy
+          python lab/brain/jspace/analyse.py jspace.pt jspace-report.json shards/*.pt
+      - uses: actions/upload-artifact@v4
+        with: { name: jspace, path: "jspace.pt\njspace-report.json" }
+  merge:
+    needs: analyse
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        cand: [p01-ringg, p02-yemeni, p03-xlam, p04-ties-ry, p07-linear-ryx]
+    steps:
+      - name: Free disk and add swap
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          sudo swapoff -a || true
+          sudo fallocate -l 40G /swap40 && sudo chmod 600 /swap40 && sudo mkswap /swap40 && sudo swapon /swap40
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - uses: actions/download-artifact@v4
+        with: { name: jspace }
+      - name: Build llama.cpp
+        run: |
+          git clone --depth 1 https://github.com/ggml-org/llama.cpp
+          cmake -S llama.cpp -B llama.cpp/build -DLLAMA_CURL=OFF -DCMAKE_BUILD_TYPE=Release
+          cmake --build llama.cpp/build -j4 --target llama-server llama-quantize
+      - name: Python packages and base
+        run: |
+          pip install -q torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -q -U transformers "huggingface_hub[cli]" requests numpy sentencepiece protobuf safetensors
+          pip install -q -e llama.cpp/gguf-py
+          python - <<'PY'
+          from huggingface_hub import snapshot_download, hf_hub_download
+          import shutil
+          snapshot_download("google/gemma-4-E2B-it", local_dir="hf")
+          shutil.copyfile(hf_hub_download("McGill-NLP/Sudanese_Flores", "DEVTEST.jsonl", repo_type="dataset", local_dir="dl"), "flores.jsonl")
+          PY
+          rm -rf dl hf/.cache
+      - name: Merge (J-space protected)
+        run: python lab/brain/merge/merge.py hf lab/brain/merge/candidates/${{ matrix.cand }}.json autopsy-${{ matrix.cand }}.json
+      - name: Convert and quantise
+        run: |
+          python llama.cpp/convert_hf_to_gguf.py hf --outtype bf16 --use-temp-file --outfile m.bf16.gguf
+          rm -rf hf
+          llama.cpp/build/bin/llama-quantize m.bf16.gguf m.gguf Q4_K_M > quant.log 2>&1 || (tail -30 quant.log; exit 1)
+          rm m.bf16.gguf
+      - name: Judge
+        run: |
+          llama.cpp/build/bin/llama-server -m m.gguf --jinja --reasoning-budget 0 -c 8192 -np 2 -t 4 --port 8080 > server.log 2>&1 &
+          for i in $(seq 180); do curl -sf localhost:8080/health && break; sleep 2; done
+          c=${{ matrix.cand }}
+          cd lab/brain
+          export KAWKAB_PROMPT=system_prompt_v2.txt
+          python exam.py $c-exam kawkab_exam.json ../../flores.jsonl ../../r-$c-exam.json
+          python exam.py $c-holdout holdout_exam.json - ../../r-$c-holdout.json
+          python exam.py $c-fresh2 holdout2_exam.json - ../../r-$c-fresh2.json
+          python exam.py $c-fresh3 holdout3_exam.json - ../../r-$c-fresh3.json
+          python merge/mathcheck.py gsm8k_sample.jsonl ../../r-$c-math.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: "r-${{ matrix.cand }}", path: "r-*.json" }
+  report:
+    needs: [analyse, merge]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { pattern: "r-*", path: out, merge-multiple: true }
+      - uses: actions/download-artifact@v4
+        with: { name: jspace, path: js }
+      - name: Results
+        run: |
+          python - <<'PY'
+          import json, glob, os
+          r6 = {"c00-base": ("80.0%", "69.5", "84.0%"), "c01-ringg": ("71.1%", "66.3", "88.0%"), "c02-yemeni": ("77.8%", "53.5", "84.0%"),
+                "c03-xlam": ("14.4%", "61.4", "60.0%"), "c04-ties-ry": ("78.9%", "66.0", "88.0%"), "c07-linear-ryx": ("72.2%", "66.3", "92.0%")}
+          def get(c, k):
+              p = f"out/r-{c}-{k}.json"
+              return json.load(open(p)) if os.path.exists(p) else None
+          pct = lambda v: "-" if v is None else f"{v:.1%}"
+          rows = ["Round 8: the round-6 merges again, with every update projected out of J-space. Prompt v2, raw model.", "",
+                  "| recipe | fresh3 protected | fresh3 round 6 (unprotected) | Sudanese protected | Sudanese round 6 | GSM8K protected | GSM8K round 6 |",
+                  "|---|---|---|---|---|---|---|", f"| original Gemma | - | {r6['c00-base'][0]} | - | {r6['c00-base'][1]} | - | {r6['c00-base'][2]} |"]
+          for p in ["p01-ringg", "p02-yemeni", "p03-xlam", "p04-ties-ry", "p07-linear-ryx"]:
+              c = "c" + p[1:]
+              e, f3, m = get(p, "exam"), get(p, "fresh3"), get(p, "math")
+              ref = r6.get(c, ("-", "-", "-"))
+              rows.append(f"| {p[4:]} | {pct(f3 and f3['exam_score'])} | {ref[0]} | {'-' if not e or e['sudanese_chrf'] is None else round(e['sudanese_chrf'], 1)} | {ref[1]} | {pct(m and m['gsm8k_25'])} | {ref[2]} |")
+          rep = json.load(open("js/jspace-report.json")) if os.path.exists("js/jspace-report.json") else None
+          if rep:
+              rows += ["", f"J-lens fitted on {rep['prompts']} prompts.", "", "| layer | J-space rank (90% energy) | strongest concept tokens |", "|---|---|---|"]
+              for l in rep["layers"]:
+                  rows.append(f"| {l['layer']} | {l['rank90']} | {' '.join(l['strongest'])} |")
+              rows += ["", "| fine-tune | share of update inside J-space | random expectation | focus (1 = random) |", "|---|---|---|---|"]
+              for k, v in rep["experts"].items():
+                  rows.append(f"| {k} | {v['share_in_jspace']:.3f} | {v['random_expectation']:.3f} | {v['focus']:.2f} |")
+          open("RESULTS.md", "w").write("\n".join(rows) + "\n"); print("\n".join(rows))
+          PY
+      - name: Publish
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: gh release create "brain-lab8-${{ github.run_number }}" RESULTS.md out/r-*.json js/* --prerelease --target "$GITHUB_SHA" --title "Brain lab 8 - J-space" --notes-file RESULTS.md

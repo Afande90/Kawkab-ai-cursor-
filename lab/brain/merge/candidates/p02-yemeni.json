@@ -1,0 +1,9 @@
+{
+ "method": "linear",
+ "protect": "jspace.pt",
+ "experts": [
+  {
+   "repo": "yemeni-ai-lab/gemma-4-e2b-yemeni-arabic-assistant-merged"
+  }
+ ]
+}

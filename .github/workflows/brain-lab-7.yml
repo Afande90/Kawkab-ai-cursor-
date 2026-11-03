@@ -2,9 +2,6 @@
 # with task-vector math, and judge on the same exams as round 6 (holdout3 = outside judge). Short system prompt.
 name: Brain lab 7
 on:
-  push:
-    branches: [brain-lab]
-    paths: [lab/brain/train/**, .github/workflows/brain-lab-7.yml]
   workflow_dispatch:
 permissions:
   contents: write

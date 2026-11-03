@@ -112,6 +112,30 @@ def low_rank(t, rank):
     return (u[:, :rank] * s[:rank]) @ v[:, :rank].T
 
 
+WRITERS = ("self_attn.o_proj.weight", "mlp.down_proj.weight", "per_layer_projection.weight")
+READERS = ("self_attn.q_proj.weight", "self_attn.k_proj.weight", "self_attn.v_proj.weight", "mlp.gate_proj.weight",
+           "mlp.up_proj.weight", "per_layer_input_gate.weight")
+_BASES = {}
+
+
+def protect(name, delta, basis_path):
+    """Remove the part of an update that would move the model's J-space (its concept workspace): a writer may not
+    write into J-space directions, a reader may not change how it reads them (null-space projection)."""
+    if basis_path not in _BASES:
+        _BASES[basis_path] = torch.load(basis_path)["bases"]
+    bases = _BASES[basis_path]
+    lay = layer_of(name)
+    if lay is None or "language_model" not in name or delta.dim() != 2:
+        return delta
+    if name.endswith(WRITERS) and lay < len(bases):
+        b = bases[lay]
+        return delta - b @ (b.T @ delta)
+    if name.endswith(READERS) and 0 < lay <= len(bases):
+        b = bases[lay - 1]
+        return delta - (delta @ b) @ b.T
+    return delta
+
+
 def combine(deltas, weights, cand, gen):
     method = cand["method"]
     if cand.get("svd_rank"):
@@ -198,6 +222,8 @@ def main(base_dir, cand_path, autopsy_path=None):
                 raw = out.read((stop - start) * row * size)
                 base = torch.frombuffer(bytearray(raw), dtype=dt).reshape([stop - start] + shape[1:]).float()
                 deltas = [experts[i].rows(name, start, stop).reshape(base.shape) - base for i in usable]
+                if cand.get("protect"):
+                    deltas = [protect(name, dl, cand["protect"]) for dl in deltas]
                 for i, d in zip(usable, deltas):
                     g = stats[cand["experts"][i]["repo"]]["groups"].setdefault(group, [0.0, 0.0])
                     g[0] += float((d * d).sum())

@@ -4,9 +4,6 @@
 # Sudanese-Flores chrF and a 25-problem GSM8K check. Runs only on the brain-lab branch.
 name: Brain lab 6
 on:
-  push:
-    branches: [brain-lab]
-    paths: [lab/brain/merge/**, .github/workflows/brain-lab-6.yml]
   workflow_dispatch:
 permissions:
   contents: write

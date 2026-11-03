@@ -1,0 +1,9 @@
+{
+ "method": "linear",
+ "protect": "jspace.pt",
+ "experts": [
+  {
+   "repo": "RinggAI/ringg-router-e2b"
+  }
+ ]
+}

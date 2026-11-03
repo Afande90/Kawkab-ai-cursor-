@@ -1,0 +1,9 @@
+{
+ "method": "linear",
+ "protect": "jspace.pt",
+ "experts": [
+  {
+   "repo": "ermiaazarkhalili/Gemma4-E2B-Function-Calling-xLAM-Unsloth"
+  }
+ ]
+}

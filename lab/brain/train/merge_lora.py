@@ -13,7 +13,7 @@ import torch
 from safetensors.torch import load_file
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "merge"))
-from merge import TORCH_DT, combine  # noqa: E402
+from merge import TORCH_DT, combine, protect  # noqa: E402
 
 
 def updates(patch_dir):
@@ -50,7 +50,10 @@ def main(base_dir, recipe_path):
             out.seek(8 + n + a)
             base = torch.frombuffer(bytearray(out.read(b - a)), dtype=dt).reshape(info["shape"]).float()
             idx = [i for i, u in enumerate(ups) if name in u]
-            delta = combine([ups[i][name] for i in idx], [weights[i] for i in idx], recipe, torch.Generator().manual_seed(7))
+            parts = [ups[i][name] for i in idx]
+            if recipe.get("protect"):
+                parts = [protect(name, p, recipe["protect"]) for p in parts]
+            delta = combine(parts, [weights[i] for i in idx], recipe, torch.Generator().manual_seed(7))
             out.seek(8 + n + a)
             out.write((base + delta).to(dt).contiguous().view(torch.uint8).numpy().tobytes())
     print("merged", recipe_path, flush=True)
