@@ -24,8 +24,9 @@ APPS = {"WhatsApp": ["whatsapp", "واتساب", "واتس"], "YouTube": ["youtu
 AR = str.maketrans("٠١٢٣٤٥٦٧٨٩", "0123456789")
 
 
-def ask(messages, max_tokens=200):
-    body = {"messages": messages, "max_tokens": max_tokens, "temperature": 0.2, "top_p": 0.9}
+def ask(messages, max_tokens=450):
+    body = {"messages": messages, "max_tokens": max_tokens, "temperature": 0.2, "top_p": 0.9,
+            "chat_template_kwargs": {"enable_thinking": False}}
     req = urllib.request.Request(URL, json.dumps(body).encode(), {"Content-Type": "application/json"})
     t = time.time()
     with urllib.request.urlopen(req, timeout=900) as r:
@@ -122,7 +123,7 @@ def main(label, exam_path, flores_path, out_path):
     flores = [json.loads(l)["translation"] for l in open(flores_path)][:60]
 
     def tr(p):
-        text, _ = ask([{"role": "user", "content": "Rewrite this Sudanese Arabic sentence in Modern Standard Arabic. Output only the sentence.\n\n" + p["Sud"]}], 160)
+        text, _ = ask([{"role": "user", "content": "Rewrite this Sudanese Arabic sentence in Modern Standard Arabic. Output only the sentence.\n\n" + p["Sud"]}], 300)
         return chrf(text.strip(), p["Arb"])
 
     with cf.ThreadPoolExecutor(2) as ex:

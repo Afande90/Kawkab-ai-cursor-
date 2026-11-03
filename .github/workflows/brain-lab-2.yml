@@ -31,7 +31,7 @@ jobs:
           run() {
             label=$1; repo=$2; file=$3
             python -c "from huggingface_hub import hf_hub_download as d; import shutil; shutil.copyfile(d('$repo','$file',local_dir='dl'),'m.gguf')"; rm -rf dl; ls -la m.gguf
-            llama.cpp/build/bin/llama-server -m m.gguf --jinja -c 8192 -np 2 -t 4 --port 8080 > server-$label.log 2>&1 &
+            llama.cpp/build/bin/llama-server -m m.gguf --jinja --reasoning-budget 0 -c 8192 -np 2 -t 4 --port 8080 > server-$label.log 2>&1 &
             pid=$!
             for i in $(seq 180); do curl -sf localhost:8080/health && break; sleep 2; done
             python lab/brain/exam.py $label lab/brain/kawkab_exam.json flores.jsonl result-$label.json || tail -20 server-$label.log
