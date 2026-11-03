@@ -1,0 +1,18 @@
+{
+ "method": "linear",
+ "protect": "jspace.pt",
+ "patches": [
+  {
+   "dir": "patches/A",
+   "weight": 0.7
+  },
+  {
+   "dir": "patches/B",
+   "weight": 0.7
+  },
+  {
+   "dir": "patches/C",
+   "weight": 0.7
+  }
+ ]
+}

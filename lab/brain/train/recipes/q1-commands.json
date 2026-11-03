@@ -1,0 +1,9 @@
+{
+ "method": "linear",
+ "protect": "jspace.pt",
+ "patches": [
+  {
+   "dir": "patches/A"
+  }
+ ]
+}
