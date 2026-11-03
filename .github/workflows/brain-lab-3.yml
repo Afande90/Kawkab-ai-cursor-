@@ -1,0 +1,81 @@
+# Owner experiment, round 3: weight-space edit of Gemma 4 E2B for the "ask when unclear" habit.
+# Finds the ask-vs-act direction on prompts outside the exam, writes it into one ffn_down tensor
+# at three strengths, and scores each edited model on the 147-request Kawkab exam and Sudanese-Flores.
+name: Brain lab 3
+on:
+  push:
+    branches: [brain-lab]
+    paths: [lab/brain/ask_edit.py, .github/workflows/brain-lab-3.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  ask-edit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - name: Free disk
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          df -h / | tail -1
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Build llama.cpp
+        run: |
+          git clone --depth 1 https://github.com/ggml-org/llama.cpp
+          cmake -S llama.cpp -B llama.cpp/build -DLLAMA_CURL=OFF -DCMAKE_BUILD_TYPE=Release
+          cmake --build llama.cpp/build -j4 --target llama-server llama-quantize
+          echo "LLAMA_COMMIT=$(git -C llama.cpp rev-parse --short HEAD)" >> $GITHUB_ENV
+      - name: Python packages
+        run: |
+          pip install -q torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -q -U transformers accelerate "huggingface_hub[cli]" numpy pillow
+          pip install -q -e llama.cpp/gguf-py
+      - name: Download Gemma 4 E2B (weights and BF16 GGUF) and Sudanese-Flores
+        run: |
+          python - <<'PY'
+          from huggingface_hub import snapshot_download, hf_hub_download
+          import shutil
+          snapshot_download("unsloth/gemma-4-E2B-it", local_dir="hf", allow_patterns=["*.json", "*.safetensors", "*.model", "*.jinja", "*.txt"])
+          shutil.copyfile(hf_hub_download("unsloth/gemma-4-E2B-it-GGUF", "gemma-4-E2B-it-BF16.gguf", local_dir="dl"), "base.bf16.gguf")
+          shutil.copyfile(hf_hub_download("McGill-NLP/Sudanese_Flores", "DEVTEST.jsonl", repo_type="dataset", local_dir="dl"), "flores.jsonl")
+          PY
+          rm -rf dl; df -h / | tail -1
+      - name: Find the direction and write edited models
+        run: |
+          python lab/brain/ask_edit.py hf base.bf16.gguf ask 0.5,1,2
+          rm -rf hf base.bf16.gguf; ls -la *.gguf; df -h / | tail -1
+      - name: Quantize and score each edit
+        run: |
+          for f in ask-a*.bf16.gguf; do
+            label=${f%.bf16.gguf}
+            llama.cpp/build/bin/llama-quantize $f $label.Q4_K_M.gguf Q4_K_M > /dev/null && rm $f
+            llama.cpp/build/bin/llama-server -m $label.Q4_K_M.gguf --jinja --reasoning-budget 0 -c 8192 -np 2 -t 4 --port 8080 > server-$label.log 2>&1 &
+            pid=$!
+            for i in $(seq 180); do curl -sf localhost:8080/health && break; sleep 2; done
+            python lab/brain/exam.py $label lab/brain/kawkab_exam.json flores.jsonl result-$label.json || tail -20 server-$label.log
+            kill $pid; sleep 3; rm -f $label.Q4_K_M.gguf
+          done
+          python - <<'PY'
+          import json, glob
+          rows = ["Baseline (Google Gemma 4 E2B, same exam): 82.3% exam, 69.7 Sudanese chrF.", "",
+                  "| edit | Kawkab exam | asks when unclear | refuses danger | median s | Sudanese (chrF) |", "|---|---|---|---|---|---|"]
+          exam = json.load(open("lab/brain/kawkab_exam.json"))
+          kind = {e["prompt"]: e["expect"]["action"] for e in exam}
+          for f in sorted(glob.glob("result-ask-*.json")):
+              r = json.load(open(f))
+              ask = [x for x in r["exam"] if kind[x["prompt"]] == "ask"]
+              ref = [x for x in r["exam"] if kind[x["prompt"]] == "refuse"]
+              rows.append(f"| {r['label']} | {r['exam_score']:.1%} | {sum(x['ok'] for x in ask)}/{len(ask)} | {sum(x['ok'] for x in ref)}/{len(ref)} | {r['exam_median_seconds']} | {r['sudanese_chrf']:.1f} |")
+          edit = json.load(open("ask-edit.json"))
+          rows += ["", f"Edited layer {edit['layer']}, separation {edit['separation']:.2f}. Per-layer separation: {edit['layers']}"]
+          open("RESULTS.md", "w").write("\n".join(rows)); print("\n".join(rows))
+          PY
+      - name: Publish
+        if: always()
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          gh release create brain-lab3-${{ github.run_number }} --prerelease --target ${{ github.sha }} \
+            --title "Brain lab 3: ask-when-unclear weight edit on Gemma 4 E2B (llama.cpp ${LLAMA_COMMIT})" \
+            --notes-file RESULTS.md RESULTS.md result-*.json ask-edit.json || true
