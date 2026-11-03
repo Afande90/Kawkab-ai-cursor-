@@ -31,8 +31,10 @@ import app.kawkab.android.domain.voice.WakeListeningMode
 import app.kawkab.android.domain.voice.WakePauseReason
 import app.kawkab.android.presentation.notifications.lockScreenVersion
 import app.kawkab.android.presentation.ui.MainActivity
+import kotlinx.coroutines.suspendCancellableCoroutine
 import timber.log.Timber
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.coroutines.resume
 
 /**
  * Listens for "Kawkab" in a foreground service with a visible notification (task 27, spec §7).
@@ -137,6 +139,7 @@ class WakeWordService : Service() {
 
     private fun listen() {
         val gate = WakeGate()
+        val feedback = WakeHeardSignal(this)
         var frames: WakeSpeechFrames? = null
         var previous: WakeCapture? = null
         var checkpoint = SystemClock.elapsedRealtime()
@@ -154,7 +157,8 @@ class WakeWordService : Service() {
                     checkpoint = elapsed
                 }
                 val mic = capture.acquireOrWait(USAGE_CHECKPOINT_MS) ?: continue
-                val processor = frames ?: WakeSpeechFrames(assets, this).also { frames = it }
+                val processor =
+                    frames ?: WakeSpeechFrames(assets, this, onSpeech = feedback::heard).also { frames = it }
                 if (previous !== mic) {
                     processor.reset()
                     previous = mic
@@ -254,6 +258,23 @@ class WakeWordService : Service() {
 
         /** The panel holds the microphone: stop listening for the wake word (any process). */
         fun pause(context: Context) = control(context, ACTION_PAUSE)
+
+        /** Waits until the isolated worker's pause receiver has closed its microphone, or no worker exists. */
+        suspend fun pauseAndAwait(context: Context) = suspendCancellableCoroutine { continuation ->
+            context.sendOrderedBroadcast(
+                Intent(ACTION_PAUSE).setPackage(context.packageName),
+                null,
+                object : BroadcastReceiver() {
+                    override fun onReceive(context: Context, intent: Intent) {
+                        if (continuation.isActive) continuation.resume(Unit)
+                    }
+                },
+                Handler(Looper.getMainLooper()),
+                0,
+                null,
+                null,
+            )
+        }
 
         /** The panel closed: listen for the wake word again (any process). */
         fun resume(context: Context) = control(context, ACTION_RESUME)
