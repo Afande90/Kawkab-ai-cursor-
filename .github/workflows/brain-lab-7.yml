@@ -1,0 +1,174 @@
+# Owner experiment, round 7: train Kawkab's OWN skill patches (LoRA) on Gemma 4 E2B on free CPU runners, merge them
+# with task-vector math, and judge on the same exams as round 6 (holdout3 = outside judge). Short system prompt.
+name: Brain lab 7
+on:
+  push:
+    branches: [brain-lab]
+    paths: [lab/brain/train/**, .github/workflows/brain-lab-7.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Build llama.cpp
+        run: |
+          git clone --depth 1 https://github.com/ggml-org/llama.cpp
+          cmake -S llama.cpp -B llama.cpp/build -DLLAMA_CURL=OFF -DCMAKE_BUILD_TYPE=Release
+          cmake --build llama.cpp/build -j4 --target llama-server
+      - name: Inputs
+        run: |
+          pip install -q "huggingface_hub[cli]" pandas pyarrow
+          python - <<'PY'
+          from huggingface_hub import hf_hub_download as d
+          import shutil
+          shutil.copyfile(d('unsloth/gemma-4-E2B-it-GGUF', 'gemma-4-E2B-it-Q4_K_M.gguf', local_dir='dl'), 'm.gguf')
+          shutil.copyfile(d('CohereLabs/aya_dataset', 'data/train-00000-of-00001.parquet', repo_type='dataset', local_dir='dl'), 'aya.parquet')
+          PY
+      - name: Build the training set
+        run: |
+          python lab/brain/train/make_data.py commands.jsonl
+          llama.cpp/build/bin/llama-server -m m.gguf --jinja --reasoning-budget 0 -c 4096 -np 2 -t 4 --port 8080 > server.log 2>&1 &
+          for i in $(seq 180); do curl -sf localhost:8080/health && break; sleep 2; done
+          python lab/brain/train/build_chat.py commands.jsonl aya.parquet data.jsonl
+      - uses: actions/upload-artifact@v4
+        with: { name: data, path: data.jsonl }
+  train:
+    needs: data
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { id: A, skills: "call,sms" }
+          - { id: B, skills: "alarm,reminder,open_app,flashlight,bluetooth,show_screenshot,read_screenshot" }
+          - { id: C, skills: "ask,refuse" }
+          - { id: M, skills: "all" }
+    steps:
+      - name: Free disk and add swap
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          sudo swapoff -a || true
+          sudo fallocate -l 40G /swap40 && sudo chmod 600 /swap40 && sudo mkswap /swap40 && sudo swapon /swap40
+          free -g; nproc; lscpu | grep -iE "model name|flags" | cut -c1-300
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - uses: actions/download-artifact@v4
+        with: { name: data }
+      - name: Python packages and base model
+        run: |
+          pip install -q torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -q -U transformers peft accelerate "huggingface_hub[cli]" safetensors sentencepiece protobuf
+          python -c "from huggingface_hub import snapshot_download as s; s('google/gemma-4-E2B-it', local_dir='hf')"
+      - name: Train (time budget)
+        run: python lab/brain/train/train_lora.py hf data.jsonl "${{ matrix.skills }}" patch-${{ matrix.id }} 270
+      - uses: actions/upload-artifact@v4
+        with: { name: "patch-${{ matrix.id }}", path: "patch-${{ matrix.id }}" }
+  judge:
+    needs: train
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        recipe: [t0-base, t1-commands, t2-clock-apps, t3-ask-refuse, t4-mixed, t5-ties-ABC, t6-linear-ABC, t7-ties-ABCM]
+    steps:
+      - name: Free disk and add swap
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          sudo swapoff -a || true
+          sudo fallocate -l 40G /swap40 && sudo chmod 600 /swap40 && sudo mkswap /swap40 && sudo swapon /swap40
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - uses: actions/download-artifact@v4
+        with: { pattern: "patch-*", path: patches-raw }
+      - name: Lay out patches
+        run: |
+          mkdir -p patches
+          for d in patches-raw/patch-*; do [ -d "$d" ] && cp -r "$d" "patches/${d##*/patch-}"; done
+          ls -R patches | head -30
+      - name: Build llama.cpp
+        run: |
+          git clone --depth 1 https://github.com/ggml-org/llama.cpp
+          cmake -S llama.cpp -B llama.cpp/build -DLLAMA_CURL=OFF -DCMAKE_BUILD_TYPE=Release
+          cmake --build llama.cpp/build -j4 --target llama-server llama-quantize
+      - name: Python packages and base
+        run: |
+          pip install -q torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -q -U transformers "huggingface_hub[cli]" requests numpy sentencepiece protobuf safetensors
+          pip install -q -e llama.cpp/gguf-py
+          python - <<'PY'
+          from huggingface_hub import snapshot_download, hf_hub_download
+          import shutil
+          snapshot_download("google/gemma-4-E2B-it", local_dir="hf")
+          shutil.copyfile(hf_hub_download("McGill-NLP/Sudanese_Flores", "DEVTEST.jsonl", repo_type="dataset", local_dir="dl"), "flores.jsonl")
+          PY
+          rm -rf dl hf/.cache
+      - name: Merge patches
+        run: python lab/brain/train/merge_lora.py hf lab/brain/train/recipes/${{ matrix.recipe }}.json
+      - name: Convert and quantise
+        run: |
+          python llama.cpp/convert_hf_to_gguf.py hf --outtype bf16 --use-temp-file --outfile m.bf16.gguf
+          rm -rf hf
+          llama.cpp/build/bin/llama-quantize m.bf16.gguf m.gguf Q4_K_M > quant.log 2>&1 || (tail -30 quant.log; exit 1)
+          rm m.bf16.gguf
+      - name: Judge
+        run: |
+          llama.cpp/build/bin/llama-server -m m.gguf --jinja --reasoning-budget 0 -c 8192 -np 2 -t 4 --port 8080 > server.log 2>&1 &
+          for i in $(seq 180); do curl -sf localhost:8080/health && break; sleep 2; done
+          c=${{ matrix.recipe }}
+          cd lab/brain
+          export KAWKAB_PROMPT=system_prompt_short.txt
+          python exam.py $c-exam kawkab_exam.json ../../flores.jsonl ../../r-$c-exam.json
+          python exam.py $c-holdout holdout_exam.json - ../../r-$c-holdout.json
+          python exam.py $c-fresh2 holdout2_exam.json - ../../r-$c-fresh2.json
+          python exam.py $c-fresh3 holdout3_exam.json - ../../r-$c-fresh3.json
+          python merge/mathcheck.py gsm8k_sample.jsonl ../../r-$c-math.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: "r-${{ matrix.recipe }}", path: "r-*.json" }
+  report:
+    needs: [train, judge]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { pattern: "r-*", path: out, merge-multiple: true }
+      - uses: actions/download-artifact@v4
+        with: { pattern: "patch-*", path: patches }
+      - name: Results
+        run: |
+          python - <<'PY'
+          import json, glob, os
+          def get(c, k):
+              p = f"out/r-{c}-{k}.json"
+              return json.load(open(p)) if os.path.exists(p) else None
+          rows = ["Short system prompt for every row. Round 6 reference: original Gemma with the long v2 prompt scored 80.0% on fresh3.", "",
+                  "| model | search set | fresh2 | fresh3 | fresh3 + guard | Sudanese chrF | GSM8K 25 | median s |", "|---|---|---|---|---|---|---|---|"]
+          cands = sorted({os.path.basename(f)[2:].rsplit("-", 1)[0] for f in glob.glob("out/r-*-exam.json")})
+          pct = lambda v: "-" if v is None else f"{v:.1%}"
+          for c in cands:
+              e, h, f2, f3, m = (get(c, k) for k in ("exam", "holdout", "fresh2", "fresh3", "math"))
+              s = (sum(r["ok"] for r in e["exam"]) + sum(r["ok"] for r in h["exam"])) / (len(e["exam"]) + len(h["exam"])) if e and h else None
+              rows.append(f"| {c} | {pct(s)} | {pct(f2 and f2['exam_score'])} | {pct(f3 and f3['exam_score'])} | {pct(f3 and f3['exam_score_guarded'])} | "
+                          f"{'-' if not e or e['sudanese_chrf'] is None else round(e['sudanese_chrf'], 1)} | {pct(m and m['gsm8k_25'])} | {e and e['exam_median_seconds']} |")
+          rows += ["", "| patch | rows | rows seen | steps | minutes | final loss |", "|---|---|---|---|---|---|"]
+          for f in sorted(glob.glob("patches/*/train.json")):
+              t = json.load(open(f)); rows.append(f"| {f.split('/')[1]} | {t['rows']} | {t['rows_seen']} | {t['steps']} | {t['minutes']} | {t['final_loss']:.3f} |")
+          open("RESULTS.md", "w").write("\n".join(rows) + "\n"); print("\n".join(rows))
+          PY
+      - name: Publish
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          cd patches && for d in patch-*; do [ -d "$d" ] && zip -qr ../$d.zip $d; done; cd ..
+          gh release create "brain-lab7-${{ github.run_number }}" RESULTS.md out/r-*.json patch-*.zip --prerelease --target "$GITHUB_SHA" --title "Brain lab 7 - Kawkab's own skill patches" --notes-file RESULTS.md

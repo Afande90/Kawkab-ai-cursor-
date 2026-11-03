@@ -1,0 +1,16 @@
+{
+ "method": "ties",
+ "density": 0.5,
+ "lambda": 1.0,
+ "patches": [
+  {
+   "dir": "patches/A"
+  },
+  {
+   "dir": "patches/B"
+  },
+  {
+   "dir": "patches/C"
+  }
+ ]
+}
