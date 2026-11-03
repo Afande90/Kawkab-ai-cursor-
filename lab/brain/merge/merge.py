@@ -25,13 +25,28 @@ import struct
 import sys
 import time
 
+import requests
 import torch
-from huggingface_hub import HfFileSystem, hf_hub_download
+from huggingface_hub import hf_hub_download, hf_hub_url
 
 ROWS_PER_CHUNK = 8192
 SAMPLE = 2_000_000
 TORCH_DT = {"BF16": torch.bfloat16, "F16": torch.float16, "F32": torch.float32}
-FS = HfFileSystem()
+SESSION = requests.Session()
+
+
+def fetch(url, start, length):
+    """Bytes [start, start+length) of a Hub file by HTTP range request, with retries."""
+    for attempt in range(8):
+        try:
+            r = SESSION.get(url, headers={"Range": f"bytes={start}-{start + length - 1}"}, timeout=600)
+            r.raise_for_status()
+            if len(r.content) == length:
+                return r.content
+        except requests.RequestException:
+            pass
+        time.sleep(min(60, 2 ** attempt))
+    raise IOError(f"range read failed: {url} {start}+{length}")
 
 
 def header_of(read8, readn):
@@ -52,9 +67,11 @@ class Remote:
         except Exception:
             shards = ["model.safetensors"]
         for shard in shards:
-            fh = FS.open(f"{repo}/{shard}", "rb", block_size=0, revision=revision)
-            head, off = header_of(lambda: fh.read(8), lambda n: fh.read(n))
-            self.files[shard] = (fh, off)
+            url = hf_hub_url(repo, shard, revision=revision)
+            n = struct.unpack("<Q", fetch(url, 0, 8))[0]
+            head = json.loads(fetch(url, 8, n))
+            head.pop("__metadata__", None)
+            self.files[shard] = (url, 8 + n)
             for name, info in head.items():
                 self.where[name] = (shard, info)
 
@@ -63,23 +80,14 @@ class Remote:
 
     def rows(self, name, start, stop):
         shard, info = self.where[name]
-        fh, off = self.files[shard]
+        url, off = self.files[shard]
         shape, dt = (info["shape"] or [1]), TORCH_DT[info["dtype"]]
         row = 1
         for d in shape[1:]:
             row *= d
         size = torch.tensor([], dtype=dt).element_size()
         a = info["data_offsets"][0] + start * row * size
-        for attempt in range(6):
-            try:
-                fh.seek(off + a)
-                buf = fh.read((stop - start) * row * size)
-                if len(buf) == (stop - start) * row * size:
-                    break
-            except Exception:
-                if attempt == 5:
-                    raise
-            time.sleep(2 ** attempt)
+        buf = fetch(url, off + a, (stop - start) * row * size)
         return torch.frombuffer(bytearray(buf), dtype=dt).reshape([stop - start] + shape[1:]).float()
 
 

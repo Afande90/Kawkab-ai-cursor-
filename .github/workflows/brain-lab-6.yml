@@ -22,7 +22,10 @@ jobs:
       - name: Free disk
         run: |
           sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost
-          df -h / | tail -1
+          # The GGUF converter needs more than the runner's 16 GB of RAM for Gemma 4's per-layer embeddings.
+          sudo swapoff -a || true
+          sudo fallocate -l 40G /swap40 && sudo chmod 600 /swap40 && sudo mkswap /swap40 && sudo swapon /swap40
+          free -g; df -h / | tail -1
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
@@ -34,7 +37,7 @@ jobs:
       - name: Python packages
         run: |
           pip install -q torch --index-url https://download.pytorch.org/whl/cpu
-          pip install -q -U transformers "huggingface_hub[cli]" numpy sentencepiece protobuf safetensors
+          pip install -q -U transformers "huggingface_hub[cli]" requests numpy sentencepiece protobuf safetensors
           pip install -q -e llama.cpp/gguf-py
       - name: Download base (google/gemma-4-E2B-it) and Sudanese-Flores
         run: |
@@ -50,7 +53,7 @@ jobs:
           python lab/brain/merge/merge.py hf lab/brain/merge/candidates/${{ matrix.cand }}.json autopsy-${{ matrix.cand }}.json
       - name: Convert and quantise
         run: |
-          python llama.cpp/convert_hf_to_gguf.py hf --outtype bf16 --outfile m.bf16.gguf
+          python llama.cpp/convert_hf_to_gguf.py hf --outtype bf16 --use-temp-file --outfile m.bf16.gguf
           rm -rf hf
           llama.cpp/build/bin/llama-quantize m.bf16.gguf m.gguf Q4_K_M > quant.log 2>&1 || (tail -30 quant.log; exit 1)
           rm m.bf16.gguf; ls -la m.gguf
