@@ -26,7 +26,7 @@ class WakeScoreLogTest {
         assertEquals(
             setOf(
                 "time_ms", "source", "personal", "generic", "generic_threshold",
-                "sherpa", "speaker", "templates", "outcome",
+                "sherpa", "speaker", "templates", "outcome", "speech",
             ),
             row.keys().asSequence().toSet(),
         )

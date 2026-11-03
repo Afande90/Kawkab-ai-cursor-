@@ -36,6 +36,12 @@ class WakeAssessmentTest {
         assertFalse(match.copy(personal = 0.0, generic = 0.9, genericThreshold = Double.NaN).accepted)
     }
 
+    @Test fun `a silent test has its own outcome and never accepts even stale keyword evidence`() {
+        val silence = match.copy(speech = false, sherpa = true)
+        assertFalse(silence.accepted)
+        assertEquals("NO_SPEECH", silence.outcome)
+    }
+
     @Test fun `speaker score refuses invalid profiles and preserves cosine evidence`() {
         assertNull(OwnerVoicePolicy.score(floatArrayOf(1f), null))
         assertNull(OwnerVoicePolicy.score(floatArrayOf(1f), floatArrayOf(0f)))
