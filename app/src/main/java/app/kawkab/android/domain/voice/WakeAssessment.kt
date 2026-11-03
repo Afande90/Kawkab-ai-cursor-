@@ -7,6 +7,7 @@ package app.kawkab.android.domain.voice
  * @property sherpa Whether the independent keyword spotter detected Kawkab.
  * @property speaker Cosine similarity to the owner, or null when no keyword justified inference.
  * @property templates Number of valid enrolled keyword templates.
+ * @property speech False for a completed test with no Silero speech window.
  */
 data class WakeAssessment(
     val personal: Double = 0.0,
@@ -15,9 +16,11 @@ data class WakeAssessment(
     val sherpa: Boolean = false,
     val speaker: Double? = null,
     val templates: Int = 0,
+    val speech: Boolean = true,
 ) {
     /** All ten templates are required, including when sherpa supplies the keyword opinion. */
-    val keyword: Boolean get() = templates == OwnerVoicePolicy.WAKE_REPETITIONS &&
+    val keyword: Boolean get() = speech &&
+        templates == OwnerVoicePolicy.WAKE_REPETITIONS &&
         (
             personal.isFinite() &&
                 personal >= PERSONAL_THRESHOLD ||
@@ -34,6 +37,7 @@ data class WakeAssessment(
 
     /** Stable private diagnostic labels; these never dispatch a command. */
     val outcome: String get() = when {
+        !speech -> "NO_SPEECH"
         templates != OwnerVoicePolicy.WAKE_REPETITIONS -> "NOT_ENROLLED"
         !keyword -> "KEYWORD_MISS"
         !accepted -> "SPEAKER_REJECTED"

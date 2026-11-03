@@ -29,7 +29,7 @@ class WakeScoreLog(context: Context) {
                 .put("personal", score.personal).put("generic", score.generic)
                 .put("generic_threshold", score.genericThreshold).put("sherpa", score.sherpa)
                 .put("speaker", score.speaker ?: JSONObject.NULL).put("templates", score.templates)
-                .put("outcome", score.outcome)
+                .put("outcome", score.outcome).put("speech", score.speech)
             synchronized(WRITE_LOCK) {
                 RandomAccessFile(File(directory, "${LocalDate.now()}.jsonl"), "rw").use { file ->
                     file.channel.lock().use {
@@ -65,6 +65,7 @@ class WakeScoreLog(context: Context) {
                     row.getBoolean("sherpa"),
                     if (row.isNull("speaker")) null else row.getDouble("speaker"),
                     row.getInt("templates"),
+                    row.optBoolean("speech", true),
                 )
             }.getOrNull()
         }.take(limit.coerceAtLeast(0)).toList()

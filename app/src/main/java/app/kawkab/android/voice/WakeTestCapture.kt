@@ -44,7 +44,9 @@ class WakeTestCapture(private val context: Context) : AutoCloseable {
                     }
                 }
             }
-            (frames.best ?: WakeAssessment()).also { WakeScoreLog(context).record(WakeScoreLog.Source.TEST, it) }
+            (frames.best ?: WakeAssessment(speech = false)).also {
+                WakeScoreLog(context).record(WakeScoreLog.Source.TEST, it)
+            }
         } finally {
             microphone.getAndSet(null)?.close()
             frames.close()

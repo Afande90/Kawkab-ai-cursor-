@@ -130,7 +130,9 @@ internal fun PocketWakeTest(enrolled: Boolean, talkRequest: Int, onRecording: (B
 }
 
 @Composable
-private fun TestLine(text: String) = LcdLine(text, size = 18.sp)
+private fun TestLine(text: String) {
+    LcdLine(text, size = 18.sp)
+}
 
 private fun scoreText(value: Double?): String = value?.let { String.format(Locale.US, "%.2f", it) } ?: "--"
 
