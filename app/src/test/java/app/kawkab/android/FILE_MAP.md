@@ -767,6 +767,7 @@ Only Kotlin files appear inside the generated blocks.
           - `ShippedPipelineLayoutTest.kt` - Guards the layout of every pipeline the project ships as a file: the bundled presets under `src/main/assets/presets/pipelines/` and the cookbook recipes under `docs/recipes/`.
           - `ValidationAutoFixTest.kt` - Pure-Kotlin tests for `ValidationAutoFix` recipes.
     - `pocket/` - Regression tests for owner-facing Pocket LCD routes, local learning and useful error messages.
+      - `ModelFileImportTest.kt` - Only plain `.litertlm` / `.gguf` file names are accepted from the picker.
       - `PocketErrorsTest.kt` - Failed voice commands need a visible explanation without exposing the engine.
     - `prompts/` - Tests for the prompt library.
       - `PromptLibraryViewModelTest.kt` - Unit tests for `PromptLibraryViewModel`.

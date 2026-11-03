@@ -1210,6 +1210,7 @@ Only Kotlin files appear inside the generated blocks.
           - `NodeConfigSheetHost.kt` - Thin adapter exposing the catalog `NodeConfigSheet` (with all 12 per-type forms + validator) to the editor screen.
           - `NodeTypePickerSheet.kt` - The pipeline editor's "Add node" sheet: the catalog's `NodeTypePickerSheetBody` inside a full-height `ModalBottomSheet`.
     - `pocket/` - Owner-facing Pocket LCD routes, local learning and useful error messages.
+      - `ModelFileImport.kt` - Copies a `.litertlm` or `.gguf` file the owner picked into the model folder, via a temporary file renamed only when complete.
       - `PocketErrors.kt` - Ordinary owner messages; diagnostic detail remains behind Advanced and crash-report copying.
       - `PocketHomeScreen.kt` - The owner's product surface.
       - `PocketListeningSettings.kt` - Voice-only listening controls and local daily capture totals, inside the shared LCD.

@@ -290,6 +290,25 @@ fun PocketHomeScreen(
             }
         }
     }
+    val modelFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            scope.launch {
+                notice = "ADDING MODEL. KEEP KAWKAB OPEN."
+                notice = try {
+                    val added = withContext(Dispatchers.IO) { ModelFileImport.copy(context, uri) }
+                    dagger.hilt.android.EntryPointAccessors.fromApplication(context, PocketServices::class.java)
+                        .registerModel()(fileName = added.name, path = added.absolutePath, sizeBytes = added.length())
+                    "MODEL ADDED: ${added.name}"
+                } catch (cancel: CancellationException) {
+                    throw cancel
+                } catch (failure: IllegalArgumentException) {
+                    failure.message ?: "THAT FILE IS NOT A MODEL."
+                } catch (failure: java.io.IOException) {
+                    "COULD NOT COPY THE MODEL: ${failure.message ?: "storage error"}"
+                }
+            }
+        }
+    }
     val microphone = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { tick += 1 }
     val settings = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { tick += 1 }
     suspend fun recordEnrollment() {
@@ -667,6 +686,9 @@ fun PocketHomeScreen(
                         })
                         DeviceKey("GET LANGUAGE & IMAGES", onClick = {
                             models.startDownload(GEMMA_URL, "gemma-4-E2B-it.litertlm")
+                        })
+                        DeviceKey("ADD MODEL FROM FILE", onClick = {
+                            modelFile.launch(arrayOf("*/*"))
                         })
                     }
                     "PRIVACY" -> {

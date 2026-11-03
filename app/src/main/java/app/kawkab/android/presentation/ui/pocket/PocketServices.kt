@@ -32,4 +32,7 @@ interface PocketServices {
 
     /** Persists successful first voice setup. */
     fun appState(): AppStateSettings
+
+    /** Registers a model file the owner added from the phone's storage. */
+    fun registerModel(): app.kawkab.android.domain.usecases.RegisterDownloadedModelUseCase
 }
