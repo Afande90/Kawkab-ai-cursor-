@@ -447,12 +447,12 @@ class PersistentStorageInventoryGuardTest {
             notArchived = "learned contact choices of this phone; a new phone learns them again",
         ),
 
-        /** Owner audio, learned plans and judge certificates are private and never backed up. */
+        /** Owner audio, learned plans, wake scores and judge certificates are private and never backed up. */
         OWNER_LEARNING(
             domain = "root",
             plaintextPath = null,
             erasedBy = null,
-            kept = "phone-specific owner profile and plans; removable through Voice and Growth, not the database reset",
+            kept = "phone-specific profile and plans (Voice and Growth); private score history stays on this phone",
             archive = emptyList(),
             notArchived = "Android noBackupFilesDir is excluded from platform backup and app archives",
         ),
@@ -550,6 +550,7 @@ class PersistentStorageInventoryGuardTest {
             "/di/SafetyModule.kt" to "ACTIVITY_LOG",
             "/voice/WakeWordSwitch.kt" to "VOICE_SWITCHES",
             "/voice/WakeMicUsage.kt" to "VOICE_USAGE",
+            "/voice/WakeScoreLog.kt" to "OWNER_LEARNING (private score-only wake journal)",
             "/voice/VoiceConfirmSwitch.kt" to "VOICE_SWITCHES",
             "/crash/CrashLog.kt" to "CRASH_LOG",
             "/hands/ContactAliasStore.kt" to "CONTACT_ALIASES",
