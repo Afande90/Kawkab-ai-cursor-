@@ -542,6 +542,7 @@ Only Kotlin files appear inside the generated blocks.
     - `ChatTierRouter.kt` - Decides whether a typed line skips the pipeline.
     - `CommandFastPath.kt` - Deterministic Arabic and English grammar for the five core commands.
     - `CommandText.kt` - Cleans a typed command before the grammar reads it (task 23h).
+    - `SpokenRefusal.kt` - Refuses money moves, passwords and bulk deletes from the words, before any model.
     - `TierTwoRecipes.kt` - Matches the three skill phrases.
   - `harness/` - Typed planner decisions, a short history, error tiers, breakers, and the skill cache.
     - `BiometricRisk.kt` - Whether a biometric check is required on top of the outbound tap.

@@ -35,6 +35,14 @@ class ChatTierRouterTest {
     private val router = HandsChatTierRouter(gate, chatRepository, engine)
 
     @Test
+    fun `a money transfer is refused from the words and never reaches the model`() = runTest {
+        val command = router.command("حول خمسمية درهم لعمر")
+        assertEquals("kawkab_reply", command?.tool)
+        assertEquals(SpokenRefusal.MONEY, command?.args?.get("text"))
+        coVerify(exactly = 0) { engine.generateResponseStream(any(), any(), any()) }
+    }
+
+    @Test
     fun `an alarm is a hands command and does not call the model`() = runTest {
         val command = router.command("set an alarm for 6")
         assertEquals("set_alarm", command?.tool)

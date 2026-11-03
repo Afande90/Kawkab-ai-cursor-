@@ -375,8 +375,10 @@ Only Kotlin files appear inside the generated blocks.
   - `fastpath/` - Scores the frozen command set against the deterministic grammar, including the constant-parser check.
     - `ChatTierRouterTest.kt` - The router plans a hands command with no model, and a skill with one text call.
     - `CommandFastPathTest.kt` - Scores the frozen command set.
+    - `CommandFastPathDialectTest.kt` - Sudanese, Gulf and Egyptian calls and alarms; pronouns and placeholders left to the model.
     - `CommandFastPathV2Test.kt` - Scores the frozen v2 command set.
     - `CommandTextTest.kt` - Task 23h: quotes, trailing punctuation and emoji no longer hide a command from the fast path.
+    - `SpokenRefusalTest.kt` - Money, secrets and bulk deletes are refused; ordinary commands and chat are not.
   - `harness/` - Tests for typed decisions, the skill cache, image notes, and the extra biometric check.
     - `HarnessRulesTest.kt` - Planner decisions, history, breakers, the skill cache, and the extra biometric check.
     - `SkillPersistenceTest.kt` - Restart and deletion must affect the actual replay store.

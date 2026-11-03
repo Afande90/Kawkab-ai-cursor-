@@ -137,6 +137,12 @@ class HandsChatTierRouter @Inject constructor(
     private val picks: MutableSet<String> = java.util.Collections.synchronizedSet(mutableSetOf())
 
     override fun command(text: String): PlannedCommand? {
+        // Money, secrets and bulk deletes are refused from the words alone, before any model reads them.
+        SpokenRefusal.reason(text)?.let { refusal ->
+            choice.clear()
+            apps?.clear()
+            return PlannedCommand(REPLY, mapOf(REPLY_TEXT to refusal))
+        }
         // A call or text waiting for a contact pick takes the line first, so "the mubadala" or a
         // chip tap completes it instead of going to free chat (task 23j). A new command replaces it.
         CommandFastPath.parse(text)?.let { parsed ->
