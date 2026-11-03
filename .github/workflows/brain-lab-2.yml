@@ -30,12 +30,12 @@ jobs:
         run: |
           run() {
             label=$1; repo=$2; file=$3
-            python -c "from huggingface_hub import hf_hub_download as d; import shutil; shutil.move(d('$repo','$file'),'m.gguf')"
+            python -c "from huggingface_hub import hf_hub_download as d; import shutil; shutil.copyfile(d('$repo','$file',local_dir='dl'),'m.gguf')"; rm -rf dl; ls -la m.gguf
             llama.cpp/build/bin/llama-server -m m.gguf --jinja -c 8192 -np 2 -t 4 --port 8080 > server-$label.log 2>&1 &
             pid=$!
             for i in $(seq 180); do curl -sf localhost:8080/health && break; sleep 2; done
             python lab/brain/exam.py $label lab/brain/kawkab_exam.json flores.jsonl result-$label.json || tail -20 server-$label.log
-            kill $pid; sleep 3; rm -f m.gguf; rm -rf ~/.cache/huggingface/hub/models--*
+            kill $pid; sleep 3; rm -f m.gguf; df -h . | tail -1
           }
           run gemma-e2b unsloth/gemma-4-E2B-it-GGUF gemma-4-E2B-it-Q4_K_M.gguf
           run gemma-e2b-yemeni yemeni-ai-lab/gemma-4-e2b-yemeni-arabic-assistant-GGUF gemma-4-e2b-yemeni-arabic-assistant.Q4_K_M.gguf
