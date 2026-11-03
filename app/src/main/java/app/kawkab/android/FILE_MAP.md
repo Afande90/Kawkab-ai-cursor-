@@ -960,10 +960,12 @@ Only Kotlin files appear inside the generated blocks.
     - `ConversationLoop.kt` - Conversation mode (task 23l): listen, send what was said, speak the reply, listen again, until the owner taps stop.
     - `MicUsageMeter.kt` - Counts actual capture time using a monotonic clock, apportioned to local calendar dates.
     - `OwnerVoicePolicy.kt` - Speaker verification policy, independent of Android and model-generated confidence.
+    - `PersonalWakeTemplates.kt` - Ten enrollment exemplars with speech trimming and gain normalization for a quiet distant voice.
     - `SmartTurnBudget.kt` - Bounds preprocessing plus inference, without ever blocking the recorder or UI thread.
     - `SmartTurnFeatures.kt` - Whisper-tiny's 80x800 Slaney log-mel input, matched to the frozen upstream NumPy reference.
     - `SpeechWakeGate.kt` - Personal keyword features and speaker verification are never evaluated outside VAD speech windows.
     - `VoiceAnswers.kt` - Short spoken answers in a hands-free conversation (task 29): "undo" after a local action, and "yes" or "no" to a confirmation card.
+    - `WakeAssessment.kt` - Numeric evidence for one speech window, never a transcript or an audio recording.
     - `WakeFeatures.kt` - Duration-normalized Goertzel log-spectral features; identical to the local CPU training pipeline.
     - `WakeListeningPolicy.kt` - Pure policy shared by device monitoring and deterministic tests.
     - `WakeWord.kt` - The wake word "Kawkab" / "كوكب" (task 27).
@@ -1215,6 +1217,7 @@ Only Kotlin files appear inside the generated blocks.
       - `PocketHomeScreen.kt` - The owner's product surface.
       - `PocketListeningSettings.kt` - Voice-only listening controls and local daily capture totals, inside the shared LCD.
       - `PocketServices.kt` - Services needed by the device shell without adding presentation duties to the chat engine.
+      - `PocketWakeTest.kt` - Fresh arm's-length attempts, with exactly the production scoring path and no action dispatch.
       - `ShotCategories.kt` - Only owner-supplied labels are remembered; image bytes remain in the existing attachment store.
     - `prompts/` - Prompt Library screen components. The screen is wired end-to-end onto the new `PromptPreset` catalogue (bundled + user) — the legacy `PromptTemplate` source is no longer consulted here.
       - `PromptImportDialogHost.kt` - Maps each import outcome onto the shared `OutcomeDialog` family: info for a version/unknown-key note, **shield (not red)** for a refused capability — a ceiling that held is not an error — red only for "nothing was imported", and an icon-less question for the re-import decision. Node types are named by their raw enum, matching the tabs.
@@ -1298,12 +1301,15 @@ Only Kotlin files appear inside the generated blocks.
   - `VoiceConfirmSwitch.kt` - The owner's "Confirm by voice" setting (task 29, spec §0.4.3).
   - `WakeAudioInput.kt` - The only wake recorder factory; failed initialization also releases its native audio resource.
   - `WakeHealth.kt` - Whether the wake process died in native code since the wake word was last turned on (M1.8).
+  - `WakeHeardSignal.kt` - A throttled package-only hint for a dynamically registered foreground LCD; never opens the app.
   - `WakeListeningMonitor.kt` - Low-rate sensors and system events control capture; no polling, phone-state permission or wake lock.
   - `WakeMicSession.kt` - Serializes permission to open capture with every pause, eliminating reopen-after-pause races.
   - `WakeMicUsage.kt` - Daily microphone-open milliseconds, stored locally without audio and excluded from every backup.
   - `WakeRelayReceiver.kt` - The app-process side of the wake word (M1.8).
+  - `WakeScoreLog.kt` - Private score-only journal, excluded from backups; enrollment and microphone audio are never copied here.
   - `WakeSpeechFrames.kt` - One bounded speech buffer; personal KWS and speaker inference sleep whenever Silero hears silence.
   - `WakeSpotter.kt` - Silero VAD in front of the sherpa-onnx keyword spotter (task 27).
+  - `WakeTestCapture.kt` - A bounded fresh wake test using the production VAD, keyword and speaker path; it can never run an action.
   - `WakeWordService.kt` - Listens for "Kawkab" in a foreground service with a visible notification (task 27, spec §7).
   - `WakeWordSwitch.kt` - The wake word's on/off setting and its counters (task 27).
 <!-- /AUTO-GEN:FILE_MAP -->

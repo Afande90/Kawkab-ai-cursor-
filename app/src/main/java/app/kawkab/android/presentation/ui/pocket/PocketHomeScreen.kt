@@ -3,9 +3,12 @@ package app.kawkab.android.presentation.ui.pocket
 import android.Manifest
 import android.app.Activity
 import android.app.KeyguardManager
+import android.content.BroadcastReceiver
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.BatteryManager
 import android.provider.Settings
@@ -55,6 +58,7 @@ import app.kawkab.android.voice.OfflineSpeech
 import app.kawkab.android.voice.OfflineVoice
 import app.kawkab.android.voice.OwnerAudioPipe
 import app.kawkab.android.voice.OwnerVoice
+import app.kawkab.android.voice.WakeHeardSignal
 import app.kawkab.android.voice.WakeWordSwitch
 import app.kawkab.design.components.chat.ChatContent
 import app.kawkab.design.components.chat.ChatRole
@@ -113,6 +117,35 @@ fun PocketHomeScreen(
     var phase by remember { mutableStateOf(ConversationLoop.Phase.IDLE) }
     var heard by remember { mutableStateOf("") }
     var notice by remember { mutableStateOf("") }
+    var wakeFlicker by remember { mutableStateOf(false) }
+    var wakeNotice by remember { mutableIntStateOf(0) }
+    var wakeTestRequest by remember { mutableIntStateOf(0) }
+    LifecycleResumeEffect(Unit) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                if (intent.action == WakeHeardSignal.ACTION) {
+                    wakeFlicker = true
+                    wakeNotice += 1
+                }
+            }
+        }
+        ContextCompat.registerReceiver(
+            context,
+            receiver,
+            IntentFilter(WakeHeardSignal.ACTION),
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
+        onPauseOrDispose {
+            context.unregisterReceiver(receiver)
+            wakeFlicker = false
+        }
+    }
+    LaunchedEffect(wakeNotice) {
+        if (wakeNotice > 0) {
+            delay(WAKE_FLICKER_MS)
+            wakeFlicker = false
+        }
+    }
     var enrollmentCount by remember { mutableIntStateOf(0) }
     var recording by remember { mutableStateOf(false) }
     var draft by remember { mutableStateOf("") }
@@ -510,9 +543,13 @@ fun PocketHomeScreen(
             BatteryManager::class.java,
         )?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) ?: 0}%",
         heard = heard, reply = failure ?: notice.ifBlank { lastReply },
-        result = lastReply.takeIf {
-            listOf("Alarm", "Timer", "Called", "SMS submitted", "Sent", "Opened", "Reminder").any(it::startsWith)
-        }.orEmpty(),
+        result = if (wakeFlicker && shownPage == DevicePage.IDLE) {
+            "HEARD SOMETHING"
+        } else {
+            lastReply.takeIf {
+                listOf("Alarm", "Timer", "Called", "SMS submitted", "Sent", "Opened", "Reminder").any(it::startsWith)
+            }.orEmpty()
+        },
         name =
         args["name"] ?: args["spoken"] ?: args["contact"]
             ?: pendingContact?.args?.get(ContactChoice.SPOKEN) ?: pendingApp?.spoken.orEmpty(),
@@ -556,6 +593,8 @@ fun PocketHomeScreen(
         onTalk = {
             if (pending?.runsAtMs != null) {
                 viewModel.hitl.rejectTool()
+            } else if (menu == "TEST WAKE WORD") {
+                wakeTestRequest += 1
             } else if (!enrolled) {
                 menu = null
                 page = DevicePage.ENROLL
@@ -615,6 +654,10 @@ fun PocketHomeScreen(
                                 enroll()
                             }
                         })
+                        DeviceKey("TEST WAKE WORD", onClick = {
+                            if (driver?.phase != ConversationLoop.Phase.IDLE) driver?.tap()
+                            menu = "TEST WAKE WORD"
+                        })
                         PocketListeningSettings(enrolled)
                         DeviceKey("DELETE MY RECORDINGS", onClick = {
                             SpokenOwnerAnswer.clear()
@@ -622,6 +665,7 @@ fun PocketHomeScreen(
                             conversation().ask("Delete your voice recordings? Say yes or cancel.")
                         })
                     }
+                    "TEST WAKE WORD" -> PocketWakeTest(enrolled, wakeTestRequest) { recording = it }
                     "PHONE ACCESS" -> {
                         val smsOn = ContextCompat.checkSelfPermission(context, Manifest.permission.SEND_SMS) ==
                             PackageManager.PERMISSION_GRANTED
@@ -731,3 +775,5 @@ private const val GEMMA_URL =
 private const val COUNTDOWN_SECONDS = 3
 
 private const val SHOTS_LIMIT = 20
+
+private const val WAKE_FLICKER_MS = 900L

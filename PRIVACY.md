@@ -410,6 +410,8 @@ Wake listening defaults to **SMART** after owner enrollment: Silero VAD gates ke
 
 Settings → Voice contains the listening modes, optional local sleep times, and a daily wake-microphone log. The log stores only microphone-open milliseconds per local date under Android's private `noBackupFilesDir`, including silence, never audio or transcripts. It is excluded from backups and uploads, survives mode changes and service restarts, and is retained for battery comparisons. Actual capture time is checkpointed once per minute and on orderly pause/shutdown; an abrupt process kill can lose at most the current checkpoint interval. These are wake-service minutes, not an estimate of battery percentage or other apps' microphone use.
 
+Settings → Voice → TEST WAKE WORD uses fresh, temporary microphone audio on this phone with the same owner-only detector as background listening. It never sends a command or takes an action. The private wake-score journal under `noBackupFilesDir/wake_scores` contains timestamps, test/background origin, numeric keyword/speaker scores, the detector threshold, a sherpa hit flag and outcomes only. A missing speaker score means it was not evaluated. No audio or transcript is saved in this journal; owner enrollment recordings remain separate. Scores are excluded from app and platform backups, never uploaded, and retained locally. The brief HEARD SOMETHING hint is delivered only to an already resumed screen and does not open the app.
+
 The Wi-Fi network name obtained under the location permission is used on the
 device to decide whether a trigger fires, and never leaves it. Background
 location is **not** requested.
