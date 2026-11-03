@@ -4,7 +4,7 @@ name: Brain lab 4
 on:
   push:
     branches: [brain-lab]
-    paths: [lab/brain/guard.py, lab/brain/holdout_exam.json, lab/brain/system_prompt_v2.txt, .github/workflows/brain-lab-4.yml]
+    paths: [lab/brain/guard.py, lab/brain/holdout_exam.json, lab/brain/holdout2_exam.json, lab/brain/system_prompt_v2.txt, .github/workflows/brain-lab-4.yml]
   workflow_dispatch:
 permissions:
   contents: write
@@ -31,8 +31,8 @@ jobs:
           llama.cpp/build/bin/llama-server -m m.gguf --jinja --reasoning-budget 0 -c 8192 -np 2 -t 4 --port 8080 > server.log 2>&1 &
           for i in $(seq 180); do curl -sf localhost:8080/health && break; sleep 2; done
           cd lab/brain
-          python exam.py v1-holdout holdout_exam.json - ../../r-v1-holdout.json
-          python exam.py v1-exam kawkab_exam.json - ../../r-v1-exam.json
+          python exam.py v1-fresh holdout2_exam.json - ../../r-v1-fresh.json
+          KAWKAB_PROMPT=system_prompt_v2.txt python exam.py v2-fresh holdout2_exam.json - ../../r-v2-fresh.json
           KAWKAB_PROMPT=system_prompt_v2.txt python exam.py v2-holdout holdout_exam.json - ../../r-v2-holdout.json
           KAWKAB_PROMPT=system_prompt_v2.txt python exam.py v2-exam kawkab_exam.json - ../../r-v2-exam.json
       - name: Summary
@@ -40,9 +40,9 @@ jobs:
           python - <<'PY'
           import json
           rows=["| prompt | exam | raw | with guard | median s |","|---|---|---|---|---|"]
-          for k in ["v1-holdout","v1-exam","v2-holdout","v2-exam"]:
+          for k in ["v1-fresh","v2-fresh","v2-holdout","v2-exam"]:
               r=json.load(open(f"r-{k}.json")); p,e=k.split("-")
-              rows.append(f"| {p} | {'held-out 60 (never tuned on)' if e=='holdout' else 'original 147'} | {r['exam_score']:.1%} | {r['exam_score_guarded']:.1%} | {r['exam_median_seconds']} |")
+              rows.append(f"| {p} | {dict(fresh='fresh 60 (never seen)',holdout='held-out 60 (seen in round 4)',exam='original 147')[e]} | {r['exam_score']:.1%} | {r['exam_score_guarded']:.1%} | {r['exam_median_seconds']} |")
           open("RESULTS.md","w").write("\n".join(rows)+"\n")
           print("\n".join(rows))
           PY

@@ -15,7 +15,7 @@ ALIASES = {
     "brother": [["ali", "brother", "أخو", "اخو", "أخي", "علي"]],
     "Abdalla": [["abdall", "abdull", "عبدالله", "عبد الله"]],
 }
-APPS = {"WhatsApp": ["whatsapp", "واتساب", "واتس"], "YouTube": ["youtube", "يوتيوب", "اليوتيوب"], "Google Maps": ["map", "خرائط"]}
+APPS = {"WhatsApp": ["whatsapp", "واتساب", "واتس"], "YouTube": ["youtube", "يوتيوب", "اليوتيوب"], "Google Maps": ["map", "خرائط"], "Camera": ["camera", "كاميرا"]}
 AR = str.maketrans("٠١٢٣٤٥٦٧٨٩", "0123456789")
 
 
@@ -111,7 +111,7 @@ def main(label, exam_path, flores_path, out_path):
     def one(item):
         text, sec = ask([{"role": "system", "content": SYSTEM}, {"role": "user", "content": item["prompt"]}])
         out = parse(text)
-        fixed = guard(item["prompt"], out)
+        fixed = guard(item["prompt"], out, text)
         return {"prompt": item["prompt"], "ok": grade(item, out), "ok_guarded": grade(item, fixed), "raw": text.strip()[:300],
                 "guarded": fixed, "seconds": round(sec, 2)}
 
