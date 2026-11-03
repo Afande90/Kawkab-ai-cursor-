@@ -15,28 +15,50 @@ class CommandFastPathDialectTest {
     @Test
     fun `dialect call phrasings place a call to the named person`() {
         mapOf(
-            "ضرب لي أحمد هسي" to "أحمد", "ضرب لي عمر" to "عمر", "أديني عمر في التلفون" to "عمر",
-            "أديني my sister في التلفون" to "my sister", "دق لأمي" to "أمي", "دق لي على أحمد" to "أحمد",
-            "وصلني بسارة" to "سارة", "اضرب لي علي هسع" to "علي", "عايز أكلم mum" to "mum",
-            "داير أكلم أمي" to "أمي", "عايز اتكلم مع اختي" to "اختي", "ابغى اكلم عمر" to "عمر",
-            "عاوز أتصل بأخويا" to "أخويا", "خليني أكلم سارة هسه" to "سارة", "ممكن تتصل لي بعمر" to "عمر",
-            "give Omar a ring" to "Omar", "please connect me to my sister" to "my sister", "kalim Omar" to "Omar",
-            "Kawkab, call Omar" to "Omar", "phone Abdalla now" to "Abdalla",
+            "ضرب لي أحمد هسي" to "أحمد",
+            "ضرب لي عمر" to "عمر",
+            "أديني عمر في التلفون" to "عمر",
+            "أديني my sister في التلفون" to "my sister",
+            "دق لأمي" to "أمي",
+            "دق لي على أحمد" to "أحمد",
+            "وصلني بسارة" to "سارة",
+            "اضرب لي علي هسع" to "علي",
+            "عايز أكلم mum" to "mum",
+            "داير أكلم أمي" to "أمي",
+            "عايز اتكلم مع اختي" to "اختي",
+            "ابغى اكلم عمر" to "عمر",
+            "عاوز أتصل بأخويا" to "أخويا",
+            "خليني أكلم سارة هسه" to "سارة",
+            "ممكن تتصل لي بعمر" to "عمر",
+            "give Omar a ring" to "Omar",
+            "please connect me to my sister" to "my sister",
+            "kalim Omar" to "Omar",
+            "Kawkab, call Omar" to "Omar",
+            "phone Abdalla now" to "Abdalla",
         ).forEach { (said, who) -> assertEquals(said, who, call(said)) }
     }
 
     @Test
     fun `pronouns, placeholders and doubt are left to the model`() {
         listOf(
-            "call her", "call him back", "اتصل بيهو", "قول لي نكتة", "قول لي حاجة تفرحني", "ابعت مسج لأحمد",
-            "ابعت رسالة لعمر", "كلم ود عبدالله ولا عبدالله التاني، ما متأكد",
+            "call her",
+            "call him back",
+            "اتصل بيهو",
+            "قول لي نكتة",
+            "قول لي حاجة تفرحني",
+            "ابعت مسج لأحمد",
+            "ابعت رسالة لعمر",
+            "كلم ود عبدالله ولا عبدالله التاني، ما متأكد",
         ).forEach { assertNull(it, CommandFastPath.parse(it)) }
     }
 
     @Test
     fun `screenshots, the torch and Bluetooth are not apps`() {
         listOf(
-            "افتح آخر سكرين", "open the latest screenshot", "شغل الفلاش", "شغل البلوتوث",
+            "افتح آخر سكرين",
+            "open the latest screenshot",
+            "شغل الفلاش",
+            "شغل البلوتوث",
             "افتح لي آخر صورة شاشة صورتها",
         )
             .forEach { assertNull(it, CommandFastPath.parse(it)) }
