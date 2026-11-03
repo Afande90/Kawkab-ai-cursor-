@@ -96,10 +96,8 @@ object CommandFastPath {
     private val callHit = Regex("""^(?:ا?ضرب|دق) (?:لي )?(?:على |ل|لـ)?(.+?)$""")
     private val callGive = Regex("""^(?:أ|ا)ديني (.+?) (?:في|ف) التلفون$""")
     private val callLink = Regex("""^(?:وصلني|وصّلني) (?:ب|بـ|مع )(.+)$""")
-    private val callWant = Regex(
-        """^(?:داير|دايرة|عايز|عاوز|عايزة|عاوزة|ابغى|ابغي|أبغى|بدي|خليني) """ +
-            """(?:أ|ا)(?:كلم |تكلم مع |تصل ب|تصل على )(.+)$""",
-    )
+    private val callWant = Regex("""^(?:داير|عايز|عاوز)ة? (?:أ|ا)(?:كلم |تكلم مع |تصل ب|تصل على )(.+)$""")
+    private val callWish = Regex("""^(?:ابغى|ابغي|أبغى|بدي|خليني) (?:أ|ا)(?:كلم |تكلم مع |تصل ب|تصل على )(.+)$""")
     private val callWould = Regex("""^ممكن (?:ت|)تصل(?: لي)? (?:ب|على )(.+)$""")
     private val callTo = Regex("""^اتصلي? (?:ب|على )(.+?)$""")
     private val callRing = Regex("""^give (.+) a ring$""", RegexOption.IGNORE_CASE)
@@ -115,19 +113,15 @@ object CommandFastPath {
     private val alarmPut = Regex("""^(?:(?:حط|اضبط|عاوز|عايز|داير)(?: لي)? )?منبه (?:الساعة |على )?(.+)$""")
     private val alarmWakeAr = Regex("""^(?:صحيني|قومني|فزعني)(?: الساعة)? (.+)$""")
     private val wakePrefix = Regex("""^(?:(?:يا )?(?:kawkab|كوكب)[,،]?\s+)""", RegexOption.IGNORE_CASE)
-    private val trailingFiller = Regex(
-        """(?:\s+(?:now|please|right now|for me|هسي|هسع|هسه|هسا|هسة|هسّع""" +
-            """|لو سمحت|لو سمحتي|ضروري|بسرعة|يا زول|يا أخوي))+$""",
-        RegexOption.IGNORE_CASE,
-    )
+    private val fillerEn = Regex("""(?:\s+(?:now|please|right now|for me))+$""", RegexOption.IGNORE_CASE)
+    private val fillerAr = Regex("""(?:\s+(?:هس[يعهاة]|هسّع|لو سمحت|لو سمحتي|ضروري|بسرعة|يا زول|يا أخوي))+$""")
     private val notContacts = setOf(
         "ي", "لي", "نا", "ها", "هو", "يهو", "ليهو", "ليها", "يها", "ليك", "ك", "مسج", "رسالة", "رساله", "message",
         "msg", "text", "her", "him", "them", "me", "it", "her back", "him back", "them back", "back",
     )
-    private val notApps = Regex(
-        """(سكرين|صورة شاشة|لقطة شاشة|لقطة الشاشة|screenshot|screen shot|الفلاش|فلاش|كشاف|الكشاف""" +
-            """|بلوتوث|البلوتوث|bluetooth|flashlight|torch|بنك|bank)""",
-        RegexOption.IGNORE_CASE,
+    private val notApps = listOf(
+        "سكرين", "صورة شاشة", "لقطة شاشة", "لقطة الشاشة", "screenshot", "screen shot", "فلاش", "كشاف",
+        "بلوتوث", "bluetooth", "flashlight", "torch", "بنك", "bank",
     )
     private val unsure = Regex("""(ولا |،|\?|؟|ما متأكد|not sure|(^|\s)or\s)""", RegexOption.IGNORE_CASE)
     private val minutesEn = Regex("""^(\d+)\s*(?:minutes|minute|mins|min)$""", RegexOption.IGNORE_CASE)
@@ -145,7 +139,7 @@ object CommandFastPath {
     private val directSms = listOf(smsSend, smsColon, smsEn, smsAr, smsSay, smsLet, smsOrder, smsHer, smsWrite)
     private val directCalls = listOf(
         callEn, callAr, callTalk, callGet, callNamed, callSudan, callBack,
-        callHit, callGive, callLink, callWant, callWould, callTo, callRing, callConnect, callKalim,
+        callHit, callGive, callLink, callWant, callWish, callWould, callTo, callRing, callConnect, callKalim,
     )
     private val alarmShapes = listOf(alarmEn, alarmAr, alarmNoun, alarmWake, alarmPut, alarmWakeAr)
     private val timedEvents = listOf(calendarEn, calendarAr, calendarRecord, calendarEnd, calendarMeet, calendarPut)
@@ -245,7 +239,8 @@ object CommandFastPath {
      * placeholder, or the owner is unsure ("ود عبدالله ولا عبدالله التاني"). Null lets the model ask.
      */
     private fun contactName(raw: String): String? {
-        val name = trailingFiller.replace(raw.trim(), "").trim()
+        var name = raw.trim()
+        repeat(2) { name = fillerAr.replace(fillerEn.replace(name, ""), "").trim() }
         if (name.isEmpty() || name.lowercase() in notContacts || unsure.containsMatchIn(name)) return null
         if (name.split(' ').size > MAX_CONTACT_WORDS) return null
         return name
@@ -292,7 +287,7 @@ object CommandFastPath {
             ?: openWant.matchEntire(text)
             ?: return null
         // A screenshot, the torch or Bluetooth is not an app; the model routes those.
-        if (notApps.containsMatchIn(match.groupValues[1])) return null
+        if (notApps.any { it in match.groupValues[1].lowercase() }) return null
         return PlannedCommand(tool = "open_app", args = mapOf("name" to appName(match.groupValues[1])))
     }
 

@@ -20,11 +20,6 @@ object SpokenClock {
     private val eveningWords = setOf(
         "بالليل", "الليل", "مساء", "مساءً", "المسا", "المساء", "العصر", "بعد الضهر", "pm", "tonight", "in the evening",
     )
-    private val dayPart = Regex(
-        """\s+(الصباح|الصبح|صباحاً|صباحا|الفجر|بالليل|الليل|مساءً|مساء|المساء|المسا|العصر|بعد الضهر""" +
-            """|in the morning|in the evening|tonight)$""",
-        RegexOption.IGNORE_CASE,
-    )
     private val fraction = Regex("""^(\S+) (ونص|ونصف|والنص|وربع|والربع|إلا ربع|الا ربع|إلّا ربع)$""")
     private val halfWords = setOf("ونص", "ونصف", "والنص")
     private val quarterWords = setOf("وربع", "والربع")
@@ -70,8 +65,11 @@ object SpokenClock {
      * @return Hour (0-23) and minute as decimal text, or null when the words are not a clock time.
      */
     fun read(said: String): Pair<String, String>? {
-        val part = dayPart.find(said)?.groupValues?.get(1)
-        val text = dayPart.replace(said, "").trim()
+        val lower = said.trim().lowercase()
+        val part = (morningWords + eveningWords)
+            .filter { word -> lower.endsWith(" $word") }
+            .maxByOrNull { word -> word.length }
+        val text = if (part == null) lower else lower.removeSuffix(part).trim()
         val base = fractionClock(text) ?: spokenClock(text) ?: digitClock(text) ?: return null
         val hour = base.first.toInt()
         val shifted = when {

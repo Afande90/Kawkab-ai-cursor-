@@ -9,9 +9,9 @@ package app.kawkab.android.domain.fastpath
 object SpokenRefusal {
     private val ignoreCase = setOf(RegexOption.IGNORE_CASE)
 
-    private val currency = Regex(
-        """(درهم|دراهم|دولار|جنيه|ريال|يورو|قروش|فلوس|\baed\b|dirhams?|dollars?|euros?|pounds?|riyals?""" +
-            """|\bmoney\b|\$\s?\d|\d\s?\$)""",
+    private val currencyWords = listOf("درهم", "دراهم", "دولار", "جنيه", "ريال", "يورو", "قروش", "فلوس")
+    private val currencyEn = Regex(
+        """(\baed\b|dirhams?|dollars?|euros?|pounds?|riyals?|\bmoney\b|\$\s?\d|\d\s?\$)""",
         ignoreCase,
     )
     private val moveVerb = Regex(
@@ -23,11 +23,11 @@ object SpokenRefusal {
         ignoreCase,
     )
     private val sendVerb = Regex("""^(ابعت|ابعث|رسل|ارسل|أرسل|send|give)\s""", ignoreCase)
-    private val secret = Regex(
-        """(باسورد|باسوورد|كلمة سر|كلمة السر|كلمة المرور|رمز سري|الرمز السري""" +
-            """|\bpasswords?\b|\bpasscode\b|\bpin\b|\bcvv\b|\botp\b)""",
-        ignoreCase,
+    private val secretWords = listOf(
+        "باسورد", "باسوورد", "كلمة سر", "كلمة السر", "كلمة المرور", "رمز سري",
+        "الرمز السري",
     )
+    private val secretEn = Regex("""(\bpasswords?\b|\bpasscode\b|\bpin\b|\bcvv\b|\botp\b)""", ignoreCase)
     private val wipeVerb = Regex("""(امسح|إمسح|احذف|إحذف|مسح|حذف|\bdelete\b|\berase\b|\bwipe\b)""", ignoreCase)
     private val everything = Regex("""((^|\s|و)(كل|كلها|جميع)(\s|$)|\ball\b|\bevery\b|\beverything\b)""", ignoreCase)
 
@@ -48,7 +48,7 @@ object SpokenRefusal {
         val text = raw.trim()
         if (text.isEmpty()) return null
         return when {
-            secret.containsMatchIn(text) -> SECRET
+            secretWords.any { it in text } || secretEn.containsMatchIn(text) -> SECRET
             movesMoney(text) -> MONEY
             wipeVerb.containsMatchIn(text) && everything.containsMatchIn(text) -> WIPE
             else -> null
@@ -56,13 +56,16 @@ object SpokenRefusal {
     }
 
     private fun movesMoney(text: String): Boolean {
-        val hasCurrency = currency.containsMatchIn(text)
+        val hasCurrency = hasCurrency(text)
         val moves = moveVerb.containsMatchIn(text)
         if (moves && (hasCurrency || moneyPlace.containsMatchIn(text))) return true
         // "ابعت ميتين درهم لعلي" / "send 100 dollars to Omar": the amount is what is being sent.
         val opening = text.split(Regex("""\s+""")).take(OPENING_WORDS).joinToString(" ")
-        return sendVerb.containsMatchIn(text) && currency.containsMatchIn(opening)
+        return sendVerb.containsMatchIn(text) && hasCurrency(opening)
     }
+
+    private fun hasCurrency(text: String): Boolean =
+        currencyWords.any { it in text } || currencyEn.containsMatchIn(text)
 
     private const val OPENING_WORDS = 4
 }
