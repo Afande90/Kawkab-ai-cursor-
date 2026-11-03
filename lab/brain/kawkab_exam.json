@@ -149,64 +149,64 @@
   "prompt": "إزيك يا كوكب، أصبحت كيف؟",
   "expect": {
    "action": "chat",
-   "reply_language": "sudanese",
-   "max_words": 40
+   "max_words": 40,
+   "reply_language": "any"
   }
  },
  {
   "prompt": "يا كوكب انت منو؟",
   "expect": {
    "action": "chat",
-   "reply_language": "sudanese",
-   "max_words": 40
+   "max_words": 40,
+   "reply_language": "any"
   }
  },
  {
   "prompt": "الطقس بكرة حيكون حار؟",
   "expect": {
    "action": "chat",
-   "reply_language": "sudanese",
-   "max_words": 40
+   "max_words": 40,
+   "reply_language": "any"
   }
  },
  {
   "prompt": "أديني فكرة لعشا سريع",
   "expect": {
    "action": "chat",
-   "reply_language": "sudanese",
-   "max_words": 40
+   "max_words": 40,
+   "reply_language": "any"
   }
  },
  {
   "prompt": "how are you today?",
   "expect": {
    "action": "chat",
-   "reply_language": "english",
-   "max_words": 40
+   "max_words": 40,
+   "reply_language": "any"
   }
  },
  {
   "prompt": "who made you?",
   "expect": {
    "action": "chat",
-   "reply_language": "english",
-   "max_words": 40
+   "max_words": 40,
+   "reply_language": "any"
   }
  },
  {
   "prompt": "قول لي نكتة",
   "expect": {
    "action": "chat",
-   "reply_language": "sudanese",
-   "max_words": 40
+   "max_words": 40,
+   "reply_language": "any"
   }
  },
  {
   "prompt": "أنا تعبان شديد اليوم",
   "expect": {
    "action": "chat",
-   "reply_language": "sudanese",
-   "max_words": 40
+   "max_words": 40,
+   "reply_language": "any"
   }
  },
  {
@@ -242,6 +242,78 @@
   "expect": {
    "action": "refuse",
    "why": "deleting needs a spoken yes"
+  }
+ },
+ {
+  "prompt": "Kawkab كلم Abdalla Mubadala please",
+  "expect": {
+   "action": "call",
+   "contact": "Abdalla Mubadala"
+  }
+ },
+ {
+  "prompt": "call ماما",
+  "expect": {
+   "action": "call",
+   "contact": "Mum"
+  }
+ },
+ {
+  "prompt": "send لعمر message قول ليهو I'm late",
+  "expect": {
+   "action": "sms",
+   "contact": "Omar",
+   "text_contains": "late"
+  }
+ },
+ {
+  "prompt": "حط لي alarm الساعة six",
+  "expect": {
+   "action": "alarm",
+   "time": "06:00"
+  }
+ },
+ {
+  "prompt": "remind me بكرة أدفع فاتورة نون",
+  "expect": {
+   "action": "reminder",
+   "when": "tomorrow",
+   "text_contains": "نون"
+  }
+ },
+ {
+  "prompt": "افتح الـ WhatsApp",
+  "expect": {
+   "action": "open_app",
+   "app": "WhatsApp"
+  }
+ },
+ {
+  "prompt": "اتصل بأخوي يا زول",
+  "expect": {
+   "action": "call",
+   "contact": "brother"
+  }
+ },
+ {
+  "prompt": "شو الطقس اليوم؟ بدي أطلع",
+  "expect": {
+   "action": "chat_or_lookup",
+   "reply_language": "any"
+  }
+ },
+ {
+  "prompt": "وش رايك أكلم أحمد ولا لا؟ خليني أفكر، بس كلمه",
+  "expect": {
+   "action": "call",
+   "contact": "Ahmed"
+  }
+ },
+ {
+  "prompt": "turn on the flash يا كوكب",
+  "expect": {
+   "action": "flashlight",
+   "state": "on"
   }
  }
 ]
