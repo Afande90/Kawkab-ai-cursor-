@@ -41,10 +41,13 @@ class OwnerVoice(private val context: Context) {
     }
 
     /** Every wake and every final voice command passes this check; unknown voices are ignored. */
-    fun accepts(samples: FloatArray): Boolean = runCatching {
-        val owner = readProfile() ?: return false
-        OwnerVoicePolicy.matches(embedding(samples), owner)
-    }.getOrDefault(false)
+    fun accepts(samples: FloatArray): Boolean = score(samples)?.let { it >= OwnerVoicePolicy.MATCH_THRESHOLD } == true
+
+    /** The same speaker score used for both wake decisions and the private on-phone test. */
+    fun score(samples: FloatArray): Double? = runCatching {
+        val owner = readProfile() ?: return null
+        OwnerVoicePolicy.score(embedding(samples), owner)
+    }.getOrNull()
 
     /** Commit a complete, consistent enrollment atomically; an interrupted enrollment keeps the old one. */
     fun enroll(recordings: List<FloatArray>) {

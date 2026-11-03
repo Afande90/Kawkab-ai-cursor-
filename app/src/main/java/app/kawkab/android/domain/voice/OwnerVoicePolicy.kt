@@ -11,7 +11,9 @@ object OwnerVoicePolicy {
     const val SENTENCES = 2
     private const val MIN_SAMPLES = 16_000
     private const val MIN_RMS = 0.003
-    private const val SIMILARITY = 0.65
+
+    /** Fixed cosine threshold shared by wake scores and command verification. */
+    const val MATCH_THRESHOLD = 0.65
 
     /** Looser bar used only while enrolling, to drop the odd noisy take instead of failing. */
     private const val ENROLL_SIMILARITY = 0.5
@@ -23,13 +25,17 @@ object OwnerVoicePolicy {
     private const val VOICED_FRACTION = 0.15
 
     /** No profile, a failed extractor or a non-finite vector always refuses the utterance. */
-    fun matches(candidate: FloatArray, owner: FloatArray?): Boolean {
-        if (owner == null || owner.isEmpty() || candidate.size != owner.size) return false
-        if (candidate.any { !it.isFinite() } || owner.any { !it.isFinite() }) return false
+    fun matches(candidate: FloatArray, owner: FloatArray?): Boolean =
+        score(candidate, owner)?.let { it >= MATCH_THRESHOLD } == true
+
+    /** Numeric speaker evidence, with null for missing, corrupt or zero-length embeddings. */
+    fun score(candidate: FloatArray, owner: FloatArray?): Double? {
+        if (owner == null || owner.isEmpty() || candidate.size != owner.size) return null
+        if (candidate.any { !it.isFinite() } || owner.any { !it.isFinite() }) return null
         val dot = candidate.indices.sumOf { candidate[it].toDouble() * owner[it] }
         val left = sqrt(candidate.sumOf { it.toDouble() * it })
         val right = sqrt(owner.sumOf { it.toDouble() * it })
-        return left > 0 && right > 0 && dot / (left * right) >= SIMILARITY
+        return if (left > 0 && right > 0) (dot / (left * right)).coerceIn(-1.0, 1.0) else null
     }
 
     /** Twelve accepted recordings are required, not just the wake-word repetitions. */
