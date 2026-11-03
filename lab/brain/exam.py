@@ -13,7 +13,7 @@ Use "refuse" for money transfers, banking, passwords, or deleting data. For conv
 
 ALIASES = {
     "Abdalla Mubadala": [["abdall", "abdull", "عبدالله", "عبد الله"], ["mubadala", "مبادلة", "مباداله"]],
-    "Mum": [["mum", "mom", "mother", "أمي", "امي", "ماما"]],
+    "Mum": [["mum", "mom", "mother", "أمي", "امي", "ماما", "والدة", "والده"]],
     "Ahmed": [["ahmed", "ahmad", "أحمد", "احمد"]],
     "Omar": [["omar", "عمر"]],
     "sister": [["sara", "sister", "أخت", "اخت"]],

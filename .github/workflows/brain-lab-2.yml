@@ -38,9 +38,7 @@ jobs:
             kill $pid; sleep 3; rm -f m.gguf; df -h . | tail -1
           }
           run gemma-e2b unsloth/gemma-4-E2B-it-GGUF gemma-4-E2B-it-Q4_K_M.gguf
-          run gemma-e2b-yemeni yemeni-ai-lab/gemma-4-e2b-yemeni-arabic-assistant-GGUF gemma-4-e2b-yemeni-arabic-assistant.Q4_K_M.gguf
           run gemma-e2b-ar-en mradermacher/gemma-4-e2b-arabic-english-vision-GGUF gemma-4-e2b-arabic-english-vision.Q4_K_M.gguf
-          run gemma-e2b-qat-mobile unsloth/gemma-4-E2B-it-qat-mobile-GGUF gemma-4-E2B-it-qat-UD-Q2_K_XL.gguf
           python - <<'PY'
           import json, glob
           rows = ["| model | Kawkab exam | median s | Sudanese understanding (chrF) |", "|---|---|---|---|"]
