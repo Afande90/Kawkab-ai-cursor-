@@ -24,7 +24,7 @@ UNCLEAR = ["اتصل عليه", "كلمه", "ring her", "call him", "رسل لي
            "send it to him", "قول ليهو", "tell her", "اتصل على عبدالله بكرة", "message Abdalla", "كلم عبد الله هسي",
            "ring Abdalla now", "ذكرني بعدين", "remind me sometime", "صحيني بدري بكرة", "wake me early", "رسل ليهو الكلام داك",
            "send him that"]
-CLEAR = ["اتصل على عمر", "كلم أحمد", "ring Sara", "call Ali", "رسل لسارة قول ليها جاية", "message Omar: on my way",
+CLEAR = ["اتصل على عمر", "كلم أحمد هسي لو سمحت", "ring Sara", "call Ali", "رسل لسارة قول ليها جاية", "message Omar: on my way",
          "ابعت رسالة لأحمد إنو وصلت", "send a text to Mum saying hi", "ذكرني الساعة تلاتة أشرب موية", "remind me at 4 to stretch",
          "حط لي تذكير بكرة الساعة عشرة أكلم البنك", "set a reminder at noon to eat", "صحيني الساعة ستة", "wake me up at 6:30",
          "set an alarm for 8", "حط منبه بكرة الساعة سبعة", "اتصل على علي", "call Omar", "رسل لعمر قول ليهو تمام",
