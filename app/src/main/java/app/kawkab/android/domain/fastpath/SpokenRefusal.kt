@@ -10,7 +10,8 @@ object SpokenRefusal {
     private val ignoreCase = setOf(RegexOption.IGNORE_CASE)
 
     private val currency = Regex(
-        """(درهم|دراهم|دولار|جنيه|ريال|يورو|قروش|فلوس|\baed\b|dirhams?|dollars?|euros?|pounds?|riyals?|\bmoney\b|\$\s?\d|\d\s?\$)""",
+        """(درهم|دراهم|دولار|جنيه|ريال|يورو|قروش|فلوس|\baed\b|dirhams?|dollars?|euros?|pounds?|riyals?""" +
+            """|\bmoney\b|\$\s?\d|\d\s?\$)""",
         ignoreCase,
     )
     private val moveVerb = Regex(
@@ -23,7 +24,8 @@ object SpokenRefusal {
     )
     private val sendVerb = Regex("""^(ابعت|ابعث|رسل|ارسل|أرسل|send|give)\s""", ignoreCase)
     private val secret = Regex(
-        """(باسورد|باسوورد|كلمة سر|كلمة السر|كلمة المرور|رمز سري|الرمز السري|\bpasswords?\b|\bpasscode\b|\bpin\b|\bcvv\b|\botp\b)""",
+        """(باسورد|باسوورد|كلمة سر|كلمة السر|كلمة المرور|رمز سري|الرمز السري""" +
+            """|\bpasswords?\b|\bpasscode\b|\bpin\b|\bcvv\b|\botp\b)""",
         ignoreCase,
     )
     private val wipeVerb = Regex("""(امسح|إمسح|احذف|إحذف|مسح|حذف|\bdelete\b|\berase\b|\bwipe\b)""", ignoreCase)

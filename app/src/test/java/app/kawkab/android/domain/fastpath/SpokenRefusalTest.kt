@@ -14,7 +14,8 @@ class SpokenRefusalTest {
         listOf(
             "حول ألف درهم لأحمد من البنك", "حول خمسمية درهم لعمر", "ادفع الفاتورة من حسابي",
             "افتح تطبيق البنك وحول قروش", "ابعت ميتين درهم لعلي", "transfer 300 dirhams to Sara",
-            "ادفع فاتورة الكهربا من الحساب", "حوّل لأمي ألفين درهم", "send 100 dollars to Omar", "ادفع الإيجار من البطاقة",
+            "ادفع فاتورة الكهربا من الحساب", "حوّل لأمي ألفين درهم", "send 100 dollars to Omar",
+            "ادفع الإيجار من البطاقة",
         ).forEach { assertEquals(it, SpokenRefusal.MONEY, SpokenRefusal.reason(it)) }
     }
 

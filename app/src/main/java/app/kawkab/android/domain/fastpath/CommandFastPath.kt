@@ -15,25 +15,11 @@ data class PlannedCommand(val tool: String, val args: Map<String, String>)
  * not run the action: the caller still goes through the outbound tap and the denylist.
  */
 object CommandFastPath {
-    private const val NOON = 12
-    private const val LAST_HOUR = 23
-    private const val LAST_MINUTE = 59
     private const val SECONDS_PER_MINUTE = 60
     private const val SECONDS_PER_HOUR = 3_600
-    private const val MERIDIEM_GROUP = 3
     private const val HALF_HOUR_MINUTES = 30
     private const val FIVE_MINUTES = 5
-    private const val QUARTER = 15
-    private const val HOUR_MINUTES = 60
-    private const val HOURS_A_DAY = 24
     private const val MAX_CONTACT_WORDS = 4
-    private val MORNING_WORDS = setOf("الصباح", "الصبح", "صباحا", "صباحاً", "الفجر", "am", "in the morning")
-    private val EVENING_WORDS = setOf("بالليل", "الليل", "مساء", "مساءً", "المسا", "المساء", "العصر", "بعد الضهر", "pm", "tonight", "in the evening")
-    private val dayPart = Regex(
-        """\s+(الصباح|الصبح|صباحاً|صباحا|الفجر|بالليل|الليل|مساءً|مساء|المساء|المسا|العصر|بعد الضهر|in the morning|in the evening|tonight)$""",
-        RegexOption.IGNORE_CASE,
-    )
-    private val fraction = Regex("""^(\S+) (ونص|ونصف|والنص|وربع|والربع|إلا ربع|الا ربع|إلّا ربع)$""")
 
     private val whitespace = Regex("""\s+""")
     private val indicDigits = mapOf(
@@ -41,39 +27,6 @@ object CommandFastPath {
         '٥' to '5', '٦' to '6', '٧' to '7', '٨' to '8', '٩' to '9',
         '۰' to '0', '۱' to '1', '۲' to '2', '۳' to '3', '۴' to '4',
         '۵' to '5', '۶' to '6', '۷' to '7', '۸' to '8', '۹' to '9',
-    )
-    private val hourWords = mapOf(
-        "واحدة" to "1",
-        "واحد" to "1",
-        "اثنين" to "2",
-        "اتنين" to "2",
-        "ثلاثة" to "3",
-        "تلاتة" to "3",
-        "أربعة" to "4",
-        "اربعة" to "4",
-        "خمسة" to "5",
-        "ستة" to "6",
-        "سبعة" to "7",
-        "ثمانية" to "8",
-        "تمانية" to "8",
-        "تسعة" to "9",
-        "تاسعة" to "9",
-        "عشرة" to "10",
-        "رابعة" to "4",
-        "حداشر" to "11",
-        "اتناشر" to "12",
-    )
-    private val englishNumbers = mapOf(
-        "one" to "1",
-        "two" to "2",
-        "three" to "3",
-        "four" to "4",
-        "five" to "5",
-        "six" to "6",
-        "seven" to "7",
-        "eight" to "8",
-        "nine" to "9",
-        "ten" to "10",
     )
     private val appAliases = mapOf(
         "camra" to "Camera",
@@ -144,7 +97,8 @@ object CommandFastPath {
     private val callGive = Regex("""^(?:أ|ا)ديني (.+?) (?:في|ف) التلفون$""")
     private val callLink = Regex("""^(?:وصلني|وصّلني) (?:ب|بـ|مع )(.+)$""")
     private val callWant = Regex(
-        """^(?:داير|دايرة|عايز|عاوز|عايزة|عاوزة|ابغى|ابغي|أبغى|بدي|خليني) (?:أ|ا)(?:كلم |تكلم مع |تصل ب|تصل على )(.+)$""",
+        """^(?:داير|دايرة|عايز|عاوز|عايزة|عاوزة|ابغى|ابغي|أبغى|بدي|خليني) """ +
+            """(?:أ|ا)(?:كلم |تكلم مع |تصل ب|تصل على )(.+)$""",
     )
     private val callWould = Regex("""^ممكن (?:ت|)تصل(?: لي)? (?:ب|على )(.+)$""")
     private val callTo = Regex("""^اتصلي? (?:ب|على )(.+?)$""")
@@ -154,12 +108,16 @@ object CommandFastPath {
     private val smsSend = Regex("""^send (.+?) an? (?:message|text|sms)[:,]? (.+)$""", RegexOption.IGNORE_CASE)
     private val smsColon = Regex("""^(?:message|text|send) (.+?): (.+)$""", RegexOption.IGNORE_CASE)
     private val smsWrite = Regex("""^(?:أكتب|اكتب|ارسل|أرسل) ل(\S+) (.+)$""")
-    private val alarmWake = Regex("""^(?:wake me up at|wake me at|set alarm for|set an alarm at|alarm|alarm at) (.+)$""", RegexOption.IGNORE_CASE)
+    private val alarmWake = Regex(
+        """^(?:wake me up at|wake me at|set alarm for|set an alarm at|alarm|alarm at) (.+)$""",
+        RegexOption.IGNORE_CASE,
+    )
     private val alarmPut = Regex("""^(?:(?:حط|اضبط|عاوز|عايز|داير)(?: لي)? )?منبه (?:الساعة |على )?(.+)$""")
     private val alarmWakeAr = Regex("""^(?:صحيني|قومني|فزعني)(?: الساعة)? (.+)$""")
     private val wakePrefix = Regex("""^(?:(?:يا )?(?:kawkab|كوكب)[,،]?\s+)""", RegexOption.IGNORE_CASE)
     private val trailingFiller = Regex(
-        """(?:\s+(?:now|please|right now|for me|هسي|هسع|هسه|هسا|هسة|هسّع|لو سمحت|لو سمحتي|ضروري|بسرعة|يا زول|يا أخوي))+$""",
+        """(?:\s+(?:now|please|right now|for me|هسي|هسع|هسه|هسا|هسة|هسّع""" +
+            """|لو سمحت|لو سمحتي|ضروري|بسرعة|يا زول|يا أخوي))+$""",
         RegexOption.IGNORE_CASE,
     )
     private val notContacts = setOf(
@@ -167,13 +125,11 @@ object CommandFastPath {
         "msg", "text", "her", "him", "them", "me", "it", "her back", "him back", "them back", "back",
     )
     private val notApps = Regex(
-        """(سكرين|صورة شاشة|لقطة شاشة|لقطة الشاشة|screenshot|screen shot|الفلاش|فلاش|كشاف|الكشاف|بلوتوث|البلوتوث|bluetooth|flashlight|torch|بنك|bank)""",
+        """(سكرين|صورة شاشة|لقطة شاشة|لقطة الشاشة|screenshot|screen shot|الفلاش|فلاش|كشاف|الكشاف""" +
+            """|بلوتوث|البلوتوث|bluetooth|flashlight|torch|بنك|bank)""",
         RegexOption.IGNORE_CASE,
     )
     private val unsure = Regex("""(ولا |،|\?|؟|ما متأكد|not sure|(^|\s)or\s)""", RegexOption.IGNORE_CASE)
-    private val clockEn = Regex("""^(\d{1,2})(?::(\d{1,2}))?\s*(am|pm)?$""", RegexOption.IGNORE_CASE)
-    private val halfPast = Regex("""^half past ([A-Za-z]+)$""", RegexOption.IGNORE_CASE)
-    private val arabicHalf = Regex("""^(.+?) والنصف$""")
     private val minutesEn = Regex("""^(\d+)\s*(?:minutes|minute|mins|min)$""", RegexOption.IGNORE_CASE)
     private val secondsEn = Regex("""^(\d+)\s*(?:seconds|second|secs|sec)$""", RegexOption.IGNORE_CASE)
     private val hoursEn = Regex("""^(\d+)\s*(?:hours|hour|hrs|hr)$""", RegexOption.IGNORE_CASE)
@@ -263,7 +219,7 @@ object CommandFastPath {
 
     private fun calendar(text: String): PlannedCommand? {
         val match = timedEvents.firstNotNullOfOrNull { pattern -> pattern.matchEntire(text) } ?: return null
-        val time = clock(match.groupValues[2]) ?: return null
+        val time = SpokenClock.read(match.groupValues[2]) ?: return null
         return PlannedCommand(
             tool = "add_calendar_event",
             args = mapOf("title" to match.groupValues[1], "hour" to time.first, "minute" to time.second),
@@ -298,7 +254,7 @@ object CommandFastPath {
     private fun alarm(text: String): PlannedCommand? {
         // The first shape whose time reads wins: "set alarm for 9:15" is not "set alarm" + "for 9:15".
         val time = alarmShapes.firstNotNullOfOrNull { shape ->
-            shape.matchEntire(text)?.let { match -> clock(match.groupValues[1]) }
+            shape.matchEntire(text)?.let { match -> SpokenClock.read(match.groupValues[1]) }
         } ?: return null
         return PlannedCommand(
             tool = "set_alarm",
@@ -346,52 +302,6 @@ object CommandFastPath {
         return PlannedCommand(tool = "call_phone", args = mapOf("contact" to who))
     }
 
-    private fun clock(said: String): Pair<String, String>? {
-        val part = dayPart.find(said)?.groupValues?.get(1)
-        val text = dayPart.replace(said, "").trim()
-        val base = baseClock(text) ?: return null
-        val hour = base.first.toInt()
-        val shifted = when {
-            part == null -> hour
-            part in EVENING_WORDS && hour < NOON -> hour + NOON
-            part in MORNING_WORDS && hour == NOON -> 0
-            else -> hour
-        }
-        return shifted.toString() to base.second
-    }
-
-    private fun baseClock(text: String): Pair<String, String>? {
-        fraction.matchEntire(text)?.let { match ->
-            val hour = (arabicHour(match.groupValues[1]) ?: match.groupValues[1].toIntOrNull()?.toString())?.toInt()
-                ?: return null
-            return when (match.groupValues[2]) {
-                "ونص", "ونصف", "والنص" -> hour.toString() to HALF_HOUR_MINUTES.toString()
-                "وربع", "والربع" -> hour.toString() to QUARTER.toString()
-                else -> ((hour + LAST_HOUR) % HOURS_A_DAY).toString() to (HOUR_MINUTES - QUARTER).toString()
-            }
-        }
-        val spoken = spokenClock(text)
-        if (spoken != null) return spoken
-        val match = clockEn.matchEntire(text) ?: return null
-        val minute = match.groupValues[2].toIntOrNull() ?: 0
-        val hour = hourOnClock(match.groupValues[1].toInt(), match.groupValues[MERIDIEM_GROUP])
-        if (hour !in 0..LAST_HOUR || minute !in 0..LAST_MINUTE) return null
-        return hour.toString() to minute.toString()
-    }
-
-    private fun spokenClock(text: String): Pair<String, String>? {
-        val halfWord = halfPast.matchEntire(text)?.groupValues?.get(1)?.let { englishNumber(it) }
-        if (halfWord != null) return halfWord.toString() to HALF_HOUR_MINUTES.toString()
-        val arabicHalfHour = arabicHalf.matchEntire(text)?.groupValues?.get(1)?.let { arabicHour(it) }
-        if (arabicHalfHour != null) return arabicHalfHour to HALF_HOUR_MINUTES.toString()
-        val hour = arabicHour(text) ?: return null
-        return hour to "0"
-    }
-
-    private fun arabicHour(text: String): String? = hourWords[text] ?: hourWords[text.removePrefix("ال")]
-
-    private fun englishNumber(word: String): Int? = englishNumbers[word.lowercase()]?.toInt()
-
     private fun appName(raw: String): String = appAliases[raw.lowercase()] ?: raw
 
     private fun arabicSeconds(text: String): Int? {
@@ -405,17 +315,11 @@ object CommandFastPath {
         return amount * unit
     }
 
-    private fun hourOnClock(hour: Int, meridiem: String): Int = when (meridiem.lowercase()) {
-        "pm" -> if (hour < NOON) hour + NOON else hour
-        "am" -> if (hour == NOON) 0 else hour
-        else -> hour
-    }
-
     private fun englishSeconds(text: String): Int? {
         minutesEn.matchEntire(text)?.let { return it.groupValues[1].toInt() * SECONDS_PER_MINUTE }
         secondsEn.matchEntire(text)?.let { return it.groupValues[1].toInt() }
         hoursEn.matchEntire(text)?.let { return it.groupValues[1].toInt() * SECONDS_PER_HOUR }
-        val words = wordMinutes.matchEntire(text)?.let { englishNumber(it.groupValues[1]) }
+        val words = wordMinutes.matchEntire(text)?.let { SpokenClock.englishNumber(it.groupValues[1]) }
         if (words != null) return words * SECONDS_PER_MINUTE
         return null
     }

@@ -9,7 +9,8 @@ import org.junit.Test
  * to the model because a contact, a body or the target is missing.
  */
 class CommandFastPathDialectTest {
-    private fun call(text: String) = CommandFastPath.parse(text)?.takeIf { it.tool == "call_phone" }?.args?.get("contact")
+    private fun call(text: String) =
+        CommandFastPath.parse(text)?.takeIf { it.tool == "call_phone" }?.args?.get("contact")
 
     @Test
     fun `dialect call phrasings place a call to the named person`() {
@@ -34,7 +35,10 @@ class CommandFastPathDialectTest {
 
     @Test
     fun `screenshots, the torch and Bluetooth are not apps`() {
-        listOf("افتح آخر سكرين", "open the latest screenshot", "شغل الفلاش", "شغل البلوتوث", "افتح لي آخر صورة شاشة صورتها")
+        listOf(
+            "افتح آخر سكرين", "open the latest screenshot", "شغل الفلاش", "شغل البلوتوث",
+            "افتح لي آخر صورة شاشة صورتها",
+        )
             .forEach { assertNull(it, CommandFastPath.parse(it)) }
     }
 
