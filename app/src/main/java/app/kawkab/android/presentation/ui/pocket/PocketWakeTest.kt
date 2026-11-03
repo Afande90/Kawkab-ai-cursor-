@@ -52,12 +52,14 @@ internal fun PocketWakeTest(enrolled: Boolean, talkRequest: Int, onRecording: (B
         if (!enrolled || busy || !resumed || attempts.size >= TEST_TRIES) return
         job = scope.launch {
             busy = true
-            onRecording(true)
-            message = "SAY KAWKAB NOW"
+            message = "GETTING READY..."
             val test = WakeTestCapture(context)
             capture = test
             try {
-                val result = test.attempt()
+                val result = test.attempt {
+                    message = "SAY KAWKAB NOW"
+                    onRecording(true)
+                }
                 attempts = attempts + result
                 message = if (result.accepted) "WOKE FOR YOUR VOICE" else "DID NOT WAKE"
                 recent = withContext(Dispatchers.IO) { WakeScoreLog(context).recent() }
