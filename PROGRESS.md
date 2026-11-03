@@ -188,3 +188,17 @@ Implemented the owner's battery request on top of M2-V3. Voice settings now expo
 Silero's bounded speech windows gate both keyword paths and owner speaker verification. Silent frames no longer run personal features, and pre-roll buffers retain independent samples without continual allocation. Daily duration aggregates use monotonic time and local-date boundaries, persist in noBackupFilesDir, and are visible in Voice. No audio is logged. Abrupt process death can lose the current one-minute interval; no measured handset battery percentage is claimed.
 
 Targeted policy, sensor, recorder-lifecycle, settings, accounting and storage-inventory tests passed. A CI test opens a real recorder and verifies release for every pause rule. Local static-check and compilation results are included in the battery bundle report; actual phone power measurements and device execution remain CI/phone evidence. No push, tag or project-setting change is made.
+
+
+## Personal wake templates and testing — 3 Nov 2026
+
+Continued from owner main `9ce2fb01`. All four requested wake items are implemented:
+
+1. All ten enrolled Kawkab recordings form a gain-normalized personal template bank. Generic and sherpa keyword opinions remain available; every accepted wake needs the same owner speaker verification. The fixed 0.90 personal and 0.65 speaker thresholds are unchanged.
+2. Silero speech onset briefly shows HEARD SOMETHING on an already resumed Pocket LCD. The throttled package-only signal has no manifest receiver and cannot open the app.
+3. Settings → Voice → TEST WAKE WORD measures ten fresh arm's-length attempts with per-try word/owner scores and the 9/10 target. GETTING READY stays visible until the real microphone is open. It never hands off a command or runs an action. Cancellation, calls and lifecycle exit release capture; native warm-up cannot reopen a cancelled microphone.
+4. A private score-only journal retains timestamps, origin, word/speaker evidence and outcomes, including NO_SPEECH, under noBackupFilesDir. No audio, transcript or upload is added. Voice settings show recent scores.
+
+Final functional implementation `d417a77a` passed the full `./gradlew check` with both instrumented-test compile tasks additionally requested (20m 47s, 356 tasks; no test filters or excluded checks). Results: 6,374 FOSS + 6,378 full-variant + 1,049 catalog tests = **13,801 passed, zero failures/errors/skips**. Both lint variants, ktlint, normal and both typed detekt variants, coverage, all three compliance checks, release manifest contracts, file maps and documentation checks passed. No baseline or threshold was relaxed. Instrumented test sources compiled for both variants; execution remains CI/device-only.
+
+Actual owner-phone 9/10 arm's-length recall remains unmeasured: this environment has neither the owner recordings nor a connected handset. Enrollment takes never count as test attempts. The frozen generic evaluation set is unchanged. No GitHub push, tag, publication or project-setting write was attempted. Delivery is a verified `kawkab-wake.bundle` based on the owner's main, with a validation report and restore instructions.
