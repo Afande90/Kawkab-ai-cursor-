@@ -538,6 +538,7 @@ class PersistentStorageInventoryGuardTest {
             "/data/local/crypto/KeystoreBackedPrefsStore.kt" to "SECRET_STORES",
             "/data/network/ResumableFileDownloader.kt" to "DOWNLOADED_MODELS",
             "/data/local/DownloadedModelFilesImpl.kt" to "DOWNLOADED_MODELS (read-only listing)",
+            "/presentation/ui/pocket/ModelFileImport.kt" to "DOWNLOADED_MODELS (a model file the owner picked)",
             "/data/engine/MediaPipeTextEmbeddingEngine.kt" to "DOWNLOADED_MODELS (the embedding model)",
             "/debug/TriggerJournalDumpReceiver.kt" to "DEBUG_SOAK_DUMPS",
             "/data/services/DownloadForegroundBudget.kt" to "DOWNLOAD_BUDGET",

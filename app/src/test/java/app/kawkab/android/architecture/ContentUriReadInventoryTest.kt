@@ -96,6 +96,8 @@ class ContentUriReadInventoryTest {
                 Source.SystemPicker("OpenDocument — the chat-history import file"),
             "${BASE}presentation/ui/files/FilesScreen.kt" to
                 Source.SystemPicker("OpenDocument — a document imported into the workspace"),
+            "${BASE}presentation/ui/pocket/ModelFileImport.kt" to
+                Source.SystemPicker("OpenDocument — a model file to add, on Settings > Models"),
             "${BASE}presentation/ui/orchestrator/PipelineLibraryScreen.kt" to
                 Source.SystemPicker("OpenDocument — a pipeline file to import"),
             "${BASE}presentation/ui/prompts/PromptLibraryScreen.kt" to
