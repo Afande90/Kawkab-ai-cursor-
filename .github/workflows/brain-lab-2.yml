@@ -1,0 +1,58 @@
+# Owner experiment, round 2: which Gemma 4 E2B family member understands mixed Arabic/English and Sudanese best?
+# Kawkab exam (action JSON) + Sudanese-Flores (Sudanese -> MSA, chrF). Runs only on the brain-lab branch.
+name: Brain lab 2
+on:
+  push:
+    branches: [brain-lab]
+    paths: [lab/brain/exam.py, lab/brain/kawkab_exam.json, .github/workflows/brain-lab-2.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  tournament:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Build llama.cpp
+        run: |
+          git clone --depth 1 https://github.com/ggml-org/llama.cpp
+          cmake -S llama.cpp -B llama.cpp/build -DLLAMA_CURL=OFF -DCMAKE_BUILD_TYPE=Release
+          cmake --build llama.cpp/build -j4 --target llama-server
+          echo "LLAMA_COMMIT=$(git -C llama.cpp rev-parse --short HEAD)" >> $GITHUB_ENV
+      - name: Download Sudanese-Flores
+        run: |
+          pip install -q "huggingface_hub[cli]"
+          python -c "from huggingface_hub import hf_hub_download as d; import shutil; shutil.copy(d('McGill-NLP/Sudanese_Flores','DEVTEST.jsonl',repo_type='dataset'),'flores.jsonl')"
+      - name: Tournament
+        run: |
+          run() {
+            label=$1; repo=$2; file=$3
+            python -c "from huggingface_hub import hf_hub_download as d; import shutil; shutil.move(d('$repo','$file'),'m.gguf')"
+            llama.cpp/build/bin/llama-server -m m.gguf --jinja -c 8192 -np 2 -t 4 --port 8080 > server-$label.log 2>&1 &
+            pid=$!
+            for i in $(seq 180); do curl -sf localhost:8080/health && break; sleep 2; done
+            python lab/brain/exam.py $label lab/brain/kawkab_exam.json flores.jsonl result-$label.json || tail -20 server-$label.log
+            kill $pid; sleep 3; rm -f m.gguf; rm -rf ~/.cache/huggingface/hub/models--*
+          }
+          run gemma-e2b unsloth/gemma-4-E2B-it-GGUF gemma-4-E2B-it-Q4_K_M.gguf
+          run gemma-e2b-yemeni yemeni-ai-lab/gemma-4-e2b-yemeni-arabic-assistant-GGUF gemma-4-e2b-yemeni-arabic-assistant.Q4_K_M.gguf
+          run gemma-e2b-ar-en mradermacher/gemma-4-e2b-arabic-english-vision-GGUF gemma-4-e2b-arabic-english-vision.Q4_K_M.gguf
+          run gemma-e2b-qat-mobile unsloth/gemma-4-E2B-it-qat-mobile-GGUF gemma-4-E2B-it-qat-UD-Q2_K_XL.gguf
+          python - <<'PY'
+          import json, glob
+          rows = ["| model | Kawkab exam | median s | Sudanese understanding (chrF) |", "|---|---|---|---|"]
+          for f in sorted(glob.glob("result-*.json")):
+              r = json.load(open(f))
+              rows.append(f"| {r['label']} | {r['exam_score']:.0%} | {r['exam_median_seconds']} | {r['sudanese_chrf']:.1f} |")
+          open("RESULTS.md", "w").write("\n".join(rows)); print("\n".join(rows))
+          PY
+      - name: Publish
+        if: always()
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          gh release create brain-lab2-${{ github.run_number }} --prerelease --target ${{ github.sha }} \
+            --title "Brain lab 2: Gemma 4 E2B family on the Kawkab exam (llama.cpp ${LLAMA_COMMIT})" \
+            --notes-file RESULTS.md RESULTS.md result-*.json || true
