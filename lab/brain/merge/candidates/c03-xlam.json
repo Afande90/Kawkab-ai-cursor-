@@ -1,0 +1,8 @@
+{
+ "method": "linear",
+ "experts": [
+  {
+   "repo": "ermiaazarkhalili/Gemma4-E2B-Function-Calling-xLAM-Unsloth"
+  }
+ ]
+}

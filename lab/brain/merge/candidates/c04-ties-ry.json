@@ -1,0 +1,13 @@
+{
+ "method": "ties",
+ "density": 0.3,
+ "lambda": 1.0,
+ "experts": [
+  {
+   "repo": "RinggAI/ringg-router-e2b"
+  },
+  {
+   "repo": "yemeni-ai-lab/gemma-4-e2b-yemeni-arabic-assistant-merged"
+  }
+ ]
+}

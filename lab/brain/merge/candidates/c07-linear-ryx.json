@@ -1,0 +1,17 @@
+{
+ "method": "linear",
+ "experts": [
+  {
+   "repo": "RinggAI/ringg-router-e2b",
+   "weight": 0.6
+  },
+  {
+   "repo": "yemeni-ai-lab/gemma-4-e2b-yemeni-arabic-assistant-merged",
+   "weight": 0.4
+  },
+  {
+   "repo": "ermiaazarkhalili/Gemma4-E2B-Function-Calling-xLAM-Unsloth",
+   "weight": 0.4
+  }
+ ]
+}

@@ -1,0 +1,8 @@
+{
+ "method": "linear",
+ "experts": [
+  {
+   "repo": "RinggAI/ringg-router-e2b"
+  }
+ ]
+}
