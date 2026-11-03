@@ -5,7 +5,7 @@ name: Brain lab
 on:
   push:
     branches: [brain-lab]
-    paths: [lab/brain/**, .github/workflows/brain-lab.yml]
+    paths: [lab/brain/bench.py, lab/brain/edit-p50c/**, .github/workflows/brain-lab.yml]
   workflow_dispatch:
 permissions:
   contents: write
